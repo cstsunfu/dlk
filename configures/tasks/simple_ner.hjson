@@ -1,0 +1,8 @@
+{
+    task: 'ner',
+    preprocess: null,
+    model: 'lstm_linear_ner',
+    optimizer: "linear_warmup_adam",
+    processor: null,
+    data_loader: "ner",
+}

@@ -1,0 +1,10 @@
+{
+    config: {
+        head_num: 8,
+        input_size: 512,
+        layers: 2,
+        output_size: 512,
+        project_size: 2048
+    },
+    name: "transformer",
+}

@@ -1,0 +1,4 @@
+{
+    pretrained_model: "data/model/bert/",
+    embedding_dim: 768
+}
