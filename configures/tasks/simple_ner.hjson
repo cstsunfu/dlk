@@ -1,8 +1,26 @@
 {
-    task: 'ner',
-    preprocess: null,
-    model: 'lstm_linear_ner',
-    optimizer: "linear_warmup_adam",
-    processor: null,
     data_loader: "ner",
+    model: {
+        encoder: {
+            __search__: {
+                input_size: [
+                    1,
+                    2
+                ],
+                output_size: [
+                    3,
+                    5
+                ]
+            },
+            config: {
+                output_size: 8
+            }
+        },
+        name: "lstm_linear_ner"
+    },
+    optimizer: "linear_warmup_adam",
+    preprocess: null,
+    processor: null,
+    task: "ner",
+    tokenizer: null
 }
