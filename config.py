@@ -114,6 +114,24 @@ class BaseConfigParser(object):
         else:
             return True
         
+class OptimizerConfigParser(BaseConfigParser):
+    """docstring for ModelConfigParser"""
+    def __init__(self, config_file_path, configure_base_path='configures/optimizers'):
+        super(OptimizerConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+        self.config = self.load_hjson_file(os.path.join(self.configure_base_path, self.config_name+'.hjson'))
+
+    def parser(self, update_config: dict={}) -> List[Dict]:
+        """return a list of para dict s for all possible combinations
+        :update_config: the update_config will update the returned config
+        :returns: list[possible config dict]
+
+        """
+        module_config = self.update_base(self.config)
+        module_config.update(update_config)
+        module_config_flat = self.flat_search(module_config)
+        assert len(module_config_flat) == 1, print("The tokenizer config must be unique.")
+        
+        return module_config_flat
 
 class TokenizerConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""

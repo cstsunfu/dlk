@@ -1,12 +1,9 @@
-"""models"""
+"""encoders"""
 
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
 from utils.config import Config
-from modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
-from modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
-from modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
 
 MODEL_REGISTRY = {}
 MODEL_CONFIG_REGISTRY = {}
@@ -95,7 +92,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
+        return self._get_sub_module(embedding_register, embedding_config_register, "embedding", config)
         
     def get_encoder(self, config):
         """get encoder config and encoder module
@@ -104,7 +101,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
+        return self._get_sub_module(encoder_register, encoder_config_register, "encoder", config)
         
     def get_decoder(self, config):
         """get decoder config and decoder module
@@ -113,7 +110,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
+        return self._get_sub_module(decoder_register, decoder_config_register, "decoder", config)
 
 # automatically import any Python files in the models directory
 models_dir = os.path.dirname(__file__)

@@ -1,6 +1,11 @@
 {
-    data_loader: "ner",
+    dataset: "ner",
     model: {
+        decoder: {
+            config: {
+                output_size: 8
+            }
+        },
         encoder: {
             __search__: {
                 input_size: [
@@ -11,9 +16,6 @@
                     3,
                     5
                 ]
-            },
-            config: {
-                output_size: 8
             }
         },
         name: "lstm_linear_ner"

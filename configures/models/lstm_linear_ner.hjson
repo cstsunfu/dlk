@@ -14,5 +14,5 @@
             }
         }
     },
-    name: "ner"
+    name: "lstm_linear_ner",
 }
