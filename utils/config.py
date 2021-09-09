@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union, Callable, List
+from typing import Any, Dict, Union, Callable, List, Tuple
 import json
 import copy
 import os
@@ -18,6 +18,35 @@ class Config(object):
                 get_logger().error(f"Can't set {key} with value {value} for {self}")
                 raise err
         
+    def _get_sub_module(self, module_register: Dict, module_config_register: Dict, module_name: str, config: Dict) -> Tuple[Any, 'Config']:
+        """get sub module and config from register.
+
+        :module_register: TODO
+        :module_config_register: TODO
+        :module_name: TODO
+        :config: Dict: TODO
+        :returns: TODO
+
+        """
+        if isinstance(config, str):
+            name = config
+            extend_config = {}
+        else:
+            assert isinstance(config, dict), "{} config must be name(str) or config(dict), but you provide {}".format(module_name, config)
+            for key in config:
+                if key not in ['name', 'config']:
+                    raise KeyError('You can only provide the {} name("name") and embedding config("config")'.format(module_name))
+            name = config.get('name')
+            extend_config = config.get('config', {})
+            if not name:
+                raise KeyError('You must provide the {} name("name")'.format(module_name))
+
+        module, module_config =  module_register.get(name), module_config_register.get(name)
+        if (not module) or not (module_config):
+            raise KeyError('The {} name {} is not registed.'.format(module_name, config))
+        module_config.update(extend_config)
+        return module, module_config
+
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any], **kwargs) -> "Config":
         """
@@ -96,14 +125,14 @@ class Config(object):
                 raise err
 
 
-class BaseConfigParser(object):
-    """docstring for BaseConfigParser"""
+class BaseJsonConfigParser(object):
+    """docstring for BaseJsonConfigParser"""
     def __init__(self, config_file_path: str, configure_base_path: str):
         """
         :config_file_path: the config file path
         :configure_base_path: the directory of __base__ configure
         """
-        super(BaseConfigParser, self).__init__()
+        super(BaseJsonConfigParser, self).__init__()
         self.config_file_path = config_file_path
         self.model_config = self.load_hjson_file(self.config_file_path)
         self.config_name = self.model_config['name']
@@ -210,10 +239,10 @@ class BaseConfigParser(object):
         else:
             return True
         
-class DatasetConfigParser(BaseConfigParser):
-    """docstring for ModelConfigParser"""
-    def __init__(self, config_file_path, configure_base_path='configures/datasets'):
-        super(DatasetConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+class DataloaderJsonConfigParser(BaseJsonConfigParser):
+    """docstring for DataloaderJsonConfigParser"""
+    def __init__(self, config_file_path, configure_base_path='configures/dataloaders'):
+        super(DataloaderJsonConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
         self.config = self.load_hjson_file(os.path.join(self.configure_base_path, self.config_name+'.hjson'))
 
     def parser(self, update_config: dict={}) -> List[Dict]:
@@ -225,14 +254,14 @@ class DatasetConfigParser(BaseConfigParser):
         module_config = self.update_base(self.config)
         module_config.update(update_config)
         module_config_flat = self.flat_search(module_config)
-        assert len(module_config_flat) == 1, print("The tokenizer config must be unique.")
+        assert len(module_config_flat) == 1, print("The dataloader config must be unique.")
         return module_config_flat
 
 
-class OptimizerConfigParser(BaseConfigParser):
-    """docstring for ModelConfigParser"""
+class OptimizerJsonConfigParser(BaseJsonConfigParser):
+    """docstring for ModelJsonConfigParser"""
     def __init__(self, config_file_path, configure_base_path='configures/optimizers'):
-        super(OptimizerConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+        super(OptimizerJsonConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
         self.config = self.load_hjson_file(os.path.join(self.configure_base_path, self.config_name+'.hjson'))
 
     def parser(self, update_config: dict={}) -> List[Dict]:
@@ -244,15 +273,15 @@ class OptimizerConfigParser(BaseConfigParser):
         module_config = self.update_base(self.config)
         module_config.update(update_config)
         module_config_flat = self.flat_search(module_config)
-        assert len(module_config_flat) == 1, print("The tokenizer config must be unique.")
+        assert len(module_config_flat) == 1, print("The optimizer config must be unique.")
         
         return module_config_flat
 
 
-class TokenizerConfigParser(BaseConfigParser):
-    """docstring for ModelConfigParser"""
+class TokenizerJsonConfigParser(BaseJsonConfigParser):
+    """docstring for ModelJsonConfigParser"""
     def __init__(self, config_file_path, configure_base_path='configures/tokenizers'):
-        super(TokenizerConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+        super(TokenizerJsonConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
         self.config = self.load_hjson_file(os.path.join(self.configure_base_path, self.config_name+'.hjson'))
 
     def parser(self, update_config: dict={}) -> List[Dict]:
@@ -269,10 +298,10 @@ class TokenizerConfigParser(BaseConfigParser):
         return module_config_flat
 
 
-class ModelConfigParser(BaseConfigParser):
-    """docstring for ModelConfigParser"""
+class ModelJsonConfigParser(BaseJsonConfigParser):
+    """docstring for ModelJsonConfigParser"""
     def __init__(self, config_file_path, configure_base_path='configures/modules'):
-        super(ModelConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+        super(ModelJsonConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
 
     def _update_config(self, config: dict, update_config: dict={}) ->Dict:
         """use update_config update the config
@@ -312,6 +341,65 @@ class ModelConfigParser(BaseConfigParser):
             for config in return_list:
                 print(config)
             raise ValueError('REPEAT CONFIG')
+        return return_list
+
+    def _parser(self, config: dict, map_fun: Callable) -> Dict:
+        """use the map_fun to process all the modules
+        :returns: depend on 
+
+        """
+        modules_config = {}
+        for kind_module in config:
+            modules_config[kind_module] = map_fun(config[kind_module], kind_module)
+        return modules_config
+
+
+
+class ProcessorJsonConfigParser(BaseJsonConfigParser):
+    """docstring for ProcessorJsonConfigParser"""
+    def __init__(self, config_file_path, configure_base_path='configures/modules'):
+        super(ProcessorJsonConfigParser, self).__init__(config_file_path=config_file_path, configure_base_path=configure_base_path)
+
+    def _update_config(self, config: dict, update_config: dict={}) ->Dict:
+        """use update_config update the config
+
+        :config: will updated config
+        :returns: updated config
+
+        """
+        # new_config = update_config.get('config', {})
+        for module in update_config:
+            if module not in config:
+                raise KeyError('The processor config has not the module "{}"'.format(module))
+            config[module]['config'].update(update_config[module].get('config', {}))
+
+        return config
+
+    def parser(self, update_config: dict={}) -> List[Dict]:
+        """ return a list of para dict s for all possible combinations
+        :update_config: the update_config will update the returned config
+        :returns: list[possible config dict]
+        """
+
+        modules_config = self._parser(self.config, self.update_base)
+        modules_config = self._update_config(modules_config, update_config)
+        all_module_config_in_one = self._parser(modules_config, self.flat_search)
+        all_module_config_list = self.get_cartesian_prod(all_module_config_in_one)
+        return_list = []
+        for config in all_module_config_list:
+            return_list.append({
+                'name': self.config_name,
+                'config': config
+                })
+        check = self.is_rep_config(return_list)
+        if check:
+            print('Please check your paras carefully, there are repeat configs!!')
+            for config in return_list:
+                print(config)
+            raise ValueError('REPEAT CONFIG')
+        if len(all_module_config_list) != 1:
+            raise ValueError('Currently the project is not support search para in processor.')
+
         return return_list
 
     def _parser(self, config: dict, map_fun: Callable) -> Dict:

@@ -1,6 +1,6 @@
 {
     dataset: "ner",
-    model: {
+    model: [{
         decoder: {
             config: {
                 output_size: 8
@@ -8,10 +8,6 @@
         },
         encoder: {
             __search__: {
-                input_size: [
-                    1,
-                    2
-                ],
                 output_size: [
                     3,
                     5
@@ -20,6 +16,19 @@
         },
         name: "lstm_linear_ner"
     },
+    {
+        decoder: {
+            config: {
+                output_size: 8
+            }
+        },
+        encoder: {
+            config: {
+                output_size: 8
+            }
+        },
+        name: "lstm_linear_ner"
+    }],
     optimizer: "linear_warmup_adam",
     preprocess: null,
     processor: null,

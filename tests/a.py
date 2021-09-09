@@ -1,1 +1,3 @@
-assert 1==2, "not equl"
+
+a = [1]
+print(a[1:])

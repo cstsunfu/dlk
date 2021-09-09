@@ -57,37 +57,6 @@ class ModelConfig(Config):
     def __init__(self, **kwargs):
         super(ModelConfig, self).__init__(**kwargs)
 
-
-    def _get_sub_module(self, module_register: Dict, module_config_register: Dict, module_name: str, config: Dict) -> Tuple[Any, Config]:
-        """get sub module and config from register.
-
-        :module_register: TODO
-        :module_config_register: TODO
-        :module_name: TODO
-        :config: Dict: TODO
-        :returns: TODO
-
-        """
-        if isinstance(config, str):
-            name = config
-            extend_config = {}
-        else:
-            assert isinstance(config, dict), "{} config must be name(str) or config(dict), but you provide {}".format(module_name, config)
-            for key in config:
-                if key not in ['name', 'config']:
-                    raise KeyError('You can only provide the {} name("name") and embedding config("config")'.format(module_name))
-            name = config.get('name')
-            extend_config = config.get('config', {})
-            if not name:
-                raise KeyError('You must provide the {} name("name")'.format(module_name))
-
-        module, module_config =  module_register.get(name), module_config_register.get(name)
-        if (not module) or not (module_config):
-            raise KeyError('The {} name {} is not registed.'.format(module_name, config))
-        module_config.update(extend_config)
-        return module, module_config
-
-
     def get_embedding(self, config):
         """get embedding config and embedding module
 
