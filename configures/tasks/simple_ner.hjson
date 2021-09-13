@@ -1,37 +1,38 @@
 {
-    dataset: "ner",
-    model: [{
-        decoder: {
-            config: {
-                output_size: 8
+    multi_models: {
+        config: {
+            model_1: {
+                decoder: {
+                    config: {
+                        output_size: 8
+                    }
+                },
+                encoder: {
+                    __search__: {
+                        output_size: [
+                            3,
+                            5
+                        ]
+                    }
+                },
+                name: "lstm_linear_ner"
+            },
+            model_2: {
+                decoder: {
+                    config: {
+                        output_size: 8
+                    }
+                },
+                encoder: {
+                    config: {
+                        output_size: 8
+                    }
+                },
+                name: "lstm_linear_ner"
             }
-        },
-        encoder: {
-            __search__: {
-                output_size: [
-                    3,
-                    5
-                ]
-            }
-        },
-        name: "lstm_linear_ner"
+        }
+        name: "distill",
     },
-    {
-        decoder: {
-            config: {
-                output_size: 8
-            }
-        },
-        encoder: {
-            config: {
-                output_size: 8
-            }
-        },
-        name: "lstm_linear_ner"
-    }],
-    optimizer: "linear_warmup_adam",
-    preprocess: null,
-    processor: null,
-    task: "ner",
-    tokenizer: null
+    optimizer: "linear_warmup_adam"
+    name: "ner",
 }
