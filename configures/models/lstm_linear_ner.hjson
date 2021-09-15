@@ -1,15 +1,13 @@
 {
-    confige: {
-        decoder: {
-            __base__: "linear",
-            configure: {
-                input_size: 200,
-                output_size: 3
-            }
-        },
-        encoder: {
-            __base__: "lstm",
+    __name__: "ner",
+    decoder: {
+        __base__: "linear",
+        config: {
+            input_size: 200,
+            output_size: 3
         }
     },
-    name: "ner"
+    encoder: {
+        __base__: "lstm"
+    }
 }

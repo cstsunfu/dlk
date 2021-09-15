@@ -3,5 +3,5 @@
         input_size: 256,
         output_size: 2
     },
-    name: "linear",
+    __name__: "linear",
 }

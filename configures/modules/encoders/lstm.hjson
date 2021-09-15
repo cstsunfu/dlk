@@ -4,7 +4,7 @@
         hidden_size: 200,
         input_size: 200,
         layers: 1,
-        output_size: 200
+        output_size: 200,
     },
-    name: "lstm",
+    __name__: "lstm",
 }

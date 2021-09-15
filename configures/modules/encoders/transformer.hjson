@@ -6,5 +6,5 @@
         output_size: 512,
         project_size: 2048
     },
-    name: "transformer",
+    __name__: "transformer",
 }

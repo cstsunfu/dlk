@@ -1,38 +1,40 @@
 {
     multi_models: {
-        config: {
-            model_1: {
-                decoder: {
-                    config: {
-                        output_size: 8
-                    }
-                },
-                encoder: {
-                    __search__: {
-                        output_size: [
-                            3,
-                            5
-                        ]
-                    }
-                },
-                name: "lstm_linear_ner"
+        model_1: {
+            decoder: {
+                config: {
+                    output_size: 8
+                }
             },
-            model_2: {
-                decoder: {
-                    config: {
-                        output_size: 8
-                    }
-                },
-                encoder: {
-                    config: {
-                        output_size: 8
-                    }
-                },
-                name: "lstm_linear_ner"
-            }
-        }
-        name: "distill",
+            encoder: {
+                __search__: {
+                    output_size: [
+                        3,
+                        5
+                    ]
+                }
+            },
+            __name__: "lstm_linear_ner"
+        },
+        model_2: {
+            decoder: {
+                config: {
+                    output_size: 8
+                }
+            },
+            encoder: {
+                config: {
+                    output_size: 8
+                }
+            },
+            __name__: "lstm_linear_ner"
+        },
+        __name__: "distill"
     },
-    optimizer: "linear_warmup_adam"
-    name: "ner",
+    __name__: "ner",
+    __focus__: {
+        multi_models.model_1.decoder.config.output_size: "decoder.output_size=",
+        multi_models.model_2.encoder.config.output_size: "encoder.output_size=",
+    }
+    /*optimizer: "linear_warmup_adam"*/
 }
