@@ -10,7 +10,6 @@ class Config(object):
     """docstring for Config"""
     def __init__(self, **kwargs):
         super(Config, self).__init__()
-        self.name = "base_config"
         for key, value in kwargs.items():
             try:
                 setattr(self, key, value)
@@ -44,7 +43,8 @@ class Config(object):
         module, module_config =  module_register.get(name), module_config_register.get(name)
         if (not module) or not (module_config):
             raise KeyError('The {} name {} is not registed.'.format(module_name, config))
-        module_config.update(extend_config)
+        module_config = Config.update(module_config, extend_config)
+        # module_config.update(extend_config)
         return module, module_config
 
     @classmethod
@@ -110,16 +110,57 @@ class Config(object):
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string())
 
-    def update(self, config_dict: Dict[str, Any]):
+    def do_update_config(self, config: dict, update_config: dict={}) ->Dict:
+        """use update_config update the config
+
+        :config: will updated config
+        :returns: updated config
+
+        """
+        def _inplace_update_dict(_base, _new):
+            """TODO: Docstring for rec_update_dict.
+            :returns: TODO
+
+            """
+            for item in _new:
+                if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
+                # if item not in _base, or they all are not Dict
+                    _base[item] = _new[item]
+                elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
+                    _inplace_update_dict(_base[item], _new[item])
+                else:
+                    raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
+                
+
+        # new_config = update_config.get('config', {})
+        config = copy.deepcopy(config)
+        _inplace_update_dict(config, update_config)
+        return config
+
+    @classmethod
+    def update(cls, base: "Config", config_dict: Dict[str, Any])->'Config':
         """
         Updates attributes of this class with attributes from ``config_dict``.
 
         Args:
             config_dict (:obj:`Dict[str, Any]`): Dictionary of attributes that shall be updated for this class.
         """
-        for key, value in config_dict.items():
-            try:
-                setattr(self, key, value)
-            except AttributeError as err:
-                get_logger().error(f"Can't set {key} with value {value} for {self}")
-                raise err
+        def _inplace_update_dict(_base, _new):
+            """TODO: Docstring for rec_update_dict.
+            :returns: TODO
+
+            """
+            for item in _new:
+                if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
+                # if item not in _base, or they all are not Dict
+                    _base[item] = _new[item]
+                elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
+                    _inplace_update_dict(_base[item], _new[item])
+                else:
+                    raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
+                
+
+        # new_config = update_config.get('config', {})
+        config = base.to_dict()
+        _inplace_update_dict(config, config_dict)
+        return cls(**config)

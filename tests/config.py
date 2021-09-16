@@ -16,6 +16,14 @@ config = {
     }
 }
 
+config2 = {
+    "a":  {
+        "a2": "a21"
+    },
+    "b": {
+        "b2": "b21"
+    }
+}
 
 class TestConfig(Config):
     """docstring for TestConfig"""
@@ -29,11 +37,14 @@ class TestConfig(Config):
         :returns: TODO
 
         """
-        raise NotImplementedError
+        return TestConfig(**config2)
 
 
 
-a = {}
-a['config'] = TestConfig
-print(a['config'](**config).a)
+conf = TestConfig(**config)
+print(conf.to_dict())
+print(conf.no_imp().to_dict())
+# a = {}
+# a['config'] = TestConfig
+# print(a['config'](**config).a)
 

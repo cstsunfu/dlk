@@ -98,7 +98,6 @@ class BaseConfigParser(object):
         """
 
         modules_config = self.map_to_submodule(self.modules, self.get_kind_module_base_config)
-        # TODO: base config update
         possible_config_list = self.get_named_list_cartesian_prod(modules_config)
         if possible_config_list:
             possible_config_list = [self.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]

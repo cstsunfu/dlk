@@ -1,33 +1,22 @@
 {
-    __focus__: {
-        "multi_models.model_1.decoder.config.input_size": "decoder.input_size=",
-        "multi_models.model_2.encoder": "encoder="
-    },
     multi_models: {
         __name__: "distill",
         model_1: {
-            __link__: {
-                "encoder.config.output_size": "decoder.config.input_size"
-            },
-            __name__: "basic",
+            __name__: "lstm_linear_ner",
             decoder: {
                 config: {
+                    input_size: 3,
                     output_size: 8
                 }
             },
             encoder: {
                 config: {
-                    __search__: {
-                        output_size: [
-                            3,
-                            5
-                        ]
-                    }
+                    output_size: 3
                 }
             }
         },
         model_2: {
-            __name__: "basic",
+            __name__: "lstm_linear_ner",
             decoder: {
                 config: {
                     output_size: 8
@@ -39,6 +28,5 @@
                 }
             }
         }
-    },
-    __name__: "basic"
+    }
 }
