@@ -46,16 +46,16 @@ class BaseConfigParser(object):
         else:
             raise KeyError('The config file must be str or dict. You provide {}.'.format(config_file))
 
-        self.config_name = self.config_file.pop('__name__', "")
-        self.search = self.config_file.pop('__search__', {})
-        self.link = self.config_file.pop('__link__', {})
+        self.config_name = self.config_file.pop('__name', "")
+        self.search = self.config_file.pop('__search', {})
+        self.link = self.config_file.pop('__link', {})
 
-        base = self.config_file.pop('__base__', "")
+        base = self.config_file.pop('__base', "")
         self.base_config = {}
         if base:
             self.base_config = self.get_base_config(base)
         if self.base_config and self.config_name:
-            raise PermissionError("You should put the __name__ to the leaf config.")
+            raise PermissionError("You should put the __name to the leaf config.")
         self.modules = self.config_file
             
 
@@ -69,7 +69,7 @@ class BaseConfigParser(object):
         """
         base_config = cls(config_file).parser(update_config)
         if len(base_config)>1:
-            raise PermissionError("The base config don't support __search__ now.")
+            raise PermissionError("The base config don't support __search now.")
         if base_config:
             return base_config[0]
         return {}
@@ -120,7 +120,7 @@ class BaseConfigParser(object):
         for possible_config in all_possible_config_list:
             config = copy.deepcopy(possible_config)
             if self.config_name:
-                config['__name__'] = self.config_name
+                config['__name'] = self.config_name
             return_list.append(config)
 
         if self.is_rep_config(return_list):
@@ -188,7 +188,7 @@ class BaseConfigParser(object):
         return json_file
 
     def flat_search(self, config: dict, _: str='', extend_base=False) -> List[dict]:
-        """flat all the __search__ paras to list
+        """flat all the __search paras to list
 
         :config: dict: base config
         :kind_module: str: module kind name
@@ -201,7 +201,7 @@ class BaseConfigParser(object):
             result.append(config)
         else:
             search_para_list = self.get_named_list_cartesian_prod(module_search_para)
-            # TODO: support search __base__ when extend_base is True
+            # TODO: support search __base when extend_base is True
             for search_para in search_para_list:
                 base_config = copy.deepcopy(config)
                 base_config.update(search_para)
@@ -270,8 +270,8 @@ class BaseConfigParser(object):
 class SystemConfigParser(BaseConfigParser):
     """docstring for SystemConfigParser"""
     def __init__(self, config_file):
-        if isinstance(config_file, dict) and '__search__' in config_file:
-            raise KeyError('The system(task) config is not support __search__ now.')
+        if isinstance(config_file, dict) and '__search' in config_file:
+            raise KeyError('The system(task) config is not support __search now.')
         super(SystemConfigParser, self).__init__(config_file, config_base_dir='configures/tasks/')
 
 
@@ -316,11 +316,11 @@ class ConfigConfigParser(BaseConfigParser):
     def __init__(self, config_file):
         super(ConfigConfigParser, self).__init__(config_file, config_base_dir='configures/configs/')
         if self.base_config:
-            raise AttributeError('The paras config do not support __base__.')
+            raise AttributeError('The paras config do not support __base.')
         if self.link:
-            raise AttributeError('The paras config do not support __link__.')
+            raise AttributeError('The paras config do not support __link.')
         if self.config_name:
-            raise AttributeError('The paras config do not support __name__.')
+            raise AttributeError('The paras config do not support __name.')
 
     def parser(self, update_config: Dict={}):
         """TODO: Docstring for parser.

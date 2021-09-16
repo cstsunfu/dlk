@@ -1,5 +1,5 @@
 {
     encoder: {
-        __base__: "lstm"
+        __base: "lstm"
     }
 }

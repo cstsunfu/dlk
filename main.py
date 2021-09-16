@@ -11,7 +11,7 @@ class Train(object):
     def __init__(self, config_file):
         super(Train, self).__init__()
         self.config_file = self.load_hjson_file(config_file)
-        self.focus = self.config_file.pop('__focus__', {})
+        self.focus = self.config_file.pop('__focus', {})
         parser = CONFIG_PARSER_REGISTRY['system'](self.config_file)
         self.configs = parser.parser()
         self.config_names = []
@@ -51,4 +51,5 @@ Train('./configures/tasks/simple_ner.hjson')
 # Train('test')
 # Train('lstm')
 # print(task_config)
+
 
