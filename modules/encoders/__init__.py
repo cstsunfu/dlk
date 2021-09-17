@@ -49,11 +49,20 @@ def import_encoders(encoders_dir, namespace):
             importlib.import_module(namespace + "." + encoder_name)
 
 
-class ModelConfig(Config):
-    """docstring for ModelConfig"""
-    def __init__(self, **kwargs):
-        super(ModelConfig, self).__init__(**kwargs)
+class EncoderInput(object):
+    """docstring for EncoderInput"""
+    def __init__(self, **args):
+        super(EncoderInput, self).__init__()
+        self.represent = args.get("represent", None)
+        self.input_ids = args.get("input_ids", None)
+        self.input_mask = args.get("input_mask", None)
 
+
+class EncoderOutput(object):
+    """docstring for EncoderOutput"""
+    def __init__(self, **args):
+        super(EncoderOutput, self).__init__()
+        self.represent = args.get("represent", None)
 
 
 # automatically import any Python files in the encoders directory

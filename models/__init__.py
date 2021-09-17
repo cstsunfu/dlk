@@ -64,7 +64,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
+        return self._get_leaf_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
         
     def get_encoder(self, config):
         """get encoder config and encoder module
@@ -73,7 +73,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
+        return self._get_leaf_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
         
     def get_decoder(self, config):
         """get decoder config and decoder module
@@ -82,7 +82,7 @@ class ModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_sub_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
+        return self._get_leaf_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
 
 # automatically import any Python files in the models directory
 models_dir = os.path.dirname(__file__)
