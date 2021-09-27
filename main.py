@@ -3,6 +3,7 @@ import os
 from typing import Dict, Union, Callable, List, Any
 # from models import MODEL_REGISTRY, MODEL_CONFIG_REGISTRY
 from utils.parser import CONFIG_PARSER_REGISTRY 
+import json
 
 
 class Train(object):
@@ -10,10 +11,29 @@ class Train(object):
     def __init__(self, config_file):
         super(Train, self).__init__()
         self.config_file = self.load_hjson_file(config_file)
-        self.focus = self.config_file.pop('__focus__', {})
+        self.focus = self.config_file.pop('__focus', {})
         parser = CONFIG_PARSER_REGISTRY['system'](self.config_file)
-        config = parser.parser()
-        print(config)
+        self.configs = parser.parser()
+        self.config_names = []
+        for possible_config in self.configs:
+            config_name = []
+            for source, to in self.focus.items():
+                config_point = possible_config
+                trace = source.split('.')
+                for t in trace:
+                    config_point = config_point[t]
+                config_name.append(to+str(config_point))
+            self.config_names.append('_'.join(config_name))
+
+        if len(self.config_names) != len(set(self.config_names)):
+            for config, name in zip(self.configs, self.config_names):
+                print(json.dumps(config, indent=4))
+                print(name)
+            raise NameError('The config_names is not unique.')
+        for config, name in zip(self.configs, self.config_names):
+            print(json.dumps(config, indent=4))
+            print(name)
+
 
     def load_hjson_file(self, file_name: str) -> Dict:
         """load hjson file by file_name
@@ -31,3 +51,5 @@ Train('./configures/tasks/simple_ner.hjson')
 # Train('test')
 # Train('lstm')
 # print(task_config)
+
+
