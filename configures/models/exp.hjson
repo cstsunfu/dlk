@@ -1,15 +1,15 @@
 {
     config: {
         decoder: {
-            __base__: "linear",
+            _base: "linear",
             config: {
                 input_size: 200,
                 output_size: 3
             }
         },
         encoder: {
-            __base__: "lstm",
-            __search__: {
+            _base: "lstm",
+            _search: {
                 input_size: [
                     1,
                     2

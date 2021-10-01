@@ -33,9 +33,9 @@ class Config(object):
         else:
             assert isinstance(config, dict), "{} config must be name(str) or config(dict), but you provide {}".format(module_name, config)
             for key in config:
-                if key not in ['__name', 'config']:
+                if key not in ['_name', 'config']:
                     raise KeyError('You can only provide the {} name("name") and config("config")'.format(module_name))
-            name = config.get('__name', "") # must provide _name_
+            name = config.get('_name', "") # must provide _name_
             extend_config = config.get('config', {})
             if not name:
                 raise KeyError('You must provide the {} name("name")'.format(module_name))

@@ -6,5 +6,5 @@
         layers: 1,
         output_size: 200,
     },
-    __name: "lstm",
+    _name: "lstm",
 }

@@ -1,13 +1,13 @@
 {
-    __name: "ner",
+    _name: "ner",
     decoder: {
-        __base: "linear",
+        _base: "linear",
         config: {
             input_size: 200,
             output_size: 3
         }
     },
     encoder: {
-        __base: "lstm"
+        _base: "lstm"
     }
 }

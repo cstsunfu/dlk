@@ -9,12 +9,12 @@
             lr: 0.001,
             weight_decay: 0.01
         },
-        name: "adamw"
+        _name: "adamw"
     },
     schedule: {
         configure: {
             warmup_step: 0.1
         },
-        name: "linear_warmup"
+        _name: "linear_warmup"
     }
 }

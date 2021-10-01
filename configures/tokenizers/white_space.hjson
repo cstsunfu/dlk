@@ -1,5 +1,5 @@
 {
     config: {
     },
-    name: "white_space",
+    _name: "white_space",
 }

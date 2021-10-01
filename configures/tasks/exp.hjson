@@ -1,17 +1,17 @@
 {
     config: {
-        __search__: {
+        _search: {
             model: [
                 [
                     {
-                        __base__: "exp",
+                        _base: "exp",
                         decoder: {
                             config: {
                                 output_size: 8
                             }
                         },
                         encoder: {
-                            __search__: {
+                            _search: {
                                 output_size: [
                                     3,
                                     5
@@ -20,7 +20,7 @@
                         }
                     },
                     {
-                        __base__: "exp",
+                        _base: "exp",
                         decoder: {
                             config: {
                                 output_size: 8
@@ -35,14 +35,14 @@
                 ],
                 [
                     {
-                        __base__: "exp",
+                        _base: "exp",
                         decoder: {
                             config: {
                                 output_size: 8
                             }
                         },
                         encoder: {
-                            __search__: {
+                            _search: {
                                 output_size: [
                                     3,
                                     5
@@ -51,7 +51,7 @@
                         }
                     },
                     {
-                        __base__: "exp",
+                        _base: "exp",
                         decoder: {
                             config: {
                                 output_size: 8
@@ -69,5 +69,5 @@
         dataset: "exp",
         optimizer: "linear_warmup_adam",
     },
-    name: "ner"
+    _name: "ner"
 }
