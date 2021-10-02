@@ -74,8 +74,9 @@ class BaseConfigParser(object):
             return base_config[0]
         return {}
 
-    def config_link_para(self, link: Dict={}, config: Dict={}):
-        """link the self.config[to] = self.config[source]
+    @classmethod
+    def config_link_para(cls, link: Dict={}, config: Dict={}):
+        """link the config[to] = config[source]
         :link: {source1:to1, ...}
         :returns:
         """
@@ -87,6 +88,18 @@ class BaseConfigParser(object):
             source_list = source.split('.')
             to_list = to.split('.')
             for s, t in zip(source_list[:-1], to_list[:-1]):
+                if isinstance(source_config, list):
+                    ss = s
+                    if s[0] == '-':
+                        ss = s[1:]
+                    assert str.isdigit(ss)
+                    s = int(s)
+                if isinstance(to_config, list):
+                    tt = t
+                    if t[0] == '-':
+                        tt = t[1:]
+                    assert str.isdigit(tt), print("for list index must be int")
+                    t = int(t)
                 source_config = source_config[s]
                 to_config = to_config[t]
             to_config[to_list[-1]] = source_config[source_list[-1]]
