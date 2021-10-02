@@ -1,0 +1,73 @@
+{
+    config: {
+        _search: {
+            model: [
+                [
+                    {
+                        _base: "exp",
+                        decoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        },
+                        encoder: {
+                            _search: {
+                                output_size: [
+                                    3,
+                                    5
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        _base: "exp",
+                        decoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        },
+                        encoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        }
+                    }
+                ],
+                [
+                    {
+                        _base: "exp",
+                        decoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        },
+                        encoder: {
+                            _search: {
+                                output_size: [
+                                    3,
+                                    5
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        _base: "exp",
+                        decoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        },
+                        encoder: {
+                            config: {
+                                output_size: 8
+                            }
+                        }
+                    }
+                ]
+            ]
+        },
+        dataset: "exp",
+        optimizer: "linear_warmup_adam",
+    },
+    _name: "ner"
+}

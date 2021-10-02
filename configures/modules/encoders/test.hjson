@@ -1,5 +1,0 @@
-{
-    encoder: {
-        __base: "lstm"
-    }
-}
