@@ -1,4 +1,0 @@
-{
-    pretrained_model: "data/model/elmo",
-    embedding_dim: 1024
-}
