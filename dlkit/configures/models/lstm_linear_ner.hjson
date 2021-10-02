@@ -1,0 +1,13 @@
+{
+    _name: "ner",
+    decoder: {
+        _base: "linear",
+        config: {
+            input_size: 200,
+            output_size: 3
+        }
+    },
+    encoder: {
+        _base: "lstm"
+    }
+}

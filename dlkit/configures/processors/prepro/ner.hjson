@@ -1,0 +1,5 @@
+{
+    data_path: "data/ner_data/origin/text.txt",
+    processor: "ner_data",
+    output_path: "data/ner_data/train_data"
+}
