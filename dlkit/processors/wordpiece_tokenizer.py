@@ -1,65 +1,51 @@
 from dlkit.utils.config import Config
-from typing import Dict
+from typing import Dict, Callable
+import json
 
 from . import processor_register, processor_config_register
+from _pretokenizer import PreTokenizerFactory
+from _tokenizer_postprocesser import TokenizerPostprocessorFactory
+from _tokenizer_normalizer import TokenizerNormalizerFactory
+from tokenizers import normalizers
+from tokenizers import pre_tokenizers
+
 import pandas as pd
 from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
 
-from tokenizers import normalizers
-from tokenizers.normalizers import Lowercase, NFD, StripAccents
-from tokenizers.pre_tokenizers import Whitespace
-from tokenizers import Tokenizer
-# from tokenizers.models import BPE
-from tokenizers import decoders
-
-tokenizer = Tokenizer.from_file('./wp_bert-wiki.json')
-tokenizer.decoder = decoders.WordPiece()
-# encode = tokenizer.encode('著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。')
-
-encode = tokenizer.encode('a b c d e a b')
-
-bert_tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
-bert_tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
-
-# # bert_tokenizer.pre_tokenizer = Whitespace()
-# trainer = WordPieceTrainer(
-    # vocab_size=40, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-# )
-# files = ["./a.md"]
-# bert_tokenizer.train(files, trainer)
-# # bert_tokenizer.normalizer = normalizers.Sequence([NFD(), Lowercase(), StripAccents()])
-
-# bert_tokenizer.save("wp_bert-wiki.json", pretty=True)
-
 
 @processor_config_register('wordpiece_tokenizer')
 class WordpieceTokenizerConfig(Config):
-    """docstring for GeneralTokenizerConfig"""
-    def __init__(self, parallel, status, **kwargs):
-        self.data_pair = kwargs.pop('data_pair', {})
-        self.data_set = kwargs.pop('data_set', {}).pop(status, [])
-        self.parallel = self.parallel
-        self.config_path = kwargs.pop('config_path', "")
-        self.pretokenizer = kwargs.pop('config_path', "")
-
+    """docstring for GeneralTokenizerConfig
         {
-            "_name": "wordpiece_tokenizer"
-            "_status": ["train", "predict", "online"],
-            "config": {
-                "data_pair": {
-                    "origin": "origin_tokens"
+            '_name': 'wordpiece_tokenizer'
+            '_status': ['train', 'predict', 'online'],
+            'config': {
+                'data_pair': {
+                    'origin': 'origin_tokens'
                 }, // string or list, to_data[input['data'][data_set[..]]][to_data]=fn(input['data'][data_set[..]][from_data])
-                "pre_tokenizer": "whitespace", // if don't set this, will use the default normalizer from config
-                "config_path": "./token.json",
-                "normalizer": ['NFD', 'Lowercase', 'StripAccents'], // if don't set this, will use the default normalizer from config
-                "data_set": {                   // for different status, this processor will process different part of data
-                    "train": ['train', 'dev'],
-                    "predict": ['predict'],
-                    "online": ['online']
+                'pre_tokenizer': 'whitespace', // if don't set this, will use the default normalizer from config, set to null, "" or [] will disable the default setting
+                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                'config_path': './token.json',
+                'normalizer': ['NFD', 'Lowercase', 'StripAccents', "NeedConfig": {config}], // if don't set this, will use the default normalizer from config 
+                'data_set': {                   // for different status, this processor will process different part of data
+                    'train': ['train', 'dev'],
+                    'predict': ['predict'],
+                    'online': ['online']
                 },
             },
         }, //0 the process num
+
+    """
+    def __init__(self, parallel, status, **kwargs):
+        self.parallel = parallel
+        self.data_set = kwargs.pop('data_set', {}).pop(status, [])
+        self.data_pair = kwargs.pop('data_pair', {})
+        self.config_path = kwargs.pop('config_path', "")
+        self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
+        self.normalizer = kwargs.pop('normalizer', "default")
+        self.post_processor = kwargs.pop('post_processor', "default")
+
 @processor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(object):
     """
@@ -67,41 +53,50 @@ class WordpieceTokenizer(object):
 
     def __init__(self, status: str, config: WordpieceTokenizerConfig):
         super().__init__()
-        self.config = config
         self.status = status
+        self.tokenizer = Tokenizer.from_file(config.config_path)
+        pretokenizer_factory = PreTokenizerFactory()
+        tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()
+        tokenizer_normalizer_factory = TokenizerNormalizerFactory()
 
-    @classmethod
-    def tokenize(cls, inp: pd.Series, name: str):
-        """TODO: Docstring for tokenize.
+        if not config.pretokenizer:
+            self.tokenizer.pretokenizer = pre_tokenizers.Sequence([])
+        elif config.pretokenizer != "default":
+            assert isinstance(config.post_processor, list)
+            pretokenizers_list = []
+            for one_pretokenizer in config.pretokenizer:
+                pretokenizers_list.append(self._get_processor(pretokenizer_factory, one_pretokenizer))
+            self.tokenizer.pretokenizer = pre_tokenizers.Sequence(pretokenizers_list)
 
-        :arg1: TODO
+        if not config.post_processor:
+            raise KeyError("The tokenizer is not support disable default tokenizers post processer. (You can delete the config manully)")
+        elif config.post_processor != "default":
+            self.tokenizer.posttokenizer = self._get_processor(tokenizer_postprocessor_factory, config.post_processor)
+
+        if config.normalizer is None:
+            self.tokenizer.normalizer = normalizers.Sequence([])
+        elif config.normalizer != "default":
+            assert isinstance(config.post_processor, list)
+            normalizers_list = []
+            for one_normalizer in config.normalizer:
+                normalizers_list.append(self._get_processor(tokenizer_normalizer_factory, one_normalizer))
+            self.tokenizer.normalizer = normalizers.Sequence(normalizers_list)
+
+    def _get_processor(self, factory, one_processor):
+        """TODO: Docstring for _get_processor.
+
+        :factory: TODO
+        :one_processor: TODO
         :returns: TODO
+
         """
-        return inp[name].split(' ')
+        if isinstance(one_processor, dict):
+            assert len(one_processor) == 1
+            process_name, process_config = list(one_processor.items())[0]
+            return factory.get(process_name)(process_config)
+        else:
+            assert isinstance(one_processor, str)
+            return factory.get(one_processor)()
 
     def process(self, data: Dict)->Dict:
-        for part in self.config.data_set:
-            for source, to in self.config.data_pair.items():
-                source = source.split('&')
-                to = to.split('&')
-                assert len(source) == 1
-                assert len(to) == 1
-                if self.config.parallel:
-                    data[part][to[0]] = data[part][source].parallel_apply(SpaceTokenizer.tokenize, axis=1, args=source)
-                else:
-                    data[part][to[0]] = data[part][source].apply(SpaceTokenizer.tokenize, axis=1, args=source)
-
         return data
-            # "_name": "space_tokenizer"
-            # "_status": ["train", "predict", "online"],
-            # "config": {
-                # "data_pair": {
-                    # "origin": "origin_tokens"
-                # }, // string or list, to_data[input['data'][data_set[..]]][to_data]=fn(input['data'][data_set[..]][from_data])
-                # "map_char_token_idx": "origin_char_token_idx_map", // if this is empty string, will not do this
-                # "data_set": {                   // for different status, this processor will process different part of data
-                    # "train": ['train', 'dev'],
-                    # "predict": ['predict'],
-                    # "online": ['online']
-                # },
-            # },
