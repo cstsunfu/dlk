@@ -11,7 +11,7 @@ class Train(object):
     def __init__(self, config_file):
         super(Train, self).__init__()
         self.config_file = self.load_hjson_file(config_file)
-        self.focus = self.config_file.pop('__focus', {})
+        self.focus = self.config_file.pop('_focus', {})
         parser = CONFIG_PARSER_REGISTRY['system'](self.config_file)
         self.configs = parser.parser()
         self.config_names = []

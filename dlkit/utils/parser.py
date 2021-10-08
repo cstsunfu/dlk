@@ -75,14 +75,14 @@ class BaseConfigParser(object):
         return {}
 
     @classmethod
-    def config_link_para(cls, link: Dict={}, config: Dict={}):
+    def config_link_para(cls, link: Dict[str, Union[str, List[str]]]={}, config: Dict={}):
         """link the config[to] = config[source]
-        :link: {source1:to1, ...}
+        :link: {source1:to1, source2:[to2, to3]}
         :returns:
         """
-        if not link:
-            return
-        for (source, to) in link.items():
+        def make_link(source: str, to: str):
+            """copy the 'source' config to 'to'
+            """
             source_config = config
             to_config = config
             source_list = source.split('.')
@@ -103,6 +103,15 @@ class BaseConfigParser(object):
                 source_config = source_config[s]
                 to_config = to_config[t]
             to_config[to_list[-1]] = source_config[source_list[-1]]
+
+        if not link:
+            return
+        for (source, to) in link.items():
+            if isinstance(to, List):
+                for sub_to in to:
+                    make_link(source, sub_to)
+            else:
+                make_link(source, to)
 
     def parser(self, update_config: dict={}) -> Union[List[Dict], List]:
         """ return a list of para dicts for all possible combinations
