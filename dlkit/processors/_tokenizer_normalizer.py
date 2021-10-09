@@ -30,6 +30,18 @@ class TokenizerNormalizerFactory(object):
         """
         return NFC
 
+    @property
+    def strip_accents(self):
+        """
+        """
+        return StripAccents
+
+    @property
+    def strip(self):
+        """
+        """
+        return Strip
+
     def get(self, name):
         """TODO: Docstring for get.
         """

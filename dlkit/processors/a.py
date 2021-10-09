@@ -64,5 +64,16 @@
 
 
 
-a = {'a': 1}
-print(list(a.items())[0])
+def a():
+    """TODO: Docstring for a.
+    :returns: TODO
+
+    """
+    print('nihao')
+
+
+b = {}
+
+a(**b)
+# a = {'a': 1}
+# print(list(a.items())[0])

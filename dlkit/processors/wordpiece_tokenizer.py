@@ -45,6 +45,7 @@ class WordpieceTokenizerConfig(Config):
         self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
         self.normalizer = kwargs.pop('normalizer', "default")
         self.post_processor = kwargs.pop('post_processor', "default")
+        self.post_processor = kwargs.pop('post_processor', "default")
 
 @processor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(object):
@@ -93,7 +94,7 @@ class WordpieceTokenizer(object):
         if isinstance(one_processor, dict):
             assert len(one_processor) == 1
             process_name, process_config = list(one_processor.items())[0]
-            return factory.get(process_name)(process_config)
+            return factory.get(process_name)(**process_config)
         else:
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
