@@ -12,13 +12,26 @@
             "_name": "wordpiece_tokenizer"
             "_status": ["train", "predict", "online"],
             "config": {
-                "data_pair": {
-                    "origin": "origin_tokens"
+                "filed_map": {
+                    "tokens": "tokens",
+                    "ids": "ids",
+                    "attention_mask": "attention_mask",
+                    "type_ids": "type_ids",
+                    "special_tokens_mask": "special_tokens_mask",
+                    "offsets": "offsets",
                 }, // string or list, to_data[input['data'][data_set[..]]][to_data]=fn(input['data'][data_set[..]][from_data])
                 "data_type": "single", // single or pair
+                "process_data": [
+                    ['sentence', { "is_pretokenizerd": false}], 
+                ],
+                /*"data_type": "pair", // single or pair*/
+                /*"process_data": [*/
+                    /*['sentence_a', { "is_pretokenizerd": false}], */
+                    /*['sentence_b', { "is_pretokenizerd": false}], */
+                /*],*/
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
                 "config_path": "./token.json",
-                "normalizer": ['NFD', 'Lowercase', 'StripAccents'], // if don't set this, will use the default normalizer from config
+                "normalizer": ['nfd', 'lowercase', 'strip_accents'], // if don't set this, will use the default normalizer from config
                 "data_set": {                   // for different status, this processor will process different part of data
                     "train": ['train', 'dev'],
                     "predict": ['predict'],
