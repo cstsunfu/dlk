@@ -45,7 +45,6 @@ class WordpieceTokenizerConfig(Config):
         self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
         self.normalizer = kwargs.pop('normalizer', "default")
         self.post_processor = kwargs.pop('post_processor', "default")
-        self.post_processor = kwargs.pop('post_processor', "default")
 
 @processor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(object):
