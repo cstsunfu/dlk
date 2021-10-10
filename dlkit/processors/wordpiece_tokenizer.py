@@ -21,30 +21,53 @@ class WordpieceTokenizerConfig(Config):
             '_name': 'wordpiece_tokenizer'
             '_status': ['train', 'predict', 'online'],
             'config': {
-                'data_pair': {
-                    'origin': 'origin_tokens'
-                }, // string or list, to_data[input['data'][data_set[..]]][to_data]=fn(input['data'][data_set[..]][from_data])
-                'pre_tokenizer': 'whitespace', // if don't set this, will use the default normalizer from config, set to null, "" or [] will disable the default setting
-                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
-                'config_path': './token.json',
-                'normalizer': ['NFD', 'Lowercase', 'StripAccents', "NeedConfig": {config}], // if don't set this, will use the default normalizer from config 
                 'data_set': {                   // for different status, this processor will process different part of data
                     'train': ['train', 'dev'],
                     'predict': ['predict'],
                     'online': ['online']
                 },
+                'config_path': './token.json',
+                "normalizer": ['nfd', 'lowercase', 'strip_accents', "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
+                "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
+                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                "filed_map": { // this is the default value, you can provide other name
+                    "tokens": "tokens",
+                    "ids": "ids",
+                    "attention_mask": "attention_mask",
+                    "type_ids": "type_ids",
+                    "special_tokens_mask": "special_tokens_mask",
+                    "offsets": "offsets",
+                }, // the tokenizer output(the key) map to the value
+                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "process_data": [
+                    ['sentence', { "is_pretokenizerd": false}], 
+                ],
+                /*"data_type": "pair", // single or pair*/
+                /*"process_data": [*/
+                    /*['sentence_a', { "is_pretokenizerd": false}], */ 
+                    /*['sentence_b', {}], the config of the second data must as same as the first*/ 
+                /*],*/
             },
-        }, //0 the process num
-
+        }, 
     """
     def __init__(self, parallel, status, **kwargs):
-        self.parallel = parallel
+        self.parallel = True # always parallel
         self.data_set = kwargs.pop('data_set', {}).pop(status, [])
-        self.data_pair = kwargs.pop('data_pair', {})
         self.config_path = kwargs.pop('config_path', "")
-        self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
         self.normalizer = kwargs.pop('normalizer', "default")
+        self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
         self.post_processor = kwargs.pop('post_processor', "default")
+        self.filed_map = kwargs.pop('filed_map', { # default
+            "tokens": "tokens",
+            "ids": "ids",
+            "attention_mask": "attention_mask",
+            "type_ids": "type_ids",
+            "special_tokens_mask": "special_tokens_mask",
+            "offsets": "offsets",
+        })
+        self.process_data = kwargs.pop("process_data") # must provide
+        self.data_type = kwargs.pop("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
+
 
 @processor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(object):
@@ -58,6 +81,19 @@ class WordpieceTokenizer(object):
         pretokenizer_factory = PreTokenizerFactory()
         tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()
         tokenizer_normalizer_factory = TokenizerNormalizerFactory()
+        self.filed_map = config.filed_map
+        self.data_set = config.data_set
+        self.process_data = config.process_data
+        self.data_type = config.data_type
+
+        if self.data_type=='single':
+            assert len(self.process_data) == 1
+            self._process = self._single
+        elif self.data_type == 'pair':
+            assert len(self.process_data) == 2
+            self._process = self._pair
+        else:
+            raise KeyError('We only support single or pair data now.')
 
         if not config.pretokenizer:
             self.tokenizer.pretokenizer = pre_tokenizers.Sequence([])
@@ -97,6 +133,59 @@ class WordpieceTokenizer(object):
         else:
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
+    
+    def _extend_encoded_token(self, all_tokens, filed_map):
+        """TODO: Docstring for _extend_encoded_token.
+
+        :all_tokens: TODO
+        :filed_map: TODO
+        :returns: TODO
+
+        """
+        targets_map = {}
+        for k in filed_map:
+            targets_map[filed_map[k]] = []
+        for token in all_tokens:
+            for k in filed_map:
+                targets_map[filed_map[k]].append(getattr(token, k))
+        return targets_map
+
+    def _single(self, data, process_data, filed_map):
+        """TODO: Docstring for _single.
+
+        :data: TODO
+        :returns: TODO
+
+        """
+        assert len(process_data) == 1
+        process_column_name, config = process_data[0]
+        process_column_data = data[process_column_name]
+        all_token = self.tokenizer.encode_batch(process_column_data, **config)
+        token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
+        for k in token_filed_name_value_map:
+            data[k] = token_filed_name_value_map[k]
+        return data
+
+    def _pair(self, data, process_data, filed_map):
+        """TODO: Docstring for _pair.
+
+        :data: TODO
+        :returns: TODO
+
+        """
+        assert len(process_data) == 2
+        process_column_name, config = process_data[0]
+        process_column_name_b, _ = process_data[1]
+        process_column_data = data[[process_column_name, process_column_name_b]]
+        all_token = self.tokenizer.encode_batch(process_column_data, **config)
+        token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
+        for k in token_filed_name_value_map:
+            data[k] = token_filed_name_value_map[k]
+        return data
 
     def process(self, data: Dict)->Dict:
+        for data_set_name in self.data_set:
+            data_set = data['data'][data_set_name]
+            data_set = self._process(data_set, self.process_data, self.filed_map)
+            data['data'][data_set_name] = data_set
         return data

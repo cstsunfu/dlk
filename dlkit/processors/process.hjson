@@ -9,9 +9,19 @@
     },
     "process": [
         {
-            "_name": "wordpiece_tokenizer"
-            "_status": ["train", "predict", "online"],
-            "config": {
+            '_name': 'wordpiece_tokenizer'
+            '_status': ['train', 'predict', 'online'],
+            'config': {
+                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                'config_path': './token.json',
+                "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
+                "config_path": "./token.json",
+                "normalizer": ['nfd', 'lowercase', 'strip_accents', "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
+                'data_set': {                   // for different status, this processor will process different part of data
+                    'train': ['train', 'dev'],
+                    'predict': ['predict'],
+                    'online': ['online']
+                },
                 "filed_map": {
                     "tokens": "tokens",
                     "ids": "ids",
@@ -19,26 +29,18 @@
                     "type_ids": "type_ids",
                     "special_tokens_mask": "special_tokens_mask",
                     "offsets": "offsets",
-                }, // string or list, to_data[input['data'][data_set[..]]][to_data]=fn(input['data'][data_set[..]][from_data])
+                }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair
                 "process_data": [
                     ['sentence', { "is_pretokenizerd": false}], 
                 ],
                 /*"data_type": "pair", // single or pair*/
                 /*"process_data": [*/
-                    /*['sentence_a', { "is_pretokenizerd": false}], */
-                    /*['sentence_b', { "is_pretokenizerd": false}], */
+                    /*['sentence_a', { "is_pretokenizerd": false}], */ 
+                    /*['sentence_b', {}], the config of the second data must as same as the first*/ 
                 /*],*/
-                "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
-                "config_path": "./token.json",
-                "normalizer": ['nfd', 'lowercase', 'strip_accents'], // if don't set this, will use the default normalizer from config
-                "data_set": {                   // for different status, this processor will process different part of data
-                    "train": ['train', 'dev'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
             },
-        }, //0 the process num
+        }, 
         {
             "_name": "token_gather"
             "_status": ["train"],

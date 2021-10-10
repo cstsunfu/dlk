@@ -43,37 +43,24 @@
 
 
 
-# from tokenizers import Tokenizer, decoders, pre_tokenizers
-# from tokenizers.models import Unigram
-# from tokenizers.pre_tokenizers import Whitespace, ByteLevel
-# import json
+from tokenizers import Tokenizer, decoders, pre_tokenizers
+from tokenizers.models import Unigram
+from tokenizers.pre_tokenizers import Whitespace, ByteLevel
+import json
 
-# # config = json.load(open('./wp_token.json', 'r', encoding='utf-8'))
-# # print(config['pre_tokenizer'])
+# config = json.load(open('./wp_token.json', 'r', encoding='utf-8'))
+# print(config['pre_tokenizer'])
 # tokenizer = Tokenizer.from_file('./wp_token.json')
+tokenizer = Tokenizer.from_file('./uni_token.json')
 # tokenizer.pre_tokenizer = ByteLevel()
 # tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
-# tokenizer.post_processor = None
-# print(tokenizer.post_processor)
-# # token = tokenizer.encode('''                  "_name": "token_gather" "_status": ["train", "predict", "online"], "config": { "tokens": "origin", // string or list, gather all filed "deliver": "all_tokens", "data_set": ['train', 'dev'] ''')
+print(tokenizer.post_processor)
+token = tokenizer.encode_batch(["a b c d", ['b c', 'd e']])
 
-# # tokenizer.decoder = decoders.ByteLevel()
-# # print(token.tokens)
-# # print(len(token.ids))
-# # print(tokenizer.decode(token.ids))
-
-
-
-def a():
-    """TODO: Docstring for a.
-    :returns: TODO
-
-    """
-    print('nihao')
-
-
-b = {}
-
-a(**b)
-# a = {'a': 1}
-# print(list(a.items())[0])
+# tokenizer.decoder = decoders.ByteLevel()
+# print(eval("token.tokens"))
+# print(len(eval("token.ids")))
+# print(getattr(token, "ids"))
+# print(getattr(token, "tokens"))
+print(token[0].tokens)
+print(token[1].tokens)
