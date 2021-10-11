@@ -14,14 +14,20 @@ class TokenizerPostprocessorFactory(object):
         :returns: TODO
 
         """
-        return TemplateProcessing(
-            single="[CLS] $A [SEP]",
-            pair="[CLS] $A [SEP] $B:1 [SEP]:1",
-            special_tokens=[
-                ("[CLS]", 1),
-                ("[SEP]", 2),
-            ],
-        )
+        def _wrap():
+            """TODO: Docstring for _wrap.
+            :returns: TODO
+
+            """
+            return TemplateProcessing(
+                single="[CLS] $A [SEP]",
+                pair="[CLS] $A [SEP] $B:1 [SEP]:1",
+                special_tokens=[
+                    ("[CLS]", 1),
+                    ("[SEP]", 2),
+                ],
+            )
+        return _wrap
 
 
     def get(self, name):

@@ -2,10 +2,8 @@ from dlkit.utils.config import Config
 from typing import Dict, Callable
 import json
 
-from . import processor_register, processor_config_register
-from _pretokenizer import PreTokenizerFactory
-from _tokenizer_postprocesser import TokenizerPostprocessorFactory
-from _tokenizer_normalizer import TokenizerNormalizerFactory
+from dlkit.processors import processor_register, processor_config_register, Processor
+from dlkit.processors._util.tokenizer_processor import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
 from tokenizers import normalizers
 from tokenizers import pre_tokenizers
 
@@ -29,7 +27,7 @@ class WordpieceTokenizerConfig(Config):
                 'config_path': './token.json',
                 "normalizer": ['nfd', 'lowercase', 'strip_accents', "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
-                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                'post_processor': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
                 "filed_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
                     "ids": "ids",
@@ -40,11 +38,11 @@ class WordpieceTokenizerConfig(Config):
                 }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": [
-                    ['sentence', { "is_pretokenizerd": false}], 
+                    ['sentence', { "is_pretokenized": false}], 
                 ],
                 /*"data_type": "pair", // single or pair*/
                 /*"process_data": [*/
-                    /*['sentence_a', { "is_pretokenizerd": false}], */ 
+                    /*['sentence_a', { "is_pretokenized": false}], */ 
                     /*['sentence_b', {}], the config of the second data must as same as the first*/ 
                 /*],*/
             },
@@ -70,12 +68,12 @@ class WordpieceTokenizerConfig(Config):
 
 
 @processor_register('wordpiece_tokenizer')
-class WordpieceTokenizer(object):
+class WordpieceTokenizer(Processor):
     """
     """
 
     def __init__(self, status: str, config: WordpieceTokenizerConfig):
-        super().__init__()
+        super().__init__(status, config)
         self.status = status
         self.tokenizer = Tokenizer.from_file(config.config_path)
         pretokenizer_factory = PreTokenizerFactory()
@@ -98,7 +96,7 @@ class WordpieceTokenizer(object):
         if not config.pretokenizer:
             self.tokenizer.pretokenizer = pre_tokenizers.Sequence([])
         elif config.pretokenizer != "default":
-            assert isinstance(config.post_processor, list)
+            assert isinstance(config.pretokenizer, list)
             pretokenizers_list = []
             for one_pretokenizer in config.pretokenizer:
                 pretokenizers_list.append(self._get_processor(pretokenizer_factory, one_pretokenizer))
@@ -107,12 +105,12 @@ class WordpieceTokenizer(object):
         if not config.post_processor:
             raise KeyError("The tokenizer is not support disable default tokenizers post processer. (You can delete the config manully)")
         elif config.post_processor != "default":
-            self.tokenizer.posttokenizer = self._get_processor(tokenizer_postprocessor_factory, config.post_processor)
+            self.tokenizer.post_processor = self._get_processor(tokenizer_postprocessor_factory, config.post_processor)
 
         if config.normalizer is None:
             self.tokenizer.normalizer = normalizers.Sequence([])
         elif config.normalizer != "default":
-            assert isinstance(config.post_processor, list)
+            assert isinstance(config.normalizer, list)
             normalizers_list = []
             for one_normalizer in config.normalizer:
                 normalizers_list.append(self._get_processor(tokenizer_normalizer_factory, one_normalizer))
@@ -160,6 +158,7 @@ class WordpieceTokenizer(object):
         assert len(process_data) == 1
         process_column_name, config = process_data[0]
         process_column_data = data[process_column_name]
+        print(self.tokenizer.post_processor)
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
         token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
         for k in token_filed_name_value_map:
@@ -176,7 +175,7 @@ class WordpieceTokenizer(object):
         assert len(process_data) == 2
         process_column_name, config = process_data[0]
         process_column_name_b, _ = process_data[1]
-        process_column_data = data[[process_column_name, process_column_name_b]]
+        process_column_data = list(data[[process_column_name, process_column_name_b]].values)
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
         token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
         for k in token_filed_name_value_map:

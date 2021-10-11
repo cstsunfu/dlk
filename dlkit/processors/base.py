@@ -6,10 +6,10 @@ sys.path.append('../../')
 from dlkit.utils.parser import BaseConfigParser
 from pprint import pprint
 
-json = hjson.load(open('./process.hjson'), object_pairs_hook=dict)
-link = json.pop("_link", {})
-BaseConfigParser.config_link_para(link, json)
-pprint(json)
+# json = hjson.load(open('./process.hjson'), object_pairs_hook=dict)
+# link = json.pop("_link", {})
+# BaseConfigParser.config_link_para(link, json)
+# pprint(json)
 # print(int('-1'))
 
 class Process(object):

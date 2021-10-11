@@ -1,12 +1,12 @@
 """models"""
-
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
-from utils.config import Config
-from modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
-from modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
-from modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
+from dlkit.utils.config import Config
+# from dlkit.modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
+# from dlkit.modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
+# from dlkit.modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
+EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, DECODER_REGISTRY, DECODER_CONFIG_REGISTRY = 1, 2, 3, 4, 5, 6
 
 MODEL_REGISTRY = {}
 MODEL_CONFIG_REGISTRY = {}
@@ -86,4 +86,4 @@ class ModelConfig(Config):
 
 # automatically import any Python files in the models directory
 models_dir = os.path.dirname(__file__)
-import_models(models_dir, "models")
+import_models(models_dir, "dlkit.models")

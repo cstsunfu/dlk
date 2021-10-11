@@ -12,7 +12,7 @@
             '_name': 'wordpiece_tokenizer'
             '_status': ['train', 'predict', 'online'],
             'config': {
-                'post_tokenizer': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                'post_processor': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
                 'config_path': './token.json',
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
                 "config_path": "./token.json",
@@ -32,11 +32,11 @@
                 }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair
                 "process_data": [
-                    ['sentence', { "is_pretokenizerd": false}], 
+                    ['sentence', { "is_pretokenized": false}], 
                 ],
                 /*"data_type": "pair", // single or pair*/
                 /*"process_data": [*/
-                    /*['sentence_a', { "is_pretokenizerd": false}], */ 
+                    /*['sentence_a', { "is_pretokenized": false}], */ 
                     /*['sentence_b', {}], the config of the second data must as same as the first*/ 
                 /*],*/
             },

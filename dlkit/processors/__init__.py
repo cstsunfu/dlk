@@ -2,10 +2,28 @@
 
 import importlib
 import os
-from typing import Callable
+from typing import Callable, Dict, Type
+from dlkit.utils.config import Config
 
-PROCESSOR_REGISTRY = {}
-PROCESSOR_CONFIG_REGISTRY = {}
+class Processor(object):
+    """docstring for Processor"""
+
+    def __init__(self, status: str, config: Config):
+        pass
+
+    def process(self, data: Dict)->Dict:
+        """TODO: Docstring for process.
+
+        :arg1: TODO
+        :returns: TODO
+
+        """
+        raise NotImplementedError
+        
+
+PROCESSOR_REGISTRY: Dict[str, Type[Processor]] = {}
+PROCESSOR_CONFIG_REGISTRY: Dict[str, Type[Config]] = {}
+
 
 def processor_config_register(name: str = "") -> Callable:
     """
@@ -50,4 +68,4 @@ def import_processors(processors_dir, namespace):
 
 # automatically import any Python files in the models directory
 processors_dir = os.path.dirname(__file__)
-import_processors(processors_dir, "processors")
+import_processors(processors_dir, "dlkit.processors")
