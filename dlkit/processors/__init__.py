@@ -21,8 +21,8 @@ class Processor(object):
         raise NotImplementedError
         
 
-PROCESSOR_REGISTRY: Dict[str, Type[Processor]] = {}
-PROCESSOR_CONFIG_REGISTRY: Dict[str, Type[Config]] = {}
+PROCESSOR_REGISTRY: Dict[str, Processor] = {}
+PROCESSOR_CONFIG_REGISTRY: Dict[str, Config] = {}
 
 
 def processor_config_register(name: str = "") -> Callable:

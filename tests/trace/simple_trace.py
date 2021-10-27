@@ -26,4 +26,4 @@ model = Module()
 
 script = torch.jit.trace(model, (a, a))
 a = torch.randn(5, 3)
-print(script(a, a))
+# print(script(a, a))
