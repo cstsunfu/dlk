@@ -4,21 +4,23 @@ from typing import Dict, Callable, Set, List
 from dlkit.processors import processor_register, processor_config_register, Processor
 
 
-@processor_config_register('token_gather')
-class TokenGatherConfig(Config):
-    """docstring for GeneralTokenizerConfig
+@processor_config_register('token2id')
+class Token2IDConfig(Config):
+    """docstring for Token2IDConfig
         {
-            '_name': 'token_gather'
-            '_status': ['train'],
-            'config': {
-                'data_set': {                   // for different status, this processor will process different part of data
-                    'train': ['train', 'dev']
+            "_name": "token2id",
+            "_status": ["train", "predict", "online"],
+            "config": {
+                "data_pair": {
+                    "label": "label_id"
                 },
-                'gather_columns': ['label'], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
-                "update": null, // null or another Vocabulary object to update
-            },
-        }, 
+                "data_set": {                   // for different status, this processor will process different part of data
+                    "train": ['train', 'dev'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+            }
+        }, //3
     """
 
     def __init__(self, status, **kwargs):
@@ -29,12 +31,12 @@ class TokenGatherConfig(Config):
             raise ValueError("The 'deliver' value must not be null.")
         self.update = kwargs.pop('update', "")
 
-@processor_register('token_gather')
-class TokenGather(Processor):
-    """
+@processor_register('token2id')
+class Token2ID(Processor):
+    """docstring for Token2ID
     """
 
-    def __init__(self, status: str, config: TokenGatherConfig):
+    def __init__(self, status: str, config: Token2IDConfig):
         super().__init__(status, config)
         self.status = status
         self.config = config

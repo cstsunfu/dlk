@@ -30,6 +30,7 @@ class Vocabulary(object):
                 return self.word2idx[self.unknown]
             else:
                 raise KeyError('Unkown word: {}'.format(word))
+
             
     def get_word(self, index):
         """get the word of index from this vocab
@@ -49,6 +50,20 @@ class Vocabulary(object):
         self.word_count[word] += 1
         return self
     
+    def auto_update(self, data):
+        """auto detect data type to update the vocab
+
+        :data: str| List[str] | Set[str] | List[List[str]]
+        :returns: TODO
+
+        """
+        if isinstance(data, str):
+            self.add(data)
+        elif isinstance(data, list) or isinstance(data, set):
+            self.add_from_iter(data)
+        else:
+            raise ValueError("Don't support the type of {}".format(data))
+
     def __len__(self):
         return len(self.word2idx)
     
@@ -56,5 +71,10 @@ class Vocabulary(object):
         r"""add a list or set of words
         """
         for word in iterator:
-            self.add(word)
+            if isinstance(word, list) or isinstance(word, set):
+                self.add_from_iter(word)
+            elif isinstance(word, str):
+                self.add(word)
+            else:
+                raise ValueError("Don't support the type of {}".format(word))
         return self

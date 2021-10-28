@@ -21,7 +21,9 @@ class Module(nn.Module):
 
         """
         inp = args.pop('inp')
-        out = args.pop('out', torch.tensor([np.nan]))
+        out = torch.tensor([0])
+        if 'out' in args:
+            out = args.pop('out')
 
         x = self.linear(inp)
         x = self.linear2(x)

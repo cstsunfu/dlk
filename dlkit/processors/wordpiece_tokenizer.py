@@ -48,8 +48,7 @@ class WordpieceTokenizerConfig(Config):
             },
         }, 
     """
-    def __init__(self, parallel, status, **kwargs):
-        self.parallel = True # always parallel
+    def __init__(self,  status, **kwargs):
         self.data_set = kwargs.pop('data_set', {}).pop(status, [])
         self.config_path = kwargs.pop('config_path', "")
         self.normalizer = kwargs.pop('normalizer', "default")
