@@ -1,19 +1,50 @@
 import torch.nn as nn
-from . import model_register, model_config_register, ModelConfig
+from . import model_register, model_config_register
 from typing import Dict
-# from modules.embeddings import embedding_register, embedding_config_register
+from dlkit.utils.config import Config
+# from dlkit.modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
+# from dlkit.modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
+# from dlkit.modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
+EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, DECODER_REGISTRY, DECODER_CONFIG_REGISTRY = 1, 2, 3, 4, 5, 6
 
-
+        
 @model_config_register('basic')
-class BasicConfig(ModelConfig):
-    """docstring for BasicConfig"""
+class BasicModelConfig(Config):
+    """docstring for BasicModelConfig"""
     def __init__(self, **kwargs):
-        super(BasicConfig, self).__init__(**kwargs)
+        super(BasicModelConfig, self).__init__(**kwargs)
         self.embedding, self.embedding_config = self.get_embedding(kwargs.pop("embedding", "none"))
         self.encoder, self.encoder_config = self.get_encoder(kwargs.pop("encoder", "none"))
         self.decoder, self.decoder_config = self.get_decoder(kwargs.pop("decoder", "none"))
         self.config = kwargs.pop('config', {})
+
+    def get_embedding(self, config):
+        """get embedding config and embedding module
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        return self._get_leaf_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
         
+    def get_encoder(self, config):
+        """get encoder config and encoder module
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        return self._get_leaf_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
+        
+    def get_decoder(self, config):
+        """get decoder config and decoder module
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        return self._get_leaf_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
+
 
 @model_register('basic')
 class BasicModel(nn.Module):
@@ -21,7 +52,7 @@ class BasicModel(nn.Module):
     Sequence labeling model
     """
 
-    def __init__(self, config: BasicConfig):
+    def __init__(self, config: BasicModelConfig):
         super().__init__()
         self.embedding = config.embedding(config.embedding_config)
         self.encoder = config.encoder(config.encoder_config)
@@ -37,60 +68,37 @@ class BasicModel(nn.Module):
 
 
     def forward(self, **inputs: Dict)->Dict:
+        """predict forward
+        :**inputs: Dict: TODO
+        :returns: TODO
+        """
         self._check_input(**inputs)
         embedding = self.embedding(**inputs)
         encode_outputs = self.encoder(embedding=embedding, **inputs)
         decode_outputs = self.decoder(encode_outputs, **inputs)
         return decode_outputs
 
+    def training_step(self, **inputs: Dict)->Dict:
+        """TODO: Docstring for training_step.
 
-
-class IModel(nn.Module):
-    """docstring for IModel"""
-    def __init__(self):
-        super(IModel, self).__init__()
-
-    # TODO: get/set embedding是所有的模型都需要的吗，如果不是，如何设计呢？哪种情况不需要呢？如果不需要是否需要提供另外一个类呢, 如果拆分出一个单独的接口，实现之后是更简单还是更麻烦？
-    # def get_embedding(self):
-        # """TODO: Docstring for get_embedding.
-        # vat or ..
-        # """
-        # raise NotImplementedError
-
-    # def set_embedding(self):
-        # """TODO: Docstring for set_embedding.
-        # vat or ..
-        # """
-        # raise NotImplementedError
-
-    def embedding(self):
-        """TODO: Docstring for embedding.
+        :**inputs: Dict: TODO
+        :returns: TODO
         """
-        raise NotImplementedError
-        
-    def encoder(self):
-        """TODO: Docstring for encoder.
-        """
-        raise NotImplementedError
+        self._check_input(**inputs)
+        embedding = self.embedding.training_step(**inputs)
+        encode_outputs = self.encoder.training_step(embedding=embedding, **inputs)
+        decode_outputs = self.decoder.training_step(encode_outputs, **inputs)
+        return decode_outputs
 
-    def decoder(self):
-        """TODO: Docstring for decoder.
-        """
-        raise NotImplementedError
+    def valid_step(self, **inputs: Dict)->Dict:
+        """TODO: Docstring for training_step.
 
-    def forward(self):
-        """TODO: Docstring for forward.
-        """
-        raise NotImplementedError
+        :**inputs: Dict: TODO
+        :returns: TODO
 
-    def forward_train(self, **args):
-        """TODO: Docstring for forward_train.
-        ?? what case
         """
-        raise NotImplementedError
-
-    def forward_eval(self):
-        """TODO: Docstring for forward_eval.
-        ??
-        """
-        raise NotImplementedError
+        self._check_input(**inputs)
+        embedding = self.embedding.valid_step(**inputs)
+        encode_outputs = self.encoder.valid_step(embedding=embedding, **inputs)
+        decode_outputs = self.decoder.valid_step(encode_outputs, **inputs)
+        return decode_outputs

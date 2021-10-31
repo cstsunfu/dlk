@@ -46,22 +46,15 @@ class Task(pl.LightningModule):
         return self.model(input_dict)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
+        result = self.model.training_step(batch)
+        loss = F.cross_entropy(result.get(''), batch.get("label"))
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
-        self.log("valid_loss", loss)
+        pass
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x)
-        loss = F.cross_entropy(y_hat, y)
-        self.log("test_loss", loss)
+        pass
 
     def configure_optimizers(self):
         optimizer = self.init_module(self.task_config.optimizer_config, MODEL_REGISTRY, MODEL_CONFIG_REGISTRY)

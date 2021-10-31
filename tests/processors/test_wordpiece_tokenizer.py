@@ -6,7 +6,7 @@ from dlkit.processors import PROCESSOR_CONFIG_REGISTRY, PROCESSOR_REGISTRY
 # from dlkit.models import DECODER_CONFIG_REGISTRY
 
 
-def test_test():
+def test_wordpiece():
     """TODO: Docstring for test_test.
     :returns: TODO
 
@@ -17,7 +17,7 @@ def test_test():
             'predict': ['predict'],
             'online': ['online']
         },
-        'config_path': './wp_token.json',
+        'config_path': './tests/processors/wp_token.json',
         "normalizer": ['nfd', 'lowercase', 'strip_accents'], 
         "pre_tokenizer": [{"whitespace": {}}],
         'post_processor': 'bert', 
@@ -39,8 +39,7 @@ def test_test():
             ['sentence_b', {}],
         ],
     }
-        # def __init__(self, parallel, status, **kwargs):
-    process_config = PROCESSOR_CONFIG_REGISTRY.get('wordpiece_tokenizer')(True, "online", **config)
+    process_config = PROCESSOR_CONFIG_REGISTRY.get('wordpiece_tokenizer')("online", **config)
     process = PROCESSOR_REGISTRY.get('wordpiece_tokenizer')("online", process_config)
 
     data = {}

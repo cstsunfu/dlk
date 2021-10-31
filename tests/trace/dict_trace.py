@@ -21,9 +21,11 @@ class Module(nn.Module):
 
         """
         inp = args.pop('inp')
-        out = torch.tensor([0])
-        if 'out' in args:
-            out = args.pop('out')
+        out = args.pop('out')
+        if self.training:
+            print('Train')
+        else:
+            print("eval")
 
         x = self.linear(inp)
         x = self.linear2(x)
@@ -38,9 +40,13 @@ d = {"inp":a, "out":a}
 
 model = Module()
 # model(d)
-print(d)
+# print(d)
 # script = torch.jit.trace(model, d, strict=False)
+model.eval()
 script = torch.jit.script(model)
+script.train()
+print(script(d))
+script.eval()
 print(script(d))
 # # a = torch.randn(5, 3)
 # nt = namedtuple("nt", ['inp', 'out'], defaults=None)

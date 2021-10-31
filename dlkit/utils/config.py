@@ -3,7 +3,8 @@ import json
 import copy
 import os
 from dlkit.utils.logger import get_logger
-import hjson
+# import hjson
+
 
 
 class Config(object):
@@ -19,12 +20,11 @@ class Config(object):
         
     def _get_leaf_module(self, module_register: Dict, module_config_register: Dict, module_name: str, config: Dict) -> Tuple[Any, 'Config']:
         """get sub module and config from register.
-
-        :module_register: TODO
-        :module_config_register: TODO
-        :module_name: TODO
-        :config: Dict: TODO
-        :returns: TODO
+        :module_register: Dict[model_name, Model]
+        :module_config_register: Dict[model_config_name, ModelConfig]
+        :module_name: for echo the log
+        :config: Dict[key, value]
+        :returns: tuple(Model, ModelConfig)
 
         """
         if isinstance(config, str):
@@ -44,7 +44,6 @@ class Config(object):
         if (not module) or not (module_config):
             raise KeyError('The {} name {} is not registed.'.format(module_name, config))
         module_config = Config.update(module_config, extend_config)
-        # module_config.update(extend_config)
         return module, module_config
 
     @classmethod
@@ -110,6 +109,21 @@ class Config(object):
         with open(json_file_path, "w", encoding="utf-8") as writer:
             writer.write(self.to_json_string())
 
+    @staticmethod
+    def _inplace_update_dict(_base, _new):
+        """TODO: Docstring for _inplace_update_dict.
+        :returns: TODO
+
+        """
+        for item in _new:
+            if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
+            # if item not in _base, or they all are not Dict
+                _base[item] = _new[item]
+            elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
+                Config._inplace_update_dict(_base[item], _new[item])
+            else:
+                raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
+
     def do_update_config(self, config: dict, update_config: dict={}) ->Dict:
         """use update_config update the config
 
@@ -117,24 +131,8 @@ class Config(object):
         :returns: updated config
 
         """
-        def _inplace_update_dict(_base, _new):
-            """TODO: Docstring for rec_update_dict.
-            :returns: TODO
-
-            """
-            for item in _new:
-                if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
-                # if item not in _base, or they all are not Dict
-                    _base[item] = _new[item]
-                elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
-                    _inplace_update_dict(_base[item], _new[item])
-                else:
-                    raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
-                
-
-        # new_config = update_config.get('config', {})
         config = copy.deepcopy(config)
-        _inplace_update_dict(config, update_config)
+        self._inplace_update_dict(config, update_config)
         return config
 
     @classmethod
@@ -145,22 +143,7 @@ class Config(object):
         Args:
             config_dict (:obj:`Dict[str, Any]`): Dictionary of attributes that shall be updated for this class.
         """
-        def _inplace_update_dict(_base, _new):
-            """TODO: Docstring for rec_update_dict.
-            :returns: TODO
-
-            """
-            for item in _new:
-                if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
-                # if item not in _base, or they all are not Dict
-                    _base[item] = _new[item]
-                elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
-                    _inplace_update_dict(_base[item], _new[item])
-                else:
-                    raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
-                
-
         # new_config = update_config.get('config', {})
         config = base.to_dict()
-        _inplace_update_dict(config, config_dict)
+        cls._inplace_update_dict(config, config_dict)
         return cls(**config)

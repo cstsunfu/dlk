@@ -42,11 +42,11 @@ data = {}
 data['data'] = {}
 data['data']['online']
 
-df = 
+# df = 
 
-    def process(self, data: Dict)->Dict:
-        for data_set_name in self.data_set:
-            data_set = data['data'][data_set_name]
-            data_set = self._process(data_set, self.process_data, self.filed_map)
-            data['data'][data_set_name] = data_set
-        return data
+    # def process(self, data: Dict)->Dict:
+        # for data_set_name in self.data_set:
+            # data_set = data['data'][data_set_name]
+            # data_set = self._process(data_set, self.process_data, self.filed_map)
+            # data['data'][data_set_name] = data_set
+        # return data

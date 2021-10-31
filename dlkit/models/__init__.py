@@ -2,11 +2,6 @@
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
-from dlkit.utils.config import Config
-# from dlkit.modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
-# from dlkit.modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
-# from dlkit.modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
-EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, DECODER_REGISTRY, DECODER_CONFIG_REGISTRY = 1, 2, 3, 4, 5, 6
 
 MODEL_REGISTRY = {}
 MODEL_CONFIG_REGISTRY = {}
@@ -51,38 +46,6 @@ def import_models(models_dir, namespace):
             model_name = file[: file.find(".py")] if file.endswith(".py") else file
             importlib.import_module(namespace + "." + model_name)
 
-
-class ModelConfig(Config):
-    """docstring for ModelConfig"""
-    def __init__(self, **kwargs):
-        super(ModelConfig, self).__init__(**kwargs)
-
-    def get_embedding(self, config):
-        """get embedding config and embedding module
-
-        :config: TODO
-        :returns: TODO
-
-        """
-        return self._get_leaf_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
-        
-    def get_encoder(self, config):
-        """get encoder config and encoder module
-
-        :config: TODO
-        :returns: TODO
-
-        """
-        return self._get_leaf_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
-        
-    def get_decoder(self, config):
-        """get decoder config and decoder module
-
-        :config: TODO
-        :returns: TODO
-
-        """
-        return self._get_leaf_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
 
 # automatically import any Python files in the models directory
 models_dir = os.path.dirname(__file__)
