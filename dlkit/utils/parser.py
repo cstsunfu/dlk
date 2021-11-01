@@ -36,7 +36,16 @@ def config_parser_register(name: Union[str, List[str]] = "") -> Callable:
 
 
 class BaseConfigParser(object):
-    """docstring for BaseConfigParser"""
+    """docstring for BaseConfigParser
+
+        input: config_file, config_base_dir
+        config_name = config_file._name
+        search = config_file._search
+        link = config_file._link
+        base = self.config_file._base
+        if base:
+            base_config = parser(base)
+    """
     def __init__(self, config_file: Union[str, Dict, List], config_base_dir: str=""):
         super(BaseConfigParser, self).__init__()
         if isinstance(config_file, str):
@@ -56,18 +65,21 @@ class BaseConfigParser(object):
             self.base_config = self.get_base_config(base)
         if self.base_config and self.config_name:
             raise PermissionError("You should put the _name to the leaf config.")
+        if "config" not in self.base_config:
+            self.base_config['config'] = {}
+        self.base_config['config'].update(self.config_file.pop("config", {}))
         self.modules = self.config_file
             
 
     @classmethod
-    def get_base_config(cls, config_file, update_config: dict={})->Dict:
+    def get_base_config(cls, config_file)->Dict:
         """TODO: Docstring for get_base_config.
 
         :arg1: TODO
         :returns: TODO
 
         """
-        base_config = cls(config_file).parser(update_config)
+        base_config = cls(config_file).parser()
         if len(base_config)>1:
             raise PermissionError("The base config don't support _search now.")
         if base_config:
@@ -113,28 +125,31 @@ class BaseConfigParser(object):
             else:
                 make_link(source, to)
 
-    def parser(self, update_config: dict={}) -> Union[List[Dict], List]:
+    def parser(self) -> List[Dict]:
         """ return a list of para dicts for all possible combinations
         :returns: list[possible config dict]
-        :returns: list of possible config dict list(group)
         """
 
+        # parser submodules get submodules config
         modules_config = self.map_to_submodule(self.modules, self.get_kind_module_base_config)
+
+        # expand all submodules to combine a set of module configs
         possible_config_list = self.get_named_list_cartesian_prod(modules_config)
+
+        # using base_config to update all possible_config
         if possible_config_list:
             possible_config_list = [self.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]
         else:
             possible_config_list = [self.base_config]
 
-        possible_config_list = [self.do_update_config(possible_config, update_config) for possible_config in possible_config_list]
-
-
+        # flat all search paras
         possible_config_list_list = [self.flat_search(possible_config) for possible_config in possible_config_list]
 
         all_possible_config_list = []
         for possible_config_list in possible_config_list_list:
-            # all_possible_config_list.extend(self.get_named_list_cartesian_prod(possible_config_list))
             all_possible_config_list.extend(possible_config_list)
+
+        # link paras
         for possible_config in all_possible_config_list:
             self.config_link_para(self.link, possible_config)
 
@@ -173,14 +188,12 @@ class BaseConfigParser(object):
                 else:
                     raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
                 
-
-        # new_config = update_config.get('config', {})
         config = copy.deepcopy(config)
         _inplace_update_dict(config, update_config)
         return config
 
     def get_kind_module_base_config(self, abstract_config: Union[dict, str], kind_module: str="") -> List[dict]:
-        """TODO: Docstring for _get_kind_module_base_config.
+        """TODO: Docstring for get_kind_module_base_config.
 
         :abstract_config: dict: TODO
         :returns: TODO
@@ -209,11 +222,11 @@ class BaseConfigParser(object):
         json_file = hjson.load(open(file_name), object_pairs_hook=dict)
         return json_file
 
-    def flat_search(self, config: dict, _: str='', extend_base=False) -> List[dict]:
+    def flat_search(self, config: dict) -> List[dict]:
         """flat all the _search paras to list
+        not support recursive parser _search now, this means you cannot add _search paras in _search paras
 
         :config: dict: base config
-        :kind_module: str: module kind name
         :returns: list of possible config
 
         """
@@ -223,10 +236,13 @@ class BaseConfigParser(object):
             result.append(config)
         else:
             search_para_list = self.get_named_list_cartesian_prod(module_search_para)
-            # TODO: support search _base when extend_base is True
             for search_para in search_para_list:
+                assert "_search" not in search_para
+                assert "_link" not in search_para
+                assert "_base" not in search_para
                 base_config = copy.deepcopy(config)
                 base_config.update(search_para)
+                # TODO: do recursive
                 result.append(base_config)
 
         return result
@@ -288,13 +304,13 @@ class BaseConfigParser(object):
             return True
 
 
-@config_parser_register('system')
-class SystemConfigParser(BaseConfigParser):
-    """docstring for SystemConfigParser"""
+@config_parser_register('task')
+class TaskConfigParser(BaseConfigParser):
+    """docstring for TaskConfigParser"""
     def __init__(self, config_file):
         if isinstance(config_file, dict) and '_search' in config_file:
-            raise KeyError('The system(task) config is not support _search now.')
-        super(SystemConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
+            raise KeyError('The task config is not support _search now.')
+        super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
 
 @config_parser_register(['model', 'model_student', "model_teacher"] + ['model_'+str(i) for i in range(64)])

@@ -1,0 +1,7 @@
+{
+    config: {
+        vocab_size: 100,
+        embedding_dim: 128
+    },
+    _name: "test_static",
+}

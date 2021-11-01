@@ -1,7 +1,7 @@
 {
     _focus: {
-        "multi_models.model_1.decoder.config.input_size": "decoder.input_size=",
-        "multi_models.model_2.encoder": "encoder="
+        "multi_models.model_1.decoder.config.input_size": "decoder.input_size",
+        "multi_models.model_2.encoder": "encoder"
     },
     multi_models: {
         _name: "distill",

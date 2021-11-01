@@ -1,4 +1,0 @@
-{
-    pretrained_model: "data/model/word2vec/",
-    embedding_dim: 200
-}

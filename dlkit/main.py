@@ -12,7 +12,7 @@ class Train(object):
         super(Train, self).__init__()
         self.config_file = self.load_hjson_file(config_file)
         self.focus = self.config_file.pop('_focus', {})
-        parser = CONFIG_PARSER_REGISTRY['system'](self.config_file)
+        parser = CONFIG_PARSER_REGISTRY['task'](self.config_file)
         self.configs = parser.parser()
         self.config_names = []
         for possible_config in self.configs:
@@ -22,7 +22,7 @@ class Train(object):
                 trace = source.split('.')
                 for t in trace:
                     config_point = config_point[t]
-                config_name.append(to+str(config_point))
+                config_name.append(to+"="+str(config_point))
             self.config_names.append('_'.join(config_name))
 
         if len(self.config_names) != len(set(self.config_names)):

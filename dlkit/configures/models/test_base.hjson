@@ -1,0 +1,19 @@
+{
+    embedding: {
+        _base: "test_static"
+    },
+    decoder: {
+        _base: "test_linear",
+        config: {
+            input_size: 200,
+            output_size: 3
+        }
+    },
+    encoder: {
+        _base: "test_lstm",
+        config: {
+            output_size: 8
+        }
+    },
+    _name: "test_base"
+}
