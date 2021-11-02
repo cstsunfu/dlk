@@ -1,18 +1,16 @@
 {
-    config: {
-        decoder: {
-            _base: "linear",
-            config: {
-                input_size: 200,
-                output_size: 3
-            }
-        },
-        encoder: {
-            _base: "lstm",
-            config: {
-                output_size: 8
-            }
+    decoder: {
+        _base: "test_linear",
+        config: {
+            input_size: 200,
+            output_size: 3
         }
     },
-    name: "lstm_linear_ner",
+    encoder: {
+        _base: "test_lstm",
+        config: {
+            output_size: 8
+        }
+    }
+    _name: "lstm_linear_ner",
 }

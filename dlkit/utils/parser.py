@@ -2,6 +2,7 @@ import hjson
 import os
 import copy
 from typing import Callable, List, Dict, Union
+import json
 
 CONFIG_PARSER_REGISTRY = {}
 
@@ -65,9 +66,6 @@ class BaseConfigParser(object):
             self.base_config = self.get_base_config(base)
         if self.base_config and self.config_name:
             raise PermissionError("You should put the _name to the leaf config.")
-        if "config" not in self.base_config:
-            self.base_config['config'] = {}
-        self.base_config['config'].update(self.config_file.pop("config", {}))
         self.modules = self.config_file
             
 
@@ -143,7 +141,7 @@ class BaseConfigParser(object):
             possible_config_list = [self.base_config]
 
         # flat all search paras
-        possible_config_list_list = [self.flat_search(possible_config) for possible_config in possible_config_list]
+        possible_config_list_list = [self.flat_search(self.search, possible_config) for possible_config in possible_config_list]
 
         all_possible_config_list = []
         for possible_config_list in possible_config_list_list:
@@ -222,28 +220,28 @@ class BaseConfigParser(object):
         json_file = hjson.load(open(file_name), object_pairs_hook=dict)
         return json_file
 
-    def flat_search(self, config: dict) -> List[dict]:
+    # def flat_search(self, config: dict) -> List[dict]:
+    @classmethod
+    def flat_search(cls, search, config: dict) -> List[dict]:
         """flat all the _search paras to list
-        not support recursive parser _search now, this means you cannot add _search paras in _search paras
+        support recursive parser _search now, this means you can add _search/_link/_base paras in _search paras
 
         :config: dict: base config
         :returns: list of possible config
 
         """
         result = []
-        module_search_para = self.search
+        module_search_para = search
         if not module_search_para:
             result.append(config)
         else:
-            search_para_list = self.get_named_list_cartesian_prod(module_search_para)
+            search_para_list = cls.get_named_list_cartesian_prod(module_search_para)
             for search_para in search_para_list:
-                assert "_search" not in search_para
-                assert "_link" not in search_para
-                assert "_base" not in search_para
                 base_config = copy.deepcopy(config)
                 base_config.update(search_para)
-                # TODO: do recursive
-                result.append(base_config)
+                extend_config = cls(base_config).parser()
+                result.extend(extend_config)
+                # result.append(base_config)
 
         return result
 
@@ -266,7 +264,8 @@ class BaseConfigParser(object):
                 result.append([copy.deepcopy(cur_config)]+copy.deepcopy(reserve))
         return result
 
-    def get_named_list_cartesian_prod(self, dict_of_list: Dict[str, List]={}) -> List[Dict]:
+    @staticmethod
+    def get_named_list_cartesian_prod(dict_of_list: Dict[str, List]={}) -> List[Dict]:
         """get catesian prod from named lists
         :dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
         :returns: [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
@@ -281,7 +280,7 @@ class BaseConfigParser(object):
             cur_para_search_list.append({cur_name: para})
         if len(dict_of_list) == 0:
             return cur_para_search_list
-        reserve_para_list = self.get_named_list_cartesian_prod(dict_of_list)
+        reserve_para_list = BaseConfigParser.get_named_list_cartesian_prod(dict_of_list)
         all_config_list = []
         for cur_config in cur_para_search_list:
             for reserve_config in reserve_para_list:
@@ -294,10 +293,11 @@ class BaseConfigParser(object):
         """check is there a repeat config in list
 
         :list_of_dict: List[dict]: TODO
-        :returns: TODO
+        :returns: is there the list of dict repeat
 
         """
-        list_of_str = [str(dic) for dic in list_of_dict]
+        # using json.dumps + sort_keys to guarantee the same dict to the same string represatation
+        list_of_str = [json.dumps(dic, sort_keys=True) for dic in list_of_dict]
         if len(list_of_dict) == len(set(list_of_str)):
             return False
         else:
@@ -308,8 +308,6 @@ class BaseConfigParser(object):
 class TaskConfigParser(BaseConfigParser):
     """docstring for TaskConfigParser"""
     def __init__(self, config_file):
-        if isinstance(config_file, dict) and '_search' in config_file:
-            raise KeyError('The task config is not support _search now.')
         super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
 
@@ -366,7 +364,7 @@ class ConfigConfigParser(BaseConfigParser):
         :update_config: Dict: TODO
         :returns: TODO
         """
-        config_list = self.flat_search(self.modules)
+        config_list = self.flat_search(self.search, self.modules)
         return config_list
 
 

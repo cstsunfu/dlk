@@ -22,7 +22,9 @@ def test_base():
     :returns: TODO
 
     """
-    config_file = load_hjson_file('./dlkit/configures/tasks/test_base.hjson')
+    config_file = load_hjson_file('./tests/parser/test_base_inp.hjson')
+    out = [json.dumps(conf, sort_keys=True) for conf in load_hjson_file('./tests/parser/test_base_out.hjson')['out']]
+    out.sort()
     focus = config_file.pop('_focus', {})
     parser = CONFIG_PARSER_REGISTRY['task'](config_file)
     configs = parser.parser()
@@ -40,17 +42,20 @@ def test_base():
                     config_point = config_point[t]
                 config_name.append(to+str(config_point))
         config_names.append('_'.join(config_name))
-
-    if len(config_names) != len(set(config_names)):
-        print(len(config_names))
-        print(len(set(config_names)))
-        for config, name in zip(configs, config_names):
-            print(json.dumps(config, indent=4))
-            print(name)
-        raise NameError('The config_names is not unique.')
-    for config, name in zip(configs, config_names):
-        print(json.dumps(config, indent=4))
-        print(name)
+    assert len(config_names) == len(set(config_names))
+    configs = [json.dumps(conf, sort_keys=True) for conf in configs]
+    configs.sort()
+    assert configs == out
+    # if len(config_names) != len(set(config_names)):
+        # print(len(config_names))
+        # print(len(set(config_names)))
+        # for config, name in zip(configs, config_names):
+            # print(json.dumps(config, indent=4))
+            # print(name)
+        # raise NameError('The config_names is not unique.')
+    # for config, name in zip(configs, config_names):
+        # print(json.dumps(config, indent=4))
+        # print(name)
 
 test_base()
 # Train('simple_ner')
