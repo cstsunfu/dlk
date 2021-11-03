@@ -114,7 +114,7 @@ class Module(BaseModule):
         pass
         # raise NotImplementedError
 
-    def check_key_are_provided(self, provide: List[str])->bool:
+    def check_keys_are_provided(self, provide: List[str])->bool:
         """TODO: Docstring for check_key_are_provided.
         :returns: TODO
         """

@@ -5,6 +5,51 @@ from typing import Dict, Union, Callable, List, Any
 from dlkit.utils.parser import CONFIG_PARSER_REGISTRY 
 import json
 
+#TODO: Fix the base_module method name,
+#TODO: lightning module using ddp, should use training/validation/predict_step_end to collections all part gpu output?
+'''
+from argparse import ArgumentParser
+
+
+def main(args):
+    model = LightningModule()
+    trainer = Trainer.from_argparse_args(args)
+    trainer.fit(model)
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser = Trainer.add_argparse_args(parser)
+    args = parser.parse_args()
+
+    main(args)
+
+1. runs 1 train, val, test batch and program ends
+    trainer = Trainer(fast_dev_run=True)
+
+2. log every n step
+    trainer = Trainer(log_every_n_steps=50)
+    
+3. default used by the Trainer
+    trainer = Trainer(gradient_clip_val=0.0)
+
+4. overfit on 10 of the same batches
+    trainer = Trainer(overfit_batches=10)
+    trainer = Trainer(overfit_batches=0.01)
+5. to profile standard training events, equivalent to `profiler=SimpleProfiler()`
+    trainer = Trainer(profiler="simple")
+
+   advanced profiler for function-level stats, equivalent to `profiler=AdvancedProfiler()`
+    trainer = Trainer(profiler="advanced")
+
+def training_step(self, batch, batch_idx):
+    current_epoch = self.trainer.current_epoch
+    if current_epoch > 100:
+        # do something
+        pass
+'''
+
+
 
 class Train(object):
     """docstring for Train"""
