@@ -1,0 +1,18 @@
+{
+    "_name": "token2id",
+    "config": {
+        "train":{ //train、predict、online stage config,  using '&' split all stages
+            "data_pair": {
+                "label": "label_id"
+            },
+            "data_set": {                   // for different stage, this processor will process different part of data
+                "train": ['train', 'dev'],
+                "predict": ['predict'],
+                "online": ['online']
+            },
+            "vocab": "label_vocab", // usually provided by the "token_gather" module
+        }, //3
+        "predict": "train",
+        "online": "train",
+    }
+}

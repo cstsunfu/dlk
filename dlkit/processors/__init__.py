@@ -4,13 +4,13 @@ import importlib
 import os
 from typing import Callable, Dict, Type
 from dlkit.utils.config import Config
+import abc
 
-class Processor(object):
+class Processor(metaclass=abc.ABCMeta):
     """docstring for Processor"""
 
-    def __init__(self, status: str, config: Config):
-        pass
 
+    @abc.abstractmethod
     def process(self, data: Dict)->Dict:
         """TODO: Docstring for process.
 

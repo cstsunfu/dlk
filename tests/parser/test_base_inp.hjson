@@ -12,7 +12,10 @@
             config: {
                 _search: {
                     input_size:[1,2]
-                } 
+                }, 
+                "test_dict": {
+                    "value1": 1  
+                }
             },
         }
     },

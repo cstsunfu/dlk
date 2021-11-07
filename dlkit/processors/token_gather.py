@@ -6,12 +6,11 @@ from dlkit.processors import processor_register, processor_config_register, Proc
 
 @processor_config_register('token_gather')
 class TokenGatherConfig(Config):
-    """docstring for GeneralTokenizerConfig
+    """Config eg.
         {
             '_name': 'token_gather'
-            '_status': ['train'],
-            'config': {
-                'data_set': {                   // for different status, this processor will process different part of data
+            'train': { // only train stage using
+                'data_set': {                   // for different stage, this processor will process different part of data
                     'train': ['train', 'dev']
                 },
                 'gather_columns': ['label'], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
@@ -21,8 +20,8 @@ class TokenGatherConfig(Config):
         }, 
     """
 
-    def __init__(self, status, **kwargs):
-        self.data_set = kwargs.pop('data_set', {}).pop(status, [])
+    def __init__(self, stage, **kwargs):
+        self.data_set = kwargs.pop('data_set', {}).pop(stage, [])
         self.gather_columns = kwargs.pop("gather_column", [])
         self.deliver = kwargs.pop("deliver", "")
         if not self.deliver:
@@ -34,9 +33,9 @@ class TokenGather(Processor):
     """
     """
 
-    def __init__(self, status: str, config: TokenGatherConfig):
-        super().__init__(status, config)
-        self.status = status
+    def __init__(self, stage: str, config: TokenGatherConfig):
+        super().__init__()
+        self.stage = stage
         self.config = config
         self.data_set = config.data_set
 

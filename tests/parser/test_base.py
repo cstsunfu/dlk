@@ -43,6 +43,8 @@ def test_base():
                 config_name.append(to+str(config_point))
         config_names.append('_'.join(config_name))
     assert len(config_names) == len(set(config_names))
+    for conf in configs:
+        print(json.dumps(conf, indent=4))
     configs = [json.dumps(conf, sort_keys=True) for conf in configs]
     configs.sort()
     assert configs == out

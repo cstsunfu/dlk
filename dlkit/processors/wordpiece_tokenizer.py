@@ -17,9 +17,8 @@ class WordpieceTokenizerConfig(Config):
     """docstring for GeneralTokenizerConfig
         {
             '_name': 'wordpiece_tokenizer'
-            '_status': ['train', 'predict', 'online'],
-            'config': {
-                'data_set': {                   // for different status, this processor will process different part of data
+            'train & predict & online': { // you can add some whitespace surround the '&' 
+                'data_set': {                   // for different stage, this processor will process different part of data
                     'train': ['train', 'dev'],
                     'predict': ['predict'],
                     'online': ['online']
@@ -27,7 +26,7 @@ class WordpieceTokenizerConfig(Config):
                 'config_path': './token.json',
                 "normalizer": ['nfd', 'lowercase', 'strip_accents', "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
-                'post_processor': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and setting in this configure)
+                'post_processor': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
                 "filed_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
                     "ids": "ids",
@@ -48,8 +47,8 @@ class WordpieceTokenizerConfig(Config):
             },
         }, 
     """
-    def __init__(self,  status, **kwargs):
-        self.data_set = kwargs.pop('data_set', {}).pop(status, [])
+    def __init__(self,  stage, **kwargs):
+        self.data_set = kwargs.pop('data_set', {}).pop(stage, [])
         self.config_path = kwargs.pop('config_path', "")
         self.normalizer = kwargs.pop('normalizer', "default")
         self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
@@ -71,9 +70,9 @@ class WordpieceTokenizer(Processor):
     """
     """
 
-    def __init__(self, status: str, config: WordpieceTokenizerConfig):
-        super().__init__(status, config)
-        self.status = status
+    def __init__(self, stage: str, config: WordpieceTokenizerConfig):
+        super().__init__()
+        self.stage = stage
         self.tokenizer = Tokenizer.from_file(config.config_path)
         pretokenizer_factory = PreTokenizerFactory()
         tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()

@@ -44,7 +44,10 @@
                         "hidden_size": 200,
                         "input_size": 2,
                         "layers": 1,
-                        "output_size": 200
+                        "output_size": 200,
+                        "test_dict": {
+                            "value1": 1  
+                        }
                     },
                     "_name": "test_lstm"
                 },

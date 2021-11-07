@@ -70,6 +70,13 @@ class IModuleStep(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """valid
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        return self.validation_step(inputs)
+
 
 class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
     """docstring for BaseModule"""

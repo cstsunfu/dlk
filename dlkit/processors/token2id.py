@@ -9,44 +9,43 @@ class Token2IDConfig(Config):
     """docstring for Token2IDConfig
         {
             "_name": "token2id",
-            "_status": ["train", "predict", "online"],
-            "config": {
+            "train&predict&online":{ //train、predict、online stage config,  using '&' split all stages
                 "data_pair": {
                     "label": "label_id"
                 },
-                "data_set": {                   // for different status, this processor will process different part of data
+                "data_set": {                   // for different stage, this processor will process different part of data
                     "train": ['train', 'dev'],
                     "predict": ['predict'],
                     "online": ['online']
                 },
-            }
-        }, //3
+                "vocab": "label_vocab", // usually provided by the "token_gather" module
+            }, //3
+        }
     """
 
-    def __init__(self, status, **kwargs):
-        self.data_set = kwargs.pop('data_set', {}).pop(status, [])
-        self.gather_columns = kwargs.pop("gather_column", [])
-        self.deliver = kwargs.pop("deliver", "")
-        if not self.deliver:
-            raise ValueError("The 'deliver' value must not be null.")
-        self.update = kwargs.pop('update', "")
+    def __init__(self, stage, **kwargs):
+        self.data_set = kwargs.pop('data_set', {}).pop(stage, [])
+        self.data_pair = kwargs.pop('data_pair', {})
+        if self.data_set and (not self.data_pair):
+            raise ValueError("The 'data_pair' must not be null.")
+        self.vocab = kwargs.pop('vocab', "")
+        if not self.vocab:
+            raise ValueError("The 'vocab' must be provided.")
+
 
 @processor_register('token2id')
 class Token2ID(Processor):
     """docstring for Token2ID
     """
 
-    def __init__(self, status: str, config: Token2IDConfig):
-        super().__init__(status, config)
-        self.status = status
+    def __init__(self, stage: str, config: Token2IDConfig):
+        super().__init__()
+        self.stage = stage
         self.config = config
         self.data_set = config.data_set
 
     def process(self, data: Dict)->Dict:
-        if self.config.update:
-            self.vocab = data[self.config.update]
-        else:
-            self.vocab = Vocabulary(do_strip=True)
+        self.vocab = data[self.config.vocab]
         for data_set_name in self.data_set:
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:

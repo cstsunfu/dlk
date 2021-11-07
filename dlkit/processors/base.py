@@ -14,7 +14,7 @@ from pprint import pprint
 
 class Process(object):
     """docstring for DataSet"""
-    def __init__(self, config: Union[dict, str], status: str):
+    def __init__(self, config: Union[dict, str], stage: str):
         super(Process, self).__init__()
         if isinstance(config, str):
             config = hjson.load(open(config), object_pairs_hook=dict)
