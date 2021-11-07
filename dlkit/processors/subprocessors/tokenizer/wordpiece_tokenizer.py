@@ -1,9 +1,9 @@
-from dlkit.utils.config import Config
+from ._util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
+from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable
 import json
 
-from dlkit.processors import processor_register, processor_config_register, Processor
-from dlkit.processors._util.tokenizer_processor import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
+from dlkit.processors.subprocessors import subprocessor_register, subprocessor_config_register, Processor
 from tokenizers import normalizers
 from tokenizers import pre_tokenizers
 
@@ -12,21 +12,23 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
 
 
-@processor_config_register('wordpiece_tokenizer')
-class WordpieceTokenizerConfig(Config):
-    """docstring for GeneralTokenizerConfig
-        {
-            '_name': 'wordpiece_tokenizer'
-            'train & predict & online': { // you can add some whitespace surround the '&' 
-                'data_set': {                   // for different stage, this processor will process different part of data
-                    'train': ['train', 'dev'],
-                    'predict': ['predict'],
-                    'online': ['online']
+@subprocessor_config_register('wordpiece_tokenizer')
+class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
+    """
+    docstring for GeneralTokenizerConfig
+    {
+        "_base": "wordpiece_tokenizer",
+        "config": {
+            "train": { // you can add some whitespace surround the '&' 
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ["train", "dev"],
+                    "predict": ["predict"],
+                    "online": ["online"]
                 },
-                'config_path': './token.json',
-                "normalizer": ['nfd', 'lowercase', 'strip_accents', "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
+                "config_path": "*@*",
+                "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
-                'post_processor': 'bert', // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+                "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
                 "filed_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
                     "ids": "ids",
@@ -37,7 +39,7 @@ class WordpieceTokenizerConfig(Config):
                 }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": [
-                    ['sentence', { "is_pretokenized": false}], 
+                    ["sentence", { "is_pretokenized": false}], 
                 ],
                 /*"data_type": "pair", // single or pair*/
                 /*"process_data": [*/
@@ -45,15 +47,19 @@ class WordpieceTokenizerConfig(Config):
                     /*['sentence_b', {}], the config of the second data must as same as the first*/ 
                 /*],*/
             },
-        }, 
+            "predict": "train",
+            "online": "train"
+        }
+    }
     """
-    def __init__(self,  stage, **kwargs):
-        self.data_set = kwargs.pop('data_set', {}).pop(stage, [])
-        self.config_path = kwargs.pop('config_path', "")
-        self.normalizer = kwargs.pop('normalizer', "default")
-        self.pretokenizer = kwargs.pop('pre_tokenizer', "default")
-        self.post_processor = kwargs.pop('post_processor', "default")
-        self.filed_map = kwargs.pop('filed_map', { # default
+    def __init__(self, stage, config):
+        self.config = self.get_config(stage, config)
+        self.data_set = self.config.get('data_set', {}).get(stage, [])
+        self.config_path = self.config.get('config_path', "")
+        self.normalizer = self.config.get('normalizer', "default")
+        self.pretokenizer = self.config.get('pre_tokenizer', "default")
+        self.post_processor = self.config.get('post_processor', "default")
+        self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
             "ids": "ids",
             "attention_mask": "attention_mask",
@@ -61,11 +67,11 @@ class WordpieceTokenizerConfig(Config):
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
         })
-        self.process_data = kwargs.pop("process_data") # must provide
-        self.data_type = kwargs.pop("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
+        self.process_data = self.config.get("process_data", []) # must provide
+        self.data_type = self.config.get("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
 
 
-@processor_register('wordpiece_tokenizer')
+@subprocessor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(Processor):
     """
     """

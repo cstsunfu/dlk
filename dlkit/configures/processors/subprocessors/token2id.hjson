@@ -1,7 +1,7 @@
 {
     "_name": "token2id",
     "config": {
-        "train":{ //train、predict、online stage config,  using '&' split all stages
+        "train":{ 
             "data_pair": {
                 "label": "label_id"
             },
@@ -12,7 +12,7 @@
             },
             "vocab": "label_vocab", // usually provided by the "token_gather" module
         }, //3
-        "predict": "train",
+        "predict": "train", //predict setting as train
         "online": "train",
     }
 }

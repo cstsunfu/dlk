@@ -1,3 +1,4 @@
+# Register  all
 """processors"""
 
 import importlib
@@ -7,10 +8,12 @@ from dlkit.utils.config import Config
 from dlkit.utils.register import Register
 import abc
 
+subprocessor_config_register = Register("Processor config register")
+subprocessor_register = Register("Processor register")
+
+
 class Processor(metaclass=abc.ABCMeta):
     """docstring for Processor"""
-
-
     @abc.abstractmethod
     def process(self, data: Dict)->Dict:
         """TODO: Docstring for process.
@@ -20,19 +23,14 @@ class Processor(metaclass=abc.ABCMeta):
 
         """
         raise NotImplementedError
-        
-
-processor_config_register = Register('Processor config register')
-processor_register = Register("Processor register")
 
 
-def import_processors(processors_dir, namespace):
+def import_subprocessors(processors_dir, namespace):
     for file in os.listdir(processors_dir):
         path = os.path.join(processors_dir, file)
         if (
             not file.startswith("_")
             and not file.startswith(".")
-            and not (file.endswith("subprocessors") and os.path.isdir(path))
             and (file.endswith(".py") or os.path.isdir(path))
         ):
             processor_name = file[: file.find(".py")] if file.endswith(".py") else file
@@ -40,5 +38,5 @@ def import_processors(processors_dir, namespace):
 
 
 # automatically import any Python files in the models directory
-processors_dir = os.path.dirname(__file__)
-import_processors(processors_dir, "dlkit.processors")
+subprocessors_dir = os.path.dirname(__file__)
+import_subprocessors(subprocessors_dir, "dlkit.processors.subprocessors")

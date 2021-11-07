@@ -6,6 +6,44 @@ from dlkit.utils.logger import get_logger
 # import hjson
 
 
+class GetConfigByStageMixin(object):
+    """docstring for GetConfigByStageMixin"""
+
+    def get_config(self, stage:str, config:Dict)->Dict:
+        """TODO: if config[stage] is a string, like 'train', 'predict' etc., 
+            it means the config of this stage equals to config[stage]
+            return config[config[stage]]
+            e.g.
+            config = {
+                "train":{ //train、predict、online stage config,  using '&' split all stages
+                    "data_pair": {
+                        "label": "label_id"
+                    },
+                    "data_set": {                   // for different stage, this processor will process different part of data
+                        "train": ['train', 'dev'],
+                        "predict": ['predict'],
+                        "online": ['online']
+                    },
+                    "vocab": "label_vocab", // usually provided by the "token_gather" module
+                }, //3
+                "predict": "train",
+                "online": ["train",
+                {"vocab": "new_label_vocab"}
+                ]
+            }
+            config.get_config['predict'] == config[config['predict']] == config['train']
+        """
+        stage_config = config.get(stage, {})
+        if isinstance(stage_config, str):
+            stage_config = config.get(stage_config, {})
+        elif isinstance(stage_config, list):
+            assert len(stage_config) == 2 
+            assert isinstance(stage_config[0], str)
+            assert isinstance(stage_config[1], dict)
+            stage_config = config.get(stage_config[0], {})
+            self.do_update_config(stage_config, stage_config[1])
+        return stage_config
+
 
 class Config(object):
     """docstring for Config"""

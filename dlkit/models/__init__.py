@@ -2,38 +2,10 @@
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
+from dlkit.utils.register import Register
 
-MODEL_REGISTRY = {}
-MODEL_CONFIG_REGISTRY = {}
-
-def model_config_register(name: str = "") -> Callable:
-    """
-    register configures
-    """
-    def decorator(config):
-        if name.strip() == "":
-            raise ValueError('You must set a name for {}'.format(config.__name__))
-
-        if name in MODEL_CONFIG_REGISTRY:
-            raise ValueError('The model config name {} is already registed.'.format(name))
-        MODEL_CONFIG_REGISTRY[name] = config
-        return config
-    return decorator
-
-def model_register(name: str = "") -> Callable:
-    """
-    register models
-    """
-    def decorator(model):
-        if name.strip() == "":
-            raise ValueError('You must set a name for {}'.format(model.__name__))
-
-        if name in MODEL_REGISTRY:
-            raise ValueError('The model name {} is already registed.'.format(name))
-        MODEL_REGISTRY[name] = model
-        return model
-    return decorator
-
+model_config_register = Register("Model config register.")
+model_register = Register("Model register.")
 
 def import_models(models_dir, namespace):
     for file in os.listdir(models_dir):

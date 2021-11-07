@@ -265,6 +265,33 @@ class BaseConfigParser(object):
         return result
 
     @staticmethod
+    def check_config(configs: Union[Dict, List[Dict]]) -> None:
+        """check all config is right.
+        1. check all "*@*" is replaced to correct value.
+        :configs: one config or a list of configs
+        """
+        def _check(config):
+            """TODO: Docstring for _check.
+
+            :config: TODO
+            :returns: TODO
+
+            """
+            for key in config:
+                if isinstance(config[key], dict):
+                    _check(config[key])
+                if config[key] == '*@*':
+                    print("In config:")
+                    print(json.dumps(config, indent=4))
+                    raise ValueError('"*@*" is not replaced by correct value.')
+
+        if isinstance(configs, list):
+            for config in configs:
+                _check(config)
+        else:
+            _check(configs)
+
+    @staticmethod
     def get_named_list_cartesian_prod(dict_of_list: Dict[str, List]={}) -> List[Dict]:
         """get catesian prod from named lists
         :dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
