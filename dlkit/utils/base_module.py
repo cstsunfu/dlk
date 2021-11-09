@@ -27,7 +27,7 @@ class IModuleIO(metaclass=abc.ABCMeta):
         """
         pass
 
-    def check_module_chain_passed(self, module_list: List["BaseModule"]):
+    def check_module_chain(self, module_list: List["BaseModule"]):
         """check the interfaces of the list of modules are alignd or not.
 
         :List[nn.Module]: all modules in this chain
