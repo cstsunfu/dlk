@@ -32,7 +32,7 @@ def import_processors(processors_dir, namespace):
         if (
             not file.startswith("_")
             and not file.startswith(".")
-            and not (file.endswith("subprocessors") and os.path.isdir(path))
+            # and not (file.endswith("subprocessors") and os.path.isdir(path))
             and (file.endswith(".py") or os.path.isdir(path))
         ):
             processor_name = file[: file.find(".py")] if file.endswith(".py") else file

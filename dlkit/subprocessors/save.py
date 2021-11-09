@@ -1,6 +1,7 @@
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
-from dlkit.processors.subprocessors import subprocessor_register, subprocessor_config_register, Processor
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
+from dlkit.processors import Processor
 import pickle as pkl
 import os
 

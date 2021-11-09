@@ -3,13 +3,35 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-from torch.utils.data import DataLoader, random_split, Dataset
+from torch.utils.data import DataLoader, dataloader, random_split, Dataset
 import pandas as pd
 import pytorch_lightning as pl
 from typing import Dict, List, Union
 from torch.nn.utils.rnn import pad_sequence
-TODO: train dataloader shuffle=True
-    other shuffle=False
+# TODO: train dataloader shuffle=True
+    # other shuffle=False
+
+class MNISTDataModule(pl.LightningDataModule):
+    def __init__(self, dataset, collate_fn):
+        super().__init__()
+        self.dataset = dataset
+        self.collate_fn = collate_fn
+
+    # def train_dataloader(self):
+        # return DataLoader(self.mnist_train, batch_size=self.batch_size)
+
+    # def val_dataloader(self):
+        # return DataLoader(self.mnist_val, batch_size=self.batch_size)
+
+    # def test_dataloader(self):
+        # return DataLoader(self.mnist_test, batch_size=self.batch_size)
+    def predict_dataloader(self):
+        """TODO: Docstring for predict_dataloader.
+        :returns: TODO
+
+        """
+        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+
 
 class LitAutoEncoder(pl.LightningModule):
     def __init__(self):
@@ -123,28 +145,32 @@ def collate_wrapper(batch):
 
 
 np.random.seed(42)
-inp = [np.random.randn(np.random.randint(15, 17)) for _ in range(20)]
+inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(1)]
 # print(inp)
-target = list(np.random.randint(0, 1, (20, 1)))
+target = list(np.random.randint(0, 1, (1, 1)))
 # print(target)
 
-label = ["label"]*20
+label = ["label"]*1
 
 data = pd.DataFrame(data={"x": inp, 'y': target, "label": label})
 dataset = CustomDataset(data)
-train_loader = DataLoader(dataset, batch_size=4, collate_fn=collate_wrapper, pin_memory=False)
 
+# train_loader = DataLoader(dataset, batch_size=4, collate_fn=collate_wrapper, pin_memory=False)
+
+data_module = MNISTDataModule(dataset, collate_wrapper)
+# class MNISTDataModule(pl.LightningDataModule):
+    # def __init__(self, dataset, collate_fn):
 # for data in train_loader:
     # print(data)
     # break
     # pass
 # # init model
 autoencoder = LitAutoEncoder()
-autoencoder.train_data = data
+autoencoder.train_data = data_module.dataset
 
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 # trainer = pl.Trainer(gpus=8) (if you have GPUs)
 trainer = pl.Trainer(profiler="simple", max_steps=2)
 # trainer.test(model=autoencoder)
-# print(trainer.predict(model=autoencoder, dataloaders=train_loader))
-print(trainer.test(autoencoder, dataloaders=train_loader))
+print(trainer.predict(model=autoencoder, dataloaders=data_module))
+# print(trainer.test(autoencoder, dataloaders=train_loader))

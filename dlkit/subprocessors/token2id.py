@@ -1,8 +1,8 @@
 from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
-from dlkit.processors.subprocessors import subprocessor_register, subprocessor_config_register, Processor
-
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
+from dlkit.processors import Processor
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(Config, GetConfigByStageMixin):

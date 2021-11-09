@@ -3,7 +3,8 @@ from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable
 import json
 
-from dlkit.processors.subprocessors import subprocessor_register, subprocessor_config_register, Processor
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
+from dlkit.processors import Processor
 from tokenizers import normalizers
 from tokenizers import pre_tokenizers
 
