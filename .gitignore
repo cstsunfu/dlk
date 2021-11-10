@@ -1,4 +1,4 @@
-*__pychche__/*
-*_logs/*
+*/__pychche__/*
+*/lightning_logs/*
 *.pyc
 

@@ -32,6 +32,13 @@ class MNISTDataModule(pl.LightningDataModule):
         """
         return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
 
+    def train_dataloader(self):
+        """TODO: Docstring for predict_dataloader.
+        :returns: TODO
+
+        """
+        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+
 
 class LitAutoEncoder(pl.LightningModule):
     def __init__(self):
@@ -50,8 +57,8 @@ class LitAutoEncoder(pl.LightningModule):
         # training_step defined the train loop.
         # It is independent of forward
         x, y = batch['x'], batch['y']
-        y = y.squeeze()
-        print(batch['_index'])
+        # y = y.squeeze()
+        # print(batch['_index'])
         x = x.view(x.size(0), -1)
         z = self.encoder(x)
         x_hat = self.decoder(z)
@@ -69,7 +76,6 @@ class LitAutoEncoder(pl.LightningModule):
 
         """
         x, y = batch['x'], batch['y']
-        y = y.squeeze()
         # print(batch['_index'])
         x = x.view(x.size(0), -1)
         z = self.encoder(x)
@@ -139,18 +145,24 @@ def collate_wrapper(batch):
         for one_ins in batch:
             data_map[key].append(one_ins[key])
     for key in data_map:
-        data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=0)
+        try:
+            data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=0)
+        except:
+            if data_map[key][0].size():
+                raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
+            data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=0).squeeze()
+            # print( pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=0).size()).
         # torch.cat([ ], pad=0)
     return data_map
 
 
 np.random.seed(42)
-inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(1)]
+inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(4)]
 # print(inp)
-target = list(np.random.randint(0, 1, (1, 1)))
+target = list(np.random.randint(0, 1, (4)))
 # print(target)
 
-label = ["label"]*1
+label = ["label"]*4
 
 data = pd.DataFrame(data={"x": inp, 'y': target, "label": label})
 dataset = CustomDataset(data)
@@ -170,7 +182,8 @@ autoencoder.train_data = data_module.dataset
 
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 # trainer = pl.Trainer(gpus=8) (if you have GPUs)
-trainer = pl.Trainer(profiler="simple", max_steps=2)
+trainer = pl.Trainer(profiler="simple", max_steps=200)
 # trainer.test(model=autoencoder)
-print(trainer.predict(model=autoencoder, dataloaders=data_module))
+print(trainer.fit(model=autoencoder, train_dataloaders=data_module))
+# print(trainer.predict(model=autoencoder, dataloaders=data_module))
 # print(trainer.test(autoencoder, dataloaders=train_loader))

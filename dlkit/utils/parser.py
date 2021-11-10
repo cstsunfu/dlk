@@ -2,38 +2,10 @@ import hjson
 import os
 import copy
 from typing import Callable, List, Dict, Union
+from dlkit.utils.register import Register
 import json
 
-CONFIG_PARSER_REGISTRY = {}
-
-
-def config_parser_register(name: Union[str, List[str]] = "") -> Callable:
-    """
-    register config parsers
-    """
-
-    def decorator(model):
-        def register(sub_name: str=""):
-            """TODO: Docstring for register.
-
-            :sub_name: TODO
-            :returns: TODO
-
-            """
-            if sub_name.strip() == "":
-                raise ValueError('You must set a name for {}'.format(model._name))
-
-            if sub_name in CONFIG_PARSER_REGISTRY:
-                raise ValueError('The config parser name {} is already registed.'.format(name))
-            CONFIG_PARSER_REGISTRY[sub_name] = model
-
-        if isinstance(name, List):
-            for sub_name in name:
-                register(sub_name)
-        else:
-            register(name)
-        return model
-    return decorator
+config_parser_register = Register("Config parser register")
 
 
 class BaseConfigParser(object):
@@ -191,14 +163,13 @@ class BaseConfigParser(object):
         return config
 
     def get_kind_module_base_config(self, abstract_config: Union[dict, str], kind_module: str="") -> List[dict]:
-        """TODO: Docstring for get_kind_module_base_config.
+        """get the whole config of 'kind_module' by given abstract_config
 
-        :abstract_config: dict: TODO
-        :returns: TODO
-        :returns: 
+        :abstract_config: dict: will expanded config
+        :returns: parserd config (whole config) of abstract_config
 
         """
-        return CONFIG_PARSER_REGISTRY[kind_module](abstract_config).parser()
+        return config_parser_register.get(kind_module)(abstract_config).parser()
 
     def map_to_submodule(self, config: dict, map_fun: Callable) -> Dict:
         """use the map_fun to process all the modules
@@ -338,7 +309,7 @@ class TaskConfigParser(BaseConfigParser):
         super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
 
-@config_parser_register(['model', 'model_student', "model_teacher"] + ['model_'+str(i) for i in range(64)])
+@config_parser_register('model')
 class ModelConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""
     def __init__(self, config_file):
