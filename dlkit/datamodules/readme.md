@@ -1,3 +1,23 @@
+只保留一个datamodule模块
+
+```hjson
+datamodule: {
+    "_name": "base",
+    "config": {
+        "padding": 0,
+        "pin_memory": false,
+        "shuffle": {
+            "train": true,
+            "predict": false,
+            "valid": false,
+            "test": false,
+            "online": false
+        },
+        "key_type_pair": [('x', 'float'), ('y', 'int')],
+        "batch_size": 32,
+    }
+}, 
+```
 
 
 ```hjson

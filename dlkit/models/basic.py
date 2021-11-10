@@ -59,20 +59,11 @@ class BasicModel(nn.Module):
         self.decoder = config.decoder(config.decoder_config)
         self.config = config.config
 
-    def _check_input(self, **inputs):
-        """TODO: Docstring for _check_input.
-        :returns: TODO
-
-        """
-        return True
-
-
     def forward(self, **inputs: Dict)->Dict:
         """predict forward
         :**inputs: Dict: TODO
         :returns: TODO
         """
-        self._check_input(**inputs)
         embedding = self.embedding(**inputs)
         encode_outputs = self.encoder(embedding=embedding, **inputs)
         decode_outputs = self.decoder(encode_outputs, **inputs)
@@ -84,7 +75,6 @@ class BasicModel(nn.Module):
         :**inputs: Dict: TODO
         :returns: TODO
         """
-        self._check_input(**inputs)
         embedding = self.embedding.training_step(**inputs)
         encode_outputs = self.encoder.training_step(embedding=embedding, **inputs)
         decode_outputs = self.decoder.training_step(encode_outputs, **inputs)
@@ -97,7 +87,6 @@ class BasicModel(nn.Module):
         :returns: TODO
 
         """
-        self._check_input(**inputs)
         embedding = self.embedding.valid_step(**inputs)
         encode_outputs = self.encoder.valid_step(embedding=embedding, **inputs)
         decode_outputs = self.decoder.valid_step(encode_outputs, **inputs)

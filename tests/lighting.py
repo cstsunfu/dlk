@@ -24,20 +24,39 @@ class MNISTDataModule(pl.LightningDataModule):
         # return DataLoader(self.mnist_val, batch_size=self.batch_size)
 
     # def test_dataloader(self):
-        # return DataLoader(self.mnist_test, batch_size=self.batch_size)
+        # # return DataLoader(self.mnist_test, batch_size=self.batch_size)
+        # self.train_dataloader = lambda self: DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+
+    def test_dataloader(self):
+        """TODO: Docstring for predict_dataloader.
+        :returns: TODO
+
+        """
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
+        # return None
+
+    def val_dataloader(self):
+        """TODO: Docstring for predict_dataloader.
+        :returns: TODO
+
+        """
+        # return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
+        return None
+
     def predict_dataloader(self):
         """TODO: Docstring for predict_dataloader.
         :returns: TODO
 
         """
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
 
     def train_dataloader(self):
         """TODO: Docstring for predict_dataloader.
         :returns: TODO
 
         """
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
+        # return DataLoader([])
 
 
 class LitAutoEncoder(pl.LightningModule):
@@ -67,6 +86,25 @@ class LitAutoEncoder(pl.LightningModule):
         self.log("train_loss", loss,on_step=True)
         return loss
 
+    def validation_step(self, batch, batch_idx):
+        """TODO: Docstring for test_step.
+
+        :batch: TODO
+        :batch_idx: TODO
+        :returns: TODO
+
+        """
+        x, y = batch['x'], batch['y']
+        # print(batch['_index'])
+        x = x.view(x.size(0), -1)
+        z = self.encoder(x)
+        x_hat = self.decoder(z)
+        loss = F.cross_entropy(x_hat, y)
+        # Logging to TensorBoard by default
+        self.log("validation_loss", loss)
+        print(f"validation_step loss: {loss}")
+        return loss
+
     def test_step(self, batch, batch_idx):
         """TODO: Docstring for test_step.
 
@@ -82,8 +120,8 @@ class LitAutoEncoder(pl.LightningModule):
         x_hat = self.decoder(z)
         loss = F.cross_entropy(x_hat, y)
         # Logging to TensorBoard by default
-        # self.log("train_loss", loss)
-        # print(f"test_step loss: {loss}")
+        self.log("train_loss", loss)
+        print(f"test_step loss: {loss}")
         return loss
 
     def test_epoch_end(self, outputs):
@@ -182,8 +220,8 @@ autoencoder.train_data = data_module.dataset
 
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 # trainer = pl.Trainer(gpus=8) (if you have GPUs)
-trainer = pl.Trainer(profiler="simple", max_steps=200)
+trainer = pl.Trainer(profiler="simple", max_steps=200, val_check_interval=0.5)
 # trainer.test(model=autoencoder)
-print(trainer.fit(model=autoencoder, train_dataloaders=data_module))
+trainer.fit(model=autoencoder, datamodule=data_module)
 # print(trainer.predict(model=autoencoder, dataloaders=data_module))
 # print(trainer.test(autoencoder, dataloaders=train_loader))
