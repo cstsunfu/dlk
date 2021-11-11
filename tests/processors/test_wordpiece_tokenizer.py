@@ -2,7 +2,7 @@ import sys
 import pandas as pd
 # sys.path.append('../../../')
 
-from dlkit.processors import PROCESSOR_CONFIG_REGISTRY, PROCESSOR_REGISTRY
+from dlkit.processors import processor_register, processor_config_register
 # from dlkit.models import DECODER_CONFIG_REGISTRY
 
 
@@ -39,8 +39,8 @@ def test_wordpiece():
             ['sentence_b', {}],
         ],
     }
-    process_config = PROCESSOR_CONFIG_REGISTRY.get('wordpiece_tokenizer')("online", **config)
-    process = PROCESSOR_REGISTRY.get('wordpiece_tokenizer')("online", process_config)
+    process_config = processor_config_register.get('wordpiece_tokenizer')("online", **config)
+    process = processor_register.get('wordpiece_tokenizer')("online", process_config)
 
     data = {}
     data['data'] = {}

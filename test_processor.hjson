@@ -26,6 +26,9 @@
             "train":{
                 "data.train": "./train.pkl",
                 "data.dev": "./dev.pkl",
+                "token_ids": "./token_ids.pkl",
+                "embedding": "./embedding.pkl",
+                "label_ids": "./label_ids.pkl",
             },
             "predict": {
                 "data.predict": "./predict.pkl"
@@ -34,9 +37,9 @@
     },
     "subprocessor@tokenizer":{
         "_base": "wordpiece_tokenizer",
-        "config": { 
+        "config": {   TODO: REfactor config
             "train": { // you can add some whitespace surround the '&' 
-                "config_path": "*@*",
+                "config_path": "./token.json",
             },
             "predict": "train",
             "online": "train"

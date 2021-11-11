@@ -22,7 +22,11 @@ class BaseConfigParser(object):
     def __init__(self, config_file: Union[str, Dict, List], config_base_dir: str=""):
         super(BaseConfigParser, self).__init__()
         if isinstance(config_file, str):
-            self.config_file = self.load_hjson_file(os.path.join(config_base_dir, config_file+'.hjson'))
+            try:
+                self.config_file = self.load_hjson_file(os.path.join(config_base_dir, config_file+'.hjson'))
+            except:
+                print(config_base_dir, config_file)
+                raise KeyError
         elif isinstance(config_file, Dict):
             self.config_file = config_file
         else:
@@ -95,6 +99,14 @@ class BaseConfigParser(object):
             else:
                 make_link(source, to)
 
+    def parser_with_check(self)->List[Dict]:
+        """parser and check the result, only used for __main__ processor
+        :returns: TODO
+        """
+        configs = self.parser()
+        self.check_config(configs)
+        return configs
+
     def parser(self) -> List[Dict]:
         """ return a list of para dicts for all possible combinations
         :returns: list[possible config dict]
@@ -150,13 +162,13 @@ class BaseConfigParser(object):
 
             """
             for item in _new:
-                if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
-                # if item not in _base, or they all are not Dict
+                if (item not in _base) or (not isinstance(_base[item], Dict)):
+                # if item not in _base, or _base[item] is not Dict
                     _base[item] = _new[item]
                 elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
                     _inplace_update_dict(_base[item], _new[item])
                 else:
-                    raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
+                    raise AttributeError(f"The base config and update config is not match. \nbase: {json.dumps(_base, indent=4)}, \nnew: {json.dumps(_new, indent=4)}. ")
                 
         config = copy.deepcopy(config)
         _inplace_update_dict(config, update_config)
@@ -252,9 +264,7 @@ class BaseConfigParser(object):
                 if isinstance(config[key], dict):
                     _check(config[key])
                 if config[key] == '*@*':
-                    print("In config:")
-                    print(json.dumps(config, indent=4))
-                    raise ValueError('"*@*" is not replaced by correct value.')
+                    raise ValueError(f'In Config: \n {json.dumps(config, indent=4)}\n The must be provided key "{key}" marked with "*@*" is not provided.')
 
         if isinstance(configs, list):
             for config in configs:
@@ -323,13 +333,6 @@ class MultiModelConfigParser(BaseConfigParser):
         super(MultiModelConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/multi_models/')
 
 
-@config_parser_register('dataloader')
-class DataloaderConfigParser(BaseConfigParser):
-    """docstring for DataloaderConfigParser"""
-    def __init__(self, config_file):
-        super(DataloaderConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/dataloaders/')
-        
-
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):
     """docstring for OptimizerConfigParser"""
@@ -385,3 +388,17 @@ class EmbeddingConfigParser(BaseConfigParser):
     """docstring for EmbeddingConfigParser"""
     def __init__(self, config_file):
         super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/modules/embeddings/')
+
+
+@config_parser_register('processor')
+class ProcessorConfigParser(BaseConfigParser):
+    """docstring for ProcessorConfigParser"""
+    def __init__(self, config_file):
+        super(ProcessorConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/processors/')
+
+
+@config_parser_register('subprocessor')
+class SubProcessorConfigParser(BaseConfigParser):
+    """docstring for SubProcessorConfigParser"""
+    def __init__(self, config_file):
+        super(SubProcessorConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/subprocessors/')
