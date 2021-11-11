@@ -1,8 +1,7 @@
 from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
-from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
-from dlkit.processors import Processor
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 
 
 @subprocessor_config_register('token_gather')
@@ -34,10 +33,9 @@ class TokenGatherConfig(Config, GetConfigByStageMixin):
         self.update = self.config.get('update', "")
 
 @subprocessor_register('token_gather')
-class TokenGather(Processor):
+class TokenGather(ISubProcessor):
     """
     """
-
     def __init__(self, stage: str, config: TokenGatherConfig):
         super().__init__()
         self.stage = stage

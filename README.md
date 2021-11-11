@@ -22,6 +22,10 @@ TODO:
 
 ## TODO
 
-* BERT的from_pretrained方法
-* init_weights方法
-* 考虑在训练过程中加入某种因素 使其更改训练策略
+* p0, 完成processor逻辑
+* p0, 完成processor测试
+* p0, 完成optimizer模块
+
+* p1, BERT的from_pretrained方法
+* p1, init_weights方法
+* p1, 考虑在训练过程中加入某种因素 使其更改训练策略

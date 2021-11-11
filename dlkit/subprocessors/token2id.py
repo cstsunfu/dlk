@@ -1,8 +1,7 @@
 from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
-from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
-from dlkit.processors import Processor
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(Config, GetConfigByStageMixin):
@@ -40,7 +39,7 @@ class Token2IDConfig(Config, GetConfigByStageMixin):
 
 
 @subprocessor_register('token2id')
-class Token2ID(Processor):
+class Token2ID(ISubProcessor):
     """docstring for Token2ID
     """
 

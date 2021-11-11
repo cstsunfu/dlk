@@ -1,7 +1,6 @@
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
-from dlkit.subprocessors import subprocessor_register, subprocessor_config_register
-from dlkit.processors import Processor
+from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
 import os
 
@@ -33,7 +32,7 @@ class SaveConfig(Config, GetConfigByStageMixin):
         self.base_dir:str = config.get("base_dir", ".")
 
 @subprocessor_register('load')
-class Save(Processor):
+class Save(ISubProcessor):
     """
     """
 

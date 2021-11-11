@@ -7,8 +7,8 @@ from dlkit.utils.config import Config
 from dlkit.utils.register import Register
 import abc
 
-class Processor(metaclass=abc.ABCMeta):
-    """docstring for Processor"""
+class IProcessor(metaclass=abc.ABCMeta):
+    """docstring for IProcessor"""
 
 
     @abc.abstractmethod

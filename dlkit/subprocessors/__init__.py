@@ -11,6 +11,16 @@ import abc
 subprocessor_config_register = Register("SubProcessor config register")
 subprocessor_register = Register("SubProcessor register")
 
+class ISubProcessor(metaclass=abc.ABCMeta):
+    """docstring for ISubProcessor"""
+
+
+    @abc.abstractmethod
+    def process(self, data: Dict)->Dict:
+        """
+        """
+        raise NotImplementedError
+
 
 def import_subprocessors(processors_dir, namespace):
     for file in os.listdir(processors_dir):

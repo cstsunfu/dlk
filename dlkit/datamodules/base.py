@@ -2,8 +2,8 @@ import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union
 from dlkit.utils.config import Config
-from dlkit.datamodules import datamodule_config_register, datamodule_register
-from pytorch_lightning import LightningDataModule
+from dlkit.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule
+# from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
 
@@ -14,7 +14,7 @@ class BaseDatamoduleConfig(Config):
            "_name": "base",
            "config": {
                "padding": 0,
-               "pin_memory": false,
+               "pin_memory": None,
                "shuffle": {
                    "train": true,
                    "predict": false,
@@ -36,6 +36,8 @@ class BaseDatamoduleConfig(Config):
         super(BaseDatamoduleConfig, self).__init__(**kwargs)
         self.key_type_pairs = kwargs.get('key_type_pairs', {})
         self.pin_memory = kwargs.get('pin_memory', False)
+        if self.pin_memory is None:
+            self.pin_memory = torch.cuda.is_available()
         self.shuffle = kwargs.get('shuffle', { 
             "train": True, 
             "predict": False, 
@@ -85,8 +87,10 @@ def base_collate(batch):
 
 
 @datamodule_config_register("base")
-class BaseDatamodule(LightningDataModule):
+class BaseDatamodule(IBaseDataModule):
     def __init__(self, config: BaseDatamoduleConfig, data: Dict[str, pd.DataFrame]):
+        super().__init__()
+
         self.key_type_pairs = config.key_type_pairs
         self.pin_memory = config.pin_memory
         self.shuffle: Dict[str, bool] = config.shuffle
@@ -137,4 +141,3 @@ class BaseDatamodule(LightningDataModule):
     def online_dataloader(self):
         # return DataLoader(self.mnist_test, batch_size=self.batch_size)
         return self.collate_fn
-

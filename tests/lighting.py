@@ -66,7 +66,7 @@ class LitAutoEncoder(pl.LightningModule):
         self.decoder = nn.Linear(64, 2)
         self.all_data = {}
 
-    def forward(self, x):
+    def forward(self, x: Dict[str, torch.Tensor]):
         # in lightning, forward defines the prediction/inference actions
         x = x['x']
         embedding = self.encoder(x)
@@ -83,7 +83,7 @@ class LitAutoEncoder(pl.LightningModule):
         x_hat = self.decoder(z)
         loss = F.cross_entropy(x_hat, y)
         # Logging to TensorBoard by default
-        self.log("train_loss", loss,on_step=True)
+        self.log("train_loss", loss,on_step=True, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -194,7 +194,7 @@ def collate_wrapper(batch):
     return data_map
 
 
-np.random.seed(42)
+np.random.seed(20)
 inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(4)]
 # print(inp)
 target = list(np.random.randint(0, 1, (4)))
@@ -220,8 +220,12 @@ autoencoder.train_data = data_module.dataset
 
 # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
 # trainer = pl.Trainer(gpus=8) (if you have GPUs)
-trainer = pl.Trainer(profiler="simple", max_steps=200, val_check_interval=0.5)
+trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
 # trainer.test(model=autoencoder)
-trainer.fit(model=autoencoder, datamodule=data_module)
+# trainer.fit(model=autoencoder, datamodule=data_module)
 # print(trainer.predict(model=autoencoder, dataloaders=data_module))
-# print(trainer.test(autoencoder, dataloaders=train_loader))
+autoencoder.load_state_dict(torch.load('./test.pt'))
+# print('test ')
+autoencoder.to_torchscript("script.sc")
+# print(trainer.test(autoencoder, datamodule=data_module))
+# torch.save(autoencoder.state_dict(), './test.pt')

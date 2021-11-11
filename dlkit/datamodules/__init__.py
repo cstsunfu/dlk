@@ -5,11 +5,42 @@ import os
 from typing import Callable, Dict, Type
 from dlkit.utils.config import Config
 from dlkit.utils.register import Register
+from pytorch_lightning import LightningDataModule
 import abc
 
 datamodule_config_register = Register("Datamodule config register")
 datamodule_register = Register("Datamodule register")
 
+class IDataModule(metaclass=abc.ABCMeta):
+    """docstring for ModuleStepMixin"""
+
+
+    @abc.abstractmethod
+    def train_dataloader(self):
+        pass
+
+    @abc.abstractmethod
+    def predict_dataloader(self):
+        pass
+
+    @abc.abstractmethod
+    def val_dataloader(self):
+        pass
+
+    @abc.abstractmethod
+    def test_dataloader(self):
+        pass
+
+    @abc.abstractmethod
+    def online_dataloader(self):
+        pass
+
+
+class IBaseDataModule(LightningDataModule, IDataModule):
+    """docstring for IBaseDataModule"""
+    def __init__(self):
+        super(IBaseDataModule, self).__init__()
+        
 
 def import_datamodules(datamodules_dir, namespace):
     for file in os.listdir(datamodules_dir):
