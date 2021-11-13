@@ -33,6 +33,7 @@ class GetConfigByStageMixin(object):
             }
             config.get_config['predict'] == config[config['predict']] == config['train']
         """
+        config = config['config']
         stage_config = config.get(stage, {})
         if isinstance(stage_config, str):
             stage_config = config.get(stage_config, {})

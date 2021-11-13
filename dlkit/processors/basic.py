@@ -6,14 +6,13 @@ from dlkit.processors import IProcessor, processor_config_register, processor_re
 from dlkit.subprocessors import subprocessor_config_register, subprocessor_register
 from dlkit.utils.config import Config
 
-
-@processor_config_register('base')
-class BaseProcessorConfig(Config):
-    """docstring for BaseProcessorConfig
+@processor_config_register('basic')
+class BasicProcessorConfig(Config):
+    """docstring for BasicProcessorConfig
     config e.g.
     {
         "processor": {
-            "_name": "base",
+            "_name": "basic",
             "config": {
                 "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "save"]
             },
@@ -127,12 +126,12 @@ class BaseProcessorConfig(Config):
         self.stage = stage
 
 
-@processor_register('base')
-class BaseProcessor(IProcessor):
+@processor_register('basic')
+class BasicProcessor(IProcessor):
     """docstring for DataSet"""
-    def __init__(self, stage: str, config: BaseProcessorConfig):
-        super(BaseProcessor, self).__init__()
-        self._name = "base"
+    def __init__(self, stage: str, config: BasicProcessorConfig):
+        super(BasicProcessor, self).__init__()
+        self._name = "basic"
         self.stage = stage
         self.feed_order = config.feed_order
         assert len(self.feed_order) > 0
@@ -146,6 +145,7 @@ class BaseProcessor(IProcessor):
         """
         for subprocessor_name in self.feed_order:
             subprocessor_config_dict = self.subprocessors.get(f'subprocessor@{subprocessor_name}')
+            subprocessor_name = subprocessor_config_dict.get("_name")
             subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
             subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
             data = subprocessor.process(data)

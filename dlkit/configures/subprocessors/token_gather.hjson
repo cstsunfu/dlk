@@ -8,6 +8,7 @@
             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
             "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
             "update": null, // null or another Vocabulary object to update
+            "unk": "", // if set to "" or 0 or false or None, the Vocabulary is not set "unknown"
         }
     }
 }

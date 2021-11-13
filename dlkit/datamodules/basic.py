@@ -7,11 +7,11 @@ from dlkit.datamodules import datamodule_config_register, datamodule_register, I
 from torch.nn.utils.rnn import pad_sequence
 import torch
 
-@datamodule_config_register('base')
-class BaseDatamoduleConfig(Config):
+@datamodule_config_register('basic')
+class BasicDatamoduleConfig(Config):
     """docstring for BasicDatamoduleConfig
        datamodule: {
-           "_name": "base",
+           "_name": "basic",
            "config": {
                "padding": 0,
                "pin_memory": None,
@@ -33,7 +33,7 @@ class BaseDatamoduleConfig(Config):
        }, 
     """
     def __init__(self, **kwargs):
-        super(BaseDatamoduleConfig, self).__init__(**kwargs)
+        super(BasicDatamoduleConfig, self).__init__(**kwargs)
         self.key_type_pairs = kwargs.get('key_type_pairs', {})
         self.pin_memory = kwargs.get('pin_memory', False)
         if self.pin_memory is None:
@@ -52,7 +52,7 @@ class BaseDatamoduleConfig(Config):
         self.online_batch_size = kwargs.get('online_batch_size', 1)
 
 
-class BaseDataset(Dataset):
+class BasicDataset(Dataset):
     def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
         self.data = data
         self.type_map = {"float": torch.float, "int": torch.long, 'bool': torch.bool, "long": torch.long} 
@@ -86,9 +86,9 @@ def base_collate(batch):
             data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=0).squeeze()
 
 
-@datamodule_config_register("base")
-class BaseDatamodule(IBaseDataModule):
-    def __init__(self, config: BaseDatamoduleConfig, data: Dict[str, pd.DataFrame]):
+@datamodule_config_register("basic")
+class BasicDatamodule(IBaseDataModule):
+    def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, pd.DataFrame]):
         super().__init__()
 
         self.key_type_pairs = config.key_type_pairs
@@ -104,13 +104,13 @@ class BaseDatamodule(IBaseDataModule):
         self.test_data = None
         self.predict_data = None
         if 'train' in data:
-            self.train_data = BaseDataset(self.key_type_pairs, data['train'])
+            self.train_data = BasicDataset(self.key_type_pairs, data['train'])
         if "test" in data:
-            self.test_data = BaseDataset(self.key_type_pairs, data['test'])
+            self.test_data = BasicDataset(self.key_type_pairs, data['test'])
         if "valid" in data:
-            self.valid_data = BaseDataset(self.key_type_pairs, data['valid'])
+            self.valid_data = BasicDataset(self.key_type_pairs, data['valid'])
         if "predict" in data:
-            self.predict_data = BaseDataset(self.key_type_pairs, data['predict'])
+            self.predict_data = BasicDataset(self.key_type_pairs, data['predict'])
         self.collate_fn = base_collate
 
     # def train_dataloader(self):

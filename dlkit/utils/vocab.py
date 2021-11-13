@@ -1,4 +1,5 @@
 from collections import Counter
+import pandas as pd
 
 
 class Vocabulary(object):
@@ -59,7 +60,7 @@ class Vocabulary(object):
         """
         if isinstance(data, str):
             self.add(data)
-        elif isinstance(data, list) or isinstance(data, set):
+        elif isinstance(data, list) or isinstance(data, set) or isinstance(data, pd.Series):
             self.add_from_iter(data)
         else:
             raise ValueError("Don't support the type of {}".format(data))

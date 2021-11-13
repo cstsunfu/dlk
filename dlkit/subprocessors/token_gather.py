@@ -17,6 +17,7 @@ class TokenGatherConfig(Config, GetConfigByStageMixin):
                     "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                     "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
                     "update": null, // null or another Vocabulary object to update
+                    "unk": "",
                 }
             }
         }
@@ -26,11 +27,12 @@ class TokenGatherConfig(Config, GetConfigByStageMixin):
         self.config = self.get_config(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
 
-        self.gather_columns = self.config.get("gather_column", [])
+        self.gather_columns = self.config.get("gather_columns")
         self.deliver = self.config.get("deliver", "")
         if self.data_set and (not self.deliver):
             raise ValueError("The 'deliver' value must not be null.")
         self.update = self.config.get('update', "")
+        self.unk = self.config.get('unk', "")
 
 @subprocessor_register('token_gather')
 class TokenGather(ISubProcessor):
@@ -49,7 +51,7 @@ class TokenGather(ISubProcessor):
         if self.update:
             self.vocab = data[self.update]
         else:
-            self.vocab = Vocabulary(do_strip=True)
+            self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk)
         for data_set_name in self.data_set:
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:

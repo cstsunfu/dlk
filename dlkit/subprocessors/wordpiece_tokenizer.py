@@ -1,4 +1,4 @@
-from ._util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
+from dlkit.subprocessors.tokenizer.util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable
 import json
@@ -29,6 +29,7 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
                 "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
                 "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+                "prefix": "",   //the map target prefix
                 "filed_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
                     "ids": "ids",
@@ -55,10 +56,11 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
     def __init__(self, stage, config):
         self.config = self.get_config(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
-        self.config_path = self.config.get('config_path', "")
+        self.config_path = self.config.get('config_path')
         self.normalizer = self.config.get('normalizer', "default")
         self.pretokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
+        self.prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
             "ids": "ids",
@@ -87,6 +89,7 @@ class WordpieceTokenizer(ISubProcessor):
         self.data_set = config.data_set
         self.process_data = config.process_data
         self.data_type = config.data_type
+        self.prefix = config.prefix
 
         if self.data_type=='single':
             assert len(self.process_data) == 1
@@ -146,7 +149,7 @@ class WordpieceTokenizer(ISubProcessor):
         """
         targets_map = {}
         for k in filed_map:
-            targets_map[filed_map[k]] = []
+            targets_map[self.prefix + filed_map[k]] = []
         for token in all_tokens:
             for k in filed_map:
                 targets_map[filed_map[k]].append(getattr(token, k))
@@ -162,7 +165,6 @@ class WordpieceTokenizer(ISubProcessor):
         assert len(process_data) == 1
         process_column_name, config = process_data[0]
         process_column_data = data[process_column_name]
-        print(self.tokenizer.post_processor)
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
         token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
         for k in token_filed_name_value_map:

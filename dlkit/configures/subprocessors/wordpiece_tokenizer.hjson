@@ -8,9 +8,12 @@
                 "online": ["online"]
             },
             "config_path": "*@*",
-            "normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config
-            "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
-            "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+            /*"normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config*/
+            "normalizer": "default", // if don't set this, will use the default normalizer from config
+            /*"pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config*/
+            "pre_tokenizer": "default", // if don't set this, will use the default normalizer from config
+            "post_processor": "default", // you cannot set this to None, this must be "default" or other post_processor(the tokenizers lib does not support remove the default post_processor)
+            "prefix": "",   //the map target prefix
             "filed_map": { // this is the default value, you can provide other name
                 "tokens": "tokens",
                 "ids": "ids",
@@ -18,11 +21,16 @@
                 "type_ids": "type_ids",
                 "special_tokens_mask": "special_tokens_mask",
                 "offsets": "offsets",
+                "word_ids": "word_ids",
+                "overflowing": "overflowing",
+                "sequence_ids": "sequence_ids",
             }, // the tokenizer output(the key) map to the value
-            "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-            "process_data": [
-                ["sentence", { "is_pretokenized": false}], 
-            ],
+            "data_type": "*@*", // single or pair, if not provide, will calc by len(process_data)
+            "process_data": "*@*",
+            /*"data_type": "single", // single or pair, if not provide, will calc by len(process_data)*/
+            /*"process_data": [*/
+                /*["sentence", { "is_pretokenized": false}], */
+            /*],*/
             /*"data_type": "pair", // single or pair*/
             /*"process_data": [*/
                 /*['sentence_a', { "is_pretokenized": false}], */ 

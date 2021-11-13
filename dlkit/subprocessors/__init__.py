@@ -7,6 +7,10 @@ from typing import Callable, Dict, Type
 from dlkit.utils.config import Config
 from dlkit.utils.register import Register
 import abc
+from pandarallel import pandarallel
+pandarallel.initialize()
+# TODO: tokenizer parall and other parall is anti
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 subprocessor_config_register = Register("SubProcessor config register")
 subprocessor_register = Register("SubProcessor register")

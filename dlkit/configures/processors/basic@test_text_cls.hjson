@@ -1,5 +1,5 @@
 {
-    "_name": "test_simple_text_cls",
+    "_name": "basic@test_text_cls",
     "config": {
         "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "save"]
     },
@@ -8,9 +8,7 @@
         "config":{
             "base_dir": "."
             "predict":{
-                "token_ids": "./token_ids.pkl",
-                "embedding": "./embedding.pkl",
-                "label_ids": "./label_ids.pkl",
+                "label_vocab": "./label_vocab.pkl",
             },
             "online": [
                 "predict", //base predict
@@ -26,6 +24,7 @@
             "train":{
                 "data.train": "./train.pkl",
                 "data.dev": "./dev.pkl",
+                "label_vocab": "./label_vocab.pkl",
             },
             "predict": {
                 "data.predict": "./predict.pkl"
@@ -35,8 +34,13 @@
     "subprocessor@tokenizer":{
         "_base": "wordpiece_tokenizer",
         "config": { 
-            "train": { // you can add some whitespace surround the '&' 
+            "train": { 
                 "config_path": "*@*",
+                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "process_data": [
+                    ["sentence", { "is_pretokenized": false}], 
+                ],
+                "post_processor": "bert"
             },
             "predict": "train",
             "online": "train"
@@ -46,7 +50,7 @@
         "_base": "token_gather",
         "config": {
             "train": { // only train stage using
-                "data_set": {                   // for different stage, this processor will process different part of data
+                "data_set": {      // for different stage, this processor will process different part of data
                     "train": ["train", "dev"]
                 },
                 "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
@@ -55,7 +59,7 @@
         }
     },
     "subprocessor@label_to_id":{
-        "_name": "token2id",
+        "_base": "token2id",
         "config": {
             "train":{ //train、predict、online stage config,  using '&' split all stages
                 "data_pair": {

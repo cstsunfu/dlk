@@ -1,5 +1,5 @@
 */__pychche__/*
 */lightning_logs/*
+*.pkl
 *.pyc
 */logs/*
-

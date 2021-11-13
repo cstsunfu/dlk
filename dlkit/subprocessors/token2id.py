@@ -2,6 +2,8 @@ from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from functools import partial
+# import multiprocessing as mp
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(Config, GetConfigByStageMixin):
@@ -50,13 +52,21 @@ class Token2ID(ISubProcessor):
         self.data_set = config.data_set
         self.data_pair = config.data_pair
 
+
     def process(self, data: Dict)->Dict:
+        vocab = data[self.config.vocab]
+
+        def get_index_wrap(key, x):
+            """TODO: Docstring for get_index_wrap.
+            """
+            return vocab.get_index(x[key])
+
         if not self.data_set:
             return data
 
-        self.vocab = data[self.config.vocab]
         for data_set_name in self.data_set:
             data_set = data['data'][data_set_name]
             for key, value in self.data_pair.items():
-                data_set[value] = data_set[key].parallel_apply(self.vocab.get_index, axis=1)
+                get_index = partial(get_index_wrap, key)
+                data_set[value] = data_set.parallel_apply(get_index, axis=1)
         return data

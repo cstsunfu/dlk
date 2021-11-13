@@ -31,7 +31,7 @@ class SaveConfig(Config, GetConfigByStageMixin):
         self.config = self.get_config(stage, config)
         self.base_dir:str = config.get("base_dir", ".")
 
-@subprocessor_register('load')
+@subprocessor_register('save')
 class Save(ISubProcessor):
     """
     """
@@ -49,5 +49,9 @@ class Save(ISubProcessor):
 
     def process(self, data: Dict)->Dict:
         for key, value in self.config.items():
-            self.save(data[key], value)
+            subkeys = key.split('.')
+            _data = data
+            for subkey in subkeys:
+                _data = _data[subkey]
+            self.save(_data, value)
         return data
