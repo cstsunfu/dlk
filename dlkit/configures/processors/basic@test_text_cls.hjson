@@ -36,6 +36,7 @@
         "config": { 
             "train": { 
                 "config_path": "*@*",
+                "prefix": ""
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": [
                     ["sentence", { "is_pretokenized": false}], 

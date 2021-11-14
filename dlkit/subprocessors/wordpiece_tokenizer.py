@@ -60,7 +60,7 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
         self.normalizer = self.config.get('normalizer', "default")
         self.pretokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
-        self.prefix = self.config.get('prefix', '')
+        prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
             "ids": "ids",
@@ -69,9 +69,10 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
         })
+        if prefix:
+            self.filed_map = {key: prefix+value for key, value in self.filed_map.items()}
         self.process_data = self.config.get("process_data", []) # must provide
         self.data_type = self.config.get("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
-
 
 @subprocessor_register('wordpiece_tokenizer')
 class WordpieceTokenizer(ISubProcessor):
@@ -89,7 +90,6 @@ class WordpieceTokenizer(ISubProcessor):
         self.data_set = config.data_set
         self.process_data = config.process_data
         self.data_type = config.data_type
-        self.prefix = config.prefix
 
         if self.data_type=='single':
             assert len(self.process_data) == 1
@@ -149,7 +149,7 @@ class WordpieceTokenizer(ISubProcessor):
         """
         targets_map = {}
         for k in filed_map:
-            targets_map[self.prefix + filed_map[k]] = []
+            targets_map[filed_map[k]] = []
         for token in all_tokens:
             for k in filed_map:
                 targets_map[filed_map[k]].append(getattr(token, k))

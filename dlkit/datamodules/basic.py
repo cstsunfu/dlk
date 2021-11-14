@@ -56,6 +56,7 @@ class BasicDataset(Dataset):
     def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
         self.data = data
         self.type_map = {"float": torch.float, "int": torch.long, 'bool': torch.bool, "long": torch.long} 
+
         self.key_type_pairs = key_type_pairs
 
     def __len__(self):

@@ -2,4 +2,8 @@
 */lightning_logs/*
 *.pkl
 *.pyc
+*.raw
+*.txt
+*.zip
 */logs/*
+tokenizer.json
