@@ -1,0 +1,11 @@
+{
+    "train_files": ['./wikitext-103-raw/token_wiki.test.raw'],
+    "embedding_size": 50,
+    "model_file": 'embedding.model',
+    "embedding_file": 'embedding.txt'
+    "min_count": 10, // minist token frequence
+    "window": 6, // window size
+    "workers": null, //default use all cpu
+    "epochs":15,
+    "sg": 1, // use skip gram or not, use small data set 1, big data set 0 to use cbow
+}

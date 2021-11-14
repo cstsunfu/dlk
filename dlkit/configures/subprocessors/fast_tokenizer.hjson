@@ -1,5 +1,5 @@
 {
-    "_name": "wordpiece_tokenizer",
+    "_name": "fast_tokenizer",
     "config": {
         "train": { // you can add some whitespace surround the '&' 
             "data_set": {                   // for different stage, this processor will process different part of data

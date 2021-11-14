@@ -5,5 +5,8 @@
 *.raw
 *.txt
 *.zip
+*.model
+*.pt
+*.bin
 */logs/*
 tokenizer.json

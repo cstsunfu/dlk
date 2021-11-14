@@ -6,6 +6,7 @@ from dlkit.datamodules import datamodule_config_register, datamodule_register, I
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
+import copy
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(Config):
@@ -82,6 +83,7 @@ def base_collate(batch):
         try:
             data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=0)
         except:
+            # if the data_map[key] is size 0, we can concat them
             if data_map[key][0].size():
                 raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
             data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=0).squeeze()
@@ -105,17 +107,27 @@ class BasicDatamodule(IBaseDataModule):
         self.test_data = None
         self.predict_data = None
         if 'train' in data:
-            self.train_data = BasicDataset(self.key_type_pairs, data['train'])
+            self.train_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'train'), data['train'])
         if "test" in data:
-            self.test_data = BasicDataset(self.key_type_pairs, data['test'])
+            self.test_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'test'), data['test'])
         if "valid" in data:
-            self.valid_data = BasicDataset(self.key_type_pairs, data['valid'])
+            self.valid_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'valid'), data['valid'])
         if "predict" in data:
-            self.predict_data = BasicDataset(self.key_type_pairs, data['predict'])
+            self.predict_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'predict'), data['predict'])
         self.collate_fn = base_collate
 
-    # def train_dataloader(self):
-        # return DataLoader(self.mnist_train, batch_size=self.batch_size)
+    def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
+        copy_key_type_pairs = copy.deepcopy(key_type_pairs)
+        has_key = set(data[field].columns)
+        remove = set()
+        for key in copy_key_type_pairs:
+            if key not in has_key:
+                remove.add(key)
+        print(f"There are not '{', '.join(remove)}' in data field {field}.")
+        for key in remove:
+            copy_key_type_pairs.pop(key)
+        return copy_key_type_pairs
+
 
     def train_dataloader(self):
         if not self.train_data:

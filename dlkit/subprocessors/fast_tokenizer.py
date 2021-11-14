@@ -1,4 +1,4 @@
-from dlkit.subprocessors.tokenizer.util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
+from dlkit.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
 from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable
 import json
@@ -12,12 +12,12 @@ from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
 
 
-@subprocessor_config_register('wordpiece_tokenizer')
-class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
+@subprocessor_config_register('fast_tokenizer')
+class FastTokenizerConfig(Config, GetConfigByStageMixin):
     """
     docstring for GeneralTokenizerConfig
     {
-        "_base": "wordpiece_tokenizer",
+        "_base": "fast_tokenizer",
         "config": {
             "train": { // you can add some whitespace surround the '&' 
                 "data_set": {                   // for different stage, this processor will process different part of data
@@ -58,7 +58,7 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         self.config_path = self.config.get('config_path')
         self.normalizer = self.config.get('normalizer', "default")
-        self.pretokenizer = self.config.get('pre_tokenizer', "default")
+        self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
         prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
@@ -74,12 +74,12 @@ class WordpieceTokenizerConfig(Config, GetConfigByStageMixin):
         self.process_data = self.config.get("process_data", []) # must provide
         self.data_type = self.config.get("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
 
-@subprocessor_register('wordpiece_tokenizer')
-class WordpieceTokenizer(ISubProcessor):
+@subprocessor_register('fast_tokenizer')
+class FastTokenizer(ISubProcessor):
     """
     """
 
-    def __init__(self, stage: str, config: WordpieceTokenizerConfig):
+    def __init__(self, stage: str, config: FastTokenizerConfig):
         super().__init__()
         self.stage = stage
         self.tokenizer = Tokenizer.from_file(config.config_path)
@@ -100,21 +100,21 @@ class WordpieceTokenizer(ISubProcessor):
         else:
             raise KeyError('We only support single or pair data now.')
 
-        if not config.pretokenizer:
-            self.tokenizer.pretokenizer = pre_tokenizers.Sequence([])
-        elif config.pretokenizer != "default":
-            assert isinstance(config.pretokenizer, list)
-            pretokenizers_list = []
-            for one_pretokenizer in config.pretokenizer:
-                pretokenizers_list.append(self._get_processor(pretokenizer_factory, one_pretokenizer))
-            self.tokenizer.pretokenizer = pre_tokenizers.Sequence(pretokenizers_list)
+        if not config.pre_tokenizer:
+            self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
+        elif config.pre_tokenizer != "default":
+            assert isinstance(config.pre_tokenizer, list)
+            pre_tokenizers_list = []
+            for one_pre_tokenizer in config.pre_tokenizer:
+                pre_tokenizers_list.append(self._get_processor(pretokenizer_factory, one_pre_tokenizer))
+            self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence(pre_tokenizers_list)
 
         if not config.post_processor:
             raise KeyError("The tokenizer is not support disable default tokenizers post processer. (You can delete the config manully)")
         elif config.post_processor != "default":
             self.tokenizer.post_processor = self._get_processor(tokenizer_postprocessor_factory, config.post_processor)
 
-        if config.normalizer is None:
+        if not config.normalizer:
             self.tokenizer.normalizer = normalizers.Sequence([])
         elif config.normalizer != "default":
             assert isinstance(config.normalizer, list)

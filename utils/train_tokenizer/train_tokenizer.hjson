@@ -1,0 +1,11 @@
+{
+    "tokenizer_type": "wordpiece",
+    "special_tokens": ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"],
+    "unk_token": '[UNK]',
+    "vocab_size": 30000,
+    "train_files": ['./wikitext-103-raw/wiki.train.raw', './wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/wiki.test.raw'],
+    /*"train_files": ['./wikitext-103-raw/wiki.test.raw'],*/
+    "normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config
+    "pre_tokenizer": ["whitespace"], // if don't set this, will use the default normalizer from config
+    "post_processor": null, 
+}

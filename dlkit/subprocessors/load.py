@@ -14,9 +14,7 @@ class LoadConfig(Config, GetConfigByStageMixin):
         "config":{
             "base_dir": "."
             "predict":{
-                "token_ids": "./token_ids.pkl",
-                "embedding": "./embedding.pkl",
-                "label_ids": "./label_ids.pkl",
+                "meta": "./meta.pkl",
             },
             "online": [
                 "predict", //base predict
@@ -50,5 +48,7 @@ class Load(ISubProcessor):
 
     def process(self, data: Dict)->Dict:
         for key, value in self.config.items():
-            data[key] = self.load(value)
+            meta = self.load(value)
+            for key, value in meta:
+                data[key] = value
         return data

@@ -2,6 +2,7 @@ from dlkit.utils.config import Config, GetConfigByStageMixin
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
+import copy
 import os
 
 
@@ -14,14 +15,13 @@ class SaveConfig(Config, GetConfigByStageMixin):
         "config":{
             "base_dir": "."
             "train":{
-                "data.train": "./train.pkl",
-                "data.dev": "./dev.pkl",
-                "token_ids": "./token_ids.pkl",
-                "embedding": "./embedding.pkl",
-                "label_ids": "./label_ids.pkl",
+                "processed": "processed_data.pkl", // all data
+                "meta": {
+                    "meta.pkl": ['label_ids', 'embedding'] //only for next time use
+                }
             },
             "predict": {
-                "data.predict": "./predict.pkl"
+                "processed": "processed_data.pkl",
             }
         }
     },
@@ -48,10 +48,15 @@ class Save(ISubProcessor):
         return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
 
     def process(self, data: Dict)->Dict:
-        for key, value in self.config.items():
-            subkeys = key.split('.')
-            _data = data
-            for subkey in subkeys:
-                _data = _data[subkey]
-            self.save(_data, value)
+        if not self.config:
+            return data
+        if "processed" in self.config:
+            self.save(data, self.config['processed'])
+        if "meta" in self.config:
+            for save_path, save_fileds in self.config['meta'].items():
+                assert isinstance(save_fileds, list)
+                meta_data = {}
+                for field in save_fileds:
+                    meta_data[field] = copy.deepcopy(data[field])
+                self.save(meta_data, save_path)
         return data

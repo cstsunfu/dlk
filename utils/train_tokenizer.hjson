@@ -1,7 +1,0 @@
-{
-    "tokenizer_type": "wordpiece",
-    "special_tokens": ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"],
-    "unk_token": '[UNK]',
-    "vocab_size": 30000,
-    "train_files": ['./wikitext-103-raw/wiki.train.raw', './wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/wiki.test.raw'],
-}

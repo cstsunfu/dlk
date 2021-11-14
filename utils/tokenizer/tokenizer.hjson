@@ -1,0 +1,6 @@
+{
+    /*"tokenizer_files": ['./wikitext-103-raw/wiki.train.raw', './wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/wiki.test.raw'],*/
+    /*"tokenizer_output_files": ['./wikitext-103-raw/token_wiki.train.raw', './token_wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/token_wiki.test.raw'],*/
+    "tokenize_files": ['./wikitext-103-raw/wiki.test.raw'],
+    "tokenize_output_files": ['./wikitext-103-raw/token_wiki.test.raw'],
+}

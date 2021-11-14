@@ -32,7 +32,7 @@
         }
     },
     "subprocessor@tokenizer":{
-        "_base": "wordpiece_tokenizer",
+        "_base": "fast_tokenizer",
         "config": { 
             "train": { 
                 "config_path": "*@*",
