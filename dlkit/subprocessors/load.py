@@ -27,7 +27,7 @@ class LoadConfig(Config, GetConfigByStageMixin):
 
     def __init__(self, stage, config):
         self.config = self.get_config(stage, config)
-        self.base_dir:str = config.get("base_dir", ".")
+        self.base_dir:str = config.get('config').get("base_dir", ".")
 
 
 @subprocessor_register('load')

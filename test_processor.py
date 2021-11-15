@@ -1,9 +1,10 @@
 import pickle as pkl
 
-train = pkl.load(open('./train.pkl', 'rb'))
-for i in train:
-    print(train[i])
+train = pkl.load(open('./test_cls/meta.pkl', 'rb'))
+print(train)
 
+data = pkl.load(open('./test_cls/processed_data.pkl', 'rb'))
+print(data)
 
 
 

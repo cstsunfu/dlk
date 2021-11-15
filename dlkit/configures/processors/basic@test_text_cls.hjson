@@ -8,11 +8,11 @@
         "config":{
             "base_dir": "."
             "predict":{
-                "label_vocab": "./label_vocab.pkl",
+                "meta": "./meta.pkl",
             },
             "online": [
                 "predict", //base predict
-                {   // special config, update predict, is this case, the config is null, means use all config from "predict"
+                {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
                 }
             ]
         }
@@ -22,12 +22,13 @@
         "config":{
             "base_dir": "."
             "train":{
-                "data.train": "./train.pkl",
-                "data.dev": "./dev.pkl",
-                "label_vocab": "./label_vocab.pkl",
+                "processed": "processed_data.pkl", // all data
+                "meta": {
+                    "meta.pkl": ['label_vocab'] //only for next time use
+                }
             },
             "predict": {
-                "data.predict": "./predict.pkl"
+                "processed": "processed_data.pkl",
             }
         }
     },

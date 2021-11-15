@@ -29,7 +29,7 @@ class SaveConfig(Config, GetConfigByStageMixin):
 
     def __init__(self, stage, config):
         self.config = self.get_config(stage, config)
-        self.base_dir:str = config.get("base_dir", ".")
+        self.base_dir:str = config.get('config').get("base_dir", ".")
 
 @subprocessor_register('save')
 class Save(ISubProcessor):
@@ -45,6 +45,8 @@ class Save(ISubProcessor):
     def save(self, data, path):
         """TODO: Docstring for load.
         """
+        if not os.path.exists(self.base_dir):
+            os.mkdir(self.base_dir)
         return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
 
     def process(self, data: Dict)->Dict:

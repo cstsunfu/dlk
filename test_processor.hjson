@@ -13,7 +13,7 @@
     "subprocessor@tokenizer":{
         "config": { 
             "train": { 
-                "config_path": "./tokenizer.json",
+                "config_path": "../tokenizer.json",
                 "process_data": [
                     ["sentence", { "is_pretokenized": true}], 
                 ],
