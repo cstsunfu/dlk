@@ -1,12 +1,12 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import Config, GetConfigByStageMixin
+from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 # import multiprocessing as mp
 
 @subprocessor_config_register('token2id')
-class Token2IDConfig(Config, GetConfigByStageMixin):
+class Token2IDConfig(object):
     """docstring for Token2IDConfig
         {
             "_name": "token2id",
@@ -30,7 +30,7 @@ class Token2IDConfig(Config, GetConfigByStageMixin):
 
     def __init__(self, stage, config: Dict):
 
-        self.config = self.get_config(stage, config)
+        self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         self.data_pair = self.config.pop('data_pair', {})
         if self.data_set and (not self.data_pair):

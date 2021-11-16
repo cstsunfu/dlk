@@ -4,25 +4,28 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from dlkit.models import MODEL_REGISTRY, MODEL_CONFIG_REGISTRY
-from dlkit.utils.config import Config
+from dlkit.utils.config import ConfigTool
+from . import task_config_register, task_register
 
 import pytorch_lightning as pl
 
-class TaskConfig(Config):
+@task_config_register('basic')
+class TaskConfig(object):
     """docstring for TaskConfig"""
-    def __init__(self, **kwargs):
-        super(TaskConfig, self).__init__(**kwargs)
-        self.model_config = kwargs.pop("model")[0]
-        self.optimizer_config = kwargs.pop("optimizer")[0]
+    def __init__(self, config):
+        super(TaskConfig, self).__init__()
+        self.model_config = config.get("model", {})
+        self.optimizer_config = config.pop("optimizer", {})
+        self.loss_config = config.pop('loss', {})
 
-
+@task_register("basic")
 class Task(pl.LightningModule):
     """
     """
-
     def __init__(self, task_config: TaskConfig, paras: Config):
         super().__init__()
         self.task_config = task_config
+        model_config = task_config.get("model")
         self.model = self.init_module(self.task_config.model_config, MODEL_REGISTRY, MODEL_CONFIG_REGISTRY)
 
     def init_module(self, config: Dict, module_register: Dict, module_config_register: Dict, update_config: Dict={}, module_para: Dict={}):

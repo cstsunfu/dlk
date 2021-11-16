@@ -1,11 +1,11 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import Config, GetConfigByStageMixin
+from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 
 
 @subprocessor_config_register('token_gather')
-class TokenGatherConfig(Config, GetConfigByStageMixin):
+class TokenGatherConfig(object):
     """Config eg.
         {
             "_name": "token_gather",
@@ -24,7 +24,7 @@ class TokenGatherConfig(Config, GetConfigByStageMixin):
     """
 
     def __init__(self, stage, config):
-        self.config = self.get_config(stage, config)
+        self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
 
         self.gather_columns = self.config.get("gather_columns")

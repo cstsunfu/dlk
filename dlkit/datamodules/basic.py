@@ -1,7 +1,7 @@
 import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union
-from dlkit.utils.config import Config
+from dlkit.utils.config import ConfigTool
 from dlkit.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
@@ -9,7 +9,7 @@ import torch
 import copy
 
 @datamodule_config_register('basic')
-class BasicDatamoduleConfig(Config):
+class BasicDatamoduleConfig(object):
     """docstring for BasicDatamoduleConfig
        datamodule: {
            "_name": "basic",
@@ -33,24 +33,24 @@ class BasicDatamoduleConfig(Config):
            }
        }, 
     """
-    def __init__(self, **kwargs):
-        super(BasicDatamoduleConfig, self).__init__(**kwargs)
-        self.key_type_pairs = kwargs.get('key_type_pairs', {})
-        self.pin_memory = kwargs.get('pin_memory', False)
+    def __init__(self, config):
+        super(BasicDatamoduleConfig, self).__init__()
+        self.key_type_pairs = config.get('key_type_pairs', {})
+        self.pin_memory = config.get('pin_memory', False)
         if self.pin_memory is None:
             self.pin_memory = torch.cuda.is_available()
-        self.shuffle = kwargs.get('shuffle', { 
+        self.shuffle = config.get('shuffle', { 
             "train": True, 
             "predict": False, 
             "valid": False,
             "test": False,
             "online": False 
         })
-        self.train_batch_size = kwargs.get('train_batch_size', 32)
-        self.test_batch_size = kwargs.get('predict_batch_size', 32)
-        self.valid_batch_size = kwargs.get('predict_batch_size', 32)
-        self.predict_batch_size = kwargs.get('predict_batch_size', 32)
-        self.online_batch_size = kwargs.get('online_batch_size', 1)
+        self.train_batch_size = config.get('train_batch_size', 32)
+        self.test_batch_size = config.get('predict_batch_size', 32)
+        self.valid_batch_size = config.get('predict_batch_size', 32)
+        self.predict_batch_size = config.get('predict_batch_size', 32)
+        self.online_batch_size = config.get('online_batch_size', 1)
 
 
 class BasicDataset(Dataset):

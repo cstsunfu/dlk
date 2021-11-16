@@ -1,5 +1,5 @@
 from dlkit.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
-from dlkit.utils.config import Config, GetConfigByStageMixin
+from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable
 import json
 
@@ -13,7 +13,7 @@ from tokenizers.models import WordPiece
 
 
 @subprocessor_config_register('fast_tokenizer')
-class FastTokenizerConfig(Config, GetConfigByStageMixin):
+class FastTokenizerConfig(object):
     """
     docstring for GeneralTokenizerConfig
     {
@@ -54,7 +54,7 @@ class FastTokenizerConfig(Config, GetConfigByStageMixin):
     }
     """
     def __init__(self, stage, config):
-        self.config = self.get_config(stage, config)
+        self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         self.config_path = self.config.get('config_path')
         self.normalizer = self.config.get('normalizer', "default")

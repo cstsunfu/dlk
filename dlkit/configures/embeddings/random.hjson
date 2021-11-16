@@ -1,0 +1,8 @@
+{
+    config: {
+        vocab_size: "*@*",
+        embedding_dim: "*@*",
+        dropout: 0, //dropout rate
+    },
+    _name: "random",
+}

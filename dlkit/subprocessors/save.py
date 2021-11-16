@@ -1,4 +1,4 @@
-from dlkit.utils.config import Config, GetConfigByStageMixin
+from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
@@ -7,7 +7,7 @@ import os
 
 
 @subprocessor_config_register('save')
-class SaveConfig(Config, GetConfigByStageMixin):
+class SaveConfig(object):
     """
     Config eg.
     {
@@ -28,7 +28,7 @@ class SaveConfig(Config, GetConfigByStageMixin):
     """
 
     def __init__(self, stage, config):
-        self.config = self.get_config(stage, config)
+        self.config = ConfigTool.get_config_by_stage(stage, config)
         self.base_dir:str = config.get('config').get("base_dir", ".")
 
 @subprocessor_register('save')

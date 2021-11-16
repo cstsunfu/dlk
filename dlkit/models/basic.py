@@ -1,22 +1,24 @@
 import torch.nn as nn
 from . import model_register, model_config_register
-from typing import Dict
-from dlkit.utils.config import Config
-# from dlkit.modules.embeddings import EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY
-# from dlkit.modules.encoders import ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY
-# from dlkit.modules.decoders import DECODER_REGISTRY, DECODER_CONFIG_REGISTRY
-EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, DECODER_REGISTRY, DECODER_CONFIG_REGISTRY = 1, 2, 3, 4, 5, 6
+from typing import Dict, List
+from dlkit.utils.config import ConfigTool
+from dlkit.utils.base_module import BaseModule
+import torch
+from dlkit.layers.embeddings import embedding_config_register, embedding_register
+from dlkit.layers.encoders import encoder_config_register, encoder_register
+from dlkit.layers.decoders import decoder_config_register, decoder_register
 
         
 @model_config_register('basic')
-class BasicModelConfig(Config):
+class BasicModelConfig(object):
     """docstring for BasicModelConfig"""
-    def __init__(self, **kwargs):
-        super(BasicModelConfig, self).__init__(**kwargs)
-        self.embedding, self.embedding_config = self.get_embedding(kwargs.pop("embedding", "none"))
-        self.encoder, self.encoder_config = self.get_encoder(kwargs.pop("encoder", "none"))
-        self.decoder, self.decoder_config = self.get_decoder(kwargs.pop("decoder", "none"))
-        self.config = kwargs.pop('config', {})
+    def __init__(self, config):
+        super(BasicModelConfig, self).__init__()
+
+        self.embedding, self.embedding_config = self.get_embedding(config.pop("embedding", "identity"))
+        self.encoder, self.encoder_config = self.get_encoder(config.pop("encoder", "identity"))
+        self.decoder, self.decoder_config = self.get_decoder(config.pop("decoder", "identity"))
+        self.config = config.pop('config', {})
 
     def get_embedding(self, config):
         """get embedding config and embedding module
@@ -25,7 +27,7 @@ class BasicModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_leaf_module(EMBEDDING_REGISTRY, EMBEDDING_CONFIG_REGISTRY, "embedding", config)
+        return ConfigTool.get_leaf_module(embedding_register, embedding_config_register, "embedding", config)
         
     def get_encoder(self, config):
         """get encoder config and encoder module
@@ -34,20 +36,19 @@ class BasicModelConfig(Config):
         :returns: TODO
 
         """
-        return self._get_leaf_module(ENCODER_REGISTRY, ENCODER_CONFIG_REGISTRY, "encoder", config)
+        return ConfigTool.get_leaf_module(encoder_register, encoder_config_register, "encoder", config)
         
     def get_decoder(self, config):
         """get decoder config and decoder module
 
         :config: TODO
         :returns: TODO
-
         """
-        return self._get_leaf_module(DECODER_REGISTRY, DECODER_CONFIG_REGISTRY, "decoder", config)
+        return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config)
 
 
 @model_register('basic')
-class BasicModel(nn.Module):
+class BasicModel(BaseModule):
     """
     Sequence labeling model
     """
@@ -58,36 +59,67 @@ class BasicModel(nn.Module):
         self.encoder = config.encoder(config.encoder_config)
         self.decoder = config.decoder(config.decoder_config)
         self.config = config.config
+        self._provided_keys = self.config.get("provided_keys", [])
 
-    def forward(self, **inputs: Dict)->Dict:
-        """predict forward
-        :**inputs: Dict: TODO
-        :returns: TODO
+    def provide_keys(self)->List[str]:
+        """TODO: should provide_keys in model?
         """
-        embedding = self.embedding(**inputs)
-        encode_outputs = self.encoder(embedding=embedding, **inputs)
-        decode_outputs = self.decoder(encode_outputs, **inputs)
+        return self.decoder.provided_keys()
+
+    def check_keys_are_provided(self, provide: List[str]=[])->None:
+        """TODO: should check keys in model?
+        """
+        self._provided_keys = self._provided_keys + provide
+        self.embedding.check_keys_are_provided(self._provided_keys)
+        self.encoder.check_keys_are_provided(self.embedding.provide_keys())
+        self.decoder.check_keys_are_provided(self.encoder.provide_keys())
+
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """forward
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        embedding_outputs = self.embedding(inputs)
+        encode_outputs = self.encoder(embedding_outputs)
+        decode_outputs = self.decoder(encode_outputs)
         return decode_outputs
 
-    def training_step(self, **inputs: Dict)->Dict:
-        """TODO: Docstring for training_step.
-
-        :**inputs: Dict: TODO
-        :returns: TODO
+    def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """predict
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
-        embedding = self.embedding.training_step(**inputs)
-        encode_outputs = self.encoder.training_step(embedding=embedding, **inputs)
-        decode_outputs = self.decoder.training_step(encode_outputs, **inputs)
+        embedding_outputs = self.embedding.predict_step(inputs)
+        encode_outputs = self.encoder.predict_step(embedding_outputs)
+        decode_outputs = self.decoder.predict_step(encode_outputs)
+        return decode_outputs
+        
+    def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """training
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        embedding_outputs = self.embedding.training_step(inputs)
+        encode_outputs = self.encoder.training_step(embedding_outputs)
+        decode_outputs = self.decoder.training_step(encode_outputs)
         return decode_outputs
 
-    def valid_step(self, **inputs: Dict)->Dict:
-        """TODO: Docstring for training_step.
-
-        :**inputs: Dict: TODO
-        :returns: TODO
-
+    def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """valid
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
-        embedding = self.embedding.valid_step(**inputs)
-        encode_outputs = self.encoder.valid_step(embedding=embedding, **inputs)
-        decode_outputs = self.decoder.valid_step(encode_outputs, **inputs)
+        embedding_outputs = self.embedding.validation_step(inputs)
+        encode_outputs = self.encoder.validation_step(embedding_outputs)
+        decode_outputs = self.decoder.validation_step(encode_outputs)
+        return decode_outputs
+
+    def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """valid
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        embedding_outputs = self.embedding.test_step(inputs)
+        encode_outputs = self.encoder.test_step(embedding_outputs)
+        decode_outputs = self.decoder.test_step(encode_outputs)
         return decode_outputs

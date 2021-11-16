@@ -1,7 +1,8 @@
 {
     config: {
         input_size: 256,
-        output_size: 2
+        output_size: 2,
+        dropout: 0.1,
     },
     _name: "test_linear",
 }

@@ -3,6 +3,7 @@ import os
 import copy
 from typing import Callable, List, Dict, Union
 from dlkit.utils.register import Register
+from dlkit.utils.config import Config
 import json
 
 config_parser_register = Register("Config parser register")
@@ -120,7 +121,7 @@ class BaseConfigParser(object):
 
         # using base_config to update all possible_config
         if possible_config_list:
-            possible_config_list = [self.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]
+            possible_config_list = [Config.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]
         else:
             possible_config_list = [self.base_config]
 
@@ -147,32 +148,6 @@ class BaseConfigParser(object):
                 print(config)
             raise ValueError('REPEAT CONFIG')
         return return_list
-
-
-    def do_update_config(self, config: dict, update_config: dict={}) ->Dict:
-        """use update_config update the config
-
-        :config: will updated config
-        :returns: updated config
-
-        """
-        def _inplace_update_dict(_base, _new):
-            """TODO: Docstring for rec_update_dict.
-            :returns: TODO
-
-            """
-            for item in _new:
-                if (item not in _base) or (not isinstance(_base[item], Dict)):
-                # if item not in _base, or _base[item] is not Dict
-                    _base[item] = _new[item]
-                elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
-                    _inplace_update_dict(_base[item], _new[item])
-                else:
-                    raise AttributeError(f"The base config and update config is not match. \nbase: {json.dumps(_base, indent=4)}, \nnew: {json.dumps(_new, indent=4)}. ")
-                
-        config = copy.deepcopy(config)
-        _inplace_update_dict(config, update_config)
-        return config
 
     def get_kind_module_base_config(self, abstract_config: Union[dict, str], kind_module: str="") -> List[dict]:
         """get the whole config of 'kind_module' by given abstract_config
@@ -373,22 +348,28 @@ class ConfigConfigParser(BaseConfigParser):
 class EncoderConfigParser(BaseConfigParser):
     """docstring for EncoderConfigParser"""
     def __init__(self, config_file):
-        super(EncoderConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/modules/encoders/')
+        super(EncoderConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/encoders/')
 
 
 @config_parser_register('decoder')
 class DecoderConfigParser(BaseConfigParser):
     """docstring for DecoderConfigParser"""
     def __init__(self, config_file):
-        super(DecoderConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/modules/decoders/')
+        super(DecoderConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/decoders/')
 
 
 @config_parser_register('embedding')
 class EmbeddingConfigParser(BaseConfigParser):
     """docstring for EmbeddingConfigParser"""
     def __init__(self, config_file):
-        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/modules/embeddings/')
+        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/embeddings/')
 
+
+@config_parser_register('module')
+class ModuleConfigParser(BaseConfigParser):
+    """docstring for ModuleConfigParser"""
+    def __init__(self, config_file):
+        super(ModuleConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/modules/')
 
 @config_parser_register('processor')
 class ProcessorConfigParser(BaseConfigParser):

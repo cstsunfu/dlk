@@ -2,38 +2,10 @@
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
-from dlkit.utils.config import Config
+from dlkit.utils.register import Register
 
-EMBEDDING_REGISTRY = {}
-EMBEDDING_CONFIG_REGISTRY = {}
-
-def embedding_config_register(name: str = "") -> Callable:
-    """
-    register configures
-    """
-    def decorator(config):
-        if name.strip() == "":
-            raise ValueError('You must set a name for {}'.format(config.__name__))
-
-        if name in EMBEDDING_CONFIG_REGISTRY:
-            raise ValueError('The embedding config name {} is already registed.'.format(name))
-        EMBEDDING_CONFIG_REGISTRY[name] = config
-        return config
-    return decorator
-
-def embedding_register(name: str = "") -> Callable:
-    """
-    register embeddings
-    """
-    def decorator(embedding):
-        if name.strip() == "":
-            raise ValueError('You must set a name for {}'.format(embedding.__name__))
-
-        if name in EMBEDDING_REGISTRY:
-            raise ValueError('The embedding name {} is already registed.'.format(name))
-        EMBEDDING_REGISTRY[name] = embedding
-        return embedding
-    return decorator
+embedding_config_register = Register("Embedding config register.")
+embedding_register = Register("Embedding register.")
 
 
 def import_embeddings(embeddings_dir, namespace):
@@ -64,4 +36,4 @@ class EmbeddingOutput(object):
 
 # automatically import any Python files in the embeddings directory
 embeddings_dir = os.path.dirname(__file__)
-import_embeddings(embeddings_dir, "embeddings")
+import_embeddings(embeddings_dir, "dlkit.embeddings")

@@ -1,5 +1,5 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import Config, GetConfigByStageMixin
+from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from tokenizers import Tokenizer
@@ -7,7 +7,7 @@ import numpy as np
 
 
 @subprocessor_config_register('token_embedding')
-class TokenEmbeddingConfig(Config, GetConfigByStageMixin):
+class TokenEmbeddingConfig(object):
     """Config eg.
         {
             "_name": "token_embedding",
@@ -23,7 +23,7 @@ class TokenEmbeddingConfig(Config, GetConfigByStageMixin):
     """
 
     def __init__(self, stage, config):
-        self.config = self.get_config(stage, config)
+        self.config = ConfigTool.get_config_by_stage(stage, config)
 
         self.embedding_file = self.config.get("embedding_file")
         self.tokenizer = self.config.get("tokenizer")
@@ -67,7 +67,7 @@ class TokenEmbedding(ISubProcessor):
         """
         for token in vocab:
             if token not in embedding_dict:
-                embedding_dict[token] = [np.random.normal(scale=0.01) for _ in range(self.config.embedding_size)]
+                embedding_dict[token] = [np.random.normal(scale=2.0/self.config.embedding_size) for _ in range(self.config.embedding_size)]
         return embedding_dict
 
     def process(self, data: Dict)->Dict:

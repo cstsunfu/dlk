@@ -85,3 +85,40 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         """predict forward
         """
         return self.predict_step(inputs)
+
+
+class SimpleModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
+    """docstring for SimpleModule, SimpleModule, all train/predict/test/validation step call the forward"""
+
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """predict forward
+        """
+        raise NotImplementedError
+
+    def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """predict
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        raise NotImplementedError
+        
+    def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """training
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        return self(inputs)
+
+    def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """valid
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        return self(inputs)
+
+    def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """valid
+        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
+        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """
+        return self(inputs)

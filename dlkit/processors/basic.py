@@ -4,10 +4,10 @@ from typing import Union, Dict
 from dlkit.utils.parser import BaseConfigParser
 from dlkit.processors import IProcessor, processor_config_register, processor_register
 from dlkit.subprocessors import subprocessor_config_register, subprocessor_register
-from dlkit.utils.config import Config
+from dlkit.utils.config import ConfigTool
 
 @processor_config_register('basic')
-class BasicProcessorConfig(Config):
+class BasicProcessorConfig(object):
     """docstring for BasicProcessorConfig
     config e.g.
     {
