@@ -3,7 +3,7 @@ import os
 import copy
 from typing import Callable, List, Dict, Union
 from dlkit.utils.register import Register
-from dlkit.utils.config import Config
+from dlkit.utils.config import ConfigTool
 import json
 
 config_parser_register = Register("Config parser register")
@@ -121,7 +121,7 @@ class BaseConfigParser(object):
 
         # using base_config to update all possible_config
         if possible_config_list:
-            possible_config_list = [Config.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]
+            possible_config_list = [ConfigTool.do_update_config(self.base_config, possible_config) for possible_config in possible_config_list]
         else:
             possible_config_list = [self.base_config]
 
@@ -301,13 +301,6 @@ class ModelConfigParser(BaseConfigParser):
         super(ModelConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/models/')
         
 
-@config_parser_register('multi_models')
-class MultiModelConfigParser(BaseConfigParser):
-    """docstring for MultiModelConfigParser"""
-    def __init__(self, config_file):
-        super(MultiModelConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/multi_models/')
-
-
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):
     """docstring for OptimizerConfigParser"""
@@ -315,12 +308,11 @@ class OptimizerConfigParser(BaseConfigParser):
         super(OptimizerConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/optimizers/')
 
 
-@config_parser_register('multi_optimizers')
-class MultiOptimizerConfigParser(BaseConfigParser):
-    """docstring for MultiOptimizerConfigParser"""
+@config_parser_register('loss')
+class LossConfigParser(BaseConfigParser):
+    """docstring for LossConfigParser"""
     def __init__(self, config_file):
-        super(MultiOptimizerConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/multi_optimizers/')
-
+        super(LossConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/losses/')
 
 @config_parser_register('config')
 class ConfigConfigParser(BaseConfigParser):

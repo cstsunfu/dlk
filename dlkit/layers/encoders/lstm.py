@@ -18,6 +18,7 @@ class LSTMConfig(object):
             num_layers: 1,
             dropout: 0.1, // dropout between layers
             dropout_last: true, //dropout the last layer output or not
+            return_logits: "encoder_logits",
         },
         _name: "lstm",
     }
@@ -25,6 +26,7 @@ class LSTMConfig(object):
 
     def __init__(self, config: Dict):
         super(LSTMConfig, self).__init__()
+        self.return_logits = config.get('config').pop('return_logits')
         self.lstm_config = config
         
 
@@ -35,6 +37,7 @@ class LSTM(SimpleModule):
         self._provide_keys = ['embedding']
         self._required_keys = ['embedding', 'attention_mask']
         self._provided_keys = []
+        self.config = config
 
         self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
 
@@ -56,4 +59,8 @@ class LSTM(SimpleModule):
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        return self.lstm(inputs)
+        inputs = self.lstm(inputs)
+        if self.config.return_logits:
+            inputs[self.config.return_logits] = inputs['embedding']
+
+        return inputs

@@ -7,6 +7,7 @@
 *.zip
 *.model
 *.pt
+*.sc
 *.bin
 */logs/*
 tokenizer.json

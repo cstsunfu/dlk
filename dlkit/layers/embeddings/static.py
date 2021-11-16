@@ -53,7 +53,6 @@ class StaticEmbedding(SimpleModule):
         self.config = config
         self.dropout = nn.Dropout(self.config.dropout)
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding), freeze=self.config.freeze)
-
         
     def provide_keys(self):
         """TODO: should provide_keys in model?

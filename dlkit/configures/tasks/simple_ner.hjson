@@ -3,42 +3,39 @@
         "multi_models.model_1.decoder.config.input_size": "decoder.input_size",
         "multi_models.model_2.encoder": "encoder"
     },
-    multi_models: {
-        _name: "distill",
-        model_1: {
-            _link: {
-                "encoder.config.output_size": "decoder.config.input_size"
-            },
-            _name: "basic",
-            decoder: {
-                config: {
-                    output_size: 8
-                }
-            },
-            encoder: {
-                config: {
-                    _search: {
-                        output_size: [
-                            3,
-                            5
-                        ]
-                    }
-                }
+    _name: "distill",
+    model@teacher: {
+        _link: {
+            "encoder.config.output_size": "decoder.config.input_size"
+        },
+        _name: "basic",
+        decoder: {
+            config: {
+                output_size: 8
             }
         },
-        model_2: {
-            _base: "lstm_linear_ner",
-            decoder: {
-                config: {
-                    output_size: 8
-                }
-            },
-            encoder: {
-                config: {
-                    output_size: 8
+        encoder: {
+            config: {
+                _search: {
+                    output_size: [
+                        3,
+                        5
+                    ]
                 }
             }
         }
     },
-    _name: "basic"
+    model@student: {
+        _base: "lstm_linear_ner",
+        decoder: {
+            config: {
+                output_size: 8
+            }
+        },
+        encoder: {
+            config: {
+                output_size: 8
+            }
+        }
+    }
 }
