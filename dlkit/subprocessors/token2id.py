@@ -54,7 +54,7 @@ class Token2ID(ISubProcessor):
 
 
     def process(self, data: Dict)->Dict:
-        vocab = data[self.config.vocab]
+        vocab = Vocabulary.load(data[self.config.vocab])
 
         def get_index_wrap(key, x):
             """TODO: Docstring for get_index_wrap.

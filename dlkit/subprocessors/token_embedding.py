@@ -15,7 +15,7 @@ class TokenEmbeddingConfig(Config, GetConfigByStageMixin):
                 "train": { // only train stage using
                     "embedding_file": "*@*",
                     "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
                     "embedding_size": 200,
                 }
             }

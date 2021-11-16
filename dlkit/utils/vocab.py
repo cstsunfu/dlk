@@ -19,6 +19,23 @@ class Vocabulary(object):
             self.idx2word[self.word_num] = unknown
             self.word_num += 1
 
+    def dumps(self):
+        """TODO: Docstring for dump_to_dict.
+        :returns: TODO
+
+        """
+        return self.__dict__
+
+    @classmethod
+    def load(cls, attr):
+        """TODO: Docstring for dump_to_dict.
+        :returns: TODO
+
+        """
+        vocab = cls()
+        vocab.__dict__ = attr
+        return vocab
+
     def get_index(self, word):
         """get the index of word from this vocab
         """

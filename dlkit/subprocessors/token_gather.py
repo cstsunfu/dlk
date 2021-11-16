@@ -56,5 +56,5 @@ class TokenGather(ISubProcessor):
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:
                 self.vocab.auto_update(data_set[column])
-        data[self.config.deliver] = self.vocab
+        data[self.config.deliver] = self.vocab.__dict__
         return data

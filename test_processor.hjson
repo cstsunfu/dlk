@@ -21,5 +21,16 @@
         }
     },
     "subprocessor@label_to_id":{
+    },
+    "subprocessor@token_embedding": {
+        "config":{
+            "train": { // only train stage using
+                "embedding_file": "./utils/embedding.txt",
+                "embedding_size": 50,
+            }
+        }
+    },
+    "_link": {
+       "subprocessor@tokenizer.config.train.config_path": "subprocessor@token_embedding.config.train.tokenizer"
     }
 }
