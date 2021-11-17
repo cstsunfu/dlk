@@ -8,12 +8,17 @@
                 "online": ["online"]
             },
             "config_path": "*@*",
+            "truncation": {     // if this is set to None or empty, will not do trunc
+                "max_length": 512,
+                "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
+            },
             /*"normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config*/
             "normalizer": "default", // if don't set this, will use the default normalizer from config
             /*"pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config*/
             "pre_tokenizer": "default", // if don't set this, will use the default normalizer from config
             "post_processor": "default", // you cannot set this to None, this must be "default" or other post_processor(the tokenizers lib does not support remove the default post_processor)
-            "prefix": "",   //the map target prefix
+
+            "prefix": "",   //the filed_map map target prefix
             "filed_map": { // this is the default value, you can provide other name
                 "tokens": "tokens",
                 "ids": "ids",
@@ -25,6 +30,7 @@
                 "overflowing": "overflowing",
                 "sequence_ids": "sequence_ids",
             }, // the tokenizer output(the key) map to the value
+
             "data_type": "*@*", // single or pair, if not provide, will calc by len(process_data)
             "process_data": "*@*",
             /*"data_type": "single", // single or pair, if not provide, will calc by len(process_data)*/

@@ -1,7 +1,7 @@
 import hjson
 from tokenizers import Tokenizer
-from tokenizers.models import WordPiece
-from tokenizers.trainers import WordPieceTrainer
+from tokenizers.models import WordPiece, BPE
+from tokenizers.trainers import WordPieceTrainer, BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
 import argparse
 from tokenizers import normalizers
@@ -16,17 +16,23 @@ def get_trainer(trainer_name:str):
     :returns: TODO
 
     """
-    if trainer_name == "wordpiece":
-        return WordPieceTrainer
-    else:
+    trainers = {
+        "wordpiece": WordPieceTrainer,
+        "bpe": BpeTrainer
+    }
+    if trainer_name not in trainers:
         raise KeyError(f"There is not a trainer named {trainer_name}")
+    return trainers[trainer_name]
 
 
 def get_model(model_name:str):
-    if model_name == "wordpiece":
-        return WordPiece
-    else:
+    models = {
+        "wordpiece": WordPiece,
+        "bpe": BPE,
+    }
+    if model_name not in models:
         raise KeyError(f"There is not a model named {model_name}")
+    return models[model_name]
 
 
 def get_processor(factory, one_processor):
@@ -116,7 +122,7 @@ if __name__ == "__main__":
     # print(args)
     Trainer = get_trainer(args.tokenizer_type)
     Model = get_model(args.tokenizer_type)
-    trainer = Trainer(vocab_size=args.vocab_size, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
+    trainer = Trainer(vocab_size=args.vocab_size, special_tokens=args.special_tokens)
 
     tokenizer = Tokenizer(Model(unk_token=args.unk_token))
 

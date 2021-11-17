@@ -32,4 +32,4 @@ class Module(nn.Module):
 
 model = Module()
 for p in model.named_parameters():
-    print(p)
+    print(p[0])

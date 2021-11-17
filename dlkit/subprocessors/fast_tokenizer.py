@@ -26,6 +26,10 @@ class FastTokenizerConfig(object):
                     "online": ["online"]
                 },
                 "config_path": "*@*",
+                "truncation": {     // if this is set to None or empty, will not do trunc
+                    "max_length": 512,
+                    "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
+                },
                 "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
                 "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
@@ -37,6 +41,9 @@ class FastTokenizerConfig(object):
                     "type_ids": "type_ids",
                     "special_tokens_mask": "special_tokens_mask",
                     "offsets": "offsets",
+                    "word_ids": "word_ids",
+                    "overflowing": "overflowing",
+                    "sequence_ids": "sequence_ids",
                 }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": [
@@ -60,6 +67,7 @@ class FastTokenizerConfig(object):
         self.normalizer = self.config.get('normalizer', "default")
         self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
+        self.truncation = self.config.get("truncation", {})
         prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
@@ -74,6 +82,7 @@ class FastTokenizerConfig(object):
         self.process_data = self.config.get("process_data", []) # must provide
         self.data_type = self.config.get("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
 
+
 @subprocessor_register('fast_tokenizer')
 class FastTokenizer(ISubProcessor):
     """
@@ -86,42 +95,42 @@ class FastTokenizer(ISubProcessor):
         pretokenizer_factory = PreTokenizerFactory()
         tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()
         tokenizer_normalizer_factory = TokenizerNormalizerFactory()
-        self.filed_map = config.filed_map
-        self.data_set = config.data_set
-        self.process_data = config.process_data
-        self.data_type = config.data_type
+        self.config = config
 
-        if self.data_type=='single':
-            assert len(self.process_data) == 1
+        if self.config.data_type=='single':
+            assert len(self.config.process_data) == 1
             self._process = self._single
-        elif self.data_type == 'pair':
-            assert len(self.process_data) == 2
+        elif self.config.data_type == 'pair':
+            assert len(self.config.process_data) == 2
             self._process = self._pair
         else:
             raise KeyError('We only support single or pair data now.')
 
-        if not config.pre_tokenizer:
+        if not self.config.pre_tokenizer:
             self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
-        elif config.pre_tokenizer != "default":
+        elif self.config.pre_tokenizer != "default":
             assert isinstance(config.pre_tokenizer, list)
             pre_tokenizers_list = []
             for one_pre_tokenizer in config.pre_tokenizer:
                 pre_tokenizers_list.append(self._get_processor(pretokenizer_factory, one_pre_tokenizer))
             self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence(pre_tokenizers_list)
 
-        if not config.post_processor:
+        if not self.config.post_processor:
             raise KeyError("The tokenizer is not support disable default tokenizers post processer. (You can delete the config manully)")
-        elif config.post_processor != "default":
+        elif self.config.post_processor != "default":
             self.tokenizer.post_processor = self._get_processor(tokenizer_postprocessor_factory, config.post_processor)
 
-        if not config.normalizer:
+        if not self.config.normalizer:
             self.tokenizer.normalizer = normalizers.Sequence([])
-        elif config.normalizer != "default":
+        elif self.config.normalizer != "default":
             assert isinstance(config.normalizer, list)
             normalizers_list = []
             for one_normalizer in config.normalizer:
                 normalizers_list.append(self._get_processor(tokenizer_normalizer_factory, one_normalizer))
             self.tokenizer.normalizer = normalizers.Sequence(normalizers_list)
+
+        if self.config.truncation:
+            self.tokenizer.enable_truncation(max_length=self.config.truncation.get('max_length'), stride=0, strategy=self.config.truncation.get('strategy', 'longest_first'))
 
     def _get_processor(self, factory, one_processor):
         """TODO: Docstring for _get_processor.
@@ -189,8 +198,8 @@ class FastTokenizer(ISubProcessor):
         return data
 
     def process(self, data: Dict)->Dict:
-        for data_set_name in self.data_set:
+        for data_set_name in self.config.data_set:
             data_set = data['data'][data_set_name]
-            data_set = self._process(data_set, self.process_data, self.filed_map)
+            data_set = self._process(data_set, self.process_data, self.config.filed_map)
             data['data'][data_set_name] = data_set
         return data

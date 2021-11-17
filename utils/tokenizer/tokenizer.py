@@ -1,5 +1,6 @@
 import hjson
 from tokenizers import Tokenizer
+from typing import Dict
 import argparse
 
 
@@ -21,6 +22,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--truncation", type=int, default=0, help="truncation length"
+    )
+
+    parser.add_argument(
+        "--truncation_strategy", type=str, default='longest_first', help="longest_first, only_first, only_second", Optional=['longest_first', "only_first", 'only_second']
+    )
+
+    parser.add_argument(
         "--tokenize_files", type=list, default=[], help="tokenize files."
     )
     parser.add_argument(
@@ -34,12 +43,15 @@ if __name__ == "__main__":
            setattr(args, key, value) 
 
     tokenizer = Tokenizer.from_file(args.tokenizer_config)
-    print(len(tokenizer.get_vocab()))
-    # assert len(args.tokenize_output_files) == len(args.tokenize_files)
-    # for inp, out in zip(args.tokenize_files, args.tokenize_output_files):
-        # with open(inp, 'r') as f:
-            # lines = f.readlines()
-        # tokens = tokenizer.encode_batch(lines, is_pretokenized=False)
-        # with open(out, 'w') as f:
-            # for token in tokens:
-                # f.write(' '.join(token.tokens)+'\n')
+    # print(tokenizer.padding)
+
+    if args.truncation:
+        tokenizer.enable_truncation(args.truncation, stride=0, strategy=args.truncation_strategy)
+    assert len(args.tokenize_output_files) == len(args.tokenize_files)
+    for inp, out in zip(args.tokenize_files, args.tokenize_output_files):
+        with open(inp, 'r') as f:
+            lines = f.readlines()
+        tokens = tokenizer.encode_batch(lines, is_pretokenized=False)
+        with open(out, 'w') as f:
+            for token in tokens:
+                f.write(' '.join(token.tokens)+'\n')

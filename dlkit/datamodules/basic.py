@@ -2,7 +2,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union
 from dlkit.utils.config import ConfigTool
-from dlkit.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule
+from dlkit.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
@@ -14,8 +14,8 @@ class BasicDatamoduleConfig(object):
        datamodule: {
            "_name": "basic",
            "config": {
-               "padding": 0,
                "pin_memory": None,
+               "collate_fn": "default",
                "shuffle": {
                    "train": true,
                    "predict": false,
@@ -27,6 +27,10 @@ class BasicDatamoduleConfig(object):
                     'x': 'float', 
                     'y': 'int'
                 },
+               "key_padding_pairs": { //default all 0
+                    'x': 0, 
+                    'y': 0
+                },
                "train_batch_size": 32,
                "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
                "online_batch_size": 1,
@@ -35,7 +39,10 @@ class BasicDatamoduleConfig(object):
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__()
+        config = config.get('config')
         self.key_type_pairs = config.get('key_type_pairs', {})
+        self.key_padding_pairs = config.get('key_type_pairs', {})
+        self.collate_fn = config.get('collate_fn', 'default')
         self.pin_memory = config.get('pin_memory', False)
         if self.pin_memory is None:
             self.pin_memory = torch.cuda.is_available()
@@ -69,24 +76,6 @@ class BasicDataset(Dataset):
             one_ins[key] = torch.tensor(self.data.iloc[idx][key], dtype=self.type_map[key_type])
         one_ins['_index'] = torch.tensor([idx],  dtype=torch.long)
         return one_ins
-        
-
-def base_collate(batch):
-    keys = batch[0].keys()
-    data_map: Dict[str, Union[List[torch.Tensor], torch.Tensor]] = {}
-    for key in keys:
-        data_map[key] = []
-    for key in keys:
-        for one_ins in batch:
-            data_map[key].append(one_ins[key])
-    for key in data_map:
-        try:
-            data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=0)
-        except:
-            # if the data_map[key] is size 0, we can concat them
-            if data_map[key][0].size():
-                raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
-            data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=0).squeeze()
 
 
 @datamodule_config_register("basic")
@@ -94,27 +83,20 @@ class BasicDatamodule(IBaseDataModule):
     def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, pd.DataFrame]):
         super().__init__()
 
-        self.key_type_pairs = config.key_type_pairs
-        self.pin_memory = config.pin_memory
-        self.shuffle: Dict[str, bool] = config.shuffle
-        self.train_batch_size = config.train_batch_size
-        self.valid_batch_size = config.valid_batch_size
-        self.test_batch_size = config.test_batch_size
-        self.predict_batch_size = config.predict_batch_size
-        self.online_batch_size = config.online_batch_size
+        self.config = config
         self.train_data = None
         self.valid_data = None
         self.test_data = None
         self.predict_data = None
         if 'train' in data:
-            self.train_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'train'), data['train'])
+            self.train_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'train'), data['train'])
         if "test" in data:
-            self.test_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'test'), data['test'])
+            self.test_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'test'), data['test'])
         if "valid" in data:
-            self.valid_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'valid'), data['valid'])
+            self.valid_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'valid'), data['valid'])
         if "predict" in data:
-            self.predict_data = BasicDataset(self.real_key_type_pairs(self.key_type_pairs, data, 'predict'), data['predict'])
-        self.collate_fn = base_collate
+            self.predict_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'predict'), data['predict'])
+        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs)
 
     def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
         copy_key_type_pairs = copy.deepcopy(key_type_pairs)
@@ -128,28 +110,27 @@ class BasicDatamodule(IBaseDataModule):
             copy_key_type_pairs.pop(key)
         return copy_key_type_pairs
 
-
     def train_dataloader(self):
         if not self.train_data:
             return None
-        return DataLoader(self.train_data, batch_size=self.train_batch_size, collate_fn=self.collate_fn, pin_memory=self.pin_memory)
+        return DataLoader(self.train_data, batch_size=self.config.train_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('train', True))
 
     def predict_dataloader(self):
         """
         """
         if not self.predict_data:
             return None
-        return DataLoader(self.predict_data, batch_size=self.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.pin_memory)
+        return DataLoader(self.predict_data, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False))
 
     def val_dataloader(self):
         if not self.valid_data:
             return None
-        return DataLoader(self.valid_data, batch_size=self.valid_batch_size, collate_fn=self.collate_fn, pin_memory=self.pin_memory)
+        return DataLoader(self.valid_data, batch_size=self.config.valid_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('valid', False))
 
     def test_dataloader(self):
         if not self.test_data:
             return None
-        return DataLoader(self.test_data, batch_size=self.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.pin_memory)
+        return DataLoader(self.test_data, batch_size=self.config.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('test', False))
 
     def online_dataloader(self):
         # return DataLoader(self.mnist_test, batch_size=self.batch_size)

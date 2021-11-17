@@ -2,14 +2,45 @@
 
 import importlib
 import os
-from typing import Callable, Dict, Type
-from dlkit.utils.config import Config
+from typing import Dict, Any
 from dlkit.utils.register import Register
 from pytorch_lightning import LightningDataModule
 import abc
+from torch.nn.utils.rnn import pad_sequence
 
 datamodule_config_register = Register("Datamodule config register")
 datamodule_register = Register("Datamodule register")
+
+
+collate_register = Register('Collate function register.')
+
+
+
+@collate_register('default')
+class DefaultCollate(object):
+    """docstring for DefaultCollate"""
+    def __init__(self, **config):
+        super(DefaultCollate, self).__init__()
+        self.key_padding_pairs = config.get("key_padding_pairs", {})
+
+    def __call__(self, batch):
+        keys = batch[0].keys()
+        data_map: Dict[str, Any] = {}
+        for key in keys:
+            data_map[key] = []
+        for key in keys:
+            for one_ins in batch:
+                data_map[key].append(one_ins[key])
+        for key in data_map:
+            try:
+                data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0))
+            except:
+                # if the data_map[key] is size 0, we can concat them
+                if data_map[key][0].size():
+                    raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
+                data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0)).squeeze()
+        return data_map
+
 
 class IDataModule(metaclass=abc.ABCMeta):
     """docstring for ModuleStepMixin"""
