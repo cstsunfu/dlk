@@ -1,9 +1,19 @@
+import torch
 
-outputs = []
 
-outputs_map = {}
-for batch in outputs:
-    for key in batch:
-        outputs_map[key] = outputs_map.get(key, []).append(batch[key])
+
+print(torch.tensor([[[0], [2], [4], [6]], [[1], [3], [5], [7]]]).shape)
+print(torch.tensor([[0], [1], [2], [3]]).shape)
+# outputs = []
+
+# outputs_map = {}
+# for batch in outputs:
+    # for key in batch:
+        # if key not in outputs_map:
+            # outputs_map[key] = []
+        # outputs_map[key].append(batch[key])
+
+# for key in outputs_map:
+    # outputs_map[key] = torch.cat(outputs_map[key], dim=0)
     
     

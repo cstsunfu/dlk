@@ -33,7 +33,7 @@ class MNISTDataModule(pl.LightningDataModule):
         :returns: TODO
 
         """
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False, num_workers=4)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False, num_workers=2)
         # return None
 
     def val_dataloader(self):
@@ -41,8 +41,8 @@ class MNISTDataModule(pl.LightningDataModule):
         :returns: TODO
 
         """
-        # return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False, num_workers=4)
+        # return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False, num_workers=2)
         # return None
 
     def predict_dataloader(self):
@@ -50,14 +50,14 @@ class MNISTDataModule(pl.LightningDataModule):
         :returns: TODO
 
         """
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False)
 
     def train_dataloader(self):
         """TODO: Docstring for predict_dataloader.
         :returns: TODO
 
         """
-        return DataLoader(self.dataset, batch_size=4, collate_fn=self.collate_fn, pin_memory=False, num_workers=4)
+        return DataLoader(self.dataset, batch_size=2, collate_fn=self.collate_fn, pin_memory=False, num_workers=2)
         # return DataLoader([])
 
 
@@ -65,7 +65,7 @@ class LitAutoEncoder(pl.LightningModule):
     def __init__(self):
         super().__init__()
         self.encoder = nn.Linear(16, 64)
-        self.decoder = nn.Linear(64, 2)
+        self.decoder = nn.Linear(64, 7)
         self.all_data = {}
 
     def forward(self, x: Dict[str, torch.Tensor]):
@@ -73,6 +73,17 @@ class LitAutoEncoder(pl.LightningModule):
         x = x['x']
         embedding = self.encoder(x)
         return embedding
+
+    def predict_step(self, batch, batch_idx):
+        embedding = self(batch)
+        return {"embedding": embedding, "index": batch["_index"]}
+
+    def predict_step_end(self, outputs):
+        """TODO: Docstring for predict_epoch_end.
+        :returns: TODO
+
+        """
+        print("outputs: ", outputs)
 
     def training_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -128,29 +139,47 @@ class LitAutoEncoder(pl.LightningModule):
             # print("start sleep")
             # time.sleep(1)
             # print("end sleep")
-        return {"loss": loss, "index": batch['_index'], "x_hat": x_hat, 'y': y}
+        return {"loss": loss.unsqueeze(0), "index": batch['_index'], "x_hat": x_hat, 'y': y}
 
     def test_epoch_end(self, outputs):
         """TODO: Docstring for test_epoch_end.
         :returns: TODO
 
         """
-        # self.log("result", outputs)
-        gather_output = self.all_gather(outputs)
-        if self.local_rank==0:
-            # print(f"test_epoch_end outputs:", outputs)
-            print(f"All gather :", gather_output)
-            # for key in gather_output:
-                # print(f"{key}\t: {gather_output[key].shape}")
-        # self.log('------------------------------', rank_zero_only=True)
-        # mean = torch.mean(self.all_gather(outputs))
-        # print(f"Mean: {mean}")
+        print(f"origin outputs on rank {self.local_rank}: {outputs}")
+        def proc_dist_outputs(dist_outputs):
+            """gather all distributed outputs to outputs which is like in a single worker.
 
-        # # When logging only on rank 0, don't forget to add
-        # # ``rank_zero_only=True`` to avoid deadlocks on synchronization.
-        # if self.trainer.is_global_zero:
-            # self.log("my_reduced_metric", mean, rank_zero_only=True)
-        # print(self.train_data)
+            :dist_outputs: the inputs of pytorch_lightning *_epoch_end when using ddp
+            :returns: the inputs of pytorch_lightning *_epoch_end when only run on one worker.
+            """
+            outputs = []
+            for dist_output in dist_outputs:
+                one_output = {}
+                for key in dist_output:
+                    try:
+                        one_output[key] = torch.cat(torch.swapaxes(dist_output[key], 0, 1).unbind(), dim=0)
+                    except:
+                        raise KeyError(f"{key}: {dist_output[key]}")
+                outputs.append(one_output)
+            return outputs
+        if self.trainer.world_size>1:
+            dist_outputs = self.all_gather(outputs)
+            if self.local_rank in [0, -1]:
+                outputs = proc_dist_outputs(dist_outputs)
+
+        if self.local_rank in [0, -1]:
+            key_all_batch_map = {}
+            for batch in outputs:
+                for key in batch:
+                    if key not in key_all_batch_map:
+                        key_all_batch_map[key] = []
+                    key_all_batch_map[key].append(batch[key])
+            key_all_ins_map = {}
+            for key in key_all_batch_map:
+                key_all_ins_map[key] = torch.cat(key_all_batch_map[key], dim=0)
+
+            # print(key_all_ins_map)
         return outputs
 
     def configure_optimizers(self):
@@ -173,7 +202,7 @@ class CustomDataset(Dataset):
         one_ins = {}
         for key, key_type in self.get:
             one_ins[key] = torch.tensor(self.data.iloc[idx][key], dtype=self.type_map[key_type])
-        one_ins['_index'] = torch.tensor([idx],  dtype=torch.long)
+        one_ins['_index'] = torch.tensor(idx,  dtype=torch.long)
         return one_ins
 
 # class SimpleCustomBatch:
@@ -216,18 +245,18 @@ def collate_wrapper(batch):
     return data_map
 
 if __name__ == "__main__":
-    np.random.seed(20)
-    inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(20)]
+    pl.seed_everything(seed=21, workers=False)
+    inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(8)]
     # print(inp)
-    target = list(np.random.randint(0, 1, (20)))
+    target = [np.random.randint(0, 7) for _ in range(8)]
     # print(target)
 
-    label = ["label"]*20
+    label = ["label"+str(i) for i in target]
 
     data = pd.DataFrame(data={"x": inp, 'y': target, "label": label})
     dataset = CustomDataset(data)
 
-    # train_loader = DataLoader(dataset, batch_size=4, collate_fn=collate_wrapper, pin_memory=False)
+    # train_loader = DataLoader(dataset, batch_size=2, collate_fn=collate_wrapper, pin_memory=False)
 
     data_module = MNISTDataModule(dataset, collate_wrapper)
     # class MNISTDataModule(pl.LightningDataModule):
@@ -243,14 +272,27 @@ if __name__ == "__main__":
     # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
     # trainer = pl.Trainer(gpus=8) (if you have GPUs)
     # trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
-    trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=2)
+    trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=3)
     # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
+
+    # ||   f"The dataloader, {name}, does not have many workers which may be a bottleneck."
+    # || {'loss': tensor([1.7302, 2.0444, 1.8584, 2.0197, 1.6216]), 'index': tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]), 'x_hat': tensor([[-0.1372, -0.0799, -0.5360,  0.2338,  0.4960,  0.4023, -0.3246],
+    # ||         [0.5022, -0.1290, -0.1485, -0.1233,  0.0878, -0.6274,  0.0223],
+    # ||         [ 0.5856, -0.0941, -0.5043,  0.4242,  0.0402, -0.2722, -0.5075],
+    # ||         [ 0.4972,  0.0438, -0.1166,  0.6076,  0.3012, -0.2274, -0.0862],
+    # ||         [ 0.7239,  0.0819,  0.2844,  0.5649, -0.1423, -0.0531, -0.0930],
+    # ||         [ 0.5377,  0.5609,  0.0337,  0.4377, -0.3391, -0.6256,  0.0529],
+    # ||         [-0.3093,  0.1956, -0.2559, -0.4937, -0.1110,  0.1913,  0.2810],
+    # ||         [ 0.0496, -0.4714, -0.3664, -0.3089,  0.4195,  0.1058, -0.3020],
+    # ||         [ 0.2277,  0.2494, -0.0622, -0.2946, -0.2783, -0.0608, -0.8347]]), 'y': tensor([5, 4, 5, 4, 3, 2, 0, 0, 0])}
 
     # trainer.test(model=autoencoder)
     # trainer.fit(model=autoencoder, datamodule=data_module)
-    # # print(trainer.predict(model=autoencoder, dataloaders=data_module))
+    # print(trainer.predict(model=autoencoder, dataloaders=data_module))
+    # print(trainer.world_size)
+    # trainer.predict(model=autoencoder, dataloaders=data_module)
     # autoencoder.load_state_dict(torch.load('./test.pt'))
     # # print('test ')
     # autoencoder.to_torchscript("script.sc")
-    print("Print", trainer.test(autoencoder, datamodule=data_module))
+    trainer.test(autoencoder, datamodule=data_module)
     # torch.save(autoencoder.state_dict(), './test.pt')

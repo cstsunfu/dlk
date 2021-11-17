@@ -38,7 +38,10 @@ class DefaultCollate(object):
                 # if the data_map[key] is size 0, we can concat them
                 if data_map[key][0].size():
                     raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
-                data_map[key] = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0)).squeeze()
+                _data = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0)).squeeze()
+                if not _data.size():
+                    _data.unsqueeze_(0)
+                data_map[key] = _data
         return data_map
 
 

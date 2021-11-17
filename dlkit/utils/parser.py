@@ -294,6 +294,13 @@ class TaskConfigParser(BaseConfigParser):
         super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
 
+@config_parser_register('imodel')
+class IModelConfigParser(BaseConfigParser):
+    """docstring for IModelConfigParser"""
+    def __init__(self, config_file):
+        super(IModelConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/imodels/')
+
+
 @config_parser_register('model')
 class ModelConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""

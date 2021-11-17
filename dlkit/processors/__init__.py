@@ -3,7 +3,6 @@
 import importlib
 import os
 from typing import Callable, Dict, Type
-from dlkit.utils.config import Config
 from dlkit.utils.register import Register
 import abc
 
