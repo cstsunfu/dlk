@@ -11,3 +11,4 @@
 *.bin
 */logs/*
 tokenizer.json
+token.json
