@@ -74,7 +74,7 @@ class BasicDataset(Dataset):
         one_ins = {}
         for key, key_type in self.key_type_pairs.items():
             one_ins[key] = torch.tensor(self.data.iloc[idx][key], dtype=self.type_map[key_type])
-        one_ins['_index'] = torch.tensor([idx],  dtype=torch.long)
+        one_ins['_index'] = torch.tensor(idx,  dtype=torch.long)
         return one_ins
 
 

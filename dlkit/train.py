@@ -1,12 +1,20 @@
+from logging import Manager
 import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
-# from models import MODEL_REGISTRY, MODEL_CONFIG_REGISTRY
-from dlkit.utils.parser import CONFIG_PARSER_REGISTRY 
+from dlkit.utils.parser import config_parser_register 
+from dlkit.utils.config import ConfigTool
+from dlkit.datamodules import datamodule_register, datamodule_config_register
+from dlkit.managers import manager_register, manager_config_register
+from dlkit.imodels import imodel_register, imodel_config_register
+from dlkit.postprocessors import postprocessor_register, postprocessor_config_register
+import pickle as pkl
+import uuid
 import json
 
 #TODO: Fix the base_module method name,
 #TODO: lightning module using ddp, should use training/validation/predict_step_end to collections all part gpu output?
+#TODO:  get trainer  by config
 '''
 from argparse import ArgumentParser
 
@@ -53,12 +61,16 @@ def training_step(self, batch, batch_idx):
 
 class Train(object):
     """docstring for Train"""
-    def __init__(self, config_file):
+    def __init__(self, config):
         super(Train, self).__init__()
-        self.config_file = self.load_hjson_file(config_file)
-        self.focus = self.config_file.pop('_focus', {})
-        parser = CONFIG_PARSER_REGISTRY['task'](self.config_file)
-        self.configs = parser.parser()
+        if not isinstance(config, dict):
+            self.config = hjson.load(open(config), object_pairs_hook=dict)
+        else:
+            self.config = config
+        self.focus = self.config.pop('_focus', {})
+
+        self.configs = config_parser_register.get('task')(self.config).parser_with_check()
+
         self.config_names = []
         for possible_config in self.configs:
             config_name = []
@@ -68,27 +80,55 @@ class Train(object):
                 for t in trace:
                     config_point = config_point[t]
                 config_name.append(to+"="+str(config_point))
-            self.config_names.append('_'.join(config_name))
+            if config_name:
+                self.config_names.append('_'.join(config_name))
+            else:
+                self.config_names.append(uuid.uuid1())
 
         if len(self.config_names) != len(set(self.config_names)):
             for config, name in zip(self.configs, self.config_names):
-                print(json.dumps(config, indent=4))
-                print(name)
+                print(f"{name}:\n{json.dumps(config, indent=4)}")
             raise NameError('The config_names is not unique.')
-        for config, name in zip(self.configs, self.config_names):
-            print(json.dumps(config, indent=4))
-            print(name)
 
+    def run_once(self, config, name):
+        """TODO: Docstring for run_once.
+        """
+        self.pre_run_hook()
+        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('datamodule'))
+        datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
+        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('manager'))
+        manager = Manager(ManagerConfig)
+        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('imodel'))
+        imodel = IModel(IModelConfig)
 
-    def load_hjson_file(self, file_name: str) -> Dict:
-        """load hjson file by file_name
+        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('postprocessor'))
+        imodel = IModel(IModelConfig)
+        imodel.post_process = PostProcessor(PostProcessorConfig)
+        manager.fit(model=imodel, datamodule=datamodule)
 
-        :file_name: TODO
+    def run(self):
+        """TODO: Docstring for run.
+        :returns: TODO
+        """
+        print(f"You have {len(self.config_names)} training config(s), so they all will be run.")
+        for i, (config, name) in enumerate(zip(self.configs, self.config_names)):
+            print(f"Runing {i}...")
+            self.run_once(config, name)
+
+    def get_data(self, config):
+        """TODO: Docstring for get_data.
         :returns: TODO
 
         """
-        json_file = hjson.load(open(file_name), object_pairs_hook=dict)
-        return json_file
+        return pkl.load(config.get('data_path'))
+
+    def pre_run_hook(self):
+        """TODO: Docstring for pre_run_hook.
+        :returns: TODO
+
+        """
+        pass
+        
 
 # Train('simple_ner')
 Train('./configures/tasks/simple_ner.hjson')
