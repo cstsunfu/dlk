@@ -9,6 +9,7 @@ import time
 import pytorch_lightning as pl
 from typing import Dict, List, Union
 from torch.nn.utils.rnn import pad_sequence
+import torch.optim as optim
 # TODO: train dataloader shuffle=True
     # other shuffle=False
 
@@ -62,6 +63,7 @@ class LitAutoEncoder(pl.LightningModule):
         super().__init__()
         self.encoder = nn.Linear(16, 64)
         self.decoder = nn.Linear(64, 7)
+        self.other = nn.Linear(8, 8)
         self.all_data = {}
 
     def forward(self, x: Dict[str, torch.Tensor]):
@@ -280,32 +282,47 @@ if __name__ == "__main__":
         # pass
     # # init model
     autoencoder = LitAutoEncoder()
-    autoencoder.train_data = data_module.dataset
+    optimizer = optim.AdamW(params=[ 
+        { "params": [p for p in autoencoder.encoder.parameters()], "lr": 0.3},
+        { "params": autoencoder.decoder.parameters(), "lr": 0.3},
+        { "params": autoencoder.other.parameters()},
+    ], lr=0.1
+    )
+    print(optimizer)
+    # print(list(autoencoder.parameters()))
 
-    # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
-    # trainer = pl.Trainer(gpus=8) (if you have GPUs)
-    # trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
-    trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=3)
-    # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
 
-    # ||   f"The dataloader, {name}, does not have many workers which may be a bottleneck."
-    # || {'loss': tensor([1.7302, 2.0444, 1.8584, 2.0197, 1.6216]), 'index': tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]), 'x_hat': tensor([[-0.1372, -0.0799, -0.5360,  0.2338,  0.4960,  0.4023, -0.3246],
-    # ||         [0.5022, -0.1290, -0.1485, -0.1233,  0.0878, -0.6274,  0.0223],
-    # ||         [ 0.5856, -0.0941, -0.5043,  0.4242,  0.0402, -0.2722, -0.5075],
-    # ||         [ 0.4972,  0.0438, -0.1166,  0.6076,  0.3012, -0.2274, -0.0862],
-    # ||         [ 0.7239,  0.0819,  0.2844,  0.5649, -0.1423, -0.0531, -0.0930],
-    # ||         [ 0.5377,  0.5609,  0.0337,  0.4377, -0.3391, -0.6256,  0.0529],
-    # ||         [-0.3093,  0.1956, -0.2559, -0.4937, -0.1110,  0.1913,  0.2810],
-    # ||         [ 0.0496, -0.4714, -0.3664, -0.3089,  0.4195,  0.1058, -0.3020],
-    # ||         [ 0.2277,  0.2494, -0.0622, -0.2946, -0.2783, -0.0608, -0.8347]]), 'y': tensor([5, 4, 5, 4, 3, 2, 0, 0, 0])}
 
-    # trainer.test(model=autoencoder)
-    # trainer.fit(model=autoencoder, datamodule=data_module)
-    # print(trainer.predict(model=autoencoder, dataloaders=data_module))
-    # print(trainer.world_size)
-    # trainer.predict(model=autoencoder, dataloaders=data_module)
-    # autoencoder.load_state_dict(torch.load('./test.pt'))
-    # # print('test ')
-    # autoencoder.to_torchscript("script.sc")
-    trainer.test(autoencoder, datamodule=data_module)
-    # torch.save(autoencoder.state_dict(), './test.pt')
+
+
+
+
+    # autoencoder.train_data = data_module.dataset
+
+    # # most basic trainer, uses good defaults (auto-tensorboard, checkpoints, logs, and more)
+    # # trainer = pl.Trainer(gpus=8) (if you have GPUs)
+    # # trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
+    # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=3)
+    # # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
+
+    # # ||   f"The dataloader, {name}, does not have many workers which may be a bottleneck."
+    # # || {'loss': tensor([1.7302, 2.0444, 1.8584, 2.0197, 1.6216]), 'index': tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]), 'x_hat': tensor([[-0.1372, -0.0799, -0.5360,  0.2338,  0.4960,  0.4023, -0.3246],
+    # # ||         [0.5022, -0.1290, -0.1485, -0.1233,  0.0878, -0.6274,  0.0223],
+    # # ||         [ 0.5856, -0.0941, -0.5043,  0.4242,  0.0402, -0.2722, -0.5075],
+    # # ||         [ 0.4972,  0.0438, -0.1166,  0.6076,  0.3012, -0.2274, -0.0862],
+    # # ||         [ 0.7239,  0.0819,  0.2844,  0.5649, -0.1423, -0.0531, -0.0930],
+    # # ||         [ 0.5377,  0.5609,  0.0337,  0.4377, -0.3391, -0.6256,  0.0529],
+    # # ||         [-0.3093,  0.1956, -0.2559, -0.4937, -0.1110,  0.1913,  0.2810],
+    # # ||         [ 0.0496, -0.4714, -0.3664, -0.3089,  0.4195,  0.1058, -0.3020],
+    # # ||         [ 0.2277,  0.2494, -0.0622, -0.2946, -0.2783, -0.0608, -0.8347]]), 'y': tensor([5, 4, 5, 4, 3, 2, 0, 0, 0])}
+
+    # # trainer.test(model=autoencoder)
+    # # trainer.fit(model=autoencoder, datamodule=data_module)
+    # # print(trainer.predict(model=autoencoder, dataloaders=data_module))
+    # # print(trainer.world_size)
+    # # trainer.predict(model=autoencoder, dataloaders=data_module)
+    # # autoencoder.load_state_dict(torch.load('./test.pt'))
+    # # # print('test ')
+    # # autoencoder.to_torchscript("script.sc")
+    # trainer.test(autoencoder, datamodule=data_module)
+    # # torch.save(autoencoder.state_dict(), './test.pt')

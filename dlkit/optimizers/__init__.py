@@ -3,9 +3,17 @@ import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
 from dlkit.utils.register import Register
+import torch.optim as optim
 
-optimizer_config_register = Register("Model config register.")
-optimizer_register = Register("Model register.")
+
+optimizer_config_register = Register("Optimizer config register.")
+optimizer_register = Register("Optimizer register.")
+
+optimizer_map = Register("Optimizer Map")
+
+optimizer_map.register('adamw')(optim.AdamW)
+optimizer_map.register('sgd')(optim.SGD)
+
 
 def import_optimizers(optimizers_dir, namespace):
     for file in os.listdir(optimizers_dir):

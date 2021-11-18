@@ -78,7 +78,7 @@ class LightningManager(object):
     """
     """
 
-    def __init__(self, config: LightningManagerConfig):
+    def __init__(self, config: LightningManagerConfig, name=""):
         super().__init__()
         self.manager = pl.Trainer(**config.__dict__)
 

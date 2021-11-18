@@ -15,6 +15,7 @@ import json
 #TODO: Fix the base_module method name,
 #TODO: lightning module using ddp, should use training/validation/predict_step_end to collections all part gpu output?
 #TODO:  get trainer  by config
+
 '''
 from argparse import ArgumentParser
 
@@ -90,22 +91,6 @@ class Train(object):
                 print(f"{name}:\n{json.dumps(config, indent=4)}")
             raise NameError('The config_names is not unique.')
 
-    def run_once(self, config, name):
-        """TODO: Docstring for run_once.
-        """
-        self.pre_run_hook()
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('datamodule'))
-        datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
-        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('manager'))
-        manager = Manager(ManagerConfig)
-        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('imodel'))
-        imodel = IModel(IModelConfig)
-
-        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('postprocessor'))
-        imodel = IModel(IModelConfig)
-        imodel.post_process = PostProcessor(PostProcessorConfig)
-        manager.fit(model=imodel, datamodule=datamodule)
-
     def run(self):
         """TODO: Docstring for run.
         :returns: TODO
@@ -113,7 +98,18 @@ class Train(object):
         print(f"You have {len(self.config_names)} training config(s), so they all will be run.")
         for i, (config, name) in enumerate(zip(self.configs, self.config_names)):
             print(f"Runing {i}...")
-            self.run_once(config, name)
+            self.run_oneturn(config, name)
+
+    def run_oneturn(self, config, name):
+        """TODO: Docstring for run_oneturn.
+        """
+        self.pre_run_hook()
+
+        datamodule = self.get_datamodule(config)
+        manager = self.get_manager(config, name)
+        imodel = self.get_imodel(config)
+        imodel.postprocessor = self.get_postprocessor(config)
+        manager.fit(model=imodel, datamodule=datamodule)
 
     def get_data(self, config):
         """TODO: Docstring for get_data.
@@ -128,13 +124,47 @@ class Train(object):
 
         """
         pass
+
+    def get_datamodule(self, config):
+        """TODO: Docstring for get_datamodule.
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('datamodule'))
+        datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
+        return datamodule
         
+    def get_manager(self, config, name):
+        """TODO: Docstring for get_manager.
 
-# Train('simple_ner')
-Train('./configures/tasks/simple_ner.hjson')
-# Train('lstm_linear_ner')
-# Train('test')
-# Train('lstm')
-# print(task_config)
+        :config: TODO
+        :returns: TODO
 
+        """
+        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('manager'))
+        manager = Manager(ManagerConfig, name=name)
+        return manager
 
+    def get_postprocessor(self, config):
+        """TODO: Docstring for get_postprocessor.
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('postprocessor'))
+        return PostProcessor(PostProcessorConfig)
+        
+    def get_imodel(self, config):
+        """TODO: Docstring for get_imodel.
+
+        :config: TODO
+        :returns: TODO
+
+        """
+
+        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('imodel'))
+        imodel = IModel(IModelConfig)
+        return imodel

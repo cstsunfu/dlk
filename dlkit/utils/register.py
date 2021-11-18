@@ -41,6 +41,8 @@ class Register(object):
 
         """
         sp_name = name.split('@')
+        if sp_name not in self.registry:
+            raise KeyError(f"In '{self.register_name}' register, there is not a entry named '{sp_name}'")
         return self.registry[sp_name[0]]
 
     def __getitem__(self, name: str='')->Any:
