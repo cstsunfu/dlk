@@ -109,6 +109,7 @@ class Train(object):
         manager = self.get_manager(config, name)
         imodel = self.get_imodel(config)
         imodel.postprocessor = self.get_postprocessor(config)
+
         manager.fit(model=imodel, datamodule=datamodule)
 
     def get_data(self, config):

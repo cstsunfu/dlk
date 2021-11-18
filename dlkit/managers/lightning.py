@@ -3,8 +3,10 @@ from . import manager_register, manager_config_register
 from typing import Dict, List
 import torch
 import pytorch_lightning as pl
-
+import os
+from pytorch_lightning.callbacks import ModelCheckpoint
         
+
 @manager_config_register('lightning')
 class LightningManagerConfig(object):
     """docstring for LightningManagerConfig
@@ -13,10 +15,11 @@ class LightningManagerConfig(object):
     def __init__(self, config):
         super(LightningManagerConfig, self).__init__()
         config = config.get('config')
+        # TODO: callback
+        self.callbacks =config.get("callbacks", {}), 
         self.logger = config.get("logger", True)
-        self.enable_checkpointing = config.get("enable_checkpointing", True)
-        # TODO: add callback module, from parser callbacks config (list[{str: config}])  return a list of callbacks
-        self.callbacks = config.get("callbacks", None)
+        self.enable_checkpointing = config.get("enable_checkpointing", False) # use checkpoint callback
+
         self.accelerator = config.get("accelerator", None)
 
         self.default_root_dir = config.get("default_root_dir", None)
@@ -78,9 +81,17 @@ class LightningManager(object):
     """
     """
 
-    def __init__(self, config: LightningManagerConfig, name=""):
+    def __init__(self, config: LightningManagerConfig, rt_config: Dict):
         super().__init__()
+        config.callbacks = self.get_callbacks(config.callbacks, rt_config)
         self.manager = pl.Trainer(**config.__dict__)
+
+    def get_callbacks(self, config, rt_config):
+        """TODO: Docstring for get_callbacks.
+        :returns: TODO
+
+        """
+        return []
 
     def fit(self, **inputs):
         return self.manager.fit(**inputs)

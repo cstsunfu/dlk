@@ -1,5 +1,6 @@
-*/__pychche__/*
-*/lightning_logs/*
+**/__pychche__/**
+**/lightning_logs/**
+**/tb_logger/**
 *.pkl
 *.pyc
 *.raw
@@ -9,6 +10,6 @@
 *.pt
 *.sc
 *.bin
-*/logs/*
+**/logs/**
 tokenizer.json
 token.json
