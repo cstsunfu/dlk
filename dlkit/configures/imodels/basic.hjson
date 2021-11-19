@@ -1,0 +1,16 @@
+{
+    embedding: {
+        _base: "identity"
+    },
+    decoder: {
+        _base: "identity",
+        config: {
+        }
+    },
+    encoder: {
+        _base: "identity",
+        config: {
+        }
+    },
+    _name: "basic"
+}

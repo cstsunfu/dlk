@@ -1,0 +1,11 @@
+{
+    config: {
+        task_name: "",
+        weight: null, # or a list of value for every class
+        ignore_index: -1,
+        label_smoothing: 0.0, # torch>=1.10
+        pred_truth_pair: [], # overwrite the TASK_PRED_TRUTH_PAIRS
+        loss_scale: [], # scale the loss, if loss_scale 
+    },
+    _name: "cross_entropy",
+}

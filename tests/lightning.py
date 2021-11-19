@@ -11,6 +11,7 @@ from typing import Dict, List, Union
 from torch.nn.utils.rnn import pad_sequence
 import torch.optim as optim
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 # TODO: train dataloader shuffle=True
     # other shuffle=False
 
@@ -305,7 +306,8 @@ if __name__ == "__main__":
     # trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
     logger = TensorBoardLogger(save_dir="tb_logger", version="", name="", sub_dir='test_sub_dir_2')
     # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=3, default_root_dir='root_dir', logger=logger)
-    trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, logger=logger, default_root_dir='test_sub_dir_2')
+    
+    trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, logger=logger, default_root_dir='test_sub_dir_2', callbacks=[ModelCheckpoint(dirpath='checkpoint_dirpath', filename='checkpoint_filename')])
 
 # default logger used by trainer
     # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)

@@ -33,7 +33,7 @@ class CrossEntropyLossConfig(object):
     def __init__(self, config: Dict):
         super(CrossEntropyLossConfig, self).__init__()
         config = config.get('config', {})
-        self.task_name = config.get('task_name', 'classification') # must provide
+        self.task_name = config.get('task_name', "") # must provide
         self.weight = config.get('weight', None)
         self.ignore_index = config.get('ignore_index', -1)
         self.label_smoothing = config.get('label_smoothing', 0.0)

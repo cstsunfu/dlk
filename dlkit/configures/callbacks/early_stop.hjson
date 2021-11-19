@@ -1,0 +1,10 @@
+{
+    "_name": "early_stop",
+    "config":{
+        "monitor": "val_loss",
+        "patience": 3,
+        "min_delta": 0.0,
+        "check_on_train_epoch_end": null,
+        "strict": true,
+    }
+}

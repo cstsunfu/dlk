@@ -1,0 +1,11 @@
+
+{   //weight_average default
+    "_name": "weight_average",
+    "config": {
+        "swa_epoch_start": 0.8,
+        "swa_lrs": null,
+        "annealing_epochs": 10,
+        "annealing_strategy": 'cos',
+        "device": 'cpu',
+    }
+}

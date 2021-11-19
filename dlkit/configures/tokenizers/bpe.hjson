@@ -1,6 +1,0 @@
-{
-    config: {
-        model_path: './datasets/token_model'
-    },
-    _name: "bpe",
-}
