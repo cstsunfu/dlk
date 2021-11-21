@@ -18,7 +18,6 @@ logger = get_logger()
 class Train(object):
     """docstring for Trainer
         {
-            "_name": "config_name",
             "_focus": {
 
             },
@@ -29,7 +28,8 @@ class Train(object):
                 "data_path": "*@*",  # must provide
             },
             "task": {
-                "_base": task_name
+                "_name": task_name
+                ...
             }
         }
     """
@@ -40,6 +40,7 @@ class Train(object):
 
         self.focus = config.pop('_focus', {})
         self.configs = config_parser_register.get('root')(config).parser_with_check()
+        # logger.info(json.dumps(self.configs, indent=4))
         self.config_names = []
         for possible_config in self.configs:
             config_name = []
@@ -52,7 +53,7 @@ class Train(object):
             if config_name:
                 self.config_names.append('_'.join(config_name))
             else:
-                self.config_names.append(uuid.uuid1())
+                self.config_names.append(str(uuid.uuid1()))
 
         if len(self.config_names) != len(set(self.config_names)):
             for config, name in zip(self.configs, self.config_names):
@@ -72,6 +73,7 @@ class Train(object):
         """TODO: Docstring for run_oneturn.
         """
         self.pre_run_hook()
+        config = config['root']
         # save configure
         json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name), 'w'), ensure_ascii=False, indent=4)
 
@@ -79,7 +81,7 @@ class Train(object):
         manager = self.get_manager(config, name)
         imodel = self.get_imodel(config)
         # TODO: should register data to imodel? or using trainer.datamodule.data?
-        imodel.postprocessor = self.get_postprocessor(config)
+        # imodel.postprocessor = self.get_postprocessor(config)
 
         manager.fit(model=imodel, datamodule=datamodule)
 
@@ -88,7 +90,7 @@ class Train(object):
         :returns: TODO
 
         """
-        return pkl.load(config.get('data_path'))
+        return pkl.load(open(config['data_path'], 'rb'))
 
     def pre_run_hook(self):
         """TODO: Docstring for pre_run_hook.
@@ -104,7 +106,7 @@ class Train(object):
         :returns: TODO
 
         """
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('task').get('datamodule'))
+        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
         datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
         return datamodule
         

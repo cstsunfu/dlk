@@ -29,4 +29,4 @@ def import_optimizers(optimizers_dir, namespace):
 
 # automatically import any Python files in the optimizers directory
 optimizers_dir = os.path.dirname(__file__)
-import_optimizers(optimizers_dir, "dlkit.optimizers")
+import_optimizers(optimizers_dir, "dlkit.core.optimizers")

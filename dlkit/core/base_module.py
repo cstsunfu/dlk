@@ -1,13 +1,34 @@
 import torch
 import torch.nn as nn
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Any, Set
 import abc
 
 
 class ModuleOutputRenameMixin:
     """Just rename the output key name by config to adapt the input field of downstream module."""
-    def output_rename(self, result: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        return {self.config['output_map'].get(key, key): value for key, value in result.items()}
+    def dict_rename(self, input: Dict, output_map: Dict[str, str])->Dict:
+        if isinstance(input, dict):
+            output = {}
+            for key, value in input.items():
+                if key in output_map:
+                    output[output_map[key]] = value
+                else:
+                    output[key] = value
+            return output
+        else:
+            raise PermissionError("Not Defined")
+
+    def set_rename(self, input: Set, output_map: Dict[str, str])->Set:
+        if isinstance(input, set):
+            output = set()
+            for key in input:
+                if key in output_map:
+                    output.add(output_map[key])
+                else:
+                    output.add(key)
+            return output
+        else:
+            raise PermissionError("Not Defined")
         
 
 class IModuleIO(metaclass=abc.ABCMeta):

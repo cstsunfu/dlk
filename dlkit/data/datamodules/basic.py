@@ -2,7 +2,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union
 from dlkit.utils.config import ConfigTool
-from dlkit.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
+from dlkit.data.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
@@ -24,12 +24,13 @@ class BasicDatamoduleConfig(object):
                    "online": false
                },
                "key_type_pairs": {
-                    'x': 'float', 
-                    'y': 'int'
+                    'input_ids': 'int', 
+                },
+               "gen_mask": {
+                    'input_ids': 'attention_mask', 
                 },
                "key_padding_pairs": { //default all 0
-                    'x': 0, 
-                    'y': 0
+                    'input_ids': 0, 
                 },
                "train_batch_size": 32,
                "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
@@ -39,9 +40,10 @@ class BasicDatamoduleConfig(object):
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__()
-        config = config.get('config')
+        config = config['config']
         self.key_type_pairs = config.get('key_type_pairs', {})
-        self.key_padding_pairs = config.get('key_type_pairs', {})
+        self.key_padding_pairs = config.get('key_padding_pairs', {})
+        self.gen_mask = config.get("gen_mask", {})
         self.collate_fn = config.get('collate_fn', 'default')
         self.pin_memory = config.get('pin_memory', False)
         if self.pin_memory is None:
@@ -78,7 +80,7 @@ class BasicDataset(Dataset):
         return one_ins
 
 
-@datamodule_config_register("basic")
+@datamodule_register("basic")
 class BasicDatamodule(IBaseDataModule):
     def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, pd.DataFrame]):
         super().__init__()
@@ -96,7 +98,7 @@ class BasicDatamodule(IBaseDataModule):
             self.valid_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'valid'), data['valid'])
         if "predict" in data:
             self.predict_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'predict'), data['predict'])
-        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs)
+        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask)
 
     def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
         copy_key_type_pairs = copy.deepcopy(key_type_pairs)

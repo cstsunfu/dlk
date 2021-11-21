@@ -5,7 +5,7 @@ import torch.nn as nn
 
 TASK_PRED_TRUTH_PAIRS = {
     "classification": [
-        ["embedding", "label_id"]
+        ["logits", "label_id"]
     ],
     "mrc": [
         ["start_logits", "start_position"],

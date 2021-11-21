@@ -21,4 +21,4 @@ def import_modules(modules_dir, namespace):
 
 # automatically import any Python files in the modules directory
 modules_dir = os.path.dirname(__file__)
-import_modules(modules_dir, "dlkit.modules")
+import_modules(modules_dir, "dlkit.core.modules")

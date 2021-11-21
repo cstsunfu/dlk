@@ -13,3 +13,4 @@
 **/logs/**
 tokenizer.json
 token.json
+**/test_cls/**

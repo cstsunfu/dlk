@@ -1,0 +1,33 @@
+{
+    "root": {
+        "_name": "test_cls",
+        "_link": {"config.data_path": ['task.imodel.model.config.embedding_file']},
+        "_search": {},
+        "config": {
+            "save_dir": "test_cls",  # must provide
+            "data_path": "test_cls/processed_data.pkl",  # must provide
+        },
+        "task": {
+            "_name": "test_cls",
+            "manager": {
+                "_base": "lightning",
+            },
+            "imodel": {
+                "_base": "basic@cls",
+                "model": {
+                    "_base": "basic@linearlstm4cls",
+                    "config": {
+                        "embedding_dim": 50,
+                        "dropout": 0.1,
+                        "embedding_file": "*@*",
+                    },
+                },
+            },
+            "datamodule": {
+                "_base": "basic@test_text_cls",
+            },
+        },
+    },
+    "_focus": {
+    },
+}

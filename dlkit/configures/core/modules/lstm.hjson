@@ -1,11 +1,11 @@
 {
     config: {
         bidirectional: true,
-        hidden_size: 200, //the output is 2*hidden_size if use
-        input_size: 200,
-        proj_size: 200,
+        hidden_size: "*@*", //the output is 2*hidden_size if use
+        input_size: *@*,
+        proj_size: "*@*",
         num_layers: 1,
-        dropout: 0.1, // dropout between layers
+        dropout: 0.0, // dropout between layers
         dropout_last: true, //dropout the last layer output or not
     },
     _name: "lstm",

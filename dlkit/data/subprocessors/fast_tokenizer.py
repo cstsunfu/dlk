@@ -3,7 +3,7 @@ from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable
 import json
 
-from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from tokenizers import normalizers
 from tokenizers import pre_tokenizers
 
@@ -200,6 +200,6 @@ class FastTokenizer(ISubProcessor):
     def process(self, data: Dict)->Dict:
         for data_set_name in self.config.data_set:
             data_set = data['data'][data_set_name]
-            data_set = self._process(data_set, self.process_data, self.config.filed_map)
+            data_set = self._process(data_set, self.config.process_data, self.config.filed_map)
             data['data'][data_set_name] = data_set
         return data

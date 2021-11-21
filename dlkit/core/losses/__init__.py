@@ -21,4 +21,4 @@ def import_losses(losses_dir, namespace):
 
 # automatically import any Python files in the losses directory
 losses_dir = os.path.dirname(__file__)
-import_losses(losses_dir, "dlkit.losses")
+import_losses(losses_dir, "dlkit.core.losses")

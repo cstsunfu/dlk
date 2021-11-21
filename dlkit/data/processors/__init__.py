@@ -40,4 +40,4 @@ def import_processors(processors_dir, namespace):
 
 # automatically import any Python files in the models directory
 processors_dir = os.path.dirname(__file__)
-import_processors(processors_dir, "dlkit.processors")
+import_processors(processors_dir, "dlkit.data.processors")

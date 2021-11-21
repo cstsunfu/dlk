@@ -1,9 +1,20 @@
 {
-    config: {
-        input_size: 256,
-        output_size: 2,
-        dropout: 0.0, //the decoder output no need dropout
-        bias: true, // use bias or not in linear , if set to false, all the bias will be set to 0
+    "module": {
+        "_base": "linear",
     },
-    _name: "linear",
+    "config": {
+        "input_size": "*@*",
+        "output_size": "*@*",
+        "pool": null,
+        "dropout": "*@*", //the decoder output no need dropout
+        "return_logits": "decoder_logits",
+        "output_map": {}
+    },
+    "_link":{
+        "config.input_size": ["module.config.input_size"],
+        "config.output_size": ["module.config.output_size"],
+        "config.dropout": ["module.config.dropout"],
+        "config.pool": ["module.config.pool"],
+    },
+    "_name": "linear",
 }

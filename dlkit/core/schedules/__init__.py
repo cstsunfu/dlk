@@ -154,4 +154,4 @@ def import_schedules(schedules_dir, namespace):
 
 # automatically import any Python files in the schedules directory
 schedules_dir = os.path.dirname(__file__)
-import_schedules(schedules_dir, "dlkit.schedules")
+import_schedules(schedules_dir, "dlkit.core.schedules")

@@ -23,4 +23,4 @@ def import_callbacks(callbacks_dir, namespace):
 
 # automatically import any Python files in the models directory
 callbacks_dir = os.path.dirname(__file__)
-import_callbacks(callbacks_dir, "dlkit.callbacks")
+import_callbacks(callbacks_dir, "dlkit.core.callbacks")

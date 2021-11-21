@@ -40,10 +40,10 @@ class Register(object):
         :returns: TODO
 
         """
-        sp_name = name.split('@')
+        sp_name = name.split('@')[0]
         if sp_name not in self.registry:
             raise KeyError(f"In '{self.register_name}' register, there is not a entry named '{sp_name}'")
-        return self.registry[sp_name[0]]
+        return self.registry[sp_name]
 
     def __getitem__(self, name: str='')->Any:
         """wrap for object.get(name)

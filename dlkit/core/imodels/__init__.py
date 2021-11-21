@@ -74,4 +74,4 @@ def import_imodels(imodels_dir, namespace):
 
 # automatically import any Python files in the imodels directory
 imodels_dir = os.path.dirname(__file__)
-import_imodels(imodels_dir, "dlkit.imodels")
+import_imodels(imodels_dir, "dlkit.core.imodels")

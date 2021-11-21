@@ -11,15 +11,78 @@ from dlkit.core.layers.decoders import decoder_config_register, decoder_register
         
 @model_config_register('basic')
 class BasicModelConfig(object):
-    """docstring for BasicModelConfig"""
+    """docstring for BasicIModelConfig
+    {
+        embedding: {
+            _base: "static"
+            config: {
+                embedding_file: "*@*", //the embedding file, must be saved as numpy array by pickle
+                embedding_dim: "*@*",
+                //if the embedding_file is a dict, you should provide the dict trace to embedding
+                embedding_trace: ".", //default the file itself is the embedding
+                /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
+                /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
+                freeze: false, // is freeze
+                dropout: 0, //dropout rate
+                output_map: {},
+                return_logits: "embedding_logits",
+            },
+        },
+        decoder: {
+            _base: "linear",
+            config: {
+                input_size: "*@*",
+                output_size: "*@*",
+                pool: null,
+                dropout: "*@*", //the decoder output no need dropout
+                return_logits: "decoder_logits",
+                output_map: {}
+            },
+        },
+        encoder: {
+            _base: "lstm",
+            config: {
+                return_logits: "encoder_logits",
+                output_map: {},
+                hidden_size: "*@*",
+                input_size: *@*,
+                output_size: "*@*",
+                num_layers: 1,
+                dropout: "*@*", // dropout between layers
+            },
+        },
+        "initmethod": {
+            "_base": "range_norm"
+        },
+        "config": {
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
+            "embedding_file": "*@*",
+            "embedding_trace": "token_embedding",
+        },
+        _link: {
+            "config.embedding_dim": ["embedding.config.embedding_dim", 
+                                     "encoder.config.input_size", 
+                                     "encoder.config.output_size", 
+                                     "encoder.config.hidden_size", 
+                                     "decoder.config.output_size", 
+                                     "decoder.config.input_size"
+                                    ],
+            "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
+            "config.embedding_file": ['embedding.config.embedding_file'],
+            "config.embedding_trace": ['embedding.config.embedding_trace']
+        }
+        _name: "basic"
+    }
+    """
     def __init__(self, config):
         super(BasicModelConfig, self).__init__()
 
-        self.embedding, self.embedding_config = self.get_embedding(config.pop("embedding", "identity"))
-        self.encoder, self.encoder_config = self.get_encoder(config.pop("encoder", "identity"))
-        self.decoder, self.decoder_config = self.get_decoder(config.pop("decoder", "identity"))
-        self.init_method, self.init_method_config = self.get_init_method(config.get("init_method", 'basic'))
-        self.config = config.pop('config', {})
+        self.embedding, self.embedding_config = self.get_embedding(config["embedding"])
+        self.encoder, self.encoder_config = self.get_encoder(config["encoder"])
+        self.decoder, self.decoder_config = self.get_decoder(config["decoder"])
+        self.init_method, self.init_method_config = self.get_init_method(config["initmethod"])
+        self.config = config['config']
 
     def get_embedding(self, config):
         """get embedding config and embedding module

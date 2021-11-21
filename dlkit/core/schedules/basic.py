@@ -4,7 +4,7 @@ from . import schedule_register, schedule_config_register, schedule_map
 import copy
 
 
-@schedule_config_register("baisc")
+@schedule_config_register("basic")
 class BasicScheduleConfig(object):
     """docstring for LinearConfig
     {

@@ -22,6 +22,7 @@ class DefaultCollate(object):
     def __init__(self, **config):
         super(DefaultCollate, self).__init__()
         self.key_padding_pairs = config.get("key_padding_pairs", {})
+        self.gen_mask = config.get("gen_mask", {})
 
     def __call__(self, batch):
         keys = batch[0].keys()
@@ -31,6 +32,12 @@ class DefaultCollate(object):
         for key in keys:
             for one_ins in batch:
                 data_map[key].append(one_ins[key])
+        if self.gen_mask:
+            assert len(self.gen_mask) == 1
+            key = list(self.gen_mask)[0]
+            data_map[self.gen_mask[key]] = []
+            for item in data_map[key]:
+                data_map[self.gen_mask[key]].append([1] * len(item))
         for key in data_map:
             try:
                 data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0))
@@ -90,4 +97,4 @@ def import_datamodules(datamodules_dir, namespace):
 
 # automatically import any Python files in the models directory
 datamodules_dir = os.path.dirname(__file__)
-import_datamodules(datamodules_dir, "dlkit.datamodules")
+import_datamodules(datamodules_dir, "dlkit.data.datamodules")

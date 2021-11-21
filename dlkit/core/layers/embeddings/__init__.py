@@ -36,4 +36,4 @@ class EmbeddingOutput(object):
 
 # automatically import any Python files in the embeddings directory
 embeddings_dir = os.path.dirname(__file__)
-import_embeddings(embeddings_dir, "dlkit.embeddings")
+import_embeddings(embeddings_dir, "dlkit.core.layers.embeddings")

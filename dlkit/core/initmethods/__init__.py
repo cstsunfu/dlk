@@ -22,4 +22,4 @@ def import_initmethods(initmethods_dir, namespace):
 
 # automatically import any Python files in the initmethods directory
 initmethods_dir = os.path.dirname(__file__)
-import_initmethods(initmethods_dir, "dlkit.initmethods")
+import_initmethods(initmethods_dir, "dlkit.core.initmethods")

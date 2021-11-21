@@ -1,0 +1,10 @@
+{
+    config: {
+        schedule_name: linear_warmup,
+        schedule_config: {
+            num_warmup_steps: 0.1,  # if 0 < num_warmup_steps < 1, it will be set to int(num_training_steps*num_warmup_staps), otherwise set to itself
+            # num_training_steps will be set in imodel configure_optimizers
+        },
+    },
+    _name: "basic",
+}
