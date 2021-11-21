@@ -1,43 +1,45 @@
-from logging import Manager
 import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
 from dlkit.utils.parser import config_parser_register 
 from dlkit.utils.config import ConfigTool
-from dlkit.datamodules import datamodule_register, datamodule_config_register
+from dlkit.data.datamodules import datamodule_register, datamodule_config_register
 from dlkit.managers import manager_register, manager_config_register
-from dlkit.imodels import imodel_register, imodel_config_register
-from dlkit.postprocessors import postprocessor_register, postprocessor_config_register
+from dlkit.core.imodels import imodel_register, imodel_config_register
+from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
 import pickle as pkl
 import uuid
 import json
+
+from dlkit.utils.logger import get_logger
+logger = get_logger()
 
 
 class Train(object):
     """docstring for Trainer
         {
-            "_name": "task_name",
+            "_name": "config_name",
             "_focus": {
 
             },
             "_link": {},
-            "_setting": {
+            "_search": {},
+            "config": {
                 "save_dir": "*@*",  # must provide
+                "data_path": "*@*",  # must provide
+            },
+            "task": {
+                "_base": task_name
             }
         }
     """
     def __init__(self, config):
         super(Train, self).__init__()
         if not isinstance(config, dict):
-            self.config = hjson.load(open(config), object_pairs_hook=dict)
-        else:
-            self.config = config
-        self.focus = self.config.pop('_focus', {})
+            config = hjson.load(open(config), object_pairs_hook=dict)
 
-        self.setting = self.config.pop("_setting", {})
-
-        self.configs = config_parser_register.get('task')(self.config).parser_with_check()
-
+        self.focus = config.pop('_focus', {})
+        self.configs = config_parser_register.get('root')(config).parser_with_check()
         self.config_names = []
         for possible_config in self.configs:
             config_name = []
@@ -54,26 +56,29 @@ class Train(object):
 
         if len(self.config_names) != len(set(self.config_names)):
             for config, name in zip(self.configs, self.config_names):
-                print(f"{name}:\n{json.dumps(config, indent=4)}")
+                logger.info(f"{name}:\n{json.dumps(config, indent=4)}")
             raise NameError('The config_names is not unique.')
 
     def run(self):
         """TODO: Docstring for run.
         :returns: TODO
         """
-        print(f"You have {len(self.config_names)} training config(s), so they all will be run.")
+        logger.info(f"You have {len(self.config_names)} training config(s), they all will be run.")
         for i, (config, name) in enumerate(zip(self.configs, self.config_names)):
-            print(f"Runing {i}...")
+            logger.info(f"Runing the {i}th {name}...")
             self.run_oneturn(config, name)
 
     def run_oneturn(self, config, name):
         """TODO: Docstring for run_oneturn.
         """
         self.pre_run_hook()
+        # save configure
+        json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name), 'w'), ensure_ascii=False, indent=4)
 
         datamodule = self.get_datamodule(config)
         manager = self.get_manager(config, name)
         imodel = self.get_imodel(config)
+        # TODO: should register data to imodel? or using trainer.datamodule.data?
         imodel.postprocessor = self.get_postprocessor(config)
 
         manager.fit(model=imodel, datamodule=datamodule)
@@ -99,7 +104,7 @@ class Train(object):
         :returns: TODO
 
         """
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('datamodule'))
+        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config.get('task').get('datamodule'))
         datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
         return datamodule
         
@@ -110,8 +115,8 @@ class Train(object):
         :returns: TODO
 
         """
-        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('manager'))
-        manager = Manager(ManagerConfig, rt_config={"save_dir": self.setting.get("save_dir"), "name": name})
+        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
+        manager = Manager(ManagerConfig, rt_config={"save_dir": config.get('config').get("save_dir"), "name": name})
         return manager
 
     def get_postprocessor(self, config):
@@ -121,7 +126,7 @@ class Train(object):
         :returns: TODO
 
         """
-        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('postprocessor'))
+        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('task').get('postprocessor'))
         return PostProcessor(PostProcessorConfig)
         
     def get_imodel(self, config):
@@ -132,6 +137,6 @@ class Train(object):
 
         """
 
-        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('imodel'))
+        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
         return imodel

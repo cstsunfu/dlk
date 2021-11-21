@@ -1,7 +1,7 @@
 import logging
 import sys
 
-logger = None
+_global_logger = None
 
 def setting_logger(log_file: str):
 
@@ -23,14 +23,15 @@ def setting_logger(log_file: str):
 
     _logger.addHandler(f_handler)
 
-    global logger
-    logger = _logger
+    global _global_logger
+    _global_logger = _logger
 
 def get_logger():
     """return logger if it is setted
     :returns: logger
 
     """
-    if logger:
-        return logger
+    global _global_logger
+    if _global_logger:
+        return _global_logger
     raise ValueError("You should setting_logger with log_file path first.")

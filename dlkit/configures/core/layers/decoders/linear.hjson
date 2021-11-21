@@ -1,0 +1,9 @@
+{
+    config: {
+        input_size: 256,
+        output_size: 2,
+        dropout: 0.0, //the decoder output no need dropout
+        bias: true, // use bias or not in linear , if set to false, all the bias will be set to 0
+    },
+    _name: "linear",
+}
