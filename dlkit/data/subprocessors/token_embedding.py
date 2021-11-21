@@ -1,7 +1,7 @@
 from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
-from dlkit.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from tokenizers import Tokenizer
 import numpy as np
 

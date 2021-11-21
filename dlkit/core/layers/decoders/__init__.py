@@ -22,4 +22,4 @@ def import_decoders(decoders_dir, namespace):
 
 # automatically import any Python files in the decoders directory
 decoders_dir = os.path.dirname(__file__)
-import_decoders(decoders_dir, "dlkit.decoders")
+import_decoders(decoders_dir, "dlkit.core.layers.decoders")

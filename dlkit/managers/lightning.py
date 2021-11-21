@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 from dlkit.utils.config import ConfigTool
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint
-from dlkit.callbacks import callback_register, callback_config_register
+from dlkit.core.callbacks import callback_register, callback_config_register
 from pytorch_lightning.loggers import TensorBoardLogger
 
 

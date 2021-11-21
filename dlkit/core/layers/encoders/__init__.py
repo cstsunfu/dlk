@@ -23,4 +23,4 @@ def import_encoders(encoders_dir, namespace):
 
 # automatically import any Python files in the encoders directory
 encoders_dir = os.path.dirname(__file__)
-import_encoders(encoders_dir, "dlkit.encoders")
+import_encoders(encoders_dir, "dlkit.core.layers.encoders")

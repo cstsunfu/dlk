@@ -2,7 +2,9 @@
     config: {
         input_size: "*@*",
         output_size: "*@*",
-        dropout: "*@*",
+        dropout: 0.0,
+        pool: null,
+        bias: true,
     },
-    _name: "test_linear",
+    _name: "linear",
 }

@@ -2,8 +2,8 @@ import hjson
 import pandas as pd
 from typing import Union, Dict
 from dlkit.utils.parser import BaseConfigParser
-from dlkit.processors import IProcessor, processor_config_register, processor_register
-from dlkit.subprocessors import subprocessor_config_register, subprocessor_register
+from dlkit.data.processors import IProcessor, processor_config_register, processor_register
+from dlkit.data.subprocessors import subprocessor_config_register, subprocessor_register
 from dlkit.utils.config import ConfigTool
 
 @processor_config_register('basic')

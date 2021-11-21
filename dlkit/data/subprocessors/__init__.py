@@ -4,7 +4,7 @@
 import importlib
 import os
 from typing import Callable, Dict, Type
-from dlkit.utils.config import Config
+from dlkit.utils.config import ConfigTool
 from dlkit.utils.register import Register
 import abc
 from pandarallel import pandarallel
@@ -40,4 +40,4 @@ def import_subprocessors(processors_dir, namespace):
 
 # automatically import any Python files in the models directory
 subprocessors_dir = os.path.dirname(__file__)
-import_subprocessors(subprocessors_dir, "dlkit.subprocessors")
+import_subprocessors(subprocessors_dir, "dlkit.data.subprocessors")

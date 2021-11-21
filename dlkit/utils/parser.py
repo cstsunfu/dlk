@@ -4,6 +4,8 @@ import copy
 from typing import Callable, List, Dict, Union
 from dlkit.utils.register import Register
 from dlkit.utils.config import ConfigTool
+from dlkit.utils.logger import get_logger
+logger = get_logger()
 import json
 
 config_parser_register = Register("Config parser register")
@@ -112,11 +114,14 @@ class BaseConfigParser(object):
     def __init__(self, config_file: Union[str, Dict, List], config_base_dir: str=""):
         super(BaseConfigParser, self).__init__()
         if isinstance(config_file, str):
+            if config_file == '*@*':
+                self.config_file = "*@*"
+                return
             try:
                 self.config_file = self.load_hjson_file(os.path.join(config_base_dir, config_file+'.hjson'))
-            except:
-                print(config_base_dir, config_file)
-                raise KeyError
+            except Exception as e:
+                logger.error(f"There is an error occur when loading {os.path.join(config_base_dir, config_file)}")
+                raise KeyError(e)
         elif isinstance(config_file, Dict):
             self.config_file = config_file
         else:
@@ -247,6 +252,8 @@ class BaseConfigParser(object):
         :parser_link: whether parser the link of config 
         :returns: list[possible config dict]
         """
+        if self.config_file == '*@*':
+            return ['*@*']
 
         # parser submodules get submodules config
         modules_config = self.map_to_submodule(self.modules, self.get_kind_module_base_config)
@@ -276,7 +283,7 @@ class BaseConfigParser(object):
                     cur_level_links = all_level_links[i]
                     link_union.register_low_links(cur_level_links)
 
-                self.config_link_para(all_level_links, possible_config)
+                self.config_link_para(link_union.get_links(), possible_config)
 
         return_list = []
         for possible_config in all_possible_config_list:
@@ -482,12 +489,24 @@ class TaskConfigParser(BaseConfigParser):
     def __init__(self, config_file):
         super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
+@config_parser_register('root')
+class RootConfigParser(BaseConfigParser):
+    """docstring for RootConfigParser"""
+    def __init__(self, config_file):
+        super(RootConfigParser, self).__init__(config_file, config_base_dir='')
 
 @config_parser_register('manager')
 class ManagerConfigParser(BaseConfigParser):
     """docstring for ManagerConfigParser"""
     def __init__(self, config_file):
         super(ManagerConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/managers/')
+
+
+@config_parser_register('datamodule')
+class DatamoduleConfigParser(BaseConfigParser):
+    """docstring for DatamoduleConfigParser"""
+    def __init__(self, config_file):
+        super(DatamoduleConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/data/datamodules/')
 
 
 @config_parser_register('imodel')
@@ -516,6 +535,12 @@ class ScheduleConfigParser(BaseConfigParser):
     """docstring for ScheduleConfigParser"""
     def __init__(self, config_file):
         super(ScheduleConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/schedules/')
+
+@config_parser_register('initmethod')
+class InitMethodConfigParser(BaseConfigParser):
+    """docstring for InitMethodConfigParser"""
+    def __init__(self, config_file):
+        super(InitMethodConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/initmethods/')
 
 
 @config_parser_register('loss')

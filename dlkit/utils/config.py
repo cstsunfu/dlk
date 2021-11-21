@@ -18,12 +18,14 @@ class ConfigTool(object):
 
         """
         for item in _new:
-            if (item not in _base) or ((not isinstance(_new[item], Dict) and (not isinstance(_base[item], Dict)))):
-            # if item not in _base, or they all are not Dict
+            if (item not in _base) or (not isinstance(_base[item], Dict)):
+            # if item not in _base, or _base[item] is not Dict
                 _base[item] = _new[item]
             elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
                 ConfigTool._inplace_update_dict(_base[item], _new[item])
             else:
+                print(f"base {_base[item]} type: {type(_base[item])}")
+                print(f"new {_new[item]} type: {type(_new[item])}")
                 raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
 
     @staticmethod
@@ -54,11 +56,8 @@ class ConfigTool(object):
             extend_config = {}
         else:
             assert isinstance(config, dict), "{} config must be name(str) or config(dict), but you provide {}".format(module_name, config)
-            for key in config:
-                if key not in ['_name', 'config']:
-                    raise KeyError('You can only provide the {} name("name") and config("config")'.format(module_name))
             name = config.get('_name', "") # must provide _name_
-            extend_config = config.get('config', {})
+            extend_config = config
             if not name:
                 raise KeyError('You must provide the {} name("name")'.format(module_name))
 

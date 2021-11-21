@@ -44,5 +44,3 @@ class RangeNormInit(object):
             module.weight.data.fill_(1.0)
         elif isinstance(module, nn.Conv1d):
             module.weight.data.normal_(mean=0.0, std=self.range)
-        else:
-            raise PermissionError(f"You should add the {module.__name__} to 'range norm' init.")

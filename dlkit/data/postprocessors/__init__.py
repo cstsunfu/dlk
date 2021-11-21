@@ -40,4 +40,4 @@ def import_postprocessors(postprocessors_dir, namespace):
 
 # automatically import any Python files in the models directory
 postprocessors_dir = os.path.dirname(__file__)
-import_postprocessors(postprocessors_dir, "dlkit.postprocessors")
+import_postprocessors(postprocessors_dir, "dlkit.data.postprocessors")

@@ -1,3 +1,7 @@
 {
-    "_name": "identity"
+    config: {
+        return_logits: "decoder_logits",
+        output_map: {},
+    },
+    _name: "identity",
 }

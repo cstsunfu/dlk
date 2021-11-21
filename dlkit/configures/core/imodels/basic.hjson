@@ -1,16 +1,15 @@
 {
-    embedding: {
-        _base: "identity"
+    model: {
+        _base: "*@*"
     },
-    decoder: {
-        _base: "identity",
-        config: {
-        }
-    },
-    encoder: {
-        _base: "identity",
-        config: {
-        }
-    },
+    loss: "*@*",
     _name: "basic"
 }
+        self.model, self.model_config = self.get_model(config.get("model"))
+        self.loss, self.loss_config = self.get_loss(config.get("loss"))
+
+        self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'basic'))
+
+        self.schedule, self.schedule_config = self.get_schedule(config.get("schedule", "basic"))
+
+        self.config = config.pop('config', {})

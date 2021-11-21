@@ -21,4 +21,4 @@ def import_models(models_dir, namespace):
 
 # automatically import any Python files in the models directory
 models_dir = os.path.dirname(__file__)
-import_models(models_dir, "dlkit.models")
+import_models(models_dir, "dlkit.core.models")
