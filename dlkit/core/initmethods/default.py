@@ -28,17 +28,18 @@ class RangeNormInit(object):
 
     def __call__(self, module):
         """Initialize the weights"""
-        raise PermissionError("not  applied")
         if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=self.range)
+            torch.nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
                 module.bias.data.zero_()
         elif isinstance(module, nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=self.range)
-            if module.padding_idx is not None:
-                module.weight.data[module.padding_idx].zero_()
+            torch.nn.init.xavier_uniform_(module.weight)
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
         elif isinstance(module, nn.Conv1d):
-            module.weight.data.normal_(mean=0.0, std=self.range)
+            torch.nn.init.kaiming_uniform_(module.weight)
+        elif isinstance(module, nn.Conv2d):
+            torch.nn.init.kaiming_uniform_(module.weight)
+        elif isinstance(module, nn.Conv3d):
+            torch.nn.init.kaiming_uniform_(module.weight)

@@ -530,11 +530,11 @@ class OptimizerConfigParser(BaseConfigParser):
         super(OptimizerConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/optimizers/')
 
 
-@config_parser_register('schedule')
+@config_parser_register('scheduler')
 class ScheduleConfigParser(BaseConfigParser):
     """docstring for ScheduleConfigParser"""
     def __init__(self, config_file):
-        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/schedules/')
+        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/schedulers/')
 
 @config_parser_register('initmethod')
 class InitMethodConfigParser(BaseConfigParser):

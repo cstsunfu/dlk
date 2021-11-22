@@ -63,7 +63,7 @@ class Linear(SimpleModule):
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        inputs["logits"] = self.linear(inputs)
+        inputs["logits"] = self.linear(inputs['embedding'])
         if self.config.return_logits:
             inputs[self.config.return_logits] = inputs['logits']
         return self.dict_rename(inputs, self.config.output_map)

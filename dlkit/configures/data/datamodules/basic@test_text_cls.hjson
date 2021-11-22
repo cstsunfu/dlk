@@ -12,12 +12,14 @@
        },
        "key_type_pairs": {
             'input_ids': 'int', 
+            'label_id': 'long', 
         },
        "gen_mask": {
             'input_ids': 'attention_mask', 
         },
        "key_padding_pairs": { //default all 0
             'input_ids': 0, 
+            'label_id': -1, 
         },
        "train_batch_size": 32,
        "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size

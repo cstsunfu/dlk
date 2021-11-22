@@ -1,7 +1,8 @@
 from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
-from . import optimizer_register, optimizer_config_register, BaseOptimizerMixin
+import torch
+from . import optimizer_register, optimizer_config_register, BaseOptimizer
 
 
 @optimizer_config_register("adamw")
@@ -29,14 +30,14 @@ class AdamWOptimizerConfig(object):
         
 
 @optimizer_register("adamw")
-class AdamWOptimizer(BaseOptimizerMixin):
+class AdamWOptimizer(BaseOptimizer):
     def __init__(self, model: nn.Module, config: AdamWOptimizerConfig):
         super(AdamWOptimizer, self).__init__()
         self.config = config.config
         self.model = model
         self.optimizer = optim.AdamW
 
-    def __call__(self):
+    def get_optimizer(self):
         """TODO: Docstring for __call__.
         :returns: TODO
 

@@ -11,7 +11,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def process(self, data: Dict)->Dict:
+    def process(self, **inputs)->Dict:
         """TODO: Docstring for process.
 
         :arg1: TODO
@@ -19,6 +19,13 @@ class IPostProcessor(metaclass=abc.ABCMeta):
 
         """
         raise NotImplementedError
+
+    def __call__(self, **inputs):
+        """TODO: Docstring for __call.
+        :returns: TODO
+
+        """
+        return self.process(**inputs)
         
 
 postprocessor_config_register = Register('PostProcessor config register')

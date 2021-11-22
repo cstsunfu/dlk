@@ -43,6 +43,9 @@
                     ["sentence", { "is_pretokenized": false}], 
                 ],
                 "post_processor": "default"
+                "filed_map": { // this is the default value, you can provide other name
+                    "ids": "input_ids",
+                }, // the tokenizer output(the key) map to the value
             },
             "predict": "train",
             "online": "train"

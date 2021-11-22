@@ -19,7 +19,7 @@
         config: {
             input_size: "*@*",
             output_size: "*@*",
-            pool: null,
+            pool: 'first',
             dropout: "*@*", //the decoder output no need dropout
             return_logits: "decoder_logits",
             output_map: {}
@@ -38,7 +38,7 @@
         },
     },
     "initmethod": {
-        "_base": "range_norm",
+        "_base": "default",
     },
     "config": {
         "embedding_dim": "*@*",

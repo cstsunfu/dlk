@@ -2,7 +2,7 @@ import hjson
 from typing import Dict, Union, Callable, List
 from dlkit.core.models import model_register, model_config_register
 from dlkit.core.optimizers import optimizer_register, optimizer_config_register
-from dlkit.core.schedules import schedule_register, schedule_config_register
+from dlkit.core.schedulers import scheduler_register, scheduler_config_register
 from dlkit.core.losses import loss_register, loss_config_register
 from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlkit.utils.config import ConfigTool
@@ -20,7 +20,7 @@ class BasicIModelConfig(object):
 
         self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'adamw'))
 
-        self.schedule, self.schedule_config = self.get_schedule(config.get("schedule", "basic"))
+        self.scheduler, self.scheduler_config = self.get_scheduler(config.get("scheduler", "basic"))
         self.postprocess, self.postprocess_config = self.get_postprocessor(config.get("postprocessor", 'identity'))
 
         self.config = config.pop('config', {})
@@ -30,7 +30,7 @@ class BasicIModelConfig(object):
         :config: TODO
         :returns: TODO
         """
-        return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('task').get('postprocessor'))
+        return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config)
 
     def get_model(self, config):
         """get embedding config and embedding module
@@ -58,13 +58,13 @@ class BasicIModelConfig(object):
         """
         return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
 
-    def get_schedule(self, config):
+    def get_scheduler(self, config):
         """get decoder config and decoder module
 
         :config: TODO
         :returns: TODO
         """
-        return ConfigTool.get_leaf_module(schedule_register, schedule_config_register, "schedule", config)
+        return ConfigTool.get_leaf_module(scheduler_register, scheduler_config_register, "scheduler", config)
 
 
 @imodel_register("basic")
@@ -73,7 +73,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     """
     def __init__(self, config: BasicIModelConfig):
         super().__init__()
-        self.config = config  # schedule will init in configure_optimizers, because it will use the datamodule info
+        self.config = config  # scheduler will init in configure_optimizers, because it will use the datamodule info
 
         self.model = config.model(config.model_config)
 
@@ -84,17 +84,6 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self._origin_validation_data = None
         self._origin_test_data = None
         self.postprocessor = config.postprocess(config.postprocess_config)
-
-    def setup(self, stage=None) -> None:
-        if stage != "fit":
-            return
-        # Get dataloader by calling it - train_dataloader() is called after setup() by default
-        train_loader = self.train_dataloader()
-
-        # Calculate total steps
-        tb_size = train_loader.batch_size * max(1, self.trainer.gpus)
-        ab_size = self.trainer.accumulate_grad_batches * float(self.trainer.max_epochs)
-        self.total_steps = (len(train_loader.dataset) // tb_size) // ab_size
 
     def forward(self, inputs):
         return self.model(inputs)
@@ -141,18 +130,35 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     def predict_step(self, batch, batch_idx):
         return self.model.predict_step(batch)
 
+    @property
+    def num_training_steps(self) -> int:
+        """Total training steps inferred from datamodule and devices.
+        """
+         # TODO: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
+        if self.trainer.max_steps != -1:
+            return self.trainer.max_steps
+
+        limit_batches = self.trainer.limit_train_batches
+        batches = len(self.trainer.datamodule.train_dataloader())
+        batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)     
+
+        num_devices = max(1, self.trainer.num_gpus, self.trainer.num_processes)
+        if self.trainer.tpu_cores:
+            num_devices = max(num_devices, self.trainer.tpu_cores)
+
+        effective_accum = self.trainer.accumulate_grad_batches * num_devices
+        return (batches // effective_accum) * self.trainer.max_epochs
+
     def configure_optimizers(self):
         optimizer = self.get_optimizer()
-        schedule_config = self.config.schedule_config.schedule_config
-        num_warmup_steps = schedule_config.get('num_warmup_steps', 0)
+        num_warmup_steps = self.config.scheduler_config.num_warmup_steps
         if num_warmup_steps>0 and num_warmup_steps<1:
-            schedule_config["num_warmup_steps"] = self.total_steps * num_warmup_steps
-        schedule_config["num_training_steps"] = self.total_steps
-
-        self.config.schedule.schedule_config.schedule_config = schedule_config
-        schedule = self.config.schedule(optimizer, self.config.schedule_config)
+            self.config.scheduler_config.num_warmup_steps = self.num_training_steps * num_warmup_steps
+        self.config.scheduler_config.num_training_steps = self.num_training_steps
+        # self.config.scheduler_config.last_epoch = -1
+        scheduler = self.config.scheduler(optimizer, self.config.scheduler_config)()
 
         return { 
             "optimizer": optimizer,
-            "schedule": schedule 
+            "lr_scheduler": scheduler 
         }
