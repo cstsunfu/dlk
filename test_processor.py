@@ -10,13 +10,15 @@
 
 
 import pandas as pd
+from dlkit.utils.logger import setting_logger
+setting_logger('process.log')
 from dlkit.utils.parser import config_parser_register
 import json
 import hjson
 from dlkit.data.processors import processor_config_register, processor_register
 
 train = pd.DataFrame({
-    "sentence": ['i love youafsdafasd.'.split()+['f fas f'], 'thank you'.split()],
+    "sentence": ['i love you.'.split()+['f fas f'], 'thank you'.split()],
     "label": ['pos', 'neg']
 })
 

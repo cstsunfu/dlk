@@ -13,7 +13,7 @@
     "subprocessor@tokenizer":{
         "config": { 
             "train": { 
-                "config_path": "../tokenizer.json",
+                "config_path": "./utils/tokenizer/xlmr_tokenizer.json",
                 "process_data": [
                     ["sentence", { "is_pretokenized": true}], 
                 ],
@@ -25,7 +25,7 @@
     "subprocessor@token_embedding": {
         "config":{
             "train": { // only train stage using
-                "embedding_file": "./utils/embedding.txt",
+                "embedding_file": "./utils/wikitext-2/embedding.txt",
                 "embedding_size": 50,
             }
         }

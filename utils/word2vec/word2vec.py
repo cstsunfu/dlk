@@ -1,8 +1,26 @@
 import multiprocessing
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
+from gensim.models.callbacks import CallbackAny2Vec
 import hjson
 import argparse
+# Data from https://pytorch.org/text/_modules/torchtext/datasets/language_modeling.html
+
+
+class callback(CallbackAny2Vec):
+    '''Callback to print loss after each epoch.'''
+
+    def __init__(self):
+        self.epoch = 0
+        self.loss_to_be_subed = 0
+
+    def on_epoch_end(self, model):
+        loss = model.get_latest_training_loss()
+        loss_now = loss - self.loss_to_be_subed
+        self.loss_to_be_subed = loss
+        print('Loss after epoch {}: {}'.format(self.epoch, loss_now))
+        self.epoch += 1
+
 
 if __name__ == '__main__':
 
@@ -67,10 +85,13 @@ if __name__ == '__main__':
         args.workers = multiprocessing.cpu_count()
     # print(args)
 
+    print("Preprocessing text...")
     lines = []
     for file in args.train_files:
         lines = lines + list(LineSentence(file))
+    print("Training embedding...")
 
-    model = Word2Vec(lines, vector_size=args.embedding_size, window=args.window, min_count=args.min_count, workers=args.workers, epochs=args.epochs, sg=args.sg)
+    model = Word2Vec(lines, vector_size=args.embedding_size, window=args.window, min_count=args.min_count, workers=args.workers, epochs=args.epochs, sg=args.sg, compute_loss=True, callbacks=[callback()])
+    print("Saving embedding...")
     model.save(args.model_file)
     model.wv.save_word2vec_format(args.embedding_file, binary=False)
