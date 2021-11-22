@@ -42,7 +42,7 @@
                 "process_data": [
                     ["sentence", { "is_pretokenized": false}], 
                 ],
-                "post_processor": "bert"
+                "post_processor": "default"
             },
             "predict": "train",
             "online": "train"

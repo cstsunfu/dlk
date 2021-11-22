@@ -3593,3 +3593,5 @@
 11/22/2021 04:06:40 - INFO - pytorch_lightning.utilities.distributed - GPU available: False, used: False
 11/22/2021 04:06:40 - INFO - pytorch_lightning.utilities.distributed - TPU available: False, using: 0 TPU cores
 11/22/2021 04:06:40 - INFO - pytorch_lightning.utilities.distributed - IPU available: False, using: 0 IPUs
+11/22/2021 11:51:43 - INFO - root - You have 1 training config(s), they all will be run.
+11/22/2021 11:51:43 - INFO - root - Runing the 0th 819e27f6-4b47-11ec-b988-acde48001122...

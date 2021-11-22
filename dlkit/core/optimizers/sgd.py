@@ -1,0 +1,45 @@
+from typing import Dict
+import torch.nn as nn
+import torch.optim as optim
+from . import optimizer_register, optimizer_config_register, BaseOptimizerMixin
+
+
+@optimizer_config_register("sgd")
+class SGDOptimizerConfig(object):
+    """
+    {
+        config: {
+            lr: 1e-3,
+            momentum: 0,
+            dampending: 0,
+            weight_decay: 0,
+            nesterov=false,
+            optimizer_special_groups:[  
+            // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config. 
+            // You should sort the config by priority(
+            //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
+            // ["bias & LayerNorm.bias & LayerNorm.weight", {weight_decay: 0}]
+            ]
+        },
+        _name: "sgd",
+    }
+    """
+    def __init__(self, config: Dict):
+        super(SGDOptimizerConfig, self).__init__()
+        self.config = config['config']
+        
+
+@optimizer_register("sgd")
+class SGDOptimizer(BaseOptimizerMixin):
+    def __init__(self, model: nn.Module, config: SGDOptimizerConfig):
+        super(SGDOptimizer, self).__init__()
+        self.config = config.config
+        self.model = model
+        self.optimizer = optim.SGD
+
+    def __call__(self):
+        """TODO: Docstring for __call__.
+        :returns: TODO
+
+        """
+        return self.init_optimizer(optim.SGD, self.model, self.config)

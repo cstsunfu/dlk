@@ -26,7 +26,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--truncation_strategy", type=str, default='longest_first', help="longest_first, only_first, only_second", Optional=['longest_first', "only_first", 'only_second']
+        "--truncation_strategy", type=str, default='longest_first', help="longest_first, only_first, only_second", choices=['longest_first', "only_first", 'only_second']
     )
 
     parser.add_argument(

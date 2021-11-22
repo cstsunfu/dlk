@@ -1,8 +1,8 @@
 {
-    "train_files": ['./wikitext-103-raw/token_wiki.test.raw'],
+    "train_files": ['../wikitext-2/wiki.train.subwords'],
     "embedding_size": 50,
-    "model_file": 'embedding.model',
-    "embedding_file": 'embedding.txt'
+    "model_file": '../wikitext-2/embedding.model',
+    "embedding_file": '../wikitext-2/embedding.txt'
     "min_count": 10, // minist token frequence
     "window": 6, // window size
     "workers": null, //default use all cpu

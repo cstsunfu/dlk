@@ -4,6 +4,7 @@ from dlkit.core.models import model_register, model_config_register
 from dlkit.core.optimizers import optimizer_register, optimizer_config_register
 from dlkit.core.schedules import schedule_register, schedule_config_register
 from dlkit.core.losses import loss_register, loss_config_register
+from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlkit.utils.config import ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
 
@@ -17,11 +18,19 @@ class BasicIModelConfig(object):
         self.model, self.model_config = self.get_model(config.get("model"))
         self.loss, self.loss_config = self.get_loss(config.get("loss"))
 
-        self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'basic'))
+        self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'adamw'))
 
         self.schedule, self.schedule_config = self.get_schedule(config.get("schedule", "basic"))
+        self.postprocess, self.postprocess_config = self.get_postprocessor(config.get("postprocessor", 'identity'))
 
         self.config = config.pop('config', {})
+
+    def get_postprocessor(self, config):
+        """TODO: Docstring for get_postprocessor.
+        :config: TODO
+        :returns: TODO
+        """
+        return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('task').get('postprocessor'))
 
     def get_model(self, config):
         """get embedding config and embedding module
@@ -74,6 +83,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         self._origin_validation_data = None
         self._origin_test_data = None
+        self.postprocessor = config.postprocess(config.postprocess_config)
 
     def setup(self, stage=None) -> None:
         if stage != "fit":
@@ -85,15 +95,6 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         tb_size = train_loader.batch_size * max(1, self.trainer.gpus)
         ab_size = self.trainer.accumulate_grad_batches * float(self.trainer.max_epochs)
         self.total_steps = (len(train_loader.dataset) // tb_size) // ab_size
-
-    def postprocessor(self, outputs):
-        """you can overwrite this part to post process the outputs of validation_epoch_end or test_epoch_end
-
-        :outputs: TODO
-        :returns: TODO
-
-        """
-        return outputs
 
     def forward(self, inputs):
         return self.model(inputs)
@@ -111,13 +112,13 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     def validation_epoch_end(self, outputs):
         """TODO: Docstring for test_epoch_end.
         :returns: TODO
-
         """
         outputs = self.gather_outputs(outputs)
 
         if self.local_rank in [0, -1]:
             key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
-            self.postprocessor(key_all_ins_map)
+            # TODO: TODO
+            self.postprocessor(stage='valid', outputs=key_all_ins_map, data=self._origin_validation_data)
         return outputs
 
     def test_step(self, batch, batch_idx):
@@ -134,7 +135,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         if self.local_rank in [0, -1]:
             key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
-            self.postprocessor(key_all_ins_map)
+            self.postprocessor(stage='test', outputs=key_all_ins_map, data=self._origin_validation_data)
         return outputs
 
     def predict_step(self, batch, batch_idx):

@@ -6,7 +6,6 @@ from dlkit.utils.config import ConfigTool
 from dlkit.data.datamodules import datamodule_register, datamodule_config_register
 from dlkit.managers import manager_register, manager_config_register
 from dlkit.core.imodels import imodel_register, imodel_config_register
-from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
 import pickle as pkl
 import uuid
 import json
@@ -24,8 +23,8 @@ class Train(object):
             "_link": {},
             "_search": {},
             "config": {
-                "save_dir": "*@*",  # must provide
-                "data_path": "*@*",  # must provide
+                "save_dir": "*@*",  # must be provided
+                "data_path": "*@*",  # must be provided
             },
             "task": {
                 "_name": task_name
@@ -72,7 +71,6 @@ class Train(object):
     def run_oneturn(self, config, name):
         """TODO: Docstring for run_oneturn.
         """
-        self.pre_run_hook()
         config = config['root']
         # save configure
         json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name), 'w'), ensure_ascii=False, indent=4)
@@ -80,8 +78,6 @@ class Train(object):
         datamodule = self.get_datamodule(config)
         manager = self.get_manager(config, name)
         imodel = self.get_imodel(config)
-        # TODO: should register data to imodel? or using trainer.datamodule.data?
-        # imodel.postprocessor = self.get_postprocessor(config)
 
         manager.fit(model=imodel, datamodule=datamodule)
 
@@ -91,13 +87,6 @@ class Train(object):
 
         """
         return pkl.load(open(config['data_path'], 'rb'))
-
-    def pre_run_hook(self):
-        """TODO: Docstring for pre_run_hook.
-        :returns: TODO
-
-        """
-        pass
 
     def get_datamodule(self, config):
         """TODO: Docstring for get_datamodule.
@@ -121,16 +110,6 @@ class Train(object):
         manager = Manager(ManagerConfig, rt_config={"save_dir": config.get('config').get("save_dir"), "name": name})
         return manager
 
-    def get_postprocessor(self, config):
-        """TODO: Docstring for get_postprocessor.
-
-        :config: TODO
-        :returns: TODO
-
-        """
-        PostProcessor, PostProcessorConfig = ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config.get('task').get('postprocessor'))
-        return PostProcessor(PostProcessorConfig)
-        
     def get_imodel(self, config):
         """TODO: Docstring for get_imodel.
 
@@ -138,7 +117,6 @@ class Train(object):
         :returns: TODO
 
         """
-
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
         return imodel

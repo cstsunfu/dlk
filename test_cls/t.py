@@ -4,6 +4,9 @@ data = pkl.load(open('./processed_data.pkl', 'rb'))
 
 for k in data:
     print(k)
+
+print(data['label_vocab'])
+print(data['data'])
 # # data = pkl.load(open('./meta.pkl', 'rb'))
 
 # print(len(data['token_embedding']))

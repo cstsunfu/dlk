@@ -3,14 +3,16 @@
 **/tb_logger/**
 *.pkl
 *.pyc
+*.log
 *.raw
 *.txt
 *.zip
+**/wikitext*/**
 *.model
 *.pt
 *.sc
 *.bin
 **/logs/**
-tokenizer.json
+*tokenizer.json
 token.json
 **/test_cls/**

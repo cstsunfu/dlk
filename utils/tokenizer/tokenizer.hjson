@@ -1,10 +1,9 @@
 {
     /*"tokenizer_files": ['./wikitext-103-raw/wiki.train.raw', './wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/wiki.test.raw'],*/
     /*"tokenizer_output_files": ['./wikitext-103-raw/token_wiki.train.raw', './token_wikitext-103-raw/wiki.valid.raw', './wikitext-103-raw/token_wiki.test.raw'],*/
-    "tokenize_files": ['./wikitext-103-raw/wiki.test.raw'],
-    "tokenize_output_files": ['./wikitext-103-raw/token_wiki.test.raw'],
-    "tokenizer_config": '../token.json',
+    "tokenize_files": ['../wikitext-2/wiki.train.tokens'],
+    "tokenize_output_files": ['../wikitext-2/wiki.train.subwords'],
+    "tokenizer_config": './xlmr_tokenizer.json',
     "truncation": 0, //don't do trunc
     "truncation_strategy": 'longest_first',
-    /*"tokenizer_config": '../../../tokenizer.json'*/
 }

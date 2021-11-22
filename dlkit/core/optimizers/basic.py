@@ -4,6 +4,7 @@ from . import optimizer_register, optimizer_config_register, optimizer_map
 import copy
 
 
+
 @optimizer_config_register("basic")
 class BasicOptimizerConfig(object):
     """docstring for LinearConfig
