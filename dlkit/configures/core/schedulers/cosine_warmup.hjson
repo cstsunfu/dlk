@@ -1,0 +1,9 @@
+{
+    config: {
+        "last_epoch": -1,
+        "num_warmup_steps": 0,
+        "num_training_steps": -1,
+        "num_cycles": 0.5,
+    },
+    _name: "cosine_warmup",
+}

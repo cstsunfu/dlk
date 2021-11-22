@@ -1,0 +1,6 @@
+{
+    _name: range_uniform,
+    config: {
+        range: 0.01,
+    }
+}

@@ -49,6 +49,7 @@ class LSTM(SimpleModule):
         self._provided_keys = set()
         self.config = config
         self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
+        self.i = 0
 
     def provide_keys(self)->Set:
         """TODO: should provide_keys in model?

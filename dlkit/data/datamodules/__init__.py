@@ -7,6 +7,7 @@ from dlkit.utils.register import Register
 from pytorch_lightning import LightningDataModule
 import abc
 from torch.nn.utils.rnn import pad_sequence
+import torch
 
 datamodule_config_register = Register("Datamodule config register")
 datamodule_register = Register("Datamodule register")
@@ -37,7 +38,7 @@ class DefaultCollate(object):
             key = list(self.gen_mask)[0]
             data_map[self.gen_mask[key]] = []
             for item in data_map[key]:
-                data_map[self.gen_mask[key]].append([1] * len(item))
+                data_map[self.gen_mask[key]].append(torch.tensor([1] * len(item), dtype=torch.int))
         for key in data_map:
             try:
                 data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0))
@@ -52,35 +53,26 @@ class DefaultCollate(object):
         return data_map
 
 
-class IDataModule(metaclass=abc.ABCMeta):
-    """docstring for ModuleStepMixin"""
-
-
-    @abc.abstractmethod
-    def train_dataloader(self):
-        pass
-
-    @abc.abstractmethod
-    def predict_dataloader(self):
-        pass
-
-    @abc.abstractmethod
-    def val_dataloader(self):
-        pass
-
-    @abc.abstractmethod
-    def test_dataloader(self):
-        pass
-
-    @abc.abstractmethod
-    def online_dataloader(self):
-        pass
-
-
-class IBaseDataModule(LightningDataModule, IDataModule):
+class IBaseDataModule(LightningDataModule):
     """docstring for IBaseDataModule"""
     def __init__(self):
         super(IBaseDataModule, self).__init__()
+
+    def train_dataloader(self):
+        raise NotImplementedError(f"You must implementation the train_dataloader for your own datamodule.")
+
+    def predict_dataloader(self):
+        raise NotImplementedError(f"You must implementation the predict_dataloader for your own datamodule.")
+
+    def val_dataloader(self):
+        raise NotImplementedError(f"You must implementation the val_dataloader for your own datamodule.")
+
+    def test_dataloader(self):
+        raise NotImplementedError(f"You must implementation the test_dataloader for your own datamodule.")
+
+    @abc.abstractmethod
+    def online_dataloader(self):
+        raise NotImplementedError(f"You must implementation the online_dataloader for your own datamodule.")
         
 
 def import_datamodules(datamodules_dir, namespace):

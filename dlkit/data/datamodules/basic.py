@@ -1,12 +1,14 @@
 import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any
 from dlkit.utils.config import ConfigTool
 from dlkit.data.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
+from dlkit.utils.logger import get_logger
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
 import copy
+logger = get_logger()
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(object):
@@ -65,7 +67,7 @@ class BasicDatamoduleConfig(object):
 class BasicDataset(Dataset):
     def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
         self.data = data
-        self.type_map = {"float": torch.float, "int": torch.long, 'bool': torch.bool, "long": torch.long} 
+        self.type_map = {"float": torch.float, "int": torch.int, 'bool': torch.bool, "long": torch.long} 
 
         self.key_type_pairs = key_type_pairs
 
@@ -82,7 +84,7 @@ class BasicDataset(Dataset):
 
 @datamodule_register("basic")
 class BasicDatamodule(IBaseDataModule):
-    def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, pd.DataFrame]):
+    def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, Any]):
         super().__init__()
 
         self.config = config
@@ -107,7 +109,8 @@ class BasicDatamodule(IBaseDataModule):
         for key in copy_key_type_pairs:
             if key not in has_key:
                 remove.add(key)
-        print(f"There are not '{', '.join(remove)}' in data field {field}.")
+        if remove:
+            logger.warning(f"There are not '{', '.join(remove)}' in data field {field}.")
         for key in remove:
             copy_key_type_pairs.pop(key)
         return copy_key_type_pairs

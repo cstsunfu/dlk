@@ -33,5 +33,4 @@ inp = {"data": data}
 
 config = config_parser_register.get("processor")(hjson.load(open("./test_processor.hjson"),object_pairs_hook=dict)).parser_with_check()[0]
 # print(json.dumps(config, indent=4))
-# processor_config_register.get(config.get('_name'))(stage="train", config=config)
 processor_register.get(config.get('_name'))(stage="train", config=processor_config_register.get(config.get('_name'))(stage="train", config=config)).process(inp)

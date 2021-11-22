@@ -1,15 +1,17 @@
 {
-    model: {
-        _base: "*@*"
-    },
+    model: "*@*",
     loss: "*@*",
+    "optimizer": {
+        "_base": "adamw@bias_nodecay",
+    },
+    "schedule": {
+        "_base": "linear_warmup"
+    },
+    "postprocessor": {
+        "_base": "identity"
+    },
+    "config": {
+
+    },
     _name: "basic"
 }
-        self.model, self.model_config = self.get_model(config.get("model"))
-        self.loss, self.loss_config = self.get_loss(config.get("loss"))
-
-        self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'basic'))
-
-        self.schedule, self.schedule_config = self.get_schedule(config.get("schedule", "basic"))
-
-        self.config = config.pop('config', {})

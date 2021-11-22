@@ -42,7 +42,11 @@ class LSTM(nn.Module):
             assert config.proj_size % 2 == 0
             config.proj_size = config.proj_size // 2
 
-        self.lstm = nn.LSTM(config.input_size, config.hidden_size, num_layers=config.num_layers, bidirectional=config.bidirectional, dropout=config.dropout, proj_size=config.proj_size)
+        if config.num_layers <= 1:
+            inlstm_dropout = 0
+        else:
+            inlstm_dropout = config.dropout
+        self.lstm = nn.LSTM(input_size=config.input_size, hidden_size=config.hidden_size, num_layers=config.num_layers, batch_first=True, bidirectional=config.bidirectional, dropout=inlstm_dropout, proj_size=config.proj_size)
         self.dropout_last = nn.Dropout(p=config.dropout if config.dropout_last else 0)
 
     def forward(self, input: torch.Tensor, mask: torch.Tensor)->torch.Tensor:
@@ -50,7 +54,7 @@ class LSTM(nn.Module):
         """
         # No padding necessary.
         max_seq_len = input.size(1)
-        seq_lens = max_seq_len - mask.sum(1)
+        seq_lens = mask.sum(1)
         pack_seq_rep = pack_padded_sequence(input=input, lengths=seq_lens, batch_first=True, enforce_sorted=False)
         pack_seq_rep = self.lstm(pack_seq_rep)[0]
         output, _ = pad_packed_sequence(sequence=pack_seq_rep, batch_first=True, total_length=max_seq_len)

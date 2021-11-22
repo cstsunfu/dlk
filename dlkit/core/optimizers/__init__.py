@@ -11,7 +11,14 @@ optimizer_config_register = Register("Optimizer config register.")
 optimizer_register = Register("Optimizer register.")
 
 
-class BaseOptimizerMixin(object):
+class BaseOptimizer(object):
+
+    def get_optimizer(self):
+        """TODO: Docstring for get_optimizer.
+        :returns: TODO
+
+        """
+        raise NotADirectoryError
 
     def init_optimizer(self, optimizer, model, config):
         """TODO: Docstring for get_optimizer.
@@ -39,6 +46,13 @@ class BaseOptimizerMixin(object):
         params.append({"params": reserve_params})
 
         return optimizer(params=params, **config)
+
+    def __call__(self):
+        """TODO: Docstring for __call__.
+        :returns: TODO
+
+        """
+        return self.get_optimizer()
 
 
 def import_optimizers(optimizers_dir, namespace):

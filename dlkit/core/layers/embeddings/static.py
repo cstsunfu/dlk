@@ -57,7 +57,7 @@ class StaticEmbedding(SimpleModule):
         self._required_keys = {'input_ids'} # required by this module
         self.config = config
         self.dropout = nn.Dropout(self.config.dropout)
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding), freeze=self.config.freeze)
+        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze)
         
     def provide_keys(self)->Set:
         """TODO: should provide_keys in model?

@@ -48,7 +48,7 @@ class Train(object):
                 trace = source.split('.')
                 for t in trace:
                     config_point = config_point[t]
-                config_name.append(to+"="+str(config_point))
+                config_name.append(to+str(config_point))
             if config_name:
                 self.config_names.append('_'.join(config_name))
             else:
@@ -73,7 +73,9 @@ class Train(object):
         """
         config = config['root']
         # save configure
-        json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name), 'w'), ensure_ascii=False, indent=4)
+        log_path = os.path.join(config.get('config').get('save_dir'), name)
+        os.makedirs(log_path, exist_ok=True)
+        json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name, "config.json"), 'w'), ensure_ascii=False, indent=4)
 
         datamodule = self.get_datamodule(config)
         manager = self.get_manager(config, name)
@@ -86,7 +88,7 @@ class Train(object):
         :returns: TODO
 
         """
-        return pkl.load(open(config['data_path'], 'rb'))
+        return pkl.load(open(config['data_path'], 'rb')).get('data', {})
 
     def get_datamodule(self, config):
         """TODO: Docstring for get_datamodule.

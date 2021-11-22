@@ -29,5 +29,6 @@
         },
     },
     "_focus": {
+        "root._name": "task."
     },
 }
