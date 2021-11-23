@@ -4,8 +4,8 @@ import copy
 from typing import Callable, List, Dict, Union
 from dlkit.utils.register import Register
 from dlkit.utils.config import ConfigTool
-from dlkit.utils.logger import get_logger
-logger = get_logger()
+from dlkit.utils.logger import logger
+logger = logger()
 import json
 
 config_parser_register = Register("Config parser register")
@@ -37,11 +37,11 @@ class LinkUnionTool(object):
             if self.find(parant)!= self.find(child):
                 raise PermissionError(f"The  {parant} and {child} has been linked to different values, but now you want to link them together.")
             elif self.find(parant) == child:
-                print(f"WARNING: High level config has the link '{child} -> {parant}', and the low level reversed link '{parant} -> {child}' is been ignored.")
+                logger.warning(f"High level config has the link '{child} -> {parant}', and the low level reversed link '{parant} -> {child}' is been ignored.")
             else:
                 return
         elif self.find(child): # only child has been linked
-            print(f"WARNING: Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
+            logger.warn(f"Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
             self.link_union[parant] = self.find(child)
         elif self.find(parant): # only parant has been linked
             self.link_union[child] = self.find(parant)
@@ -239,14 +239,14 @@ class BaseConfigParser(object):
         return all_level_links
 
     def parser_with_check(self, parser_link=True)->List[Dict]:
-        """parser and check the result, only used for __main__ processor
+        """parser config and check the result, only used for __main__ processor
         :returns: parserd all possible configs
         """
         configs = self.parser(parser_link)
         self.check_config(configs)
         return configs
 
-    def parser(self, parser_link=True) -> List[Dict]:
+    def parser(self, parser_link=True) -> List:
         """ root parser
         return a list of para dicts for all possible combinations
         :parser_link: whether parser the link of config 
@@ -293,8 +293,10 @@ class BaseConfigParser(object):
             return_list.append(config)
 
         if self.is_rep_config(return_list):
-            for config in return_list:
-                print(config)
+            logger.warning(f"The Configures is Repeated, Please Check The Configures Carefully.")
+            for i, config in enumerate(return_list):
+                logger.info(f"The {i}th Configure is:")
+                logger.info(json.dumps(config, indent=2))
             raise ValueError('REPEAT CONFIG')
         return return_list
 

@@ -200,6 +200,9 @@ class LitAutoEncoder(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        print("configure optim")
+        for group in optimizer.param_groups:
+            print(f"optimizer group： {group}")
         return optimizer
 
 
@@ -309,15 +312,15 @@ if __name__ == "__main__":
     
     trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, logger=logger, default_root_dir='test_sub_dir_2', callbacks=[ModelCheckpoint(dirpath='checkpoint_dirpath', filename='checkpoint_filename')])
 
-# default logger used by trainer
-    # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
-    # trainer.test(model=autoencoder)
+# # default logger used by trainer
+    # # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
+    # # trainer.test(model=autoencoder)
     trainer.fit(model=autoencoder, datamodule=data_module)
-    # print(trainer.predict(model=autoencoder, dataloaders=data_module))
-    # print(trainer.world_size)
-    # trainer.predict(model=autoencoder, dataloaders=data_module)
-    # autoencoder.load_state_dict(torch.load('./test.pt'))
-    # # print('test ')
-    # autoencoder.to_torchscript("script.sc")
-    # trainer.test(autoencoder, datamodule=data_module)
-    # torch.save(autoencoder.state_dict(), './test.pt')
+    # # print(trainer.predict(model=autoencoder, dataloaders=data_module))
+    # # print(trainer.world_size)
+    # # trainer.predict(model=autoencoder, dataloaders=data_module)
+    # # autoencoder.load_state_dict(torch.load('./test.pt'))
+    # # # print('test ')
+    # # autoencoder.to_torchscript("script.sc")
+    # # trainer.test(autoencoder, datamodule=data_module)
+    # # torch.save(autoencoder.state_dict(), './test.pt')

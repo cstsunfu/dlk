@@ -2,8 +2,10 @@ from typing import Any, Dict, Union, Callable, List, Tuple, Type
 import json
 import copy
 import os
-from dlkit.utils.logger import get_logger
+from dlkit.utils.logger import logger
 from dlkit.utils.register import Register
+
+logger = logger()
 
 
 class ConfigTool(object):
@@ -24,8 +26,6 @@ class ConfigTool(object):
             elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
                 ConfigTool._inplace_update_dict(_base[item], _new[item])
             else:
-                print(f"base {_base[item]} type: {type(_base[item])}")
-                print(f"new {_new[item]} type: {type(_new[item])}")
                 raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
 
     @staticmethod
