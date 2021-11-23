@@ -3,6 +3,7 @@
 **/tb_logger/**
 *.pkl
 *.pyc
+*.ckpt
 *.log
 *.raw
 *.txt

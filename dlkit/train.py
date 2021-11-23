@@ -1,7 +1,7 @@
 import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
-from dlkit.utils.parser import config_parser_register 
+from dlkit.utils.parser import BaseConfigParser
 from dlkit.utils.config import ConfigTool
 from dlkit.data.datamodules import datamodule_register, datamodule_config_register
 from dlkit.managers import manager_register, manager_config_register
@@ -9,9 +9,9 @@ from dlkit.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
 import uuid
 import json
+from dlkit.utils.logger import logger
 
-from dlkit.utils.logger import get_logger
-logger = get_logger()
+logger = logger()
 
 
 class Train(object):
@@ -38,8 +38,10 @@ class Train(object):
             config = hjson.load(open(config), object_pairs_hook=dict)
 
         self.focus = config.pop('_focus', {})
-        self.configs = config_parser_register.get('root')(config).parser_with_check()
-        # logger.info(json.dumps(self.configs, indent=4))
+        # self.configs = config_parser_register.get('root')(config).parser_with_check()
+        self.configs = BaseConfigParser(config).parser_with_check()
+
+        # self.configs = config_parser_register.get('root')(config).parser()
         self.config_names = []
         for possible_config in self.configs:
             config_name = []
@@ -75,7 +77,7 @@ class Train(object):
         # save configure
         log_path = os.path.join(config.get('config').get('save_dir'), name)
         os.makedirs(log_path, exist_ok=True)
-        json.dump(config, open(os.path.join(config.get('config').get('save_dir'), name, "config.json"), 'w'), ensure_ascii=False, indent=4)
+        json.dump({"root":config, "_focus": self.focus}, open(os.path.join(config.get('config').get('save_dir'), name, "config.json"), 'w'), ensure_ascii=False, indent=4)
 
         datamodule = self.get_datamodule(config)
         manager = self.get_manager(config, name)

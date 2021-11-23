@@ -1,7 +1,6 @@
 from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
-import torch
 from . import optimizer_register, optimizer_config_register, BaseOptimizer
 
 

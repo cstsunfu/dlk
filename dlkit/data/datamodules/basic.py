@@ -3,12 +3,12 @@ from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union, Any
 from dlkit.utils.config import ConfigTool
 from dlkit.data.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
-from dlkit.utils.logger import get_logger
+from dlkit.utils.logger import logger
 # from pytorch_lightning import LightningDataModule
 from torch.nn.utils.rnn import pad_sequence
 import torch
 import copy
-logger = get_logger()
+logger = logger()
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(object):

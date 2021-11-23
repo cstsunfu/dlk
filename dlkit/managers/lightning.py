@@ -1,3 +1,4 @@
+from torch.functional import Tensor
 import torch.nn as nn
 from . import manager_register, manager_config_register
 from typing import Dict, List
@@ -105,7 +106,7 @@ class LightningManager(object):
         super().__init__()
 
         if config.logger:
-            config.logger = TensorBoardLogger(save_dir=os.path.join(rt_config["save_dir"], rt_config["name"]))
+            config.logger = TensorBoardLogger(save_dir=os.path.join(rt_config["save_dir"], rt_config["name"]), version='')
         if config.callbacks:
             config.callbacks = self.get_callbacks(config.callbacks, rt_config)
 

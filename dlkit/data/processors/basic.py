@@ -5,6 +5,9 @@ from dlkit.utils.parser import BaseConfigParser
 from dlkit.data.processors import IProcessor, processor_config_register, processor_register
 from dlkit.data.subprocessors import subprocessor_config_register, subprocessor_register
 from dlkit.utils.config import ConfigTool
+from dlkit.utils.logger import logger
+
+logger = logger()
 
 @processor_config_register('basic')
 class BasicProcessorConfig(object):
@@ -143,11 +146,15 @@ class BasicProcessor(IProcessor):
         :data: TODO
         :returns: TODO
         """
+        logger.info(f"Start Data Processing....")
         for subprocessor_name in self.feed_order:
             subprocessor_config_dict = self.subprocessors.get(f'subprocessor@{subprocessor_name}')
+            logger.info(f"Processing on '{subprocessor_name}' ....")
             subprocessor_name = subprocessor_config_dict.get("_name")
             subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
             subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
             data = subprocessor.process(data)
+        logger.info(f"Data Processed.")
 
         return data
+

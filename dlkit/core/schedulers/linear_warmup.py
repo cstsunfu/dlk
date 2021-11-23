@@ -1,9 +1,9 @@
 from typing import Dict
 from . import scheduler_register, scheduler_config_register, BaseScheduler
 from torch.optim.lr_scheduler import LambdaLR
-from dlkit.utils.logger import get_logger
+from dlkit.utils.logger import logger
 import torch.optim as optim
-logger = get_logger()
+logger = logger()
 
 
 @scheduler_config_register("linear_warmup")
