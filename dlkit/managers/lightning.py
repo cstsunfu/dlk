@@ -2,6 +2,7 @@ from torch.functional import Tensor
 import torch.nn as nn
 from . import manager_register, manager_config_register
 from typing import Dict, List
+import hjson
 import torch
 import pytorch_lightning as pl
 from dlkit.utils.config import ConfigTool
@@ -28,7 +29,7 @@ class LightningManagerConfig(object):
         self.callbacks = self.get_callbacks_config(config)  # this is callback config, should be initialized Callback in LightningManager
         self.logger = manager_config.get("logger", True)
 
-        self.enable_checkpointing = manager_config.get("enable_checkpointing", False) # use checkpoint callback
+        self.enable_checkpointing = manager_config.get("enable_checkpointing", True) # use checkpoint callback
         self.accelerator = manager_config.get("accelerator", None)
         self.default_root_dir = manager_config.get("default_root_dir", None)
         self.gradient_clip_val = manager_config.get("gradient_clip_val", None)
@@ -91,8 +92,9 @@ class LightningManagerConfig(object):
         callback_names = config.get("config", {}).get("callbacks", [])
         callback_configs_list = []
         for callback_name in callback_names:
-            callback_config = config.get(f"callback@{callback_name}")
-            assert callback_config, f"You want to use callback '{callback_name}', but not provide the config."
+            callback_config = config.get(f"callback@{callback_name}", {})
+            if not callback_config:
+                callback_config = hjson.load(open(f'dlkit/configures/core/callbacks/{callback_name}.hjson', 'r'), object_pairs_hook=dict)
             callback_configs_list.append(callback_config)
         return callback_configs_list
 
@@ -110,6 +112,7 @@ class LightningManager(object):
         if config.callbacks:
             config.callbacks = self.get_callbacks(config.callbacks, rt_config)
 
+        print(config.callbacks)
         self.manager = pl.Trainer(**config.__dict__)
 
     def get_callbacks(self, callback_configs, rt_config):

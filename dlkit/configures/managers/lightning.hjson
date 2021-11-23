@@ -1,9 +1,9 @@
 {
     "_name": "lightning",
     "config":{
-        "callbacks": [],
+        "callbacks": ["checkpoint@val_loss"],
         "logger": true,
-        "enable_checkpointing": false,
+        "enable_checkpointing": true,
         "accelerator": null,
         "default_root_dir": null,
         "gradient_clip_val": null,

@@ -12,6 +12,17 @@ from torch.nn.utils.rnn import pad_sequence
 import torch.optim as optim
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
+
+import logging
+pl_logger = logging.getLogger("ligtning")
+pl_logger.setLevel(logging.INFO)
+# pl_logger.propagate = False
+pl_logger.info("--------------------------------------------------------------------------------------------")
+
+
+# loger.info(...)
+# loger.debug(...)
+
 # TODO: train dataloader shuffle=True
     # other shuffle=False
 
@@ -83,7 +94,7 @@ class LitAutoEncoder(pl.LightningModule):
         :returns: TODO
 
         """
-        print("outputs: ", outputs)
+        # print("outputs: ", outputs)
 
     def training_step(self, batch, batch_idx):
         # training_step defined the train loop.
@@ -162,7 +173,7 @@ class LitAutoEncoder(pl.LightningModule):
         # if self.trainer.is_global_zero:
             # self.log("my_reduced_metric", mean, rank_zero_only=True)
         # print(self.train_data)
-        print(f"origin outputs on rank {self.local_rank}: {outputs}")
+        # print(f"origin outputs on rank {self.local_rank}: {outputs}")
         def proc_dist_outputs(dist_outputs):
             """gather all distributed outputs to outputs which is like in a single worker.
 
@@ -200,9 +211,9 @@ class LitAutoEncoder(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        print("configure optim")
-        for group in optimizer.param_groups:
-            print(f"optimizer group： {group}")
+        # print("configure optim")
+        # for group in optimizer.param_groups:
+            # # print(f"optimizer group： {group}")
         return optimizer
 
 
@@ -265,6 +276,8 @@ def collate_wrapper(batch):
 
 if __name__ == "__main__":
     # pl.seed_everything(seed=21, workers=False)
+    # loger = logging.getLogger('lightning')
+
     pl.seed_everything( workers=False)
     inp = [np.random.randn(np.random.randint(16, 17)) for _ in range(8)]
     # print(inp)

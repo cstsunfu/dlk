@@ -1,7 +1,7 @@
 {
     "_name": "checkpoint",
     "config": {
-        "monitor": "val_loss",
+        "monitor": "train_loss",
         "save_weights_only": true,
         "save_top_k": 3,
         "every_n_epochs": 1,
