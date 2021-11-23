@@ -521,9 +521,28 @@ class CRF(nn.Module):
 
         return best_tags_list
 
+class Module(nn.Module):
+    """docstring for Module"""
+    def __init__(self):
+        super(Module, self).__init__()
+        self.linear = nn.LSTM(300, 300)
+        self.linear2 = nn.Linear(300, 100)
 
-tag_num = 8
-lengths = [10, 20, 12, 8]
+
+    def forward(self, inp):
+        """TODO: Docstring for forward.
+
+        :inp: TODO
+        :returns: TODO
+
+        """
+        inp = self.linear(inp)[0]
+        inp = self.linear(inp)[0]
+        return inp
+        
+
+tag_num = 100
+lengths = [300, 500, 320, 100]
 feats = torch.rand((len(lengths), max(lengths), tag_num))
 tags = torch.randint(0, tag_num, (len(lengths), max(lengths)))
 mask = torch.tensor([[1]*length + (max(lengths)-length)*[0] for length in lengths], dtype=torch.bool)
@@ -536,7 +555,7 @@ crf = CRF(tag_num, batch_first=True)
 # || Time spend: 0.16005492210388184
 
 start = time.time()
-for i in range(40):
+for i in range(10):
     crf.forward(feats, tags, mask)
 print(f"Time spend: {time.time() - start}")
 
@@ -544,7 +563,20 @@ print(f"Time spend: {time.time() - start}")
 # || Time spend: 2.300191879272461
 
 start = time.time()
-for i in range(40):
+for i in range(10):
     # crf.viterbi_decode(feats, mask)
     crf.decode(feats, mask)
 print(f"Time spend: {time.time() - start}")
+
+
+
+# inp = torch.rand(4, 400, 300)
+# module = Module()
+
+# start = time.time()
+# for i in range(10):
+    # module(inp)
+    # # crf.viterbi_decode(feats, mask)
+
+# print(f"Time spend: {time.time() - start}")
+

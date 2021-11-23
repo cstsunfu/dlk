@@ -85,17 +85,24 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self._origin_test_data = None
         self.postprocessor = config.postprocess(config.postprocess_config)
 
+    def get_progress_bar_dict(self):
+        tqdm_dict = super().get_progress_bar_dict()
+        tqdm_dict.pop("v_num", None)
+        return tqdm_dict
+
     def forward(self, inputs):
         return self.model(inputs)
 
     def training_step(self, batch, batch_idx):
         result = self.model.training_step(batch)
         loss = self.calc_loss(result, batch)
+        self.log_dict({"train_loss": loss}, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         result = self.model.validation_step(batch)
         loss = self.calc_loss(result, batch)
+        self.log_dict({"val_loss": loss}, prog_bar=True)
         return {"loss": loss, "index": batch["_index"], "predict": result}
 
     def validation_epoch_end(self, outputs):

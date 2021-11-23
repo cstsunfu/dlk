@@ -2,7 +2,7 @@
     // default checkpoint configure
     "_name": "checkpoint",
     "config": {
-        "monitor": null,
+        "monitor": "*@*",
         "save_top_k": 3,
         "save_last": null,
         "auto_insert_metric_name": true,

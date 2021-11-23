@@ -19,6 +19,7 @@ class CheckpointCallbackConfig(object):
             "every_n_train_steps": null,
             "every_n_epochs": null,
             "save_on_train_epoch_end": null,
+            "save_weights_only": false,
         }
     }
     """
@@ -32,6 +33,7 @@ class CheckpointCallbackConfig(object):
         self.every_n_train_steps = config.get('every_n_train_steps', None)
         self.every_n_epochs = config.get('every_n_epochs', None)
         self.save_on_train_epoch_end = config.get('save_on_train_epoch_end', None)
+        self.save_weights_only = config.get('save_weights_only', False)
 
 @callback_register('checkpoint')
 class CheckpointCallback(object):

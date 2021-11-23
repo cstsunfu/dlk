@@ -1,0 +1,7 @@
+{
+    // default progressbar configure
+    "_name": "progressbar",
+    "config": {
+        "disable_v_num": true,
+    }
+}
