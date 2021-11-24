@@ -3,7 +3,9 @@ from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
-# import multiprocessing as mp
+from dlkit.utils.logger import logger
+
+logger = logger()
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(object):
@@ -65,6 +67,9 @@ class Token2ID(ISubProcessor):
             return data
 
         for data_set_name in self.data_set:
+            if data_set_name not in data['data']:
+                logger.info(f'The {data_set_name} not in data. We will skip do token2id on it.')
+                continue
             data_set = data['data'][data_set_name]
             for key, value in self.data_pair.items():
                 get_index = partial(get_index_wrap, key)

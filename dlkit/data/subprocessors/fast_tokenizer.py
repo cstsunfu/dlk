@@ -2,6 +2,7 @@ from dlkit.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocess
 from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable
 import json
+from dlkit.utils.logger import logger
 
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from tokenizers import normalizers
@@ -10,6 +11,8 @@ from tokenizers import pre_tokenizers
 import pandas as pd
 from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
+
+logger = logger()
 
 
 @subprocessor_config_register('fast_tokenizer')
@@ -21,7 +24,7 @@ class FastTokenizerConfig(object):
         "config": {
             "train": { // you can add some whitespace surround the '&' 
                 "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ["train", "dev"],
+                    "train": ["train", "valid", 'test'],
                     "predict": ["predict"],
                     "online": ["online"]
                 },
@@ -199,6 +202,9 @@ class FastTokenizer(ISubProcessor):
 
     def process(self, data: Dict)->Dict:
         for data_set_name in self.config.data_set:
+            if data_set_name not in data['data']:
+                logger.info(f'The {data_set_name} not in data. We will skip tokenize it.')
+                continue
             data_set = data['data'][data_set_name]
             data_set = self._process(data_set, self.config.process_data, self.config.filed_map)
             data['data'][data_set_name] = data_set

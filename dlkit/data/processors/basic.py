@@ -14,110 +14,100 @@ class BasicProcessorConfig(object):
     """docstring for BasicProcessorConfig
     config e.g.
     {
-        "processor": {
-            "_name": "basic",
-            "config": {
-                "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "save"]
-            },
-            "subprocessor@load": {
-                "_name": "load",
-                "config":{
-                    "base_dir": "."
-                    "predict":{
-                        "token_ids": "./token_ids.pkl",
-                        "embedding": "./embedding.pkl",
-                        "label_ids": "./label_ids.pkl",
-                    },
-                    "online": [
-                        "predict", //base predict
-                        {   // special config, update predict, is this case, the config is null, means use all config from "predict"
-                        }
-                    ]
-                }
-            },
-            "subprocessor@save": {
-                "_name": "save",
-                "config":{
-                    "base_dir": "."
-                    "train":{
-                        "data.train": "./train.pkl",
-                        "data.dev": "./dev.pkl",
-                        "token_ids": "./token_ids.pkl",
-                        "embedding": "./embedding.pkl",
-                        "label_ids": "./label_ids.pkl",
-                    },
-                    "predict": {
-                        "data.predict": "./predict.pkl"
+        // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
+        "_name": "basic@test_text_cls",
+        "config": {
+            "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "token_embedding", "save"]
+        },
+        "subprocessor@load": {
+            "_base": "load",
+            "config":{
+                "base_dir": "."
+                "predict":{
+                    "meta": "./meta.pkl",
+                },
+                "online": [
+                    "predict", //base predict
+                    {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
                     }
-                }
-            },
-            "subprocessor@tokenizer":{
-                "_base": "wordpiece_tokenizer",
-                "config": {   TODO: REfactor config
-                    "train": { // you can add some whitespace surround the '&' 
-                        "data_set": {                   // for different stage, this processor will process different part of data
-                            "train": ["train", "dev"],
-                            "predict": ["predict"],
-                            "online": ["online"]
-                        },
-                        "config_path": "./token.json",
-                        "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
-                        "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
-                        "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
-                        "filed_map": { // this is the default value, you can provide other name
-                            "tokens": "tokens",
-                            "ids": "ids",
-                            "attention_mask": "attention_mask",
-                            "type_ids": "type_ids",
-                            "special_tokens_mask": "special_tokens_mask",
-                            "offsets": "offsets",
-                        }, // the tokenizer output(the key) map to the value
-                        "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                        "process_data": [
-                            ["sentence", { "is_pretokenized": false}], 
-                        ],
-                        /*"data_type": "pair", // single or pair*/
-                        /*"process_data": [*/
-                            /*['sentence_a', { "is_pretokenized": false}], */ 
-                            /*['sentence_b', {}], the config of the second data must as same as the first*/ 
-                        /*],*/
-                    },
-                    "predict": "train",
-                    "online": "train"
-                }
-            },
-            "subprocessor@token_gather":{
-                "_name": "token_gather",
-                "config": {
-                    "train": { // only train stage using
-                        "data_set": {                   // for different stage, this processor will process different part of data
-                            "train": ["train", "dev"]
-                        },
-                        "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                        "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
-                        "update": null, // null or another Vocabulary object to update
+                ]
+            }
+        },
+        "subprocessor@save": {
+            "_base": "save",
+            "config":{
+                "base_dir": "."
+                "train":{
+                    "processed": "processed_data.pkl", // all data
+                    "meta": {
+                        "meta.pkl": ['label_vocab'] //only for next time use
                     }
-                }
-            },
-            "subprocessor@label_to_id":{
-                "_name": "token2id",
-                "config": {
-                    "train":{ //train、predict、online stage config,  using '&' split all stages
-                        "data_pair": {
-                            "label": "label_id"
-                        },
-                        "data_set": {                   // for different stage, this processor will process different part of data
-                            "train": ['train', 'dev'],
-                            "predict": ['predict'],
-                            "online": ['online']
-                        },
-                        "vocab": "label_vocab", // usually provided by the "token_gather" module
-                    }, //3
-                    "predict": "train",
-                    "online": "train",
+                },
+                "predict": {
+                    "processed": "processed_data.pkl",
                 }
             }
-        }
+        },
+        "subprocessor@tokenizer":{
+            "_base": "fast_tokenizer",
+            "config": { 
+                "train": { 
+                    "config_path": "*@*",
+                    "prefix": ""
+                    "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                    "process_data": [
+                        ["sentence", { "is_pretokenized": false}], 
+                    ],
+                    "post_processor": "default"
+                    "filed_map": { // this is the default value, you can provide other name
+                        "ids": "input_ids",
+                    }, // the tokenizer output(the key) map to the value
+                },
+                "predict": "train",
+                "online": "train"
+            }
+        },
+        "subprocessor@token_gather":{
+            "_base": "token_gather",
+            "config": {
+                "train": { // only train stage using
+                    "data_set": {      // for different stage, this processor will process different part of data
+                        "train": ["train", "valid"]
+                    },
+                    "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                    "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                }
+            }
+        },
+        "subprocessor@label_to_id":{
+            "_base": "token2id",
+            "config": {
+                "train":{ //train、predict、online stage config,  using '&' split all stages
+                    "data_pair": {
+                        "label": "label_id"
+                    },
+                    "data_set": {                   // for different stage, this processor will process different part of data
+                        "train": ['train', 'valid', 'test'],
+                        "predict": ['predict'],
+                        "online": ['online']
+                    },
+                    "vocab": "label_vocab", // usually provided by the "token_gather" module
+                }, //3
+                "predict": "train",
+                "online": "train",
+            }
+        },
+        "subprocessor@token_embedding": {
+            "_base": "token_embedding",
+            "config":{
+                "train": { // only train stage using
+                    "embedding_file": "*@*",
+                    "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "embedding_size": 200,
+                }
+            }
+        },
     }
     """
 
@@ -148,9 +138,9 @@ class BasicProcessor(IProcessor):
         """
         logger.info(f"Start Data Processing....")
         for subprocessor_name in self.feed_order:
-            subprocessor_config_dict = self.subprocessors.get(f'subprocessor@{subprocessor_name}')
+            subprocessor_config_dict = self.subprocessors[f'subprocessor@{subprocessor_name}']
             logger.info(f"Processing on '{subprocessor_name}' ....")
-            subprocessor_name = subprocessor_config_dict.get("_name")
+            subprocessor_name = subprocessor_config_dict["_name"]
             subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
             subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
             data = subprocessor.process(data)
