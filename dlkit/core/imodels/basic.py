@@ -9,6 +9,7 @@ from dlkit.data.postprocessors import postprocessor_register, postprocessor_conf
 from dlkit.utils.config import ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
 from dlkit.utils.logger import logger
+from functools import lru_cache
 logger = logger()
 
 import pytorch_lightning as pl
@@ -99,40 +100,60 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
     def training_step(self, batch, batch_idx):
         result = self.model.training_step(batch)
-        loss = self.calc_loss(result, batch)
+        loss = self.calc_loss(result, batch, rt_config={
+            "current_step": self.global_step,
+            "current_epoch": self.current_epoch, 
+            "total_steps": self.num_training_steps, 
+            "total_epochs": self.num_training_epochs
+        })
         self.log_dict({"train_loss": loss.unsqueeze(0)}, prog_bar=True)
         return loss
 
+
     def validation_step(self, batch, batch_idx):
         result = self.model.validation_step(batch)
-        loss = self.calc_loss(result, batch)
+        loss = self.calc_loss(result, batch, rt_config={  # align with training step
+            "current_step": self.global_step,
+            "current_epoch": self.current_epoch, 
+            "total_steps": self.num_training_steps, 
+            "total_epochs": self.num_training_epochs
+        })
         gather_column = list(self.gather_data.keys())
         return_result = {"loss": loss.unsqueeze(0)}
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]
         return_result['_index'] = batch['_index']
-        logger.info(f"after validate bath {batch_idx}")
-        # return return_result
-        return {"loss": loss.unsqueeze(0), "index": batch['_index']}
+        return return_result
 
     def validation_epoch_end(self, outputs):
         """TODO: Docstring for test_epoch_end.
         :returns: TODO
         """
-        print("before gather,  ", len(outputs))
         outputs = self.gather_outputs(outputs)
-        print("after gather,  ", len(outputs))
 
         if self.local_rank in [0, -1]:
             key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
             # TODO: TODO
-            self.log_dict(self.postprocessor(stage='valid', outputs=key_all_ins_map, origin_data=self._origin_valid_data), prog_bar=True)
+            self.log_dict(
+                self.postprocessor(stage='valid', outputs=key_all_ins_map, origin_data=self._origin_valid_data,
+                    rt_config={
+                        "current_step": self.global_step,
+                        "current_epoch": self.current_epoch, 
+                        "total_steps": self.num_training_steps, 
+                        "total_epochs": self.num_training_epochs
+                    }),
+                prog_bar=True)
         return outputs
 
     def test_step(self, batch, batch_idx):
         result = self.model.test_step(batch)
-        loss = self.calc_loss(result, batch)
+        loss = self.calc_loss(result, batch, rt_config={  # align with training step
+            "current_step": self.global_step,
+            "current_epoch": self.current_epoch, 
+            "total_steps": self.num_training_steps, 
+            "total_epochs": self.num_training_epochs
+        })
         gather_column = list(self.gather_data.keys())
         return_result = {"loss": loss.unsqueeze(0)}
         for column in gather_column:
@@ -150,13 +171,29 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         if self.local_rank in [0, -1]:
             key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
-            self.log_dict(self.postprocessor(stage='test', outputs=key_all_ins_map, origin_data=self._origin_test_data), prog_bar=True)
+            self.log_dict(
+                self.postprocessor(stage='test', outputs=key_all_ins_map, origin_data=self._origin_test_data,
+                    rt_config={
+                        "current_step": self.global_step,
+                        "current_epoch": self.current_epoch, 
+                        "total_steps": self.num_training_steps, 
+                        "total_epochs": self.num_training_epochs
+                    }),
+                prog_bar=True)
         return outputs
 
     def predict_step(self, batch, batch_idx):
         return self.model.predict_step(batch)
 
     @property
+    @lru_cache(maxsize=5) # the size should always == 1
+    def num_training_epochs(self) -> int:
+        """Total training epochs inferred from datamodule and devices.
+        """
+        return self.trainer.max_epochs
+
+    @property
+    @lru_cache(maxsize=5) # the size should always == 1
     def num_training_steps(self) -> int:
         """Total training steps inferred from datamodule and devices.
         """
@@ -176,6 +213,12 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return (batches // effective_accum) * self.trainer.max_epochs
 
     def configure_optimizers(self):
+
+        self.calc_loss.update_config(rt_config={
+            "total_steps": self.num_training_steps, 
+            "total_epochs": self.num_training_epochs 
+        })
+
         optimizer = self.get_optimizer()
         num_warmup_steps = self.config.scheduler_config.num_warmup_steps
         if num_warmup_steps>0 and num_warmup_steps<1:

@@ -38,7 +38,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         return loss_name_map.get(stage_name, stage_name+'_loss')
 
     @abc.abstractmethod
-    def process(self, stage, outputs, origin_data)->Dict:
+    def process(self, stage, outputs, origin_data, rt_config)->Dict:
         """TODO: Docstring for process.
 
         :arg1: TODO
@@ -47,12 +47,12 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def __call__(self, stage, outputs, origin_data):
+    def __call__(self, stage, outputs, origin_data, rt_config):
         """TODO: Docstring for __call.
         :returns: TODO
 
         """
-        return self.process(stage, outputs, origin_data)
+        return self.process(stage, outputs, origin_data, rt_config)
         
 
 postprocessor_config_register = Register('PostProcessor config register')

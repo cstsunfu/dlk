@@ -17,8 +17,8 @@ import hjson
 from dlkit.data.processors import processor_config_register, processor_register
 
 train = pd.DataFrame({
-    "sentence": ['i love you.'.split()+['f fas f'], 'thank you'.split()],
-    "label": ['pos', 'neg']
+    "sentence": ['i love you.'.split()+['f fas f'], 'thank you'.split()]*100,
+    "label": ['pos', 'neg']*100
 })
 
 valid = pd.DataFrame({

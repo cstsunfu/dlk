@@ -6,10 +6,18 @@
             "label_vocab": 'label_vocab',
         },
         "output_data": {
-            "logits": "logits"
+            "logits": "logits",
+            "label_id": "label_id"
         },
         "origin_data": {
             "sentence": "sentence"
-        }
+        },
+        "save_root_path": ".",  //save data root dir
+        "save_path": {
+            "valid": "valid",  // relative dir for valid stage
+            "test": "test",    // relative dir for test stage
+        },
+        "start_save_step": 0,  // -1 means the last
+        "start_save_epoch": -1,
     }
 }
