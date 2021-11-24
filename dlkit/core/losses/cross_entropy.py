@@ -3,27 +3,20 @@ import torch.nn as nn
 from . import loss_register, loss_config_register
 import torch.nn as nn
 
-TASK_PRED_TRUTH_PAIRS = {
-    "classification": [
-        ["logits", "label_id"]
-    ],
-    "mrc": [
-        ["start_logits", "start_position"],
-        ["end_logits", "end_position"]
-    ]
-}
 
 @loss_config_register("cross_entropy")
 class CrossEntropyLossConfig(object):
     """docstring for CrossEntropyLossConfig
     {
         config: {
-            task_name: "classification",
-            weight: null, # or a list of value for every class
-            ignore_index: -1,
-            label_smoothing: 0.0, # torch>=1.10
-            pred_truth_pair: [], # overwrite the TASK_PRED_TRUTH_PAIRS
-            loss_scale: [], # scale the loss, if loss_scale 
+            "ignore_index": -1,
+            "weight": null, # or a list of value for every class
+            "label_smoothing": 0.0, # torch>=1.10
+            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+            "schdeule": [1],
+            "scale": [1], # scale the loss for every schedule
+            // "schdeule": [0.3, 1.0],
+            // "scale": [0, 1, 0.5], # scale the loss
         },
         _name: "cross_entropy",
     }
@@ -31,20 +24,24 @@ class CrossEntropyLossConfig(object):
     def __init__(self, config: Dict):
         super(CrossEntropyLossConfig, self).__init__()
         config = config.get('config', {})
-        self.task_name = config.get('task_name', "") # must provide
+        self.scale = config['scale']
+        self.schedule = config['schedule']
+
+        if not isinstance(self.scale, list):
+            assert isinstance(float(self.scale), float)
+            self.scale = [self.scale]
+        if not isinstance(self.schedule, list):
+            assert isinstance(float(self.schedule), float)
+            self.schedule = [self.schedule]
+        assert len(self.schedule) == len(self.scale)
+        assert self.schedule[-1] - 1 < 0.00001
+
         self.weight = config.get('weight', None)
         self.ignore_index = config.get('ignore_index', -1)
         self.label_smoothing = config.get('label_smoothing', 0.0)
         self.pred_truth_pair = config.get('pred_truth_pair', [])
-        if self.task_name not in TASK_PRED_TRUTH_PAIRS and not self.pred_truth_pair:
-            raise PermissionError(f"The cross_entropy loss is not defined for {self.task_name}.")
         if not self.pred_truth_pair:
-            self.pred_truth_pair = TASK_PRED_TRUTH_PAIRS.get(self.task_name, [])
-        self.loss_scale = config.get("config", [])
-        if self.loss_scale:
-            assert len(self.loss_scale) == len(self.pred_truth_pair), f"loss scale number must equals to loss num"
-        else:
-            self.loss_scale = [1]*len(self.pred_truth_pair) if len(self.pred_truth_pair)>0 else []
+            raise PermissionError(f"You must provide the pred_truth_pair for loss.")
 
 
 @loss_register("cross_entropy")
@@ -58,19 +55,39 @@ class CrossEntropyLoss(object):
             label_smoothing=config.label_smoothing 
         )
 
-    def calc(self, result, inputs):
+    def update_config(self, rt_config):
+        """TODO: Docstring for update_config.
+        :rt_config: TODO
+         {
+             "total_steps": self.num_training_steps, 
+             "total_epochs": self.num_training_epochs 
+         }
+        :returns: TODO
+
+        """
+        self.current_stage = 0
+        self.config.schedule = [rt_config['total_steps']*i for i in self.config.schedule]
+
+
+    def calc(self, result, inputs, rt_config):
         """TODO: Docstring for get_loss.
         :returns: TODO
         """
-
-        loss = 0
-        for i, (pred, truth) in enumerate(self.config.pred_truth_pair):
-            loss = loss + self.cross_entropy(result[pred], inputs[truth]) * self.config.loss_scale[i]
+        if rt_config['current_step']>self.config.schedule[self.current_stage]:
+            self.current_stage += 1
+        scale = self.config.scale[self.current_stage]
+        pred_name, truth_name = self.config.pred_truth_pair
+        loss = self.cross_entropy(result[pred_name], inputs[truth_name]) * scale
         return loss
 
-    def __call__(self, result, inputs):
+    def __call__(self, result, inputs, rt_config):
         """TODO: Docstring for __call__.
         :returns: TODO
-
+         rt_config={
+             "current_step": self.global_step,
+             "current_epoch": self.current_epoch, 
+             "total_steps": self.num_training_steps, 
+             "total_epochs": self.num_training_epochs
+         }),
         """
-        return self.calc(result, inputs)
+        return self.calc(result, inputs, rt_config)

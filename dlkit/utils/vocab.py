@@ -54,7 +54,7 @@ class Vocabulary(object):
         """get the word of index from this vocab
         """
         try:
-            return self.idx2word[index]
+            return self.idx2word[int(index)]
         except:
             raise KeyError('Undefined index: {}'.format(index))
 
