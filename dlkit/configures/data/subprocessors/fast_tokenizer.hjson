@@ -3,7 +3,7 @@
     "config": {
         "train": { // you can add some whitespace surround the '&' 
             "data_set": {                   // for different stage, this processor will process different part of data
-                "train": ["train", "dev"],
+                "train": ["train", "valid", 'test'],
                 "predict": ["predict"],
                 "online": ["online"]
             },

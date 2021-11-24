@@ -47,6 +47,11 @@ class GatherOutputMixin(object):
         """TODO: Docstring for concat_outputs.
         :returns: TODO
         """
+        print('befor concat')
+        print(outputs)
+        print(len(outputs))
+        print("the first")
+        print(outputs[0])
         key_all_batch_map = {}
         for batch in outputs:
             for key in batch:

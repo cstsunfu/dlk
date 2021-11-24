@@ -1,0 +1,15 @@
+{
+    "_name": "classification",
+    "config": {
+        "meta": "*@*",
+        "meta_data": {
+            "label_vocab": 'label_vocab',
+        },
+        "output_data": {
+            "logits": "logits"
+        },
+        "origin_data": {
+            "sentence": "sentence"
+        }
+    }
+}

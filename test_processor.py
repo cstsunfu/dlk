@@ -8,7 +8,6 @@
 
 
 
-
 import pandas as pd
 from dlkit.utils.logger import setting_logger
 setting_logger('process.log')
@@ -22,12 +21,12 @@ train = pd.DataFrame({
     "label": ['pos', 'neg']
 })
 
-dev = pd.DataFrame({
-    "sentence": ['thank you'.split()],
-    "label": ['neg']
+valid = pd.DataFrame({
+    "sentence": ['thank you'.split()]*100,
+    "label": ['neg', 'pos']*50
 })
 
-data = {"train": train, "dev": dev}
+data = {"train": train, "valid": valid}
 
 inp = {"data": data}
 

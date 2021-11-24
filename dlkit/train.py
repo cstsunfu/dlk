@@ -70,19 +70,38 @@ class Train(object):
             logger.info(f"Runing the {i}th {name}...")
             self.run_oneturn(config, name)
 
-    def run_oneturn(self, config, name):
-        """TODO: Docstring for run_oneturn.
+    def dump_config(self, config, name):
+        """TODO: Docstring for dump_config.
+
+        :config: TODO
+        :returns: TODO
+
         """
-        config = config['root']
-        # save configure
         log_path = os.path.join(config.get('config').get('save_dir'), name)
         os.makedirs(log_path, exist_ok=True)
         json.dump({"root":config, "_focus": self.focus}, open(os.path.join(config.get('config').get('save_dir'), name, "config.json"), 'w'), ensure_ascii=False, indent=4)
 
-        datamodule = self.get_datamodule(config)
-        manager = self.get_manager(config, name)
-        imodel = self.get_imodel(config)
+    def run_oneturn(self, config, name):
+        """TODO: Docstring for run_oneturn.
+        """
 
+        config = config['root']
+        # save configure
+        self.dump_config(config, name)
+
+        # get data
+        data = self.get_data(config)
+
+        # set datamodule
+        datamodule = self.get_datamodule(config, data)
+
+        # set training manager
+        manager = self.get_manager(config, name)
+
+        # init imodel and inject the origin test and valid data
+        imodel = self.get_imodel(config, data)
+
+        # start training
         manager.fit(model=imodel, datamodule=datamodule)
 
     def get_data(self, config):
@@ -90,9 +109,10 @@ class Train(object):
         :returns: TODO
 
         """
-        return pkl.load(open(config['data_path'], 'rb')).get('data', {})
+        self.data = pkl.load(open(config['config']['data_path'], 'rb')).get('data', {})
+        return self.data
 
-    def get_datamodule(self, config):
+    def get_datamodule(self, config, data):
         """TODO: Docstring for get_datamodule.
 
         :config: TODO
@@ -100,7 +120,7 @@ class Train(object):
 
         """
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
-        datamodule = DataModule(DataModuleConfig, self.get_data(config.get('config')))
+        datamodule = DataModule(DataModuleConfig, data)
         return datamodule
         
     def get_manager(self, config, name):
@@ -114,7 +134,7 @@ class Train(object):
         manager = Manager(ManagerConfig, rt_config={"save_dir": config.get('config').get("save_dir"), "name": name})
         return manager
 
-    def get_imodel(self, config):
+    def get_imodel(self, config, data):
         """TODO: Docstring for get_imodel.
 
         :config: TODO
@@ -123,4 +143,10 @@ class Train(object):
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
+        if 'valid' in data:
+            imodel._origin_valid_data = data['valid']
+
+        if 'test' in data:
+            imodel._origin_valid_data = data['test']
+
         return imodel

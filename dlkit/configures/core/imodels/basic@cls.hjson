@@ -10,7 +10,7 @@
         "_base": "linear_warmup"
     },
     "postprocessor": {
-        "_base": "identity"
+        "_base": "classification"
     },
     "config": {
 

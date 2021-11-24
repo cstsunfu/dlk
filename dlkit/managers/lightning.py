@@ -43,8 +43,8 @@ class LightningManagerConfig(object):
         self.ipus = manager_config.get("ipus", None)
         self.log_gpu_memory = manager_config.get("log_gpu_memory", None)
         self.enable_progress_bar = manager_config.get("enable_progress_bar", True)
-        self.overfit_batches = manager_config.get("overfit_batches", 0.0)
-        self.track_grad_norm = manager_config.get("track_grad_norm", - 1)
+        self.overfit_batches = eval(manager_config.get("overfit_batches", "0.0"))
+        self.track_grad_norm = manager_config.get("track_grad_norm", -1)
         self.check_val_every_n_epoch = manager_config.get("check_val_every_n_epoch", 1)
         self.fast_dev_run = manager_config.get("fast_dev_run", False)
         self.accumulate_grad_batches = manager_config.get("accumulate_grad_batches", 1)
@@ -53,11 +53,12 @@ class LightningManagerConfig(object):
         self.max_steps = manager_config.get("max_steps", -1)
         self.min_steps = manager_config.get("min_steps", None)
         self.max_time = manager_config.get("max_time", None)
-        self.limit_train_batches = manager_config.get("limit_train_batches", 1.0)
-        self.limit_val_batches = manager_config.get("limit_val_batches", 1.0)
-        self.limit_test_batches = manager_config.get("limit_test_batches", 1.0)
-        self.limit_predict_batches = manager_config.get("limit_predict_batches", 1.0)
-        self.val_check_interval = manager_config.get("val_check_interval", 1.0)
+
+        self.limit_train_batches = eval(manager_config.get("limit_train_batches", "1.0"))
+        self.limit_val_batches = eval(manager_config.get("limit_val_batches", "1.0"))
+        self.limit_test_batches = eval(manager_config.get("limit_test_batches", "1.0"))
+        self.limit_predict_batches = eval(manager_config.get("limit_predict_batches", "1.0"))
+        self.val_check_interval = eval(manager_config.get("val_check_interval", "1.0"))
         self.log_every_n_steps = manager_config.get("log_every_n_steps", 50)
         self.strategy = manager_config.get("strategy", 'ddp') # use ddp as default
         self.sync_batchnorm = manager_config.get("sync_batchnorm", False)
@@ -112,7 +113,6 @@ class LightningManager(object):
         if config.callbacks:
             config.callbacks = self.get_callbacks(config.callbacks, rt_config)
 
-        print(config.callbacks)
         self.manager = pl.Trainer(**config.__dict__)
 
     def get_callbacks(self, callback_configs, rt_config):

@@ -6,12 +6,39 @@ from typing import Callable, Dict, Type
 from dlkit.utils.register import Register
 import abc
 
+class IPostProcessorConfig(object):
+    """docstring for PostProcessorConfigBase"""
+    def __init__(self, config):
+        super(IPostProcessorConfig, self).__init__()
+        self.config = config.get('config', {})
+
+    @property
+    def output_data(self):
+        """TODO: Docstring for output_data.
+        :returns: TODO
+
+        """
+        return self.config.get("output_data", {})
+
 class IPostProcessor(metaclass=abc.ABCMeta):
     """docstring for IPostProcessor"""
 
+    def loss_name_map(self, stage_name):
+        """TODO: Docstring for loss_name_map.
+
+        :stage: TODO
+        :returns: TODO
+
+        """
+        loss_name_map = {
+            "valid": "val_loss",
+            "train": "train_loss",
+            "test": "test_loss"
+        }
+        return loss_name_map.get(stage_name, stage_name+'_loss')
 
     @abc.abstractmethod
-    def process(self, **inputs)->Dict:
+    def process(self, stage, outputs, origin_data)->Dict:
         """TODO: Docstring for process.
 
         :arg1: TODO
@@ -20,12 +47,12 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def __call__(self, **inputs):
+    def __call__(self, stage, outputs, origin_data):
         """TODO: Docstring for __call.
         :returns: TODO
 
         """
-        return self.process(**inputs)
+        return self.process(stage, outputs, origin_data)
         
 
 postprocessor_config_register = Register('PostProcessor config register')

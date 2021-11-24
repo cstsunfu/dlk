@@ -20,7 +20,13 @@
                         "embedding_dim": 50,
                         "dropout": 0.1,
                         "embedding_file": "*@*",
+                        "label_num": 2,
                     },
+                },
+                "postprocessor": {
+                    "config": {
+                        "meta": 'test_cls/meta.pkl'
+                    }
                 },
             },
             "datamodule": {

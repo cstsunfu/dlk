@@ -2,7 +2,9 @@ from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from dlkit.utils.logger import logger
 
+logger = logger()
 
 @subprocessor_config_register('token_gather')
 class TokenGatherConfig(object):
@@ -27,12 +29,12 @@ class TokenGatherConfig(object):
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
 
-        self.gather_columns = self.config.get("gather_columns")
-        self.deliver = self.config.get("deliver", "")
+        self.gather_columns = self.config["gather_columns"]
+        self.deliver = self.config["deliver"]
         if self.data_set and (not self.deliver):
             raise ValueError("The 'deliver' value must not be null.")
-        self.update = self.config.get('update', "")
-        self.unk = self.config.get('unk', "")
+        self.update = self.config['update']
+        self.unk = self.config['unk']
 
 @subprocessor_register('token_gather')
 class TokenGather(ISubProcessor):
@@ -53,6 +55,9 @@ class TokenGather(ISubProcessor):
         else:
             self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk)
         for data_set_name in self.data_set:
+            if data_set_name not in data['data']:
+                logger.info(f'The {data_set_name} not in data. We will skip gather tokens from it.')
+                continue
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:
                 self.vocab.auto_update(data_set[column])

@@ -126,7 +126,7 @@ class LitAutoEncoder(pl.LightningModule):
         loss = F.cross_entropy(x_hat, y)
         # Logging to TensorBoard by default
         self.log("validation_loss", loss)
-        return loss
+        return {"loss": loss.unsqueeze(0), "index": batch['_index'], "x_hat": x_hat, 'y': y}
 
     def test_step(self, batch, batch_idx):
         """TODO: Docstring for test_step.
@@ -151,12 +151,73 @@ class LitAutoEncoder(pl.LightningModule):
             # print("end sleep")
         return {"loss": loss.unsqueeze(0), "index": batch['_index'], "x_hat": x_hat, 'y': y}
 
+    def validation_epoch_end(self, outputs):
+        """TODO: Docstring for test_epoch_end.
+        :returns: TODO
+
+        """
+        print('batch num')
+        print(len(outputs))
+        # self.log("result", outputs)
+        gather_output = self.all_gather(outputs)
+        if self.local_rank==0:
+            # print(f"test_epoch_end outputs:", outputs)
+            print(f"All gather :", gather_output)
+            # for key in gather_output:
+                # print(f"{key}\t: {gather_output[key].shape}")
+        # self.log('------------------------------', rank_zero_only=True)
+        # mean = torch.mean(self.all_gather(outputs))
+        # print(f"Mean: {mean}")
+
+        # # When logging only on rank 0, don't forget to add
+        # # ``rank_zero_only=True`` to avoid deadlocks on synchronization.
+        # if self.trainer.is_global_zero:
+            # self.log("my_reduced_metric", mean, rank_zero_only=True)
+        # print(self.train_data)
+        # print(f"origin outputs on rank {self.local_rank}: {outputs}")
+        def proc_dist_outputs(dist_outputs):
+            """gather all distributed outputs to outputs which is like in a single worker.
+
+            :dist_outputs: the inputs of pytorch_lightning *_epoch_end when using ddp
+            :returns: the inputs of pytorch_lightning *_epoch_end when only run on one worker.
+            """
+            outputs = []
+            for dist_output in dist_outputs:
+                one_output = {}
+                for key in dist_output:
+                    try:
+                        one_output[key] = torch.cat(torch.swapaxes(dist_output[key], 0, 1).unbind(), dim=0)
+                    except:
+                        raise KeyError(f"{key}: {dist_output[key]}")
+                outputs.append(one_output)
+            return outputs
+        if self.trainer.world_size>1:
+            dist_outputs = self.all_gather(outputs)
+            if self.local_rank in [0, -1]:
+                outputs = proc_dist_outputs(dist_outputs)
+
+        if self.local_rank in [0, -1]:
+            key_all_batch_map = {}
+            for batch in outputs:
+                for key in batch:
+                    if key not in key_all_batch_map:
+                        key_all_batch_map[key] = []
+                    key_all_batch_map[key].append(batch[key])
+            key_all_ins_map = {}
+            for key in key_all_batch_map:
+                key_all_ins_map[key] = torch.cat(key_all_batch_map[key], dim=0)
+
+            # print(key_all_ins_map)
+        return outputs
+
 
     def test_epoch_end(self, outputs):
         """TODO: Docstring for test_epoch_end.
         :returns: TODO
 
         """
+        print('batch num')
+        print(len(outputs))
         # self.log("result", outputs)
         gather_output = self.all_gather(outputs)
         if self.local_rank==0:
@@ -328,12 +389,12 @@ if __name__ == "__main__":
 # # default logger used by trainer
     # # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2)
     # # trainer.test(model=autoencoder)
-    trainer.fit(model=autoencoder, datamodule=data_module)
+    # trainer.fit(model=autoencoder, datamodule=data_module)
     # # print(trainer.predict(model=autoencoder, dataloaders=data_module))
     # # print(trainer.world_size)
     # # trainer.predict(model=autoencoder, dataloaders=data_module)
     # # autoencoder.load_state_dict(torch.load('./test.pt'))
     # # # print('test ')
     # # autoencoder.to_torchscript("script.sc")
-    # # trainer.test(autoencoder, datamodule=data_module)
+    trainer.validate(autoencoder, datamodule=data_module)
     # # torch.save(autoencoder.state_dict(), './test.pt')

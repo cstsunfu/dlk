@@ -2,17 +2,19 @@ import hjson
 import pandas as pd
 from typing import Union, Dict
 from dlkit.utils.parser import BaseConfigParser
-from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor
+from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlkit.utils.config import ConfigTool
+import torch
 
 @postprocessor_config_register('identity')
-class IdentityPostProcessorConfig(object):
+class IdentityPostProcessorConfig(IPostProcessorConfig):
     """docstring for IdentityPostProcessorConfig
     config e.g.
+
     """
 
     def __init__(self, config: Dict):
-        self.config = config
+        super(IdentityPostProcessorConfig, self).__init__(config)
 
 
 @postprocessor_register('identity')
@@ -21,10 +23,12 @@ class IdentityPostProcessor(IPostProcessor):
     def __init__(self, config: IdentityPostProcessorConfig):
         super(IdentityPostProcessor, self).__init__()
 
-    def process(self, stage, **inputs)->Dict:
+    def process(self, stage, outputs, origin_data)->Dict:
         """TODO: Docstring for process.
 
         :data: TODO
         :returns: TODO
         """
-        return inputs
+        if 'loss' in outputs:
+            return {self.loss_name_map(stage): torch.sum(outputs['loss'])}
+        return {}

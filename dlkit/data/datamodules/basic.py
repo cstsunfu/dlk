@@ -44,6 +44,9 @@ class BasicDatamoduleConfig(object):
         super(BasicDatamoduleConfig, self).__init__()
         config = config['config']
         self.key_type_pairs = config.get('key_type_pairs', {})
+
+        if "_index" in self.key_type_pairs:
+            logger.warning(f"'_index' is a preserved key, we will use this to indicate the index of item, if you ignore this warning, we will ignore the origin '_index' data.")
         self.key_padding_pairs = config.get('key_padding_pairs', {})
         self.gen_mask = config.get("gen_mask", {})
         self.collate_fn = config.get('collate_fn', 'default')
