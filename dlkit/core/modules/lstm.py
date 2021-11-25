@@ -10,9 +10,8 @@ class LSTMConfig(object):
     {
         config: {
             bidirectional: true,
-            hidden_size: 200, //the output is 2*hidden_size if use
+            output_size: 200, //the output is 2*hidden_size if use
             input_size: 200,
-            proj_size: 200,
             num_layers: 1,
             dropout: 0.1, // dropout between layers
             dropout_last: true, //dropout the last layer output or not
@@ -27,8 +26,11 @@ class LSTMConfig(object):
         self.num_layers = config.get('num_layers', 1)
         self.bidirectional= config.get('bidirectional', False)
         self.input_size = config.get('input_size', 128)
-        self.hidden_size = config.get('hidden_size', 128)
-        self.proj_size = config.get('proj_size', 128)
+        self.output_size = config.get('output_size', 128)
+        self.hidden_size = self.output_size
+        if self.bidirectional:
+            assert self.output_size % 2 == 0
+            self.hidden_size = self.output_size // 2
         self.dropout = config.get('dropout', 0.1)
         self.dropout_last = config.get('dropout_last', False)
         
@@ -37,16 +39,12 @@ class LSTMConfig(object):
 class LSTM(nn.Module):
     def __init__(self, config: LSTMConfig):
         super(LSTM, self).__init__()
-        # the output_size is proj_size // 2 when bidirectinal is true
-        if config.bidirectional:
-            assert config.proj_size % 2 == 0
-            config.proj_size = config.proj_size // 2
 
         if config.num_layers <= 1:
             inlstm_dropout = 0
         else:
             inlstm_dropout = config.dropout
-        self.lstm = nn.LSTM(input_size=config.input_size, hidden_size=config.hidden_size, num_layers=config.num_layers, batch_first=True, bidirectional=config.bidirectional, dropout=inlstm_dropout, proj_size=config.proj_size)
+        self.lstm = nn.LSTM(input_size=config.input_size, hidden_size=config.hidden_size, num_layers=config.num_layers, batch_first=True, bidirectional=config.bidirectional, dropout=inlstm_dropout)
         self.dropout_last = nn.Dropout(p=config.dropout if config.dropout_last else 0)
 
     def forward(self, input: torch.Tensor, mask: torch.Tensor)->torch.Tensor:

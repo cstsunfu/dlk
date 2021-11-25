@@ -2,38 +2,38 @@ from typing import Dict
 import torch.nn as nn
 from . import loss_register, loss_config_register
 import torch.nn as nn
+from dlkit.utils.config import ConfigTool
 
-TASK_PRED_TRUTH_PAIRS = {
-    "classification": [
-        ["logits", "label_id"]
-    ],
-    "mrc": [
-        ["start_logits", "start_position"],
-        ["end_logits", "end_position"]
-    ]
-}
 
 @loss_config_register("multi_loss")
 class MultiLossConfig(object):
     """docstring for CrossEntropyLossConfig
     {
-        "loss@main":{
-            "_name": "cross_entropy",
-            "config": {
-            "schdeule": [0.3, 0.6],
-            "scale": [0, 1, 0.5],
+        "loss@the_first": {
+            config: {
+                "ignore_index": -1,
+                "weight": null, # or a list of value for every class
+                "label_smoothing": 0.0, # torch>=1.10
+                "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+                "schdeule": [0.3, 0.6, 1],
+                "scale": [1, 0, 0.5], # scale the loss for every schedule
+                // "schdeule": [0.3, 1.0],
+                // "scale": [0, 1, 0.5], # scale the loss
             },
-
-        }
+            _name: "cross_entropy",
+        }, 
+        "loss@the_second": {
+            config: {
+                "pred_truth_pair": ["logits2", "label2"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+                "schdeule": [0.3, 0.6, 1],
+                "scale": [0, 1, 0.5], # scale the loss for every schedule
+                // "schdeule": [0.3, 1.0],
+                // "scale": [0, 1, 0.5], # scale the loss
+            },
+            _base: "cross_entropy",  // _name or _base is all ok
+        },
         config: {
-            "loss_list": [''],
-
-            task_name: "classification",
-            weight: null, # or a list of value for every class
-            ignore_index: -1,
-            label_smoothing: 0.0, # torch>=1.10
-            pred_truth_pair: [], # overwrite the TASK_PRED_TRUTH_PAIRS
-            loss_scale: [], # scale the loss, if loss_scale 
+            "loss_list": ['the_first', 'the_second'],
         },
         _name: "cross_entropy",
     }
@@ -41,20 +41,7 @@ class MultiLossConfig(object):
     def __init__(self, config: Dict):
         super(MultiLossConfig, self).__init__()
         config = config.get('config', {})
-        self.task_name = config.get('task_name', "") # must provide
-        self.weight = config.get('weight', None)
-        self.ignore_index = config.get('ignore_index', -1)
-        self.label_smoothing = config.get('label_smoothing', 0.0)
-        self.pred_truth_pair = config.get('pred_truth_pair', [])
-        if self.task_name not in TASK_PRED_TRUTH_PAIRS and not self.pred_truth_pair:
-            raise PermissionError(f"The cross_entropy loss is not defined for {self.task_name}.")
-        if not self.pred_truth_pair:
-            self.pred_truth_pair = TASK_PRED_TRUTH_PAIRS.get(self.task_name, [])
-        self.loss_scale = config.get("config", [])
-        if self.loss_scale:
-            assert len(self.loss_scale) == len(self.pred_truth_pair), f"loss scale number must equals to loss num"
-        else:
-            self.loss_scale = [1]*len(self.pred_truth_pair) if len(self.pred_truth_pair)>0 else []
+
 
 
 @loss_register("multi_loss")
@@ -62,11 +49,15 @@ class MultiLoss(object):
     def __init__(self, config: MultiLossConfig):
         super(MultiLoss, self).__init__()
         self.config = config
-        self.cross_entropy = nn.CrossEntropyLoss(
-            weight=config.weight,
-            ignore_index=config.ignore_index, 
-            label_smoothing=config.label_smoothing 
-        )
+
+    def get_loss(self, config):
+        """get encoder config and encoder module
+
+        :config: TODO
+        :returns: TODO
+
+        """
+        return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
 
     def calc(self, result, inputs, rt_config):
         """TODO: Docstring for get_loss.

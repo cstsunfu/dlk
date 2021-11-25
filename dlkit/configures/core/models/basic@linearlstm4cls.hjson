@@ -30,7 +30,6 @@
         config: {
             return_logits: "encoder_logits",
             output_map: {},
-            hidden_size: "*@*",
             input_size: *@*,
             output_size: "*@*",
             num_layers: 1,
@@ -51,7 +50,6 @@
         "config.embedding_dim": ["embedding.config.embedding_dim", 
                                  "encoder.config.input_size", 
                                  "encoder.config.output_size", 
-                                 "encoder.config.hidden_size", 
                                  "decoder.config.input_size"
                                 ],
         "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],

@@ -1,6 +1,6 @@
 {
-    model: "*@*",
-    loss: {
+    "model": "*@*",
+    "loss": {
         "_base": "cross_entropy@classification",
     },
     "optimizer": {
@@ -15,5 +15,5 @@
     "config": {
 
     },
-    _name: "basic"
+    "_name": "basic"
 }
