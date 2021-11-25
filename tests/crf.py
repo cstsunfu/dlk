@@ -541,8 +541,8 @@ class Module(nn.Module):
         return inp
         
 
-tag_num = 100
-lengths = [300, 500, 320, 100]
+tag_num = 3
+lengths = [10, 20]
 feats = torch.rand((len(lengths), max(lengths), tag_num))
 tags = torch.randint(0, tag_num, (len(lengths), max(lengths)))
 mask = torch.tensor([[1]*length + (max(lengths)-length)*[0] for length in lengths], dtype=torch.bool)
@@ -554,19 +554,21 @@ crf = CRF(tag_num, batch_first=True)
 # || Time spend: 0.09769082069396973
 # || Time spend: 0.16005492210388184
 
+output = crf.decode(feats, mask)
+print(output)
 start = time.time()
-for i in range(10):
-    crf.forward(feats, tags, mask)
-print(f"Time spend: {time.time() - start}")
+# for i in range(10):
+    # crf.forward(feats, tags, mask)
+# print(f"Time spend: {time.time() - start}")
 
 # || Time spend: 2.5643091201782227
 # || Time spend: 2.300191879272461
 
-start = time.time()
-for i in range(10):
-    # crf.viterbi_decode(feats, mask)
-    crf.decode(feats, mask)
-print(f"Time spend: {time.time() - start}")
+# start = time.time()
+# for i in range(10):
+    # # crf.viterbi_decode(feats, mask)
+    # crf.decode(feats, mask)
+# print(f"Time spend: {time.time() - start}")
 
 
 

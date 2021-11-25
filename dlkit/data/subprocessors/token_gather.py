@@ -18,6 +18,7 @@ class TokenGatherConfig(object):
                     },
                     "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                     "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "ignore": "", // ignore the token, the id of this token will be -1
                     "update": null, // null or another Vocabulary object to update
                     "unk": "",
                 }
@@ -29,6 +30,7 @@ class TokenGatherConfig(object):
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
 
+        self.ignore = self.config['ignore']
         self.gather_columns = self.config["gather_columns"]
         self.deliver = self.config["deliver"]
         if self.data_set and (not self.deliver):
@@ -53,7 +55,7 @@ class TokenGather(ISubProcessor):
         if self.update:
             self.vocab = data[self.update]
         else:
-            self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk)
+            self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk, ignore=self.config.ignore)
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
                 logger.info(f'The {data_set_name} not in data. We will skip gather tokens from it.')

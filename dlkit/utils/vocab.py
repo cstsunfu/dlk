@@ -6,13 +6,16 @@ class Vocabulary(object):
     r"""vocabulary doc:
     """
     
-    def __init__(self, do_strip: bool=False, unknown: str=''):
+    def __init__(self, do_strip: bool=False, unknown: str='', ignore: str=""):
         self.word2idx = {}
         self.idx2word = {}
         self.do_strip = do_strip
         self.word_num = 0
         self.word_count = Counter() # reserved
         self.unknown = unknown
+        if ignore:
+            self.word2idx[ignore] = -1
+            self.idx2word[-1] = ignore
         if unknown:
             self.word_count[unknown] += 1
             self.word2idx[unknown] = self.word_num
@@ -35,6 +38,18 @@ class Vocabulary(object):
         vocab = cls()
         vocab.__dict__ = attr
         return vocab
+
+    def __getitem__(self, index):
+        """TODO: Docstring for __getitem__.
+
+        :index: TODO
+        :returns: TODO
+
+        """
+        try:
+            return self.idx2word[int(index)]
+        except:
+            raise KeyError('Undefined index: {}'.format(index))
 
     def get_index(self, word):
         """get the index of word from this vocab
