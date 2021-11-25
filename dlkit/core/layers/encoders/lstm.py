@@ -16,16 +16,14 @@ class LSTMConfig(object):
         config: {
             return_logits: "encoder_logits",
             output_map: {},
-            hidden_size: "*@*",
             input_size: *@*,
             output_size: "*@*",
             num_layers: 1,
             dropout: "*@*", // dropout between layers
         },
         _link: {
-            config.hidden_size: [module.config.hidden_size],
             config.input_size: [module.config.input_size],
-            config.output_size: [module.config.proj_size],
+            config.output_size: [module.config.output_size],
             config.dropout: [module.config.dropout],
         },
         _name: "lstm",

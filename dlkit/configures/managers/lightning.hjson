@@ -22,7 +22,7 @@
         "check_val_every_n_epoch": 1,
         "fast_dev_run": false,
         "accumulate_grad_batches": 1,
-        "max_epochs": 10,
+        "max_epochs": 100,
         "min_epochs": null,
         "max_steps": -1,
         "min_steps": null,

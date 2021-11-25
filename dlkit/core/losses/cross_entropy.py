@@ -15,8 +15,8 @@ class CrossEntropyLossConfig(object):
             "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
             "schdeule": [1],
             "scale": [1], # scale the loss for every schedule
-            // "schdeule": [0.3, 1.0],
-            // "scale": [0, 1, 0.5], # scale the loss
+            // "schdeule": [0.3, 1.0], # can be a list or str
+            // "scale": "[0.5, 1]",
         },
         _name: "cross_entropy",
     }
@@ -24,8 +24,14 @@ class CrossEntropyLossConfig(object):
     def __init__(self, config: Dict):
         super(CrossEntropyLossConfig, self).__init__()
         config = config.get('config', {})
+
         self.scale = config['scale']
         self.schedule = config['schedule']
+
+        if isinstance(self.scale, str):
+            self.scale = eval(self.scale)
+        if isinstance(self.schedule, str):
+            self.schedule = eval(self.schedule)
 
         if not isinstance(self.scale, list):
             assert isinstance(float(self.scale), float)
