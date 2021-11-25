@@ -94,13 +94,16 @@ class ClassificationPostProcessor(IPostProcessor):
         logits = outputs[self.config.logits]
 
         log_info = {}
-        log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
+        if self.config.label_id in outputs:
+            log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
+            label_ids = outputs[self.config.label_id]
+        else:
+            label_ids = ["null"]*logits.shape[0]
 
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
             self.config.start_save_step = rt_config['total_steps'] - 1
             self.config.start_save_epoch = rt_config['total_epochs'] - 1
         if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
-            label_ids = list(outputs[self.config.label_id])
             assert len(logits.shape) == 2
             predict_indexes = list(torch.argmax(logits, 1))
             indexes = list(outputs["_index"])

@@ -119,7 +119,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             "total_epochs": self.num_training_epochs
         })
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)}
+        return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]
@@ -155,7 +155,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             "total_epochs": self.num_training_epochs
         })
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)}
+        return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]

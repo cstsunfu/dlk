@@ -29,6 +29,7 @@ class FastTokenizerConfig(object):
                     "online": ["online"]
                 },
                 "config_path": "*@*",
+                "deliver": "tokenizer",
                 "truncation": {     // if this is set to None or empty, will not do trunc
                     "max_length": 512,
                     "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
@@ -71,6 +72,7 @@ class FastTokenizerConfig(object):
         self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
         self.truncation = self.config.get("truncation", {})
+        self.deliver = self.config.get('deliver', "")
         prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
@@ -208,4 +210,6 @@ class FastTokenizer(ISubProcessor):
             data_set = data['data'][data_set_name]
             data_set = self._process(data_set, self.config.process_data, self.config.filed_map)
             data['data'][data_set_name] = data_set
+        if self.config.deliver:
+            data[self.config.deliver] = self.tokenizer.to_str()
         return data
