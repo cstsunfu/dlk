@@ -25,6 +25,7 @@ class CRFConfig(object):
         self.reduction = config.get("reduction", 'mean')
         
 
+@module_register("crf")
 class CRF(nn.Module):
     """
     This module is mostly copied from pytorchcrf
