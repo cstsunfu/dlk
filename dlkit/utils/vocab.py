@@ -51,6 +51,16 @@ class Vocabulary(object):
         except:
             raise KeyError('Undefined index: {}'.format(index))
 
+    def auto_get_index(self, data):
+        """get the index of word from this vocab
+        """
+        if isinstance(data, str):
+            return self.get_index(data)
+        elif isinstance(data, list):
+            return [self.auto_get_index(subdata) for subdata in data]
+        else:
+            raise ValueError("Don't support the type of {}".format(data))
+
     def get_index(self, word):
         """get the index of word from this vocab
         """
@@ -71,6 +81,8 @@ class Vocabulary(object):
         try:
             return self.idx2word[int(index)]
         except:
+            if index == -1:
+                return '[unknown]'
             raise KeyError('Undefined index: {}'.format(index))
 
     def add(self, word):

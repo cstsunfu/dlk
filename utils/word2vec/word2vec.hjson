@@ -1,11 +1,32 @@
 {
-    "train_files": ['../wikitext-2/wiki.train.subwords'],
-    "embedding_size": 50,
-    "model_file": '../wikitext-2/embedding.model',
-    "embedding_file": '../wikitext-2/embedding.txt'
+    /*"train_files": ['../wikitext-2/wiki.train.subwords'],*/
+    /*"model_file": '../wikitext-2/embedding.model',*/
+    /*"embedding_file": '../wikitext-2/embedding.txt'*/
+    "train_files": [
+        'subtoken_only_title_0_sub_0.txt', 
+        'subtoken_only_title_0_sub_1.txt', 
+        'subtoken_only_title_0_sub_2.txt', 
+        'subtoken_only_title_0_sub_3.txt', 
+        'subtoken_only_title_0_sub_4.txt', 
+        'subtoken_only_title_1_sub_0.txt', 
+        'subtoken_only_title_1_sub_1.txt', 
+        'subtoken_only_title_1_sub_2.txt', 
+        'subtoken_only_title_1_sub_3.txt', 
+        'subtoken_only_title_1_sub_4.txt', 
+        'subtoken_only_title_2_sub_0.txt', 
+        'subtoken_only_title_2_sub_1.txt', 
+        'subtoken_only_title_2_sub_2.txt', 
+        'subtoken_only_title_2_sub_3.txt', 
+        'subtoken_only_title_2_sub_4.txt', 
+    ],
+    "model_file": '../embedding.model',
+    "embedding_file": '../embedding.txt'
+    "embedding_size": 200,
     "min_count": 10, // minist token frequence
+    "max_vocab_size": 300000, // minist token frequence
     "window": 6, // window size
     "workers": null, //default use all cpu
-    "epochs":15,
-    "sg": 1, // use skip gram or not, use small data set 1, big data set 0 to use cbow
+    "epochs":10,
+    "hs":1,
+    "sg": 0, // use skip gram or not, use small data set 1, big data set 0 to use cbow
 }

@@ -1,5 +1,5 @@
 {
-    config: {
+    "config": {
         "ignore_index": -1,
         "weight": null, # or a list of value for every class
         "label_smoothing": 0.0, # torch>=1.10
@@ -9,5 +9,5 @@
         // "schdeule": [0.3, 1.0],
         // "scale": [0, 1, 0.5], # scale the loss
     },
-    _name: "cross_entropy",
+    "_name": "cross_entropy",
 }

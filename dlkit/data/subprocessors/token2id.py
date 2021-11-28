@@ -15,10 +15,10 @@ class Token2IDConfig(object):
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
                     "data_pair": {
-                        "label": "label_id"
+                        "labels": "label_ids"
                     },
                     "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'dev'],
+                        "train": ['train', 'valid', 'test'],
                         "predict": ['predict'],
                         "online": ['online']
                     },
@@ -61,7 +61,7 @@ class Token2ID(ISubProcessor):
         def get_index_wrap(key, x):
             """TODO: Docstring for get_index_wrap.
             """
-            return vocab.get_index(x[key])
+            return vocab.auto_get_index(x[key])
 
         if not self.data_set:
             return data

@@ -76,7 +76,7 @@ class FastTokenizerConfig(object):
         prefix = self.config.get('prefix', '')
         self.filed_map = self.config.get('filed_map', { # default
             "tokens": "tokens",
-            "ids": "ids",
+            "ids": "input_ids",
             "attention_mask": "attention_mask",
             "type_ids": "type_ids",
             "special_tokens_mask": "special_tokens_mask",
@@ -178,6 +178,7 @@ class FastTokenizer(ISubProcessor):
         """
         assert len(process_data) == 1
         process_column_name, config = process_data[0]
+
         process_column_data = data[process_column_name]
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
         token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)

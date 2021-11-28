@@ -2,7 +2,9 @@
     "_name": "load",
     "config":{
         "base_dir": ".",
-        "predict": "*@*",
+        "predict":{
+            "meta": "./meta.pkl",
+        },
         "online": "predict"
     }
 }

@@ -44,7 +44,7 @@ class GatherOutputMixin(object):
         return outputs
 
     def concat_list_of_dict_outputs(self, outputs):
-        """TODO: Docstring for concat_outputs.
+        """only support all the outputs has the same dim
         :returns: TODO
         """
         key_all_batch_map = {}

@@ -30,7 +30,7 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
             },
             "output_data": {
                 "logits": "logits",
-                "label_id": "label_id"
+                "label_ids": "label_ids"
             },
             "origin_data": {
                 "sentence": "sentence"
@@ -51,7 +51,7 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
 
         self.logits = self.output_data['logits']
         self.sentence = self.config['origin_data']['sentence']
-        self.label_id = self.output_data['label_id']
+        self.label_ids = self.output_data['label_ids']
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
         else:
@@ -94,11 +94,11 @@ class ClassificationPostProcessor(IPostProcessor):
         logits = outputs[self.config.logits]
 
         log_info = {}
-        if self.config.label_id in outputs:
-            log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
-            label_ids = outputs[self.config.label_id]
+        if self.config.label_ids in outputs:
+            log_info["acc"] = self.metric(logits, outputs[self.config.label_ids])
+            label_ids = outputs[self.config.label_ids]
         else:
-            label_ids = ["null"]*logits.shape[0]
+            label_ids = [-1]*logits.shape[0]
 
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
             self.config.start_save_step = rt_config['total_steps'] - 1

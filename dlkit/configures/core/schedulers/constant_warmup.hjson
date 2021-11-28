@@ -1,7 +1,7 @@
 {
-    config: {
+    "config": {
         "last_epoch": -1,
         "num_warmup_steps": 0,
     },
-    _name: "constant_warmup",
+    "_name": "constant_warmup",
 }

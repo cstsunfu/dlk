@@ -1,0 +1,43 @@
+{
+    "root": {
+        "_name": "test_cls",
+        "_link": {"config.data_path": ['task.imodel.model.config.embedding_file']},
+        "_search": {},
+        "config": {
+            "save_dir": "test_simple_ner",  # must provide
+            "data_path": "test_simple_ner/processed_data.pkl",  # must provide
+        },
+        "task": {
+            "_name": "test_token_cls",
+            "manager": {
+                "_base": "lightning",
+                "config":{
+                    "max_epochs": 10,
+                }
+            },
+            "imodel": {
+                "_base": "basic@sequence_labeling",
+                "model": {
+                    "_base": "basic@linearlstm4tokencls",
+                    "config": {
+                        "embedding_dim": 50,
+                        "dropout": 0.1,
+                        "embedding_file": "*@*",
+                        "label_num": 11,
+                    },
+                },
+                "postprocessor": {
+                    "config": {
+                        "meta": 'test_simple_ner/meta.pkl'
+                    }
+                },
+            },
+            "datamodule": {
+                "_base": "basic@test_text_cls",
+            },
+        },
+    },
+    "_focus": {
+        "root._name": "task."
+    },
+}

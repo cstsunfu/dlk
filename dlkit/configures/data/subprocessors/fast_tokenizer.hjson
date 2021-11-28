@@ -12,6 +12,7 @@
                 "max_length": 512,
                 "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
             },
+            "deliver": "tokenizer",
             /*"normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config*/
             "normalizer": "default", // if don't set this, will use the default normalizer from config
             /*"pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config*/
@@ -21,7 +22,7 @@
             "prefix": "",   //the filed_map map target prefix
             "filed_map": { // this is the default value, you can provide other name
                 "tokens": "tokens",
-                "ids": "ids",
+                "ids": "input_ids",
                 "attention_mask": "attention_mask",
                 "type_ids": "type_ids",
                 "special_tokens_mask": "special_tokens_mask",
