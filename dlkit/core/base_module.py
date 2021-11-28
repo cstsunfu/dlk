@@ -3,6 +3,13 @@ import torch.nn as nn
 from typing import Dict, List, Callable, Any, Set
 import abc
 
+class BaseModuleConfig(object):
+    """docstring for BaseLayerConfig"""
+    def __init__(self, config: Dict):
+        super(BaseModuleConfig, self).__init__()
+        self.output_map = config['config'].get("output_map", {})
+        self.input_map = config['config'].get('input_map', {})
+        
 
 class ModuleOutputRenameMixin:
     """Just rename the output key name by config to adapt the input field of downstream module."""
@@ -17,6 +24,30 @@ class ModuleOutputRenameMixin:
             return output
         else:
             raise PermissionError("Not Defined")
+
+    def get_real_name(self, name, name_map):
+        """TODO: Docstring for get_real_name.
+        :returns: TODO
+
+        """
+        if name in name_map:
+            return name_map[name]
+        else:
+            return name
+
+    def get_input_name(self, name):
+        """TODO: Docstring for get_input_name.
+        :name: TODO
+        :returns: TODO
+        """
+        return self.get_real_name(name, self.config.input_map)
+
+    def get_output_name(self, name):
+        """TODO: Docstring for get_input_name.
+        :name: TODO
+        :returns: TODO
+        """
+        return self.get_real_name(name, self.config.output_map)
 
     def set_rename(self, input: Set, output_map: Dict[str, str])->Set:
         if isinstance(input, set):
@@ -101,6 +132,20 @@ class IModuleStep(metaclass=abc.ABCMeta):
 
 class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
     """docstring for BaseModule"""
+
+    def provide_keys(self)->Set:
+        """TODO: should provide_keys in model?
+        """
+        return self.set_rename(self._provide_keys, self.config.output_map).union(self._provided_keys)
+
+    def check_keys_are_provided(self, provide: Set[str])->None:
+        """
+        """
+        self._provided_keys = provide
+        provide = self.set_rename(provide, self.config.input_map)
+        for required_key in self._required_keys:
+            if required_key not in provide:
+                raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")
 
     def init_weight(self, method: Callable):
         """init  Module weight by `method`

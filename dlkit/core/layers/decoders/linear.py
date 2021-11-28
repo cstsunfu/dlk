@@ -1,11 +1,11 @@
 import torch
 from typing import Dict, List, Set
-from dlkit.core.base_module import SimpleModule
+from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 from . import decoder_register, decoder_config_register
 from dlkit.core.modules import module_config_register, module_register
 
 @decoder_config_register("linear")
-class LinearConfig(object):
+class LinearConfig(BaseModuleConfig):
     """docstring for LinearConfig
     {
         module: {
@@ -16,7 +16,8 @@ class LinearConfig(object):
             output_size: "*@*",
             pool: null,
             return_logits: "decoder_logits",
-            output_map: {}
+            output_map: {},
+            input_map: {},
         },
         _link:{
             config.input_size: [module.config.input_size],
@@ -27,10 +28,9 @@ class LinearConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(LinearConfig, self).__init__()
+        super(LinearConfig, self).__init__(config)
         self.linear_config = config["module"]
         self.return_logits = config['config']['return_logits']
-        self.output_map = config['config']['output_map']
         
 
 @decoder_register("linear")
@@ -45,23 +45,10 @@ class Linear(SimpleModule):
 
         self.linear = module_register.get('linear')(module_config_register.get('linear')(config.linear_config))
 
-    def provide_keys(self)->Set:
-        """TODO: should provide_keys in model?
-        """
-        return self.set_rename(self._provided_keys.union(self._provide_keys), self.config.output_map)
-
-    def check_keys_are_provided(self, provide: Set[str])->None:
-        """
-        """
-        self._provided_keys = provide
-        for required_key in self._required_keys:
-            if required_key not in provide:
-                raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")
-
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        inputs["logits"] = self.linear(inputs['embedding'])
+        inputs[self.get_output_name("logits")] = self.linear(inputs[self.get_input_name('embedding')])
         if self.config.return_logits:
-            inputs[self.config.return_logits] = inputs['logits']
-        return self.dict_rename(inputs, self.config.output_map)
+            inputs[self.config.return_logits] = inputs[self.get_output_name('logits')]
+        return inputs

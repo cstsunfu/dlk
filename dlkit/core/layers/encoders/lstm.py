@@ -2,12 +2,12 @@ import torch.nn as nn
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict, List, Set
-from dlkit.core.base_module import SimpleModule
+from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 from . import encoder_register, encoder_config_register
 from dlkit.core.modules import module_config_register, module_register
 
 @encoder_config_register("lstm")
-class LSTMConfig(object):
+class LSTMConfig(BaseModuleConfig):
     """docstring for LSTMConfig
     {
         module: {
@@ -15,6 +15,7 @@ class LSTMConfig(object):
         },
         config: {
             return_logits: "encoder_logits",
+            input_map: {},
             output_map: {},
             input_size: *@*,
             output_size: "*@*",
@@ -31,10 +32,9 @@ class LSTMConfig(object):
     """
 
     def __init__(self, config: Dict):
-        super(LSTMConfig, self).__init__()
+        super(LSTMConfig, self).__init__(config)
         self.return_logits = config['config']['return_logits']
         self.lstm_config = config["module"]
-        self.output_map = config['config']['output_map']
         assert self.lstm_config['_name'] == "lstm"
         
 
@@ -49,23 +49,10 @@ class LSTM(SimpleModule):
         self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
         self.i = 0
 
-    def provide_keys(self)->Set:
-        """TODO: should provide_keys in model?
-        """
-        return self.set_rename(self._provided_keys.union(self._provide_keys), self.config.output_map)
-
-    def check_keys_are_provided(self, provide: Set[str])->None:
-        """
-        """
-        self._provided_keys = provide
-        for required_key in self._required_keys:
-            if required_key not in provide:
-                raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")
-
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        inputs['embedding'] = self.lstm(inputs['embedding'], inputs['attention_mask'])
+        inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
         if self.config.return_logits:
-            inputs[self.config.return_logits] = inputs['embedding']
-        return self.dict_rename(inputs, self.config.output_map)
+            inputs[self.config.return_logits] = inputs[self.get_output_name('embedding')]
+        return inputs

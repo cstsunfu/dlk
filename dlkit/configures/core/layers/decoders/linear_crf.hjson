@@ -1,0 +1,22 @@
+{
+    "module@linear": {
+        "_base": "linear",
+    },
+    "module@crf": {
+        "_base": "crf",
+    },
+    "config": {
+        "input_size": "*@*",
+        "output_size": "*@*",
+        "return_logits": "decoder_logits",
+        "reduction": "mean",
+        "output_map": {}, //provide_key: output_key
+        "input_map": {}, // required_key: provide_key
+    },
+    "_link":{
+        "config.input_size": ["module@linear.config.input_size"],
+        "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
+        "config.reduction": ["module@crf.config.reduction"],
+    }
+    "_name": "linear_crf",
+}

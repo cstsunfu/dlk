@@ -1,10 +1,11 @@
 {
-    config: {
-        vocab_size: "*@*",
-        embedding_dim: "*@*",
-        dropout: 0, //dropout rate
-        output_map: {},
-        return_logits: "embedding_logits",
+    "config": {
+        "vocab_size": "*@*",
+        "embedding_dim": "*@*",
+        "dropout": 0, //dropout rate
+        "output_map": {},
+        "input_map": {}, // required_key: provide_key
+        "return_logits": "embedding_logits",
     },
-    _name: "random",
+    "_name": "random",
 }
