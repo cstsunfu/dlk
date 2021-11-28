@@ -15,7 +15,7 @@ class MultiLossConfig(object):
                 "weight": null, # or a list of value for every class
                 "label_smoothing": 0.0, # torch>=1.10
                 "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-                "schdeule": [0.3, 0.6, 1],
+                "schedule": [0.3, 0.6, 1],
                 "scale": [1, 0, 0.5], # scale the loss for every schedule
                 // "schdeule": [0.3, 1.0],
                 // "scale": [0, 1, 0.5], # scale the loss
