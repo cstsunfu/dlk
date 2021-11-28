@@ -13,7 +13,7 @@ class CrossEntropyLossConfig(object):
             "weight": null, # or a list of value for every class
             "label_smoothing": 0.0, # torch>=1.10
             "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-            "schdeule": [1],
+            "schedule": [1],
             "scale": [1], # scale the loss for every schedule
             // "schdeule": [0.3, 1.0], # can be a list or str
             // "scale": "[0.5, 1]",

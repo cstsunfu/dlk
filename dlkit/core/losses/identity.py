@@ -9,9 +9,9 @@ class IdentityLossConfig(object):
     """docstring for IdentityLossConfig
     {
         config: {
-            "schdeule": [1],
+            "schedule": [1],
             "scale": [1], # scale the loss for every schedule
-            // "schdeule": [0.3, 1.0], # can be a list or str
+            // "schedule": [0.3, 1.0], # can be a list or str
             // "scale": "[0.5, 1]",
             "loss": "loss", // the real loss from result['loss']
         },
