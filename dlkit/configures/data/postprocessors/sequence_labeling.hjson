@@ -10,6 +10,7 @@
         "output_data": {
             "logits": "logits",
             "input_ids": "input_ids",
+            "predict_seq_label": "predict_seq_label",
             "attention_mask": "attention_mask",
         },
         "origin_data": {
