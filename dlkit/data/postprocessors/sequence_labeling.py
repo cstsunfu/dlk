@@ -30,6 +30,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
             "output_data": {
                 "logits": "logits",
                 "input_ids": "input_ids",
+                "predict_seq_label": "predict_seq_label",
                 "attention_mask": "attention_mask",
             },
             "origin_data": {
@@ -64,6 +65,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = self.config['ignore_labels']
         self.input_ids = self.output_data['input_ids']
+        self.predict_seq_label = self.output_data['predict_seq_label']
         self.special_tokens_mask = self.config['origin_data']['special_tokens_mask']
         self.attention_mask = self.output_data['attention_mask']
         if isinstance(self.config['meta'], str):
@@ -196,16 +198,15 @@ class SequenceLabelingPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits]
+            batch_predict = outputs[self.config.predict_seq_label]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
             batch_attention_mask = outputs[self.config.attention_mask]
 
             indexes = list(outputs["_index"])
-
             batch_input_ids = outputs[self.config.input_ids]
             outputs = []
 
-            for logits, index, input_ids, attention_mask in zip(batch_logits, indexes, batch_input_ids, batch_attention_mask):
+            for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
                 one_ins = {}
                 origin_ins = origin_data.iloc[int(index)]
 
@@ -214,32 +215,12 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 one_ins["entities_info"] = origin_ins[self.config.entities_info]
 
                 rel_token_len = int(attention_mask.sum())
+                offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
+                print(f"Predict: {predict}\n Input ids: {input_ids}\n Sentence: {one_ins['sentence']}\n")
+                print("Continue")
+                break
 
-                special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
-                offset_mapping = origin_data.iloc[int(index)][self.config.offsets]
-                logits = logits[:rel_token_len].numpy()
-
-                maxes = np.max(logits, axis=-1, keepdims=True)
-                shifted_exp = np.exp(logits - maxes)
-                scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
-                pre_entities = self.gather_pre_entities(
-                    one_ins["sentence"], input_ids[:rel_token_len], scores, offset_mapping, special_tokens_mask)
-                grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)
-                # Filter anything that is in self.ignore_labels
-                entities = [
-                    entity
-                    for entity in grouped_entities
-                    if entity.get("entity", None) not in self.config.ignore_labels
-                    and entity.get("entity_group", None) not in self.config.ignore_labels
-                ]
-                predict_entities_info = []
-                for entity in entities:
-                    one_predict = {}
-                    one_predict['start'] = entity['start']
-                    one_predict['end'] = entity['end']
-                    one_predict['labels'] = [entity['entity']]
-                    predict_entities_info.append(one_predict)
-                one_ins['predict_entities_info'] = predict_entities_info
+                # one_ins['predict_entities_info'] = predict_entities_info
                 predicts.append(one_ins)
         return predicts
 
@@ -283,7 +264,8 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 rel_token_len = int(attention_mask.sum())
 
                 special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
-                offset_mapping = origin_data.iloc[int(index)][self.config.offsets]
+                offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
+
                 logits = logits[:rel_token_len].numpy()
 
                 maxes = np.max(logits, axis=-1, keepdims=True)
