@@ -118,6 +118,17 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
+    def loss_name_map(self, stage):
+        """TODO: Docstring for loss_name_map.
+        :returns: TODO
+
+        """
+        map = {
+            "valid": 'val',
+            'train': 'train',
+            "test": "test",
+        }
+        return map.get(stage, stage)
 
     def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
         """ This script is mostly copied from Transformers
@@ -134,7 +145,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         """
         log_info = {}
         average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
-        log_info[f'{stage}_loss'] = average_loss
+        log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
         if not self.config.use_crf:
             predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         else:
