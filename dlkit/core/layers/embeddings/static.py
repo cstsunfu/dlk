@@ -1,13 +1,13 @@
 import torch.nn as nn
 from . import embedding_register, embedding_config_register
 from typing import Dict, List, Set
-from dlkit.core.base_module import SimpleModule
+from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
 import torch
 
         
 @embedding_config_register('static')
-class StaticEmbeddingConfig(object):
+class StaticEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
     {
         config: {
@@ -20,13 +20,14 @@ class StaticEmbeddingConfig(object):
             freeze: false, // is freeze
             dropout: 0, //dropout rate
             output_map: {},
+            input_map: {},
             return_logits: "embedding_logits",
         },
         _name: "static",
     }
     """
     def __init__(self, config: Dict):
-        super(StaticEmbeddingConfig, self).__init__()
+        super(StaticEmbeddingConfig, self).__init__(config)
         config = config['config']
 
         embedding_file = config['embedding_file']
@@ -39,8 +40,6 @@ class StaticEmbeddingConfig(object):
         self.embedding = embedding_file
         self.freeze = config['freeze']
         self.dropout = config['dropout']
-
-        self.output_map = config['output_map']
         self.return_logits = config['return_logits']
 
 
@@ -59,25 +58,13 @@ class StaticEmbedding(SimpleModule):
         self.dropout = nn.Dropout(self.config.dropout)
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze)
         
-    def provide_keys(self)->Set:
-        """TODO: should provide_keys in model?
-        """
-        return self.set_rename(self._provided_keys.union(self._provide_keys), self.config.output_map)
-
-    def check_keys_are_provided(self, provide: Set[str])->None:
-        """
-        """
-        self._provided_keys = provide
-        for required_key in self._required_keys:
-            if required_key not in provide:
-                raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")
-
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
-        inputs['embedding'] = self.dropout(self.embedding(inputs['input_ids']))
+        inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))
         if self.config.return_logits:
-            inputs[self.config.return_logits] = inputs['embedding']
-        return self.dict_rename(inputs, self.config.output_map)
+            inputs[self.config.return_logits] = inputs[self.get_output_name('embedding')]
+
+        return inputs

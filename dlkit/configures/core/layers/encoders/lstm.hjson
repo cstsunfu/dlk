@@ -5,6 +5,7 @@
     "config": {
         "return_logits": "encoder_logits",
         "output_map": {},
+        "input_map": {}, // required_key: provide_key
         "input_size": "*@*",
         "output_size": "*@*",
         "num_layers": 1,

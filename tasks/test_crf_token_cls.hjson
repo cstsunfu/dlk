@@ -18,7 +18,7 @@
             "imodel": {
                 "_base": "basic@sequence_labeling",
                 "model": {
-                    "_base": "basic@linearlstm4sequencelabeling",
+                    "_base": "basic@lstmcrf4sequencelabeling",
                     "config": {
                         "embedding_dim": 50,
                         "dropout": 0.1,

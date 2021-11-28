@@ -7,7 +7,8 @@
         "output_size": "*@*",
         "pool": null,
         "return_logits": "decoder_logits",
-        "output_map": {}
+        "output_map": {},
+        "input_map": {}, // required_key: provide_key
     },
     "_link":{
         "config.input_size": ["module.config.input_size"],
