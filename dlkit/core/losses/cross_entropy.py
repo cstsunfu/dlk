@@ -83,7 +83,11 @@ class CrossEntropyLoss(object):
             self.current_stage += 1
         scale = self.config.scale[self.current_stage]
         pred_name, truth_name = self.config.pred_truth_pair
-        loss = self.cross_entropy(result[pred_name], inputs[truth_name]) * scale
+        pred = result[pred_name]
+        target = inputs[truth_name]
+        pred = pred.reshape(-1, pred.shape[-1])
+        target = target.reshape(-1)
+        loss = self.cross_entropy(pred, target) * scale
         return loss
 
     def __call__(self, result, inputs, rt_config):

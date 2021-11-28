@@ -1,3 +1,17 @@
+# Appointments
+
+For one sentence processor:
+
+The input one sentence named "sentence", label named "labels"
+The output named:
+    "input_ids",
+    "label_ids",
+    "word_ids",
+    "attention_mask",
+    "special_tokens_mask",
+    "type_ids", 
+    "sequence_ids"
+    
 
 # The main file tree:
 

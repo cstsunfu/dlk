@@ -1,49 +1,43 @@
 '''
 '''
-import hjson
 import pickle as pkl
-import pandas as pd
 import json
 from typing import Dict, List, Optional, Tuple
 import os
 import numpy as np
-from typing import Union, Dict
-from dlkit.utils.parser import BaseConfigParser, PostProcessorConfigParser
+from typing import Dict
 from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
-from dlkit.utils.config import ConfigTool
 from dlkit.utils.logger import logger
-import torch
 from dlkit.utils.vocab import Vocabulary
 from tokenizers import Tokenizer
 import torchmetrics
-
-
 logger = logger()
 
-        
 
-@postprocessor_config_register('ner')
-class NerPostProcessorConfig(IPostProcessorConfig):
-    """docstring for IdentityPostProcessorConfig
+@postprocessor_config_register('sequence_labeling')
+class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
+    """docstring for SequenceLabelingPostProcessorConfig
     config e.g.
     {
-        "_name": "ner",
+        "_name": "sequence_labeling",
         "config": {
             "meta": "*@*",
+            "use_crf": false, //use or not use crf
             "meta_data": {
                 "label_vocab": 'label_vocab',
                 "tokenizer": "tokenizer",
             },
             "output_data": {
                 "logits": "logits",
-                "label_id": "label_id",
                 "input_ids": "input_ids",
-                "special_tokens_mask": "special_tokens_mask",
                 "attention_mask": "attention_mask",
             },
             "origin_data": {
+                "uuid": "uuid",
                 "sentence": "sentence",
-                "offsets": "offsets"
+                "entities_info": "entities_info",
+                "offsets": "offsets",
+                "special_tokens_mask": "special_tokens_mask",
             },
             "save_root_path": ".",  //save data root dir
             "save_path": {
@@ -59,16 +53,18 @@ class NerPostProcessorConfig(IPostProcessorConfig):
     """
 
     def __init__(self, config: Dict):
-        super(NerPostProcessorConfig, self).__init__(config)
+        super(SequenceLabelingPostProcessorConfig, self).__init__(config)
 
         self.logits = self.output_data['logits']
+        self.use_crf = self.config['use_crf']
         self.sentence = self.config['origin_data']['sentence']
         self.offsets = self.config['origin_data']['offsets']
+        self.entities_info = self.config['origin_data']['entities_info']
+        self.uuid = self.config['origin_data']['uuid']
         self.aggregation_strategy = self.config['aggregation_strategy']
-        self.label_id = self.output_data['label_id']
-        self.ignore_labels = self.output_data['ignore_labels']
+        self.ignore_labels = self.config['ignore_labels']
         self.input_ids = self.output_data['input_ids']
-        self.special_tokens_mask = self.output_data['special_tokens_mask']
+        self.special_tokens_mask = self.config['origin_data']['special_tokens_mask']
         self.attention_mask = self.output_data['attention_mask']
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
@@ -111,78 +107,208 @@ class AggregationStrategy(object):
     MAX = "max"
         
 
-@postprocessor_register('ner')
-class NerPostProcessor(IPostProcessor):
+@postprocessor_register('sequence_labeling')
+class SequenceLabelingPostProcessor(IPostProcessor):
     """docstring for DataSet"""
-    def __init__(self, config: NerPostProcessorConfig):
-        super(NerPostProcessor, self).__init__()
+    def __init__(self, config:    SequenceLabelingPostProcessorConfig):
+        super(   SequenceLabelingPostProcessor, self).__init__()
         self.config = config
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
 
-
-    def process(self, stage, outputs, origin_data, rt_config)->Dict:
+    def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
         """ This script is mostly copied from Transformers
-        rt_config={
-            "current_step": self.global_step,
-            "current_epoch": self.current_epoch, 
-            "total_steps": self.num_training_steps, 
-            "total_epochs": self.num_training_epochs
-        }),
+        :list_batch_outputs: 
+            list of batch outputs
+        :rt_config: 
+            {
+                "current_step": self.global_step,
+                "current_epoch": self.current_epoch, 
+                "total_steps": self.num_training_steps, 
+                "total_epochs": self.num_training_epochs
+            }
+        :returns: log info dict
+        """
+        log_info = {}
+        average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
+        log_info[f'{stage}_loss'] = average_loss
+        if not self.config.use_crf:
+            predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+        else:
+            predicts = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+
+        metrics = {}
+        if stage not in self.no_ground_truth_stage:
+            metrics = self.calc_metrics(predicts)
+        log_info.update(metrics)
+
+        # save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
+        # if not os.path.exists(save_path):
+            # os.makedirs(save_path, exist_ok=True)
+        # save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}.csv")
+        # logger.info(f"Save the {stage} predict data at {save_file}")
+        # json.dump(outputs, open(save_file, 'w'), indent=4)
+        # TODO Metrics
+        # log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
+        return log_info
+
+    def calc_metrics(self, predicts)->Dict:
+        """TODO: Docstring for calc_metrics.
+        :predicts: TODO
+        :returns: scores for logging
+        """
+        for i, predict in enumerate(predicts):
+            print(predict)
+            if i>3:
+                raise PermissionError
+        return {}
+
+    def average_loss(self, list_batch_outputs):
+        """TODO: Docstring for average_loss.
+
+        :list_batch_outputs: TODO
         :returns: TODO
 
         """
-        batch_logits = outputs[self.config.logits]
-        batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
-        batch_attention_mask = outputs[self.config.attention_mask]
+        sum_loss = 0
+        for batch_output in list_batch_outputs:
+            sum_loss += batch_output.get('loss', 0)
+        return sum_loss / len(list_batch_outputs)
 
-        if self.config.label_id in outputs:
-            batch_label_ids = list(outputs[self.config.label_id])
-        else:
-            batch_label_ids = batch_logits.shape[0] * [[]]
+    def crf_predict(self, list_batch_outputs, origin_data):
+        """TODO: Docstring for predict.
 
-        indexes = list(outputs["_index"])
+        :list_batch_outputs: TODO
+        :origin_data: TODO
+        :returns: TODO
 
-        batch_input_ids = outputs[self.config.input_ids]
-        outputs = []
+        """
+        if self.config.sentence not in origin_data:
+            logger.error(f"{self.config.sentence} not in the origin data")
+            raise PermissionError(f"{self.config.sentence} must be provided")
+        if self.config.uuid not in origin_data:
+            logger.error(f"{self.config.uuid} not in the origin data")
+            raise PermissionError(f"{self.config.uuid} must be provided")
+        if self.config.entities_info not in origin_data:
+            logger.error(f"{self.config.entities_info} not in the origin data")
+            raise PermissionError(f"{self.config.entities_info} must be provided")
 
-        for logits, index, label_ids, input_ids, special_tokens_mask, attention_mask in zip(batch_logits, indexes, batch_label_ids, batch_input_ids, batch_special_tokens_mask, batch_attention_mask):
-            one_ins = {}
-            sentence = origin_data.iloc[int(index)][self.config.sentence]
-            offset_mapping = origin_data.iloc[int(index)][self.config.offsets]
-            logits = logits.numpy()
-            special_tokens_mask = special_tokens_mask.numpy()
+        predicts = []
+        for outputs in list_batch_outputs:
+            batch_logits = outputs[self.config.logits]
+            # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
+            batch_attention_mask = outputs[self.config.attention_mask]
 
-            maxes = np.max(logits, axis=-1, keepdims=True)
-            shifted_exp = np.exp(logits - maxes)
-            scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
-            pre_entities = self.gather_pre_entities(
-                sentence, input_ids, scores, offset_mapping, special_tokens_mask, self.config.aggregation_strategy
-            )
-            grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)
-            # Filter anything that is in self.ignore_labels
-            entities = [
-                entity
-                for entity in grouped_entities
-                if entity.get("entity", None) not in self.config.ignore_labels
-                and entity.get("entity_group", None) not in self.config.ignore_labels
-            ]
-            one_ins['sentence'] = sentence
-            one_ins['entities'] = entities
-            outputs.append(one_ins)
+            indexes = list(outputs["_index"])
 
-        save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
-        if not os.path.exists(save_path):
-            os.makedirs(save_path, exist_ok=True)
-        save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}.csv")
-        logger.info(f"Save the {stage} predict data at {save_file}")
-        json.dump(outputs, open(save_file, 'w'), indent=4)
-        # TODO Metrics
-        log_info = {}
-        log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
-        return log_info
+            batch_input_ids = outputs[self.config.input_ids]
+            outputs = []
 
+            for logits, index, input_ids, attention_mask in zip(batch_logits, indexes, batch_input_ids, batch_attention_mask):
+                one_ins = {}
+                origin_ins = origin_data.iloc[int(index)]
+
+                one_ins["sentence"] = origin_ins[self.config.sentence]
+                one_ins["uuid"] = origin_ins[self.config.uuid]
+                one_ins["entities_info"] = origin_ins[self.config.entities_info]
+
+                rel_token_len = int(attention_mask.sum())
+
+                special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
+                offset_mapping = origin_data.iloc[int(index)][self.config.offsets]
+                logits = logits[:rel_token_len].numpy()
+
+                maxes = np.max(logits, axis=-1, keepdims=True)
+                shifted_exp = np.exp(logits - maxes)
+                scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
+                pre_entities = self.gather_pre_entities(
+                    one_ins["sentence"], input_ids[:rel_token_len], scores, offset_mapping, special_tokens_mask)
+                grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)
+                # Filter anything that is in self.ignore_labels
+                entities = [
+                    entity
+                    for entity in grouped_entities
+                    if entity.get("entity", None) not in self.config.ignore_labels
+                    and entity.get("entity_group", None) not in self.config.ignore_labels
+                ]
+                predict_entities_info = []
+                for entity in entities:
+                    one_predict = {}
+                    one_predict['start'] = entity['start']
+                    one_predict['end'] = entity['end']
+                    one_predict['labels'] = [entity['entity']]
+                    predict_entities_info.append(one_predict)
+                one_ins['predict_entities_info'] = predict_entities_info
+                predicts.append(one_ins)
+        return predicts
+
+    def predict(self, list_batch_outputs, origin_data):
+        """TODO: Docstring for predict.
+
+        :list_batch_outputs: TODO
+        :origin_data: TODO
+        :returns: TODO
+
+        """
+        if self.config.sentence not in origin_data:
+            logger.error(f"{self.config.sentence} not in the origin data")
+            raise PermissionError(f"{self.config.sentence} must be provided")
+        if self.config.uuid not in origin_data:
+            logger.error(f"{self.config.uuid} not in the origin data")
+            raise PermissionError(f"{self.config.uuid} must be provided")
+        if self.config.entities_info not in origin_data:
+            logger.error(f"{self.config.entities_info} not in the origin data")
+            raise PermissionError(f"{self.config.entities_info} must be provided")
+
+        predicts = []
+        for outputs in list_batch_outputs:
+            batch_logits = outputs[self.config.logits]
+            # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
+            batch_attention_mask = outputs[self.config.attention_mask]
+
+            indexes = list(outputs["_index"])
+
+            batch_input_ids = outputs[self.config.input_ids]
+            outputs = []
+
+            for logits, index, input_ids, attention_mask in zip(batch_logits, indexes, batch_input_ids, batch_attention_mask):
+                one_ins = {}
+                origin_ins = origin_data.iloc[int(index)]
+
+                one_ins["sentence"] = origin_ins[self.config.sentence]
+                one_ins["uuid"] = origin_ins[self.config.uuid]
+                one_ins["entities_info"] = origin_ins[self.config.entities_info]
+
+                rel_token_len = int(attention_mask.sum())
+
+                special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
+                offset_mapping = origin_data.iloc[int(index)][self.config.offsets]
+                logits = logits[:rel_token_len].numpy()
+
+                maxes = np.max(logits, axis=-1, keepdims=True)
+                shifted_exp = np.exp(logits - maxes)
+                scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
+                pre_entities = self.gather_pre_entities(
+                    one_ins["sentence"], input_ids[:rel_token_len], scores, offset_mapping, special_tokens_mask)
+                grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)
+                # Filter anything that is in self.ignore_labels
+                entities = [
+                    entity
+                    for entity in grouped_entities
+                    if entity.get("entity", None) not in self.config.ignore_labels
+                    and entity.get("entity_group", None) not in self.config.ignore_labels
+                ]
+                predict_entities_info = []
+                for entity in entities:
+                    one_predict = {}
+                    one_predict['start'] = entity['start']
+                    one_predict['end'] = entity['end']
+                    one_predict['labels'] = [entity['entity_group']]
+                    predict_entities_info.append(one_predict)
+                one_ins['predict_entities_info'] = predict_entities_info
+                predicts.append(one_ins)
+        return predicts
 
     def aggregate(self, pre_entities: List[dict], aggregation_strategy: AggregationStrategy) -> List[dict]:
         if aggregation_strategy in {AggregationStrategy.NONE, AggregationStrategy.SIMPLE}:
@@ -207,7 +333,7 @@ class NerPostProcessor(IPostProcessor):
         return self.group_entities(entities)
 
     def aggregate_word(self, entities: List[dict], aggregation_strategy: AggregationStrategy) -> dict:
-        word = self.tokenizer.convert_tokens_to_string([entity["word"] for entity in entities])
+        word = self.tokenizer.decode([self.tokenizer.token_to_id(entity['word']) for entity in entities])
         if aggregation_strategy == AggregationStrategy.FIRST:
             scores = entities[0]["scores"]
             idx = scores.argmax()
@@ -248,11 +374,10 @@ class NerPostProcessor(IPostProcessor):
         entity = entities[0]["entity"].split("-")[-1]
         scores = np.nanmean([entity["score"] for entity in entities])
         tokens = [entity["word"] for entity in entities]
-
         entity_group = {
             "entity_group": entity,
             "score": np.mean(scores),
-            "word": self.tokenizer.convert_tokens_to_string(tokens),
+            "word": " ".join(tokens),
             "start": entities[0]["start"],
             "end": entities[-1]["end"],
         }
@@ -343,7 +468,6 @@ class NerPostProcessor(IPostProcessor):
         scores: np.ndarray,
         offset_mapping: Optional[List[Tuple[int, int]]],
         special_tokens_mask: np.ndarray,
-        aggregation_strategy: AggregationStrategy,
     ) -> List[dict]:
         """Fuse various numpy arrays into dicts with all the information needed for aggregation"""
         pre_entities = []
@@ -354,7 +478,7 @@ class NerPostProcessor(IPostProcessor):
             if special_tokens_mask[idx]:
                 continue
 
-            word = self.tokenizer.convert_ids_to_tokens(int(input_ids[idx]))
+            word = self.tokenizer.id_to_token(int(input_ids[idx]))
             if offset_mapping is not None:
                 start_ind, end_ind = offset_mapping[idx]
                 word_ref = sentence[start_ind:end_ind]
@@ -366,9 +490,6 @@ class NerPostProcessor(IPostProcessor):
                     # This is a fallback heuristic. This will fail most likely on any kind of text + punctuation mixtures that will be considered "words". Non word aware models cannot do better than this unfortunately.
                     is_subword = sentence[start_ind - 1 : start_ind] != " " if start_ind > 0 else False
 
-                if int(input_ids[idx]) == self.tokenizer.unk_token_id:
-                    word = word_ref
-                    is_subword = False
             else:
                 start_ind = None
                 end_ind = None

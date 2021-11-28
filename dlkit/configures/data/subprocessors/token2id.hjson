@@ -3,11 +3,11 @@
     "config": {
         "train":{ 
             /*"data_pair": {*/
-                /*"label": "label_id",  //use "vocab" map the id of "label" to "label_id"*/
+                /*"label": "label_ids",  //use "vocab" map the id of "label" to "label_id"*/
              /*},*/
             "data_pair": "*@*",
             "data_set": {                   // for different stage, this processor will process different part of data
-                "train": ['train', 'dev'],
+                "train": ['train', 'valid', 'test'],
                 "predict": ['predict'],
                 "online": ['online']
             },

@@ -1,10 +1,10 @@
 {
-    config: {
-        input_size: "*@*",
-        output_size: "*@*",
-        dropout: 0.0,
-        pool: null,
-        bias: true,
+    "config": {
+        "input_size": "*@*",
+        "output_size": "*@*",
+        "dropout": 0.0,
+        "pool": null,
+        "bias": true,
     },
-    _name: "linear",
+    "_name": "linear",
 }

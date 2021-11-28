@@ -15,7 +15,7 @@ class SaveConfig(object):
         "config":{
             "base_dir": "."
             "train":{
-                "processed": "processed_data.pkl", // all data
+                "processed": "processed_data.pkl", // all data without meta
                 "meta": {
                     "meta.pkl": ['label_ids', 'embedding'] //only for next time use
                 }
@@ -52,13 +52,19 @@ class Save(ISubProcessor):
     def process(self, data: Dict)->Dict:
         if not self.config:
             return data
-        if "processed" in self.config:
-            self.save(data, self.config['processed'])
+        meta_fileds = set()
         if "meta" in self.config:
             for save_path, save_fileds in self.config['meta'].items():
                 assert isinstance(save_fileds, list)
                 meta_data = {}
                 for field in save_fileds:
                     meta_data[field] = copy.deepcopy(data[field])
+                    meta_fileds.add(field)
                 self.save(meta_data, save_path)
+        reserve_meta_map = {}
+        for filed in meta_fileds:
+            reserve_meta_map[filed] = data.pop(filed)
+        if "processed" in self.config:
+            self.save(data, self.config['processed'])
+        data.update(reserve_meta_map)
         return data

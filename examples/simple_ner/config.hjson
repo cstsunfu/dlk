@@ -1,0 +1,9 @@
+{
+    "_base": "basic@simple_ner",
+    "config": {
+        "tokenizer_config_path": "./utils/tokenizer/xlmr_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+        "data_dir": "test_simple_ner",  // save load data base dir
+        "embedding_size": 50,  //the embedding size
+        "embedding_file": "./utils/wikitext-2/embedding.txt",
+    },
+}

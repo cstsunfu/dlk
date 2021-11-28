@@ -170,29 +170,34 @@ class BaseConfigParser(object):
         def make_link(source: str, to: str):
             """copy the 'source' config to 'to'
             """
-            source_config = config
-            to_config = config
-            source_list = source.split('.')
-            to_list = to.split('.')
-            for s in source_list[:-1]:
-                if isinstance(source_config, list):
-                    assert (s[0]=='-' and str.isdigit(s[1:])) or str.isdigit(s), "list index must be int"
-                    s = int(s)
-                source_config = source_config[s]
-            for t in to_list[:-1]:
+            try:
+                source_config = config
+                to_config = config
+                source_list = source.split('.')
+                to_list = to.split('.')
+                for s in source_list[:-1]:
+                    if isinstance(source_config, list):
+                        assert (s[0]=='-' and str.isdigit(s[1:])) or str.isdigit(s), "list index must be int"
+                        s = int(s)
+                    source_config = source_config[s]
+                for t in to_list[:-1]:
+                    if isinstance(to_config, list):
+                        assert (t[0]=='-' and str.isdigit(t[1:])) or str.isdigit(t), "list index must be int"
+                        t = int(t)
+                    to_config = to_config[t]
                 if isinstance(to_config, list):
-                    assert (t[0]=='-' and str.isdigit(t[1:])) or str.isdigit(t), "list index must be int"
-                    t = int(t)
-                to_config = to_config[t]
-            if isinstance(to_config, list):
-                assert (to_list[-1][0]=='-' and str.isdigit(to_list[-1][1:])) or str.isdigit(to_list[-1]), "list index must be int"
-                to_list[-1] = int(to_list[-1])
+                    assert (to_list[-1][0]=='-' and str.isdigit(to_list[-1][1:])) or str.isdigit(to_list[-1]), "list index must be int"
+                    to_list[-1] = int(to_list[-1])
 
-            if isinstance(source_config, list):
-                assert (source_list[-1][0]=='-' and str.isdigit(source_list[-1][1:])) or str.isdigit(source_list[-1]), "list index must be int"
-                source_list[-1] = int(source_list[-1])
-                
-            to_config[to_list[-1]] = source_config[source_list[-1]]
+                if isinstance(source_config, list):
+                    assert (source_list[-1][0]=='-' and str.isdigit(source_list[-1][1:])) or str.isdigit(source_list[-1]), "list index must be int"
+                    source_list[-1] = int(source_list[-1])
+                    
+                to_config[to_list[-1]] = source_config[source_list[-1]]
+            except Exception as e:
+                logger.error(f"Can not link from '{source}' to '{to}'")
+                raise e
+
 
         if not link:
             return

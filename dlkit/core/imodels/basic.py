@@ -133,10 +133,10 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         outputs = self.gather_outputs(outputs)
 
         if self.local_rank in [0, -1]:
-            key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
+            # key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
             # TODO: TODO
             self.log_dict(
-                self.postprocessor(stage='valid', outputs=key_all_ins_map, origin_data=self._origin_valid_data,
+                self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
                     rt_config={
                         "current_step": self.global_step,
                         "current_epoch": self.current_epoch, 
@@ -170,9 +170,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         outputs = self.gather_outputs(outputs)
 
         if self.local_rank in [0, -1]:
-            key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
             self.log_dict(
-                self.postprocessor(stage='test', outputs=key_all_ins_map, origin_data=self._origin_test_data,
+                self.postprocessor(stage='test', list_batch_outputs=outputs, origin_data=self._origin_test_data,
                     rt_config={
                         "current_step": self.global_step,
                         "current_epoch": self.current_epoch, 

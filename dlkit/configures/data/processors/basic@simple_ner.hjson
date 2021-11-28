@@ -1,22 +1,23 @@
 {
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
-    "_name": "basic@test_text_cls",
+    "_name": "basic@simple_ner",
     "config": {
-        "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "token_embedding", "save"]
+        "feed_order": ["load", "ner_prepro", "tokenizer", "ner_relabel", "token_gather", "label_to_id", "token_embedding", "save"]
+        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
+        "data_dir": "*@*",  // save load data base dir
+        "embedding_size": "*@*",  //the embedding size
+        "embedding_file": "*@*",
+    },
+    "_link": {
+        "subprocessor@tokenizer.config.train.filed_map.word_ids": "subprocessor@ner_relabel.config.train.input_column.word_ids",
+        "subprocessor@ner_relabel.config.train.output_map.labels": "subprocessor@token_gather.config.train.gather_columns.0"
+        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer'],
+        "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
+        "config.embedding_size": "subprocessor@token_embedding.config.train.embedding_size"
+        "config.embedding_file": "subprocessor@token_embedding.config.train.embedding_file"
     },
     "subprocessor@load": {
         "_base": "load",
-        "config":{
-            "base_dir": "."
-            "predict":{
-                "meta": "./meta.pkl",
-            },
-            "online": [
-                "predict", //base predict
-                {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
-                }
-            ]
-        }
     },
     "subprocessor@save": {
         "_base": "save",
@@ -25,7 +26,7 @@
             "train":{
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ['label_vocab'] //only for next time use
+                    "meta.pkl": ['label_vocab', "tokenizer"] //only for next time use
                 }
             },
             "predict": {
@@ -33,23 +34,34 @@
             }
         }
     },
+    "subprocessor@ner_prepro":{
+        "_base": "ner_prepro",
+    },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
         "config": { 
             "train": { 
                 "config_path": "*@*",
-                "prefix": ""
+                "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": [
                     ["sentence", { "is_pretokenized": false}], 
                 ],
-                "post_processor": "default"
-                "filed_map": { // this is the default value, you can provide other name
-                    "ids": "input_ids",
-                }, // the tokenizer output(the key) map to the value
             },
             "predict": "train",
             "online": "train"
+        }
+    },
+    "subprocessor@ner_relabel":{
+        "_base": "ner_relabel",
+        "config": {
+            "train":{ //train、predict、online stage config,  using '&' split all stages
+                "start_label": "S",
+                "end_label": "E",
+                "output_map": {
+                    "labels": "labels",
+                },
+            }, //3
         }
     },
     "subprocessor@token_gather":{
@@ -71,17 +83,13 @@
                 "data_pair": {
                     "labels": "label_ids"
                 },
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
                 "vocab": "label_vocab", // usually provided by the "token_gather" module
             }, //3
             "predict": "train",
             "online": "train",
         }
     },
+
     "subprocessor@token_embedding": {
         "_base": "token_embedding",
         "config":{
@@ -89,7 +97,7 @@
                 "embedding_file": "*@*",
                 "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
-                "embedding_size": 200,
+                "embedding_size": "*@*",
             }
         }
     },

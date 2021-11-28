@@ -1,0 +1,32 @@
+{
+    "_name": "sequence_labeling",
+    "config": {
+        "meta": "*@*",
+        "use_crf": false, //use or not use crf
+        "meta_data": {
+            "label_vocab": 'label_vocab',
+            "tokenizer": "tokenizer",
+        },
+        "output_data": {
+            "logits": "logits",
+            "input_ids": "input_ids",
+            "attention_mask": "attention_mask",
+        },
+        "origin_data": {
+            "uuid": "uuid",
+            "sentence": "sentence",
+            "entities_info": "entities_info",
+            "offsets": "offsets",
+            "special_tokens_mask": "special_tokens_mask",
+        },
+        "save_root_path": ".",  //save data root dir
+        "save_path": {
+            "valid": "valid",  // relative dir for valid stage
+            "test": "test",    // relative dir for test stage
+        },
+        "start_save_step": 0,  // -1 means the last
+        "start_save_epoch": -1,
+        "aggregation_strategy": "max", // AggregationStrategy item
+        "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+    }
+}

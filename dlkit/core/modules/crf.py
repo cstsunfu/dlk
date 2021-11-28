@@ -1,23 +1,34 @@
-from typing import List, Dict, Union, Optional
-import json
-
 import torch
-import time
+import torch.nn as nn
+from typing import Optional, Dict, List
+from . import module_register, module_config_register
 
-# TODO: post process
-# /Users/fu.sun/anaconda3/envs/dlkit/lib/python3.8/site-packages/transformers/pipelines
-r"""undocumented"""
-# TEST CUDA
-
-from typing import Union
-
-import torch
-from torch import nn
-
-
+@module_config_register("crf")
+class CRFConfig(object):
+    """docstring for LinearConfig
+    {
+        config: {
+            output_size: 2,
+            batch_first: true,
+            reduction: "mean", //none|sum|mean|token_mean
+        },
+        _name: "crf",
+    }
+    """
+    def __init__(self, config: Dict):
+        super(CRFConfig, self).__init__()
+        config = config['config']
+        self.output_size = config['output_size']
+        if self.output_size <= 0:
+            raise ValueError(f'invalid number of tags: {self.output_size}')
+        self.batch_first = config.get("batch_first", True)
+        self.reduction = config.get("reduction", 'mean')
+        
 
 class CRF(nn.Module):
-    """Conditional random field.
+    """
+    This module is mostly copied from pytorchcrf
+    Conditional random field.
     This module implements a conditional random field [LMP01]_. The forward computation
     of this class computes the log likelihood of the given sequence of tags and
     emission score tensor. This class also has `~CRF.decode` method which finds
@@ -39,36 +50,23 @@ class CRF(nn.Module):
     .. _Viterbi algorithm: https://en.wikipedia.org/wiki/Viterbi_algorithm
     """
 
-    def __init__(self, num_tags: int, batch_first: bool = False) -> None:
-        if num_tags <= 0:
-            raise ValueError(f'invalid number of tags: {num_tags}')
+    def __init__(self, config: CRFConfig) -> None:
+    # def __init__(self, num_tags: int, batch_first: bool = True) -> None:
+
         super().__init__()
-        self.num_tags = num_tags
-        self.batch_first = batch_first
-        self.start_transitions = nn.Parameter(torch.empty(num_tags))
-        self.end_transitions = nn.Parameter(torch.empty(num_tags))
-        self.transitions = nn.Parameter(torch.empty(num_tags, num_tags))
+        self.num_tags = config.output_size
+        self.batch_first = config.batch_first
+        self.start_transitions = nn.Parameter(torch.empty(self.num_tags))
+        self.end_transitions = nn.Parameter(torch.empty(self.num_tags))
+        self.transitions = nn.Parameter(torch.empty(self.num_tags, self.num_tags))
+        self.reduction = config.reduction
 
-        self.reset_parameters()
-
-    def reset_parameters(self) -> None:
-        """Initialize the transition parameters.
-        The parameters will be initialized randomly from a uniform distribution
-        between -0.1 and 0.1.
-        """
-        nn.init.uniform_(self.start_transitions, -0.1, 0.1)
-        nn.init.uniform_(self.end_transitions, -0.1, 0.1)
-        nn.init.uniform_(self.transitions, -0.1, 0.1)
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(num_tags={self.num_tags})'
-
-    def train(
+    def training_step(
             self,
-            inputs: Dict[str, torch.Tensor]) -> torch.Tensor:
-    # def forward(
-            # self,
-            # inputs: Dict[str, torch.Tensor]) -> torch.Tensor:
+            emissions: torch.Tensor,
+            tags: torch.LongTensor,
+            mask: Optional[torch.ByteTensor] = None,
+    ) -> torch.Tensor:
         """Compute the conditional log likelihood of a sequence of tags given emission scores.
         Args:
             emissions (`~torch.Tensor`): Emission score tensor of size
@@ -87,13 +85,9 @@ class CRF(nn.Module):
             `~torch.Tensor`: The log likelihood. This will have size ``(batch_size,)`` if
             reduction is ``none``, ``()`` otherwise.
         """
-        emissions = inputs.pop('emissions')
-        tags = inputs.pop('tags')
-        mask = inputs.pop('mask')
-        reduction="sum"
         self._validate(emissions, tags=tags, mask=mask)
-        if reduction not in ('none', 'sum', 'mean', 'token_mean'):
-            raise ValueError(f'invalid reduction: {reduction}')
+        if self.reduction not in ('none', 'sum', 'mean', 'token_mean'):
+            raise ValueError(f'invalid reduction: {self.reduction}')
         if mask is None:
             mask = torch.ones_like(tags, dtype=torch.uint8)
 
@@ -109,20 +103,17 @@ class CRF(nn.Module):
         # shape: (batch_size,)
         llh = numerator - denominator
 
-        if reduction == 'none':
+        if self.reduction == 'none':
             return llh
-        if reduction == 'sum':
+        if self.reduction == 'sum':
             return llh.sum()
-        if reduction == 'mean':
+        if self.reduction == 'mean':
             return llh.mean()
-        assert reduction == 'token_mean'
+        assert self.reduction == 'token_mean'
         return llh.sum() / mask.type_as(emissions).sum()
 
-    # def decode(self, emissions: torch.Tensor,
-               # mask: Optional[torch.ByteTensor] = None) -> List[List[int]]:
-    def forward(
-            self,
-            inputs: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, emissions: torch.FloatTensor,
+               mask: Optional[torch.ByteTensor] = None) -> torch.LongTensor:
         """Find the most likely tag sequence using Viterbi algorithm.
         Args:
             emissions (`~torch.Tensor`): Emission score tensor of size
@@ -133,8 +124,6 @@ class CRF(nn.Module):
         Returns:
             List of list containing the best tag sequence for each batch.
         """
-        emissions = inputs.pop('emissions')
-        mask = inputs.pop('mask')
         self._validate(emissions, mask=mask)
         if mask is None:
             mask = emissions.new_ones(emissions.shape[:2], dtype=torch.uint8)
@@ -143,9 +132,7 @@ class CRF(nn.Module):
             emissions = emissions.transpose(0, 1)
             mask = mask.transpose(0, 1)
 
-        # return self._viterbi_decode(emissions, mask)
-        output = self._viterbi_decode(emissions, mask)
-        return torch.tensor(output[0])
+        return self._viterbi_decode(emissions, mask)
 
     def _validate(
             self,
@@ -266,7 +253,7 @@ class CRF(nn.Module):
         return torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions: torch.FloatTensor,
-                        mask: torch.ByteTensor) -> List[List[int]]:
+                        mask: torch.ByteTensor) -> torch.LongTensor:
         # emissions: (seq_length, batch_size, num_tags)
         # mask: (seq_length, batch_size)
         assert emissions.dim() == 3 and mask.dim() == 2
@@ -340,75 +327,9 @@ class CRF(nn.Module):
             best_tags.reverse()
             best_tags_list.append(best_tags)
 
-        return best_tags_list
-
-class Module(nn.Module):
-    """docstring for Module"""
-    def __init__(self):
-        super(Module, self).__init__()
-        self.linear = nn.LSTM(300, 300)
-        self.linear2 = nn.Linear(300, 100)
-
-
-    def forward(self, inp):
-        """TODO: Docstring for forward.
-
-        :inp: TODO
-        :returns: TODO
-
-        """
-        inp = self.linear(inp)[0]
-        inp = self.linear(inp)[0]
-        return inp
-        
-
-tag_num = 3
-lengths = [10, 20]
-feats = torch.rand((len(lengths), max(lengths), tag_num))
-tags = torch.randint(0, tag_num, (len(lengths), max(lengths)))
-mask = torch.tensor([[1]*length + (max(lengths)-length)*[0] for length in lengths], dtype=torch.bool)
-# crf = ConditionalRandomField(tag_num)
-crf = CRF(tag_num, batch_first=True)
-
-# || Time spend: 1.0229871273040771
-# || Time spend: 0.9614851474761963
-# || Time spend: 0.09769082069396973
-# || Time spend: 0.16005492210388184
-
-            # self,
-            # emissions: torch.Tensor,
-            # tags: torch.LongTensor,
-            # mask: Optional[torch.ByteTensor] = None,
-d = {"emissions": feats, "tags": tags, "mask": mask}
-d = {"emissions": feats, "mask": mask}
-script = torch.jit.trace(crf, d, strict=False)
-print(script(d))
-# torch.trace
-# output = crf.decode(feats, mask)
-# print(output)
-# start = time.time()
-# for i in range(10):
-    # crf.forward(feats, tags, mask)
-# print(f"Time spend: {time.time() - start}")
-
-# || Time spend: 2.5643091201782227
-# || Time spend: 2.300191879272461
-
-# start = time.time()
-# for i in range(10):
-    # # crf.viterbi_decode(feats, mask)
-    # crf.decode(feats, mask)
-# print(f"Time spend: {time.time() - start}")
-
-
-
-# inp = torch.rand(4, 400, 300)
-# module = Module()
-
-# start = time.time()
-# for i in range(10):
-    # module(inp)
-    # # crf.viterbi_decode(feats, mask)
-
-# print(f"Time spend: {time.time() - start}")
-
+        output = []
+        for tag_list in best_tags_list:
+            if len(tag_list)<seq_length:
+                tag_list = tag_list + [-1]*(seq_length-len(tag_list))
+            output.append(tag_list)
+        return torch.tensor(output, dtype=torch.long)

@@ -6,15 +6,12 @@
         "input_size": "*@*",
         "output_size": "*@*",
         "pool": null,
-        "dropout": "*@*", //the decoder output no need dropout
         "return_logits": "decoder_logits",
         "output_map": {}
     },
     "_link":{
         "config.input_size": ["module.config.input_size"],
         "config.output_size": ["module.config.output_size"],
-        "config.dropout": ["module.config.dropout"],
-        "config.pool": ["module.config.pool"],
     },
     "_name": "linear",
 }
