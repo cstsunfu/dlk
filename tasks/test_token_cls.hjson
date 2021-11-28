@@ -33,7 +33,7 @@
                 },
             },
             "datamodule": {
-                "_base": "basic@test_text_cls",
+                "_base": "basic@test_token_cls",
             },
         },
     },
