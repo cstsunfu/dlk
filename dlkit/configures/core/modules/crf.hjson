@@ -1,0 +1,8 @@
+{
+    "config": {
+        "output_size": 2,
+        "batch_first": true,
+        "reduction": "mean", //none|sum|mean|token_mean
+    },
+    "_name": "crf",
+}
