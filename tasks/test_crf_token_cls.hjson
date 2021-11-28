@@ -16,7 +16,7 @@
                 }
             },
             "imodel": {
-                "_base": "basic@sequence_labeling",
+                "_base": "basic@crf_sequence_labeling",
                 "model": {
                     "_base": "basic@lstmcrf4sequencelabeling",
                     "config": {
