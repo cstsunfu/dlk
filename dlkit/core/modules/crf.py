@@ -66,7 +66,7 @@ class CRF(nn.Module):
             self,
             emissions: torch.Tensor,
             tags: torch.LongTensor,
-            mask: Optional[torch.ByteTensor] = None,
+            mask: Optional[torch.LongTensor] = None,
     ) -> torch.Tensor:
         """Compute the conditional log likelihood of a sequence of tags given emission scores.
         Args:
@@ -90,7 +90,7 @@ class CRF(nn.Module):
         if self.reduction not in ('none', 'sum', 'mean', 'token_mean'):
             raise ValueError(f'invalid reduction: {self.reduction}')
         if mask is None:
-            mask = torch.ones_like(tags, dtype=torch.uint8)
+            mask = torch.ones_like(tags, dtype=torch.long)
 
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
@@ -114,7 +114,7 @@ class CRF(nn.Module):
         return llh.sum() / mask.type_as(emissions).sum()
 
     def forward(self, emissions: torch.FloatTensor,
-               mask: Optional[torch.ByteTensor] = None) -> torch.LongTensor:
+               mask: Optional[torch.LongTensor] = None) -> torch.LongTensor:
         """Find the most likely tag sequence using Viterbi algorithm.
         Args:
             emissions (`~torch.Tensor`): Emission score tensor of size
@@ -127,7 +127,7 @@ class CRF(nn.Module):
         """
         self._validate(emissions, mask=mask)
         if mask is None:
-            mask = emissions.new_ones(emissions.shape[:2], dtype=torch.uint8)
+            mask = emissions.new_ones(emissions.shape[:2], dtype=torch.long)
 
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
@@ -165,7 +165,7 @@ class CRF(nn.Module):
 
     def _compute_score(
             self, emissions: torch.Tensor, tags: torch.LongTensor,
-            mask: torch.ByteTensor) -> torch.Tensor:
+            mask: torch.LongTensor) -> torch.Tensor:
         # emissions: (seq_length, batch_size, num_tags)
         # tags: (seq_length, batch_size)
         # mask: (seq_length, batch_size)
@@ -203,7 +203,7 @@ class CRF(nn.Module):
         return score
 
     def _compute_normalizer(
-            self, emissions: torch.Tensor, mask: torch.ByteTensor) -> torch.Tensor:
+            self, emissions: torch.Tensor, mask: torch.LongTensor) -> torch.Tensor:
         # emissions: (seq_length, batch_size, num_tags)
         # mask: (seq_length, batch_size)
         assert emissions.dim() == 3 and mask.dim() == 2
@@ -243,7 +243,7 @@ class CRF(nn.Module):
 
             # Set score to the next score if this timestep is valid (mask == 1)
             # shape: (batch_size, num_tags)
-            score = torch.where(mask[i].unsqueeze(1), next_score, score)
+            score = torch.where(mask.bool()[i].unsqueeze(1), next_score, score)
 
         # End transition score
         # shape: (batch_size, num_tags)
@@ -254,7 +254,7 @@ class CRF(nn.Module):
         return torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions: torch.FloatTensor,
-                        mask: torch.ByteTensor) -> torch.LongTensor:
+                        mask: torch.LongTensor) -> torch.LongTensor:
         # emissions: (seq_length, batch_size, num_tags)
         # mask: (seq_length, batch_size)
         assert emissions.dim() == 3 and mask.dim() == 2
@@ -299,7 +299,7 @@ class CRF(nn.Module):
             # Set score to the next score if this timestep is valid (mask == 1)
             # and save the index that produces the next score
             # shape: (batch_size, num_tags)
-            score = torch.where(mask[i].unsqueeze(1), next_score, score)
+            score = torch.where(mask.bool()[i].unsqueeze(1), next_score, score)
             history.append(indices)
 
         # End transition score
