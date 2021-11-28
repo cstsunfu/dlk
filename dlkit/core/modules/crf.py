@@ -333,4 +333,4 @@ class CRF(nn.Module):
             if len(tag_list)<seq_length:
                 tag_list = tag_list + [-1]*(seq_length-len(tag_list))
             output.append(tag_list)
-        return torch.tensor(output, dtype=torch.long, device=self.device)
+        return torch.tensor(output, dtype=torch.long, device=mask.device)
