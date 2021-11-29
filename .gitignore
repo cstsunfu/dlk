@@ -12,7 +12,7 @@
 *.model
 *.pt
 *.sc
-./tests/**
+tests/**
 *.bin
 **/logs/**
 *tokenizer.json
