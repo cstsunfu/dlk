@@ -13,12 +13,12 @@ class IPostProcessorConfig(object):
         self.config = config.get('config', {})
 
     @property
-    def output_data(self):
-        """TODO: Docstring for output_data.
+    def input_map(self):
+        """TODO: Docstring for input_map.
         :returns: TODO
 
         """
-        return self.config.get("output_data", {})
+        return self.config.get("input_map", {})
 
 class IPostProcessor(metaclass=abc.ABCMeta):
     """docstring for IPostProcessor"""

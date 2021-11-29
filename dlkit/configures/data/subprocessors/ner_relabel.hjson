@@ -2,7 +2,7 @@
     "_name": "ner_relabel",
     "config": {
         "train":{ //train、predict、online stage config,  using '&' split all stages
-            "input_column": {  // without necessery, don't change this
+            "input_map": {  // without necessery, don't change this
                 "word_ids": "word_ids",
                 "offsets": "offsets",
                 "entities_info": "entities_info",

@@ -28,11 +28,11 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
             "meta_data": {
                 "label_vocab": 'label_vocab',
             },
-            "output_data": {
+            "input_map": {
                 "logits": "logits",
                 "label_ids": "label_ids"
             },
-            "origin_data": {
+            "origin_input_map": {
                 "sentence": "sentence"
             },
             "save_root_path": ".",  //save data root dir
@@ -49,9 +49,9 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
     def __init__(self, config: Dict):
         super(ClassificationPostProcessorConfig, self).__init__(config)
 
-        self.logits = self.output_data['logits']
-        self.sentence = self.config['origin_data']['sentence']
-        self.label_ids = self.output_data['label_ids']
+        self.logits = self.input_map['logits']
+        self.sentence = self.config['origin_input_map']['sentence']
+        self.label_ids = self.input_map['label_ids']
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
         else:
@@ -79,7 +79,7 @@ class ClassificationPostProcessor(IPostProcessor):
         self.label_vocab = self.config.label_vocab
         self.metric = torchmetrics.Accuracy()
 
-    def process(self, stage, outputs, origin_data, rt_config)->Dict:
+    def process(self, stage, outputs, origin_input_map, rt_config)->Dict:
         """TODO: Docstring for process.
         :data: TODO
         rt_config={
@@ -116,7 +116,7 @@ class ClassificationPostProcessor(IPostProcessor):
             predicts = []
             ground_truths = []
             for predict_index, index, label_id in zip(predict_indexes, indexes, label_ids):
-                sentence = origin_data.iloc[int(index)][self.config.sentence]
+                sentence = origin_input_map.iloc[int(index)][self.config.sentence]
                 predict = self.label_vocab.get_word(predict_index)
                 ground_truth = self.label_vocab.get_word(label_id)
                 sentences.append(sentence)
