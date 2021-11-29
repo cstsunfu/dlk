@@ -25,7 +25,7 @@
             "train":{
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ['label_vocab'] //only for next time use
+                    "meta.pkl": ['label_vocab', "tokenizer", 'token_embedding'] //only for next time use
                 }
             },
             "predict": {

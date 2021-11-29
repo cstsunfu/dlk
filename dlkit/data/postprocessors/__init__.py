@@ -38,7 +38,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         return loss_name_map.get(stage_name, stage_name+'_loss')
 
     @property
-    def no_ground_truth_stage(self):
+    def without_ground_truth_stage(self):
         """TODO: Docstring for no_ground_truth_stage.
         :returns: TODO
 
