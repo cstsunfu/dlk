@@ -1,8 +1,12 @@
 from typing import Dict
 import torch.nn as nn
 from . import loss_register, loss_config_register
+from packaging import version
 import torch.nn as nn
+from dlkit.utils.logger import logger
+import torch
 
+logger = logger()
 
 @loss_config_register("cross_entropy")
 class CrossEntropyLossConfig(object):
@@ -55,11 +59,19 @@ class CrossEntropyLoss(object):
     def __init__(self, config: CrossEntropyLossConfig):
         super(CrossEntropyLoss, self).__init__()
         self.config = config
-        self.cross_entropy = nn.CrossEntropyLoss(
-            weight=config.weight,
-            ignore_index=config.ignore_index, 
-            label_smoothing=config.label_smoothing 
-        )
+        if (version.parse(torch.__version__)>=version.parse("1.10")):
+            self.cross_entropy = nn.CrossEntropyLoss(
+                weight=config.weight,
+                ignore_index=config.ignore_index, 
+                label_smoothing=config.label_smoothing 
+            )
+        else:
+            if config.label_smoothing:
+                logger.info("Torch version is <1.10, so ignore label_smoothing")
+            self.cross_entropy = nn.CrossEntropyLoss(
+                weight=config.weight,
+                ignore_index=config.ignore_index, 
+            )
 
     def update_config(self, rt_config):
         """TODO: Docstring for update_config.

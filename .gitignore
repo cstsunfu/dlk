@@ -7,6 +7,8 @@
 *.log
 *.raw
 *.txt
+**/jobs/**
+data/**
 *.zip
 **/wikitext*/**
 *.model

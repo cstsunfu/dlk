@@ -19,6 +19,7 @@
             "entities_info": "entities_info",
             "offsets": "offsets",
             "special_tokens_mask": "special_tokens_mask",
+            "word_ids": "word_ids",
         },
         "save_root_path": ".",  //save data root dir
         "save_path": {

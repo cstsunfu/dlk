@@ -52,7 +52,7 @@ class TokenEmbedding(ISubProcessor):
                 if i==0 and len(line.split())<=embedding_size:
                     continue
                 sp_line = line.split()
-                assert len(sp_line)>=embedding_size+1
+                assert len(sp_line)>=embedding_size+1, f"the {i}th line len： {len(sp_line)}"
                 word = sp_line[0]
                 vector = list(map(float, sp_line[-embedding_size:]))
                 embedding_dict[word] = vector

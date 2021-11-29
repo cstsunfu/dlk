@@ -52,7 +52,7 @@ class LSTM(nn.Module):
         """
         # No padding necessary.
         max_seq_len = input.size(1)
-        seq_lens = mask.sum(1)
+        seq_lens = mask.sum(1).cpu()
         pack_seq_rep = pack_padded_sequence(input=input, lengths=seq_lens, batch_first=True, enforce_sorted=False)
         pack_seq_rep = self.lstm(pack_seq_rep)[0]
         output, _ = pad_packed_sequence(sequence=pack_seq_rep, batch_first=True, total_length=max_seq_len)
