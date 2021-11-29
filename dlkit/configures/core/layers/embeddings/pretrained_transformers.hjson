@@ -1,0 +1,25 @@
+{
+    "module": {
+        "_base": "roberta",
+    },
+    "config": {
+        "pretrained_model_path": "*@*",
+        "return_logits": {
+            "embedding_logits": "embedding_logits",
+            "encoder_logits": "encoder_logits",
+        }, //embedding and encoder
+        "input_map": {
+            "input_ids": "input_ids",
+            "attention_mask": "attention_mask",
+            "token_type_ids": "token_type_ids",
+        },
+        "output_map": {
+            "embedding": "embedding",
+        },
+        "output_size": "*@*",
+    },
+    "_link": {
+        "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+    },
+    "_name": "pretrained_transformers",
+}

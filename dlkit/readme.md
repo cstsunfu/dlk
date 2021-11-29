@@ -160,7 +160,7 @@ given the  above config, the parser result will be a list of possible configure 
 ]
 ```
 
-## Link
+## Link(Argument Passing)
 
     Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the target position, otherwise it will cause ambiguity.)
     If a low level link  wer all not appeared at before, it will be directly regist them.
@@ -206,12 +206,12 @@ result.hjson
 }
 ```
 
-## Focus
+## Focus(Representation)
 
 The focus part is for simple the logger file, we will use the value of focus dict to replace the key while logging.
 
 
-## SubModule
+## SubModule(Combination)
 
 Due to we using the dict to represent a config, and the key is regarded as the submodule name, but sometimes one top level module will have two or more same submodules(with different config). 
 You can set the submodule name as 'submodule@speciel_name'.

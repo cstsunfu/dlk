@@ -14,7 +14,7 @@ class NerRelabelConfig(object):
             "_name": "ner_relabel",
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
-                    "input_column": {  // without necessery, don't change this
+                    "input_map": {  // without necessery, don't change this
                         "word_ids": "word_ids",
                         "offsets": "offsets",
                         "entities_info": "entities_info",
@@ -39,9 +39,9 @@ class NerRelabelConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
-        self.word_ids = self.config['input_column']['word_ids']
-        self.offsets = self.config['input_column']['offsets']
-        self.entities_info = self.config['input_column']['entities_info']
+        self.word_ids = self.config['input_map']['word_ids']
+        self.offsets = self.config['input_map']['offsets']
+        self.entities_info = self.config['input_map']['entities_info']
         self.start_label = self.config['start_label']
         self.end_label = self.config['end_label']
         self.output_labels = self.config['output_map']['labels']

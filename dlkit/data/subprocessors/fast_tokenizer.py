@@ -29,7 +29,6 @@ class FastTokenizerConfig(object):
                     "online": ["online"]
                 },
                 "config_path": "*@*",
-                "deliver": "tokenizer",
                 "truncation": {     // if this is set to None or empty, will not do trunc
                     "max_length": 512,
                     "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
@@ -37,8 +36,7 @@ class FastTokenizerConfig(object):
                 "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
                 "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
                 "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
-                "prefix": "",   //the map target prefix
-                "filed_map": { // this is the default value, you can provide other name
+                "output_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
                     "ids": "ids",
                     "attention_mask": "attention_mask",
@@ -49,15 +47,14 @@ class FastTokenizerConfig(object):
                     "overflowing": "overflowing",
                     "sequence_ids": "sequence_ids",
                 }, // the tokenizer output(the key) map to the value
+                "input_map": {
+                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
+                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                    "sentence_b": "sentence_b", //for pair inputs
+                },
+                "deliver": "tokenizer",
+                "process_data": { "is_pretokenized": false},
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": [
-                    ["sentence", { "is_pretokenized": false}], 
-                ],
-                /*"data_type": "pair", // single or pair*/
-                /*"process_data": [*/
-                    /*['sentence_a', { "is_pretokenized": false}], */ 
-                    /*['sentence_b', {}], the config of the second data must as same as the first*/ 
-                /*],*/
             },
             "predict": "train",
             "online": "train"
@@ -71,10 +68,10 @@ class FastTokenizerConfig(object):
         self.normalizer = self.config.get('normalizer', "default")
         self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
-        self.truncation = self.config.get("truncation", {})
-        self.deliver = self.config.get('deliver', "")
-        prefix = self.config.get('prefix', '')
-        self.filed_map = self.config.get('filed_map', { # default
+        self.truncation = self.config["truncation"]
+        self.deliver = self.config['deliver']
+        self.input_map = self.config['input_map']
+        self.output_map = self.config.get('output_map', { # default
             "tokens": "tokens",
             "ids": "input_ids",
             "attention_mask": "attention_mask",
@@ -82,10 +79,9 @@ class FastTokenizerConfig(object):
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
         })
-        if prefix:
-            self.filed_map = {key: prefix+value for key, value in self.filed_map.items()}
-        self.process_data = self.config.get("process_data", []) # must provide
-        self.data_type = self.config.get("data_type", "single" if len(self.process_data)==1 else "pair" if len(self.process_data)==2 else "UNDEFINED")
+        self.process_data = self.config['process_data']
+        self.data_type = self.config["data_type"]
+        assert self.data_type in ['single', 'pair']
 
 
 @subprocessor_register('fast_tokenizer')
@@ -103,10 +99,8 @@ class FastTokenizer(ISubProcessor):
         self.config = config
 
         if self.config.data_type=='single':
-            assert len(self.config.process_data) == 1
             self._process = self._single
         elif self.config.data_type == 'pair':
-            assert len(self.config.process_data) == 2
             self._process = self._pair
         else:
             raise KeyError('We only support single or pair data now.')
@@ -153,52 +147,51 @@ class FastTokenizer(ISubProcessor):
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
     
-    def _extend_encoded_token(self, all_tokens, filed_map):
+    def _extend_encoded_token(self, all_tokens, output_map):
         """TODO: Docstring for _extend_encoded_token.
 
         :all_tokens: TODO
-        :filed_map: TODO
+        :output_map: TODO
         :returns: TODO
 
         """
         targets_map = {}
-        for k in filed_map:
-            targets_map[filed_map[k]] = []
+        for k in output_map:
+            targets_map[output_map[k]] = []
         for token in all_tokens:
-            for k in filed_map:
-                targets_map[filed_map[k]].append(getattr(token, k))
+            for k in output_map:
+                targets_map[output_map[k]].append(getattr(token, k))
         return targets_map
 
-    def _single(self, data, process_data, filed_map):
+    def _single(self, data):
         """TODO: Docstring for _single.
 
         :data: TODO
         :returns: TODO
 
         """
-        assert len(process_data) == 1
-        process_column_name, config = process_data[0]
+        config = self.config.process_data
+        process_column_name = self.config.input_map.get('sentence', 'sentence')
 
         process_column_data = data[process_column_name]
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
-        token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
+        token_filed_name_value_map = self._extend_encoded_token(all_token, self.config.output_map)
         for k in token_filed_name_value_map:
             data[k] = token_filed_name_value_map[k]
         return data
 
-    def _pair(self, data, process_data, filed_map):
+    def _pair(self, data):
         """TODO: Docstring for _pair.
 
         :data: TODO
         :returns: TODO
 
         """
-        assert len(process_data) == 2
-        process_column_name, config = process_data[0]
-        process_column_name_b, _ = process_data[1]
-        process_column_data = list(data[[process_column_name, process_column_name_b]].values)
+        config = self.config.process_data
+        process_column_name_a, process_column_name_b = self.config.input_map["sentence_a"], self.config.input_map['sentence_b']
+        process_column_data = list(data[[process_column_name_a, process_column_name_b]].values)
         all_token = self.tokenizer.encode_batch(process_column_data, **config)
-        token_filed_name_value_map = self._extend_encoded_token(all_token, filed_map)
+        token_filed_name_value_map = self._extend_encoded_token(all_token, self.config.output_map)
         for k in token_filed_name_value_map:
             data[k] = token_filed_name_value_map[k]
         return data
@@ -209,7 +202,7 @@ class FastTokenizer(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip tokenize it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set = self._process(data_set, self.config.process_data, self.config.filed_map)
+            data_set = self._process(data_set)
             data['data'][data_set_name] = data_set
         if self.config.deliver:
             data[self.config.deliver] = self.tokenizer.to_str()
