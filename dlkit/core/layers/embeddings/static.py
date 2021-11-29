@@ -33,6 +33,7 @@ class StaticEmbeddingConfig(BaseModuleConfig):
         embedding_file = config['embedding_file']
         embedding_file = pkl.load(open(embedding_file, 'rb'))
         embedding_trace = config["embedding_trace"]
+        print(embedding_trace)
         if embedding_trace != '.':
             traces = embedding_trace.split('.')
             for trace in traces:

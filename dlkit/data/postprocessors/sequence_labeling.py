@@ -39,6 +39,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
                 "entities_info": "entities_info",
                 "offsets": "offsets",
                 "special_tokens_mask": "special_tokens_mask",
+                "word_ids": "word_ids",
             },
             "save_root_path": ".",  //save data root dir
             "save_path": {
@@ -62,8 +63,9 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         self.offsets = self.config['origin_data']['offsets']
         self.entities_info = self.config['origin_data']['entities_info']
         self.uuid = self.config['origin_data']['uuid']
+        self.word_ids = self.config['origin_data']['word_ids']
         self.aggregation_strategy = self.config['aggregation_strategy']
-        self.ignore_labels = self.config['ignore_labels']
+        self.ignore_labels = set(self.config['ignore_labels'])
         self.input_ids = self.output_data['input_ids']
         self.predict_seq_label = self.output_data['predict_seq_label']
         self.special_tokens_mask = self.config['origin_data']['special_tokens_mask']
@@ -152,8 +154,8 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             predicts = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
 
         metrics = {}
-        if stage not in self.no_ground_truth_stage:
-            metrics = self.calc_metrics(predicts)
+        if stage not in self.without_ground_truth_stage:
+            metrics = self.calc_metrics(predicts, stage)
         log_info.update(metrics)
 
         # save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
@@ -166,16 +168,93 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         # log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
         return log_info
 
-    def calc_metrics(self, predicts)->Dict:
+    def calc_score(self, predict_list, ground_truth_list):
+        """TODO: Docstring for calc_score.
+        """
+        category_tp = {}
+        category_fp = {}
+        category_fn = {}
+        def _care_div(a, b):
+            """TODO: Docstring for _care_div.
+            """
+            if b==0:
+                return 0.0
+            return a/b
+            
+
+        def calc_num(pred, ground_truth):
+            """TODO: Docstring for calc_num.
+            :returns: tp, fn, fp
+
+            """
+            num_p = len(pred)
+            num_t = len(ground_truth)
+            truth = 0
+            for p in pred:
+                if p in ground_truth:
+                    truth += 1
+            return truth, num_t-truth, num_p-truth
+
+        for predict, ground_truth in zip(predict_list, ground_truth_list):
+            keys = set(list(predict.keys())+list(ground_truth.keys()))
+            for key in keys:
+                tp, fn, fp = calc_num(predict.get(key, []), ground_truth.get(key, []))
+                # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
+                category_tp[key] = category_tp.get(key, 0) + tp
+                category_fn[key] = category_fn.get(key, 0) + fn
+                category_fp[key] = category_fp.get(key, 0) + fp
+
+        all_tp, all_fn, all_fp = 0, 0, 0
+        for key in category_tp:
+            tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
+            all_tp += tp
+            all_fn += fn
+            all_fp += fp
+            precision = _care_div(tp, tp+fp)
+            recall = _care_div(tp, tp+fn)
+            f1 = _care_div(2*precision*recall, precision+recall)
+            # # print(f"In class {key.upper()}, TP Num: {tp}, FN Num: {fn}, FP Num: {fp}, the dict ner precision is {precision*100 :.2f}%, the recall is {recall*100:.2f}%, the F1 score is {f1*100:.2f}%")
+            logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+        precision = _care_div(all_tp,all_tp+all_fp)
+        recall = _care_div(all_tp, all_tp+all_fn)
+        f1 = _care_div(2*precision*recall, precision+recall)
+        return precision, recall, f1
+
+
+
+    def calc_metrics(self, predicts, stage)->Dict:
         """TODO: Docstring for calc_metrics.
         :predicts: TODO
         :returns: scores for logging
         """
-        for i, predict in enumerate(predicts):
-            print(predict)
-            if i>3:
-                raise PermissionError
-        return {}
+
+        def _flat_entities_info(entities_info, text):
+            """TODO: Docstring for _flat_entity_info.
+
+            :entities_info: TODO
+            :returns: TODO
+
+            """
+            info = {}
+            for item in entities_info:
+                label = item['labels'][0]
+                if label not in info:
+                    info[label] = []
+                info[label].append(text[item['start']: item['end']].strip())
+            return info
+            
+        all_predicts = []
+        all_ground_truths = []
+        for predict in predicts:
+            text = predict['sentence']
+            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
+            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
+            all_predicts.append(predict_ins)
+            all_ground_truths.append(ground_truth_ins)
+
+        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
+        real_name = self.loss_name_map(stage)
+        return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
     def average_loss(self, list_batch_outputs):
         """TODO: Docstring for average_loss.
@@ -188,6 +267,21 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         for batch_output in list_batch_outputs:
             sum_loss += batch_output.get('loss', 0)
         return sum_loss / len(list_batch_outputs)
+
+    def get_entity_info(self, sub_tokens_index, offset_mapping, word_ids, pre_label):
+        """gather sub_tokens to get the start and end
+        :returns: start, end info
+        """
+        if not sub_tokens_index or not pre_label:
+            return None
+        # TODO: use word_ids to combine the incomplete word
+        start = offset_mapping[sub_tokens_index[0]][0]
+        end = offset_mapping[sub_tokens_index[-1]][1]
+        return {
+            "start": start,
+            "end": end,
+            "labels": [pre_label]
+        }
 
     def crf_predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for predict.
@@ -217,6 +311,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             batch_input_ids = outputs[self.config.input_ids]
             outputs = []
 
+            # for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
             for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
                 one_ins = {}
                 origin_ins = origin_data.iloc[int(index)]
@@ -225,13 +320,34 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 one_ins["uuid"] = origin_ins[self.config.uuid]
                 one_ins["entities_info"] = origin_ins[self.config.entities_info]
 
+                word_ids = origin_ins[self.config.word_ids]
                 rel_token_len = int(attention_mask.sum())
-                offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
-                print(f"Predict: {predict}\n Input ids: {input_ids}\n Sentence: {one_ins['sentence']}\n")
-                print("Continue")
-                break
+                offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
 
-                # one_ins['predict_entities_info'] = predict_entities_info
+                predict = list(predict[:rel_token_len])
+                predict_entities_info = []
+                pre_label = ''
+                sub_tokens_index = []
+                for i, label_id in enumerate(predict):
+                    if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
+                        continue
+                    label = self.config.label_vocab[label_id]
+                    if label in self.config.ignore_labels \
+                        or (label[0]=='B') \
+                        or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
+                        entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+                        if entity_info:
+                            predict_entities_info.append(entity_info)
+                        pre_label = ''
+                        sub_tokens_index = []
+                    if label not in self.config.ignore_labels:
+                        assert len(label.split('-')) == 2
+                        pre_label = label.split('-')[-1]
+                        sub_tokens_index.append(i)
+                entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+                if entity_info:
+                    predict_entities_info.append(entity_info)
+                one_ins['predict_entities_info'] = predict_entities_info
                 predicts.append(one_ins)
         return predicts
 
@@ -277,11 +393,17 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
                 offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
 
-                logits = logits[:rel_token_len].numpy()
+                logits = logits[:rel_token_len].cpu().numpy()
+
+                entity_idx = logits.argmax(-1)
+                labels = []
+                for i, idx in enumerate(list(entity_idx)):
+                    labels.append(self.config.label_vocab[idx])
 
                 maxes = np.max(logits, axis=-1, keepdims=True)
                 shifted_exp = np.exp(logits - maxes)
                 scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
+
                 pre_entities = self.gather_pre_entities(
                     one_ins["sentence"], input_ids[:rel_token_len], scores, offset_mapping, special_tokens_mask)
                 grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)

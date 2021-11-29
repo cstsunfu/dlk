@@ -16,8 +16,8 @@ import json
 import hjson
 from dlkit.data.processors import processor_config_register, processor_register
 
-train_data = json.load(open('../NER/train_format_label_data.json', 'r'))[:100]
-valid_data = json.load(open('../NER/valid_format_label_data.json', 'r'))[:100]
+train_data = json.load(open('../NER/train_format_label_data.json', 'r'))
+valid_data = json.load(open('../NER/valid_format_label_data.json', 'r'))
 # train = pd.DataFrame({
     # "ner_format_input": format_data
 # })

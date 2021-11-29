@@ -1,11 +1,12 @@
 {
     "root": {
         "_name": "test_cls",
-        "_link": {"config.data_path": ['task.imodel.model.config.embedding_file']},
+        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
             "save_dir": "test_simple_ner",  # must provide
             "data_path": "test_simple_ner/processed_data.pkl",  # must provide
+            "meta_data": "test_simple_ner/meta.pkl",  # must provide
         },
         "task": {
             "_name": "test_token_cls",
@@ -20,7 +21,7 @@
                 "model": {
                     "_base": "basic@linearlstm4sequencelabeling",
                     "config": {
-                        "embedding_dim": 50,
+                        "embedding_dim": 200,
                         "dropout": 0.1,
                         "embedding_file": "*@*",
                         "label_num": 11,
