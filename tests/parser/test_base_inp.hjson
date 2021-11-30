@@ -1,0 +1,27 @@
+{
+    model: {
+        _base: "test_base",
+        /*_base: "test_model_search",*/
+        decoder: {
+            config: {
+                output_size: 18
+            }
+        },
+        encoder: {
+            _base: "test_lstm",
+            config: {
+                _search: {
+                    input_size:[1,2]
+                }, 
+                "test_dict": {
+                    "value1": 1  
+                }
+            },
+        }
+    },
+    config: {
+        test: true
+    }
+    _name: "test_base"
+}
+
