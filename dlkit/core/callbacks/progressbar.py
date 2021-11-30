@@ -13,7 +13,6 @@ class ProgressBarCallbackConfig(object):
         "_name": progressbar,
         "config": {
             "disable_v_num": true,
-            
         }
     }
     """
