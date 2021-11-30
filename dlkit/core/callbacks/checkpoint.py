@@ -23,17 +23,17 @@ class CheckpointCallbackConfig(object):
         }
     }
     """
-    def __init__(self, config):
+    def __init__(self, config: Dict):
         super(CheckpointCallbackConfig, self).__init__()
-        config = config.get('config')
-        self.monitor = config.get('monitor', None)
-        self.save_last = config.get('save_last', None)
-        self.save_top_k = config.get('save_top_k', 3)
-        self.auto_insert_metric_name = config.get('auto_insert_metric_name', True)
-        self.every_n_train_steps = config.get('every_n_train_steps', None)
-        self.every_n_epochs = config.get('every_n_epochs', None)
-        self.save_on_train_epoch_end = config.get('save_on_train_epoch_end', None)
-        self.save_weights_only = config.get('save_weights_only', False)
+        config = config['config']
+        self.monitor = config['monitor']
+        self.save_last = config['save_last']
+        self.save_top_k = config['save_top_k']
+        self.auto_insert_metric_name = config['auto_insert_metric_name']
+        self.every_n_train_steps = config['every_n_train_steps']
+        self.every_n_epochs = config['every_n_epochs']
+        self.save_on_train_epoch_end = config['save_on_train_epoch_end']
+        self.save_weights_only = config['save_weights_only']
 
 @callback_register('checkpoint')
 class CheckpointCallback(object):

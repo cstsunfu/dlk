@@ -19,14 +19,14 @@ class EarlyStoppingCallbackConfig(object):
             }
         }
     """
-    def __init__(self, config):
+    def __init__(self, config: Dict):
         super(EarlyStoppingCallbackConfig, self).__init__()
-        config = config.get('config')
-        self.monitor = config.get('monitor', "val_loss")
-        self.min_delta = config.get('min_delta', 0.0)
-        self.patience = config.get("patience", 3)
-        self.check_on_train_epoch_end = config.get("check_on_train_epoch_end", None)
-        self.strict = config.get("strict", True)
+        config = config['config']
+        self.monitor = config['monitor']
+        self.min_delta = config['min_delta']
+        self.patience = config["patience"]
+        self.check_on_train_epoch_end = config["check_on_train_epoch_end"]
+        self.strict = config["strict"]
 
 @callback_register('early_stop')
 class EarlyStoppingCallback(object):

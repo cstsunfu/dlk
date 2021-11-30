@@ -1,6 +1,7 @@
 from logging import PercentStyle
 import hjson
 from typing import Dict, Union, Callable, List
+import torch
 from dlkit.core.models import model_register, model_config_register
 from dlkit.core.optimizers import optimizer_register, optimizer_config_register
 from dlkit.core.schedulers import scheduler_register, scheduler_config_register
@@ -95,10 +96,10 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         tqdm_dict.pop("v_num", None)
         return tqdm_dict
 
-    def forward(self, inputs):
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         return self.model(inputs)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
         result = self.model.training_step(batch)
         loss = self.calc_loss(result, batch, rt_config={
             "current_step": self.global_step,
@@ -109,8 +110,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self.log_dict({"train_loss": loss.unsqueeze(0)}, prog_bar=True)
         return loss
 
-
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
         result = self.model.validation_step(batch)
         loss = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,
@@ -146,7 +146,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
                 prog_bar=True)
         return outputs
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
         result = self.model.test_step(batch)
         loss = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,

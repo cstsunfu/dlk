@@ -64,7 +64,7 @@ class PretrainedTransformers(SimpleModule):
         inputs_embeds = inputs[self.get_input_name('inputs_embeds')] if "inputs_embeds" in self.config.input_map else None
         if (input_ids is None and inputs_embeds is None) or (input_ids is not None and inputs_embeds is not None):
             raise PermissionError("input_ids and input_embeds must set one of them to None")
-        sequence_output, pooled_output, all_hidden_states, all_self_attentions = self.pretrained_transformers(
+        sequence_output, all_hidden_states, all_self_attentions = self.pretrained_transformers(
             input_ids=input_ids, 
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
