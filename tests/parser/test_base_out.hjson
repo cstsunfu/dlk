@@ -1,0 +1,70 @@
+{
+    "out":[
+        {
+            "config": {
+                "test": true
+            },
+            "model": {
+                "encoder": {
+                    "config": {
+                        "bidirection": true,
+                        "hidden_size": 200,
+                        "input_size": 1,
+                        "layers": 1,
+                        "output_size": 200
+                    },
+                    "_name": "test_lstm"
+                },
+                "decoder": {
+                    "config": {
+                        "input_size": 200,
+                        "output_size": 18
+                    },
+                    "_name": "test_linear"
+                },
+                "embedding": {
+                    "config": {
+                        "vocab_size": 100,
+                        "embedding_dim": 128
+                    },
+                    "_name": "test_static"
+                },
+                "_name": "test_base"
+            },
+            "_name": "test_base"
+        },
+        {
+            "config": {
+                "test": true
+            },
+            "model": {
+                "encoder": {
+                    "config": {
+                        "bidirection": true,
+                        "hidden_size": 200,
+                        "input_size": 2,
+                        "layers": 1,
+                        "output_size": 200
+                    },
+                    "_name": "test_lstm"
+                },
+                "decoder": {
+                    "config": {
+                        "input_size": 200,
+                        "output_size": 18
+                    },
+                    "_name": "test_linear"
+                },
+                "embedding": {
+                    "config": {
+                        "vocab_size": 100,
+                        "embedding_dim": 128
+                    },
+                    "_name": "test_static"
+                },
+                "_name": "test_base"
+            },
+            "_name": "test_base"
+        }
+    ]
+}
