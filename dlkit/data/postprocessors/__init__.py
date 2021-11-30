@@ -14,11 +14,20 @@ class IPostProcessorConfig(object):
 
     @property
     def input_map(self):
-        """TODO: Docstring for input_map.
+        """required the output of model process content name map
         :returns: TODO
 
         """
         return self.config.get("input_map", {})
+
+    @property
+    def origin_input_map(self):
+        """required the origin data(before pass to datamodule) column name map
+        :returns: TODO
+
+        """
+        return self.config.get("origin_input_map", {})
+
 
 class IPostProcessor(metaclass=abc.ABCMeta):
     """docstring for IPostProcessor"""
@@ -36,6 +45,19 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             "test": "test_loss"
         }
         return loss_name_map.get(stage_name, stage_name+'_loss')
+
+    def average_loss(self, list_batch_outputs):
+        """TODO: Docstring for average_loss.
+
+        :list_batch_outputs: TODO
+        :returns: TODO
+
+        """
+        sum_loss = 0
+        for batch_output in list_batch_outputs:
+            sum_loss += batch_output.get('loss', 0)
+        return sum_loss / len(list_batch_outputs)
+
 
     @property
     def without_ground_truth_stage(self):

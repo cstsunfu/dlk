@@ -22,12 +22,12 @@ class StochasticWeightAveragingCallbackConfig(object):
     """
     def __init__(self, config):
         super(StochasticWeightAveragingCallbackConfig, self).__init__()
-        config = config.get('config')
-        self.swa_epoch_start = config.get('swa_epoch_start', 0.8)
-        self.swa_lrs = config.get("swa_lrs", None)
-        self.annealing_epochs = config.get("annealing_epochs", 10)
-        self.annealing_strategy = config.get("annealing_strategy", 'cos')
-        self.device = config.get("device", 'cpu')
+        config = config['config']
+        self.swa_epoch_start = config['swa_epoch_start']
+        self.swa_lrs = config["swa_lrs"]
+        self.annealing_epochs = config["annealing_epochs"]
+        self.annealing_strategy = config["annealing_strategy"]
+        self.device = config["device"]
 
 @callback_register('weight_average')
 class StochasticWeightAveragingCallback(object):

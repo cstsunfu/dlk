@@ -41,7 +41,7 @@ class RobertaWrap(nn.Module):
     def __init__(self, config: RobertaWrapConfig):
         super(RobertaWrap, self).__init__()
 
-        self.roberta = RobertaModel(config.roberta_config, add_pooling_layer=True)
+        self.roberta = RobertaModel(config.roberta_config, add_pooling_layer=False)
 
     def from_pretrained(self, pretrained_model_path):
         """TODO: Docstring for init.
@@ -69,5 +69,5 @@ class RobertaWrap(nn.Module):
             output_hidden_states = True,
             return_dict = False
         )
-        sequence_output, pooled_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[3], outputs[4]
-        return sequence_output, pooled_output, all_hidden_states, all_self_attentions
+        sequence_output, _, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[3], outputs[4]
+        return sequence_output, all_hidden_states, all_self_attentions

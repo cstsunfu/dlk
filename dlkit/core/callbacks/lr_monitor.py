@@ -14,10 +14,10 @@ class LearningRateMonitorCallbackConfig(object):
             }
         }
     """
-    def __init__(self, config):
-        config = config.get('config')
-        self.logging_interval = config.get("logging_interval", None)
-        self.log_momentum = config.get("log_momentum", False)
+    def __init__(self, config: Dict):
+        config = config['config']
+        self.logging_interval = config["logging_interval"]
+        self.log_momentum = config["log_momentum"]
 
 
 @callback_register('lr_monitor')

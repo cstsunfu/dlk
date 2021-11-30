@@ -19,8 +19,8 @@ class ProgressBarCallbackConfig(object):
     """
     def __init__(self, config):
         super(ProgressBarCallbackConfig, self).__init__()
-        config = config.get('config')
-        self.disable_v_num = config.get('disable_v_num', False)
+        config = config['config']
+        self.disable_v_num = config['disable_v_num']
 
 
 

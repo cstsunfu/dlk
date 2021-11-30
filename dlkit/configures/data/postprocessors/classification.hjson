@@ -5,12 +5,14 @@
         "meta_data": {
             "label_vocab": 'label_vocab',
         },
-        "output_data": {
+        "input_map": {
             "logits": "logits",
             "label_ids": "label_ids"
+            "_index": "_index",
         },
-        "origin_data": {
-            "sentence": "sentence"
+        "origin_input_map": {
+            "sentence": "sentence",
+            "uuid": "uuid"
         },
         "save_root_path": ".",  //save data root dir
         "save_path": {

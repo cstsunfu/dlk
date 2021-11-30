@@ -1,5 +1,3 @@
-'''
-'''
 import pickle as pkl
 import json
 from typing import Dict, List, Optional, Tuple
@@ -27,13 +25,14 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
                 "label_vocab": 'label_vocab',
                 "tokenizer": "tokenizer",
             },
-            "output_data": {
+            "input_map": {
                 "logits": "logits",
                 "input_ids": "input_ids",
                 "predict_seq_label": "predict_seq_label",
                 "attention_mask": "attention_mask",
+                "_index": "_index",
             },
-            "origin_data": {
+            "origin_input_map": {
                 "uuid": "uuid",
                 "sentence": "sentence",
                 "entities_info": "entities_info",
@@ -57,19 +56,23 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
     def __init__(self, config: Dict):
         super(SequenceLabelingPostProcessorConfig, self).__init__(config)
 
-        self.logits = self.output_data['logits']
         self.use_crf = self.config['use_crf']
-        self.sentence = self.config['origin_data']['sentence']
-        self.offsets = self.config['origin_data']['offsets']
-        self.entities_info = self.config['origin_data']['entities_info']
-        self.uuid = self.config['origin_data']['uuid']
-        self.word_ids = self.config['origin_data']['word_ids']
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
-        self.input_ids = self.output_data['input_ids']
-        self.predict_seq_label = self.output_data['predict_seq_label']
-        self.special_tokens_mask = self.config['origin_data']['special_tokens_mask']
-        self.attention_mask = self.output_data['attention_mask']
+
+        self.sentence = self.origin_input_map['sentence']
+        self.offsets = self.origin_input_map['offsets']
+        self.entities_info = self.origin_input_map['entities_info']
+        self.uuid = self.origin_input_map['uuid']
+        self.word_ids = self.origin_input_map['word_ids']
+        self.special_tokens_mask = self.origin_input_map['special_tokens_mask']
+
+        self.logits = self.input_map['logits']
+        self.attention_mask = self.input_map['attention_mask']
+        self.input_ids = self.input_map['input_ids']
+        self.predict_seq_label = self.input_map['predict_seq_label']
+        self._index = self.input_map['_index']
+
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
         else:
@@ -158,14 +161,18 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             metrics = self.calc_metrics(predicts, stage)
         log_info.update(metrics)
 
-        # save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
-        # if not os.path.exists(save_path):
-            # os.makedirs(save_path, exist_ok=True)
-        # save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}.csv")
-        # logger.info(f"Save the {stage} predict data at {save_file}")
-        # json.dump(outputs, open(save_file, 'w'), indent=4)
-        # TODO Metrics
-        # log_info["acc"] = self.metric(logits, outputs[self.config.label_id])
+        if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
+            self.config.start_save_step = rt_config['total_steps'] - 1
+            self.config.start_save_epoch = rt_config['total_epochs'] - 1
+        if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
+            
+
+            save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
+            if not os.path.exists(save_path):
+                os.makedirs(save_path, exist_ok=True)
+            save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
+            logger.info(f"Save the {stage} predict data at {save_file}")
+            json.dump(predicts, open(save_file, 'w'), indent=4)
         return log_info
 
     def calc_score(self, predict_list, ground_truth_list):
@@ -256,18 +263,6 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         real_name = self.loss_name_map(stage)
         return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
-    def average_loss(self, list_batch_outputs):
-        """TODO: Docstring for average_loss.
-
-        :list_batch_outputs: TODO
-        :returns: TODO
-
-        """
-        sum_loss = 0
-        for batch_output in list_batch_outputs:
-            sum_loss += batch_output.get('loss', 0)
-        return sum_loss / len(list_batch_outputs)
-
     def get_entity_info(self, sub_tokens_index, offset_mapping, word_ids, pre_label):
         """gather sub_tokens to get the start and end
         :returns: start, end info
@@ -307,7 +302,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
             batch_attention_mask = outputs[self.config.attention_mask]
 
-            indexes = list(outputs["_index"])
+            indexes = list(outputs[self.config._index])
             batch_input_ids = outputs[self.config.input_ids]
             outputs = []
 
@@ -375,7 +370,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
             batch_attention_mask = outputs[self.config.attention_mask]
 
-            indexes = list(outputs["_index"])
+            indexes = list(outputs[self.config._index])
 
             batch_input_ids = outputs[self.config.input_ids]
             outputs = []
