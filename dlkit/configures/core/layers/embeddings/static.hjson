@@ -11,7 +11,6 @@
         "dropout": 0, //dropout rate
         "output_map": {},
         "input_map": {}, // required_key: provide_key
-        "return_logits": "embedding_logits",
     },
     "_name": "static",
 }

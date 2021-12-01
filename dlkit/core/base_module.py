@@ -1,14 +1,16 @@
 import torch
 import torch.nn as nn
 from typing import Dict, List, Callable, Any, Set
+from dlkit.core.modules import module_register, module_config_register
 import abc
 
 class BaseModuleConfig(object):
     """docstring for BaseLayerConfig"""
     def __init__(self, config: Dict):
         super(BaseModuleConfig, self).__init__()
-        self.output_map = config['config'].get("output_map", {})
-        self.input_map = config['config'].get('input_map', {})
+        self._output_map = config['config'].get("output_map", {})
+        self._input_map = config['config'].get('input_map', {})
+        self._logits_gather_config = module_config_register.get("logits_gather")(config['config'].get("logits_gather_config", {}))
         
 
 class ModuleOutputRenameMixin:
@@ -40,14 +42,14 @@ class ModuleOutputRenameMixin:
         :name: TODO
         :returns: TODO
         """
-        return self.get_real_name(name, self.config.input_map)
+        return self.get_real_name(name, self.config._input_map)
 
     def get_output_name(self, name):
         """TODO: Docstring for get_input_name.
         :name: TODO
         :returns: TODO
         """
-        return self.get_real_name(name, self.config.output_map)
+        return self.get_real_name(name, self.config._output_map)
 
     def set_rename(self, input: Set, output_map: Dict[str, str])->Set:
         if isinstance(input, set):
@@ -133,16 +135,24 @@ class IModuleStep(metaclass=abc.ABCMeta):
 class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
     """docstring for BaseModule"""
 
+    def __init__(self, config: BaseModuleConfig):
+        super(BaseModule, self).__init__()
+        self._logits_gather = module_register.get("logits_gather")(config._logits_gather_config)
+        self._provided_keys = set()
+        self._required_keys = set()
+        self._provide_keys = set()
+        self.config = config # for better complete, you can rewrite this in child module
+
     def provide_keys(self)->Set:
         """TODO: should provide_keys in model?
         """
-        return self.set_rename(self._provide_keys, self.config.output_map).union(self._provided_keys)
+        return self.set_rename(self._provide_keys, self.config._output_map).union(self._provided_keys)
 
     def check_keys_are_provided(self, provide: Set[str])->None:
         """
         """
         self._provided_keys = provide
-        provide = self.set_rename(provide, self.config.input_map)
+        provide = self.set_rename(provide, self.config._input_map)
         for required_key in self._required_keys:
             if required_key not in provide:
                 raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")

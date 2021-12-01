@@ -7,6 +7,7 @@ from dlkit.data.datamodules import datamodule_register, datamodule_config_regist
 from dlkit.managers import manager_register, manager_config_register
 from dlkit.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
+import torch
 import uuid
 import json
 from dlkit.utils.logger import logger
@@ -32,7 +33,7 @@ class Predict(object):
             }
         }
     """
-    def __init__(self, config):
+    def __init__(self, config, checkpoint):
         super(Predict, self).__init__()
         if not isinstance(config, dict):
             config = hjson.load(open(config), object_pairs_hook=dict)
@@ -41,7 +42,7 @@ class Predict(object):
         self.config = config
         # self.configs = config_parser_register.get('root')(config).parser_with_check()
         self.configs = BaseConfigParser(config).parser_with_check()
-
+        self.ckpt = torch.load(checkpoint)
         config_name = []
         for source, to in self.focus.items():
             config_point = config
@@ -127,4 +128,5 @@ class Predict(object):
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
+        imodel.load_state_dict(self.ckpt['state_dict'])
         return imodel

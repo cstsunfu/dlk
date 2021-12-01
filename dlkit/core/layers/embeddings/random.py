@@ -17,7 +17,6 @@ class RandomEmbeddingConfig(BaseModuleConfig):
             dropout: 0, //dropout rate
             output_map: {},
             input_map: {},
-            return_logits: "embedding_logits",
         },
         _name: "random",
     }
@@ -28,7 +27,6 @@ class RandomEmbeddingConfig(BaseModuleConfig):
         self.vocab_size = config.get('vocab_size', 1)
         self.embedding_dim = config.get('embedding_dim', 1)
         self.dropout = config.get('dropout', 0.0)
-        self.return_logits = config['return_logits']
 
 
 @embedding_register('random')
@@ -38,7 +36,7 @@ class RandomEmbedding(SimpleModule):
     """
 
     def __init__(self, config: RandomEmbeddingConfig):
-        super().__init__()
+        super().__init__(config)
         self._provided_keys = set() # provided by privous module, will update by the check_keys_are_provided
         self._provide_keys = {'embedding'} # provide by this module
         self._required_keys = {'input_ids'} # required by this module
@@ -53,7 +51,6 @@ class RandomEmbedding(SimpleModule):
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))
-        if self.config.return_logits:
-            inputs[self.config.return_logits] = inputs[self.get_output_name('embedding')]
+        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
 
         return inputs

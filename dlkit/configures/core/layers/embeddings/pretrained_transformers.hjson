@@ -4,10 +4,6 @@
     },
     "config": {
         "pretrained_model_path": "*@*",
-        "return_logits": {
-            "embedding_logits": "embedding_logits",
-            "encoder_logits": "encoder_logits",
-        }, //embedding and encoder
         "input_map": {
             "input_ids": "input_ids",
             "attention_mask": "attention_mask",
