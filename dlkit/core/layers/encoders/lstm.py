@@ -14,7 +14,6 @@ class LSTMConfig(BaseModuleConfig):
             _base: "lstm",
         },
         config: {
-            return_logits: "encoder_logits",
             input_map: {},
             output_map: {},
             input_size: *@*,
@@ -33,7 +32,6 @@ class LSTMConfig(BaseModuleConfig):
 
     def __init__(self, config: Dict):
         super(LSTMConfig, self).__init__(config)
-        self.return_logits = config['config']['return_logits']
         self.lstm_config = config["module"]
         assert self.lstm_config['_name'] == "lstm"
         
@@ -41,7 +39,7 @@ class LSTMConfig(BaseModuleConfig):
 @encoder_register("lstm")
 class LSTM(SimpleModule):
     def __init__(self, config: LSTMConfig):
-        super(LSTM, self).__init__()
+        super(LSTM, self).__init__(config)
         self._provide_keys = {'embedding'}
         self._required_keys = {'embedding', 'attention_mask'}
         self._provided_keys = set()
@@ -53,6 +51,5 @@ class LSTM(SimpleModule):
         """
         """
         inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
-        if self.config.return_logits:
-            inputs[self.config.return_logits] = inputs[self.get_output_name('embedding')]
+        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs

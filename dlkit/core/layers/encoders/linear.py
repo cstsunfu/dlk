@@ -1,10 +1,10 @@
 import torch
 from typing import Dict, List, Set
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
-from . import decoder_register, decoder_config_register
+from . import encoder_register, encoder_config_register
 from dlkit.core.modules import module_config_register, module_register
 
-@decoder_config_register("linear")
+@encoder_config_register("linear")
 class LinearConfig(BaseModuleConfig):
     """docstring for LinearConfig
     {
@@ -31,11 +31,11 @@ class LinearConfig(BaseModuleConfig):
         self.linear_config = config["module"]
         
 
-@decoder_register("linear")
+@encoder_register("linear")
 class Linear(SimpleModule):
     def __init__(self, config: LinearConfig):
         super(Linear, self).__init__(config)
-        self._provide_keys = {'logits'}
+        self._provide_keys = {'embedding'}
         self._required_keys = {'embedding'}
         self._provided_keys = set()
 
@@ -46,6 +46,6 @@ class Linear(SimpleModule):
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        inputs[self.get_output_name("logits")] = self.linear(inputs[self.get_input_name('embedding')])
-        inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
+        inputs[self.get_output_name("embedding")] = self.linear(inputs[self.get_input_name('embedding')])
+        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs

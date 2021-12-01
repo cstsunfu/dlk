@@ -27,12 +27,8 @@ class IdentityDecoder(SimpleModule):
     """
 
     def __init__(self, config: IdentityDecoderConfig):
-        super().__init__()
+        super().__init__(config)
         self.config = config
-
-        self._provided_keys = set() # provided by privous module, will update by the check_keys_are_provided
-        self._provide_keys = {} # provide by this module
-        self._required_keys = {} # required by this module
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward

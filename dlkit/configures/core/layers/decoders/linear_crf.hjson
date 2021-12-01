@@ -8,7 +8,6 @@
     "config": {
         "input_size": "*@*",
         "output_size": "*@*",
-        "return_logits": "decoder_logits",
         "reduction": "mean",
         "output_map": {}, //provide_key: output_key
         "input_map": {}, // required_key: provide_key
