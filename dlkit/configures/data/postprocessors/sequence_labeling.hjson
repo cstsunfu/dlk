@@ -7,14 +7,14 @@
             "label_vocab": 'label_vocab',
             "tokenizer": "tokenizer",
         },
-        "output_data": {
+        "input_map": {
             "logits": "logits",
             "input_ids": "input_ids",
             "predict_seq_label": "predict_seq_label",
             "attention_mask": "attention_mask",
             "_index": "_index",
         },
-        "origin_data": {
+        "origin_input_map": {
             "uuid": "uuid",
             "sentence": "sentence",
             "entities_info": "entities_info",

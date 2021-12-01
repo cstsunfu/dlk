@@ -19,3 +19,6 @@ local_data/**
 *tokenizer.json
 token.json
 **/test_cls/**
+valid/**
+test_simple_ner/**
+output/**

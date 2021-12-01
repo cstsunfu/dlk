@@ -1,26 +1,26 @@
 {
     "_name": "lightning",
+    "callback@early_stop":{
+        "_name": "early_stop",
+        "config":{
+            "monitor": "val_loss",
+            "patience": 3,
+            "min_delta": 0.0,
+            "check_on_train_epoch_end": null,
+            "strict": true,
+        }
+    },
+    /*"callback@weight_average":{*/
+        /*"_name": "weight_average",*/
+        /*"config": {*/
+            /*"swa_epoch_start": 0.8,*/
+            /*"swa_lrs": null,*/
+            /*"annealing_epochs": 10,*/
+            /*"annealing_strategy": 'cos',*/
+            /*"device": 'cpu',*/
+        /*}*/
+    /*},*/
     "config":{
-        "callback@early_stop":{
-            "_name": "early_stop",
-            "config":{
-                "monitor": "val_loss",
-                "patience": 3,
-                "min_delta": 0.0,
-                "check_on_train_epoch_end": null,
-                "strict": true,
-            }
-        },
-        /*"callback@weight_average":{*/
-            /*"_name": "weight_average",*/
-            /*"config": {*/
-                /*"swa_epoch_start": 0.8,*/
-                /*"swa_lrs": null,*/
-                /*"annealing_epochs": 10,*/
-                /*"annealing_strategy": 'cos',*/
-                /*"device": 'cpu',*/
-            /*}*/
-        /*},*/
         "callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar']
         /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar', 'weight_average'],*/
         "logger": true,

@@ -16,8 +16,8 @@ import json
 import hjson
 from dlkit.data.processors import processor_config_register, processor_register
 
-train_data = json.load(open('../NER/train_format_label_data.json', 'r'))
-valid_data = json.load(open('../NER/valid_format_label_data.json', 'r'))
+train_data = json.load(open('./local_data/tasks_data/title/title_train.json', 'r'))
+valid_data = json.load(open('./local_data/tasks_data/title/title_valid.json', 'r'))
 # train = pd.DataFrame({
     # "ner_format_input": format_data
 # })
@@ -43,6 +43,6 @@ data = {"train": train_data, "valid": valid_data}
 inp = {"data": data}
 # config = config_parser_register.get("processor")(hjson.load(open("./jobs/simple_cls/config.hjson"),object_pairs_hook=dict)).parser_with_check()[0]
 
-config = config_parser_register.get("processor")(hjson.load(open("./jobs/simple_ner/config.hjson"),object_pairs_hook=dict)).parser_with_check()[0]
+config = config_parser_register.get("processor")(hjson.load(open("./examples/sequence_labeling/simple_ner/prepro.hjson"),object_pairs_hook=dict)).parser_with_check()[0]
 # print(json.dumps(config, indent=4))
 processor_register.get(config.get('_name'))(stage="train", config=processor_config_register.get(config.get('_name'))(stage="train", config=config)).process(inp)

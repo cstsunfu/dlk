@@ -117,7 +117,9 @@ class NerRelabel(ISubProcessor):
         sub_labels = []
         for entity_info in entities_info:
             start_token_index = self.find_in_tuple(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length)
-            assert start_token_index != -1
+            if start_token_index == -1:
+                logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
+                continue
             for _ in range(start_token_index-cur_token_index):
                 sub_labels.append('O')
             end_token_index = self.find_in_tuple(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)

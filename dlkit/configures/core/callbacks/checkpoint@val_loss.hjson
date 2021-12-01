@@ -1,5 +1,5 @@
 {
-    "_name": "checkpoint",
+    "_base": "checkpoint",
     "config": {
         "monitor": "val_loss",
         "save_weights_only": true,
