@@ -1,4 +1,4 @@
-import torch.nn as nn
+from typing import Dict
 from . import callback_register, callback_config_register
 from pytorch_lightning.callbacks import LearningRateMonitor
         

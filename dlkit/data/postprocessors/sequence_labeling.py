@@ -320,6 +320,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
 
                 predict = list(predict[:rel_token_len])
+                # predict = list(origin_ins['label_ids'][:rel_token_len])
                 predict_entities_info = []
                 pre_label = ''
                 sub_tokens_index = []

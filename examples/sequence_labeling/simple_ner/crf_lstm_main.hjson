@@ -1,19 +1,20 @@
 {
+    "_name": "crf_lstm"
     "root": {
         "_name": "test_cls",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
-            "save_dir": "test_simple_ner",  # must provide
-            "data_path": "test_simple_ner/processed_data.pkl",  # must provide
-            "meta_data": "test_simple_ner/meta.pkl",  # must provide
+            "save_dir": "output/title",  # must provide
+            "data_path": "output/title/processed_data.pkl",  # must provide
+            "meta_data": "output/title/meta.pkl",  # must provide
         },
         "task": {
             "_name": "test_token_cls",
             "manager": {
                 "_base": "lightning",
                 "config":{
-                    "max_epochs": 10,
+                    "max_epochs": 30,
                 }
             },
             "imodel": {
@@ -29,7 +30,7 @@
                 },
                 "optimizer": {
                     "config": {
-                        "lr": 1e-3,
+                        "lr": 2e-3,
                     },
                 },
                 "postprocessor": {
@@ -40,6 +41,10 @@
             },
             "datamodule": {
                 "_base": "basic@test_token_cls",
+                "config":{
+                   "train_batch_size": 32,
+                   "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+                }
             },
         },
     },

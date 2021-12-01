@@ -89,7 +89,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self._origin_valid_data = None
         self._origin_test_data = None
         self.postprocessor = config.postprocess(config.postprocess_config)
-        self.gather_data = config.postprocess_config.output_data
+        self.gather_data = config.postprocess_config.input_map
 
     def get_progress_bar_dict(self):
         tqdm_dict = super().get_progress_bar_dict()

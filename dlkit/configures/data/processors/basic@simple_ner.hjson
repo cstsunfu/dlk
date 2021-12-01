@@ -9,7 +9,7 @@
         "embedding_file": "*@*",
     },
     "_link": {
-        "subprocessor@tokenizer.config.train.filed_map.word_ids": "subprocessor@ner_relabel.config.train.input_column.word_ids",
+        "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@ner_relabel.config.train.input_map.word_ids",
         "subprocessor@ner_relabel.config.train.output_map.labels": "subprocessor@token_gather.config.train.gather_columns.0"
         "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer'],
         "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
@@ -44,9 +44,12 @@
                 "config_path": "*@*",
                 "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": [
-                    ["sentence", { "is_pretokenized": false}], 
-                ],
+                "process_data": { "is_pretokenized": false},
+                "input_map": {
+                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
+                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                    "sentence_b": "sentence_b", //for pair inputs
+                },
             },
             "predict": "train",
             "online": "train"

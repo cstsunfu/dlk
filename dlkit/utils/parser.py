@@ -496,17 +496,26 @@ class TaskConfigParser(BaseConfigParser):
     def __init__(self, config_file):
         super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/tasks/')
 
+
 @config_parser_register('root')
 class RootConfigParser(BaseConfigParser):
     """docstring for RootConfigParser"""
     def __init__(self, config_file):
         super(RootConfigParser, self).__init__(config_file, config_base_dir='')
 
+
 @config_parser_register('manager')
 class ManagerConfigParser(BaseConfigParser):
     """docstring for ManagerConfigParser"""
     def __init__(self, config_file):
         super(ManagerConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/managers/')
+
+
+@config_parser_register('callback')
+class CallbackConfigParser(BaseConfigParser):
+    """docstring for CallbackConfigParser"""
+    def __init__(self, config_file):
+        super(CallbackConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/callbacks/')
 
 
 @config_parser_register('datamodule')

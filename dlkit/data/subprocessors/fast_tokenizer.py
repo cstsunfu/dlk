@@ -20,7 +20,7 @@ class FastTokenizerConfig(object):
     """
     docstring for GeneralTokenizerConfig
     {
-        "_base": "fast_tokenizer",
+        "_name": "fast_tokenizer",
         "config": {
             "train": { // you can add some whitespace surround the '&' 
                 "data_set": {                   // for different stage, this processor will process different part of data
@@ -34,11 +34,11 @@ class FastTokenizerConfig(object):
                     "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
                 },
                 "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
-                "pre_tokenizer": ["whitespace": {}], // if don't set this, will use the default normalizer from config
+                "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
                 "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
                 "output_map": { // this is the default value, you can provide other name
                     "tokens": "tokens",
-                    "ids": "ids",
+                    "ids": "input_ids",
                     "attention_mask": "attention_mask",
                     "type_ids": "type_ids",
                     "special_tokens_mask": "special_tokens_mask",
