@@ -27,6 +27,8 @@ class BasicDatamoduleConfig(object):
                },
                "key_type_pairs": {
                     'input_ids': 'int', 
+                    'label_ids': 'long', 
+                    'type_ids': 'long', 
                 },
                "gen_mask": {
                     'input_ids': 'attention_mask', 

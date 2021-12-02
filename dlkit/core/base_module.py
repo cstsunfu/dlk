@@ -131,6 +131,13 @@ class IModuleStep(metaclass=abc.ABCMeta):
         """
         return self.validation_step(inputs)
 
+class BaseModel(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
+    """docstring for BaseModule"""
+
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """predict forward
+        """
+        raise NotImplementedError
 
 class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
     """docstring for BaseModule"""

@@ -64,10 +64,10 @@ class RobertaWrap(nn.Module):
             encoder_hidden_states = inputs.get("encoder_hidden_states", None),
             encoder_attention_mask = inputs.get("encoder_attention_mask", None),
             past_key_values = inputs.get("past_key_values", None),
-            use_cache = inputs.get("use_cache", None),
+            use_cache = None,
             output_attentions = True,
             output_hidden_states = True,
             return_dict = False
         )
-        sequence_output, _, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[3], outputs[4]
+        sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[2], outputs[3]
         return sequence_output, all_hidden_states, all_self_attentions

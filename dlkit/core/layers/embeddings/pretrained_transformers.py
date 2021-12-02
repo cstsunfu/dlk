@@ -18,7 +18,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "input_map": {
                 "input_ids": "input_ids",
                 "attention_mask": "attention_mask",
-                "token_type_ids": "token_type_ids",
+                "type_ids": "type_ids",
             },
             "output_map": {
                 "embedding": "embedding",
@@ -35,7 +35,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
     def __init__(self, config: Dict):
         super(PretrainedTransformersConfig, self).__init__(config)
         self.pretrained_transformers_config = config["module"]
-        assert self.pretrained_transformers_config['_name'] == "pretrained_transformers"
+        assert config['_name'] == "pretrained_transformers"
         
 
 @embedding_register("pretrained_transformers")
@@ -45,7 +45,7 @@ class PretrainedTransformers(SimpleModule):
         self._provide_keys = {'embedding'}
         self._required_keys = {'input_ids', 'attention_mask'}
         self.config = config
-        self.pretrained_transformers = module_register.get('pretrained_transformers')(module_config_register.get('pretrained_transformers')(config.pretrained_transformers_config))
+        self.pretrained_transformers = module_register.get(config.pretrained_transformers_config['_name'])(module_config_register.get(config.pretrained_transformers_config['_name'])(config.pretrained_transformers_config))
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
@@ -53,16 +53,18 @@ class PretrainedTransformers(SimpleModule):
         
         input_ids = inputs[self.get_input_name('input_ids')] if "input_ids" in self.config._input_map else None
         attention_mask = inputs[self.get_input_name('attention_mask')] if "attention_mask" in self.config._input_map else None
-        token_type_ids = inputs[self.get_input_name('token_type_ids')] if "token_type_ids" in self.config._input_map else None
-        token_type_ids = inputs[self.get_input_name('token_type_ids')] if "token_type_ids" in self.config._input_map else None
+        type_ids = inputs[self.get_input_name('type_ids')] if "type_ids" in self.config._input_map else None
+        type_ids = inputs[self.get_input_name('type_ids')] if "type_ids" in self.config._input_map else None
         inputs_embeds = inputs[self.get_input_name('inputs_embeds')] if "inputs_embeds" in self.config._input_map else None
         if (input_ids is None and inputs_embeds is None) or (input_ids is not None and inputs_embeds is not None):
             raise PermissionError("input_ids and input_embeds must set one of them to None")
         sequence_output, all_hidden_states, all_self_attentions = self.pretrained_transformers(
-            input_ids=input_ids, 
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            inputs_embeds=inputs_embeds,
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": type_ids,
+                "inputs_embeds": inputs_embeds,
+            }
         )
         inputs[self.get_output_name('embedding')] = sequence_output
         inputs.update(self._logits_gather(all_hidden_states))

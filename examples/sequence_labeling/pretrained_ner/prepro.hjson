@@ -1,0 +1,8 @@
+{
+    "_base": "basic@pretrained_ner",
+    "config": {
+        /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
+        "tokenizer_config_path": "local_data/pretrained_model/hf_id_roberta/indent_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+        "data_dir": "output/title/pretrained/",  // save load data base dir
+    },
+}

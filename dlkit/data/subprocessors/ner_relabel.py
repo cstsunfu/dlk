@@ -72,7 +72,7 @@ class NerRelabel(ISubProcessor):
 
         return data
 
-    def find_in_tuple(self, key, tuple_list, sub_word_ids, start, length):
+    def find_in_tuple(self, key, tuple_list, sub_word_ids, start, length, is_start=False):
         """TODO: Docstring for find.
 
         :key: TODO
@@ -85,6 +85,11 @@ class NerRelabel(ISubProcessor):
                 start += 1
             elif key>=tuple_list[start][0] and key<tuple_list[start][1]:
                 return start
+            elif key<tuple_list[start][0]:
+                if is_start:
+                    return -1
+                else:
+                    return start - 1
             else:
                 start += 1
         return -1
@@ -97,6 +102,8 @@ class NerRelabel(ISubProcessor):
         pre_clean_entities_info.sort(key=lambda x: x['start'])
         offsets = one_ins[self.config.offsets]
         sub_word_ids = one_ins[self.config.word_ids]
+        if not sub_word_ids:
+            logger.warning(f"entity_info: {pre_clean_entities_info}, offsets: {offsets} ")
 
         entities_info = []
         pre_end = -1
@@ -116,18 +123,19 @@ class NerRelabel(ISubProcessor):
         offset_length = len(offsets)
         sub_labels = []
         for entity_info in entities_info:
-            start_token_index = self.find_in_tuple(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length)
+            start_token_index = self.find_in_tuple(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
             if start_token_index == -1:
                 logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
                 continue
             for _ in range(start_token_index-cur_token_index):
                 sub_labels.append('O')
             end_token_index = self.find_in_tuple(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
-            assert end_token_index != -1
+            assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
             sub_labels.append("B-"+entity_info['labels'][0])
             for _ in range(end_token_index-start_token_index):
                 sub_labels.append("I-"+entity_info['labels'][0])
             cur_token_index = end_token_index + 1
+        assert cur_token_index<=offset_length
         for _ in range(offset_length-cur_token_index):
             sub_labels.append('O')
                 
@@ -137,6 +145,10 @@ class NerRelabel(ISubProcessor):
         if sub_word_ids[offset_length-1] is None:
             sub_labels[offset_length-1] = self.config.end_label
 
-        assert len(sub_labels) == offset_length
+        if len(sub_labels)!= offset_length:
+            logger.error(f"{len(sub_labels)} vs {offset_length}")
+            for i in one_ins:
+                logger.error(f"{i}")
+            raise PermissionError
 
         return sub_labels
