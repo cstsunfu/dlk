@@ -1,5 +1,5 @@
-from transformers.models.roberta.modeling_roberta import RobertaModel
-from transformers.models.roberta.configuration_roberta import RobertaConfig
+from transformers.models.bert.modeling_bert import BertModel
+from transformers.models.bert.configuration_bert import BertConfig
 import json
 
 import os
@@ -9,40 +9,40 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from . import module_register, module_config_register
 
-@module_config_register("roberta")
-class RobertaWrapConfig(object):
-    """docstring for RobertaWrapConfig
+@module_config_register("bert")
+class BertWrapConfig(object):
+    """docstring for BertWrapConfig
     {
         config: {
             "pretrained_model_path": "*@*",
         },
-        _name: "roberta",
+        _name: "bert",
     }
     """
 
     def __init__(self, config: Dict):
-        super(RobertaWrapConfig, self).__init__()
+        super(BertWrapConfig, self).__init__()
         self.pretrained_model_path = config['config']['pretrained_model_path']
         if os.path.isdir(self.pretrained_model_path):
             if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
-                self.roberta_config = RobertaConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
+                self.bert_config = BertConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
             else:
                 raise PermissionError(f"config.json must in the dir {self.pretrained_model_path}")
         else:
             if os.path.isfile(self.pretrained_model_path):
                 try:
-                    self.reberta_config = RobertaConfig(**json.load(open(self.pretrained_model_path, 'r')))
+                    self.reberta_config = BertConfig(**json.load(open(self.pretrained_model_path, 'r')))
                 except:
                     raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
         
 
-@module_register("roberta")
-class RobertaWrap(nn.Module):
-    def __init__(self, config: RobertaWrapConfig):
-        super(RobertaWrap, self).__init__()
+@module_register("bert")
+class BertWrap(nn.Module):
+    def __init__(self, config: BertWrapConfig):
+        super(BertWrap, self).__init__()
         self.config = config
 
-        self.roberta = RobertaModel(config.roberta_config, add_pooling_layer=False)
+        self.bert = BertModel(config.bert_config, add_pooling_layer=False)
 
     def init_weight(self, method):
         """TODO: Docstring for init_weight.
@@ -59,13 +59,13 @@ class RobertaWrap(nn.Module):
         :pretrained_model_path: TODO
         :returns: TODO
         """
-        self.roberta = RobertaModel.from_pretrained(self.config.pretrained_model_path)
+        self.bert = BertModel.from_pretrained(self.config.pretrained_model_path)
 
     def forward(self, inputs):
         """
         """
         # No padding necessary.
-        outputs = self.roberta(
+        outputs = self.bert(
             input_ids = inputs.get("input_ids", None),
             attention_mask = inputs.get("attention_mask", None),
             token_type_ids = inputs.get("token_type_ids", None),
