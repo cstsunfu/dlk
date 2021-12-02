@@ -1,5 +1,6 @@
-## WIP
-
+```
+This project is WIP, only provide some basic method, and is not been tested.
+```
 ## What is this project?
 
 * Provide a templete for deep learning (especially for nlp) training and deploy.
@@ -10,22 +11,29 @@
 
 ## Config example
 
-
-TODO:
-
-
-
-## NOTE
-
-一般情况，模型定义好之后执行init_weights或者load_from_dict二选一(特别是bert这种预训练的大模型，load一次太慢)
+WIP
 
 
 ## TODO
 
-* p0, 完成processor逻辑
-* p0, 完成processor测试
-* p0, 完成optimizer模块
+- [ ] Add documents
+- [ ] distill struct and *api* setting
+- [ ] Add disable tokenizer post process
+- [o] Predict
+  - [X] make the main code.
+  - [ ] test
 
-* p1, BERT的from_pretrained方法
-* p1, init_weights方法
-* p1, 考虑在训练过程中加入某种因素 使其更改训练策略
+- [ ] one Optimizer different Para Group use different Schedulers.
+  
+  - [ ] Ref  https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR
+  - [ ] add loss schedule, 
+     - [ ] how to get best checkpoint by loss
+
+- [ ] main entry? 
+  - [ ] how to apply
+
+
+- [ ] LightGBM
+ - [ ]  It's necessary？
+
+## NOTE
