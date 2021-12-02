@@ -32,14 +32,17 @@ class Train(object):
             }
         }
     """
-    def __init__(self, config):
+    def __init__(self, config: Union[str, Dict], ckpt: str=""):
         super(Train, self).__init__()
         if not isinstance(config, dict):
             config = hjson.load(open(config), object_pairs_hook=dict)
 
+        self.ckpt = ckpt
         self.focus = config.pop('_focus', {})
         # self.configs = config_parser_register.get('root')(config).parser_with_check()
         self.configs = BaseConfigParser(config).parser_with_check()
+        if self.ckpt:
+            assert len(self.configs) == 1, f"Reuse the checkpoint(ckpt is not none), you must provide the (only one) config which generate the checkpoint."
 
         # self.configs = config_parser_register.get('root')(config).parser()
         self.config_names = []
@@ -143,6 +146,9 @@ class Train(object):
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
+        if self.ckpt:
+            logger.info(f"reuse the checkpoint at {self.ckpt}")
+            imodel.load_from_checkpoint(self.ckpt)
         if 'valid' in data:
             imodel._origin_valid_data = data['valid']
 
