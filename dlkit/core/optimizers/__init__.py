@@ -4,9 +4,11 @@ import os
 from typing import Callable, Dict, Tuple, Any
 from dlkit.utils.register import Register
 import torch.optim as optim
+from dlkit.utils.logger import logger
 import copy
 
 
+logger = logger()
 optimizer_config_register = Register("Optimizer config register.")
 optimizer_register = Register("Optimizer register.")
 
@@ -34,6 +36,7 @@ class BaseOptimizer(object):
             keys = [s.strip() for s in key.split('&')]
             group_param = []
             for n, p  in all_named_parameters:
+                # logger.info(f"Param name {n}")
                 if n in has_grouped_params:
                     continue
                 if any(key in n for key in keys):
@@ -44,6 +47,7 @@ class BaseOptimizer(object):
 
         reserve_params = [p for n, p in all_named_parameters if not n in has_grouped_params]
         params.append({"params": reserve_params})
+        logger.info(f"Param Group Nums {len(params)}")
 
         return optimizer(params=params, **config)
 
