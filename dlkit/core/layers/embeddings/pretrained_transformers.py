@@ -47,6 +47,13 @@ class PretrainedTransformers(SimpleModule):
         self.config = config
         self.pretrained_transformers = module_register.get(config.pretrained_transformers_config['_name'])(module_config_register.get(config.pretrained_transformers_config['_name'])(config.pretrained_transformers_config))
 
+    def init_weight(self, method):
+        """init  Module weight by `method`
+        :method: init method, with pretrained 
+        :returns: None
+        """
+        self.pretrained_transformers.init_weight(method)
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
