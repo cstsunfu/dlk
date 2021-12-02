@@ -50,7 +50,7 @@ class LogitsGather(nn.Module):
     def forward(self, input: List[torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        assert isinstance(input, List)
+        # assert isinstance(input, List) or isinstance(input, tuple), f"type: {type(input)}, len: {len(input)}"
         result = {}
         for layer, layer_suffix in self.layer_map.items():
             result[self.prefix+layer_suffix] = self.layers_scale[layer](input[int(layer)])

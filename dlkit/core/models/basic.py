@@ -1,7 +1,7 @@
 from . import model_register, model_config_register
 from typing import Dict, List
 from dlkit.utils.config import ConfigTool
-from dlkit.core.base_module import BaseModule
+from dlkit.core.base_module import BaseModel
 import torch
 from dlkit.core.layers.embeddings import embedding_config_register, embedding_register
 from dlkit.core.initmethods import initmethod_config_register, initmethod_register
@@ -121,7 +121,7 @@ class BasicModelConfig(object):
 
 
 @model_register('basic')
-class BasicModel(BaseModule):
+class BasicModel(BaseModel):
     """
     Sequence labeling model
     """

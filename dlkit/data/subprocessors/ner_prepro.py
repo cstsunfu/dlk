@@ -89,6 +89,9 @@ class NerPrePro(ISubProcessor):
             entities_infos = []
 
             for one_ins in data_set:
+                if not one_ins['sentence'] or not one_ins['uuid'] or not one_ins['entities_info']:
+                    logger.info(f"skip: {one_ins}")
+                    continue
                 sentences.append(one_ins['sentence'])
                 uuids.append(one_ins['uuid'])
                 entities_infos.append(one_ins['entities_info'])
