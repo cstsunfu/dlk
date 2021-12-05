@@ -43,8 +43,8 @@
             "datamodule": {
                 "_base": "basic@test_token_cls",
                 "config":{
-                   "train_batch_size": 32,
-                   "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+                   "train_batch_size": 2,
+                   "predict_batch_size": 2, //predict、test batch_size is equals to valid_batch_size
                 }
             },
         },
