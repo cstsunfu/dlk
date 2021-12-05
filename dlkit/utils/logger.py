@@ -1,10 +1,11 @@
 import logging
+import os
 import colorlog
 
 _global_logger = None
 
 
-def setting_logger(log_file: str):
+def setting_logger(log_file: str, base_dir: str="log"):
     log_colors_config = {
         'DEBUG': 'white',  # cyan white
         'INFO': 'green',
@@ -21,6 +22,9 @@ def setting_logger(log_file: str):
     console_handler.setLevel(logging.DEBUG)
 
     if log_file:
+        if not os.path.isdir(base_dir):
+            os.mkdir(base_dir)
+        log_file = os.path.join(base_dir, log_file)
         file_handler = logging.FileHandler(filename=log_file, mode='a', encoding='utf8')
         file_handler.setLevel(logging.INFO)
 

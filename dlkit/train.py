@@ -153,6 +153,6 @@ class Train(object):
             imodel._origin_valid_data = data['valid']
 
         if 'test' in data:
-            imodel._origin_valid_data = data['test']
+            imodel._origin_test_data = data['test']
 
         return imodel

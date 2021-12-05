@@ -159,6 +159,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         metrics = {}
         if stage not in self.without_ground_truth_stage:
             metrics = self.calc_metrics(predicts, stage)
+
         log_info.update(metrics)
 
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
@@ -166,7 +167,6 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             self.config.start_save_epoch = rt_config['total_epochs'] - 1
         if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
             
-
             save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
             if not os.path.exists(save_path):
                 os.makedirs(save_path, exist_ok=True)
@@ -220,7 +220,6 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             precision = _care_div(tp, tp+fp)
             recall = _care_div(tp, tp+fn)
             f1 = _care_div(2*precision*recall, precision+recall)
-            # # print(f"In class {key.upper()}, TP Num: {tp}, FN Num: {fn}, FP Num: {fp}, the dict ner precision is {precision*100 :.2f}%, the recall is {recall*100:.2f}%, the F1 score is {f1*100:.2f}%")
             logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
         precision = _care_div(all_tp,all_tp+all_fp)
         recall = _care_div(all_tp, all_tp+all_fn)
@@ -261,6 +260,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
 
         precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
         real_name = self.loss_name_map(stage)
+        logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
         return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
     def get_entity_info(self, sub_tokens_index, offset_mapping, word_ids, pre_label):
