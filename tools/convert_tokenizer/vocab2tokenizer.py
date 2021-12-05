@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default='./convert.hjson',
+        default='./vocab2tokenizer.hjson',
         help="The config path.",
     )
 
