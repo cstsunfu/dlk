@@ -2,9 +2,11 @@ from dlkit.utils.vocab import Vocabulary
 from dlkit.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from dlkit.utils.logger import logger
 from tokenizers import Tokenizer
 import numpy as np
 
+logger = logger()
 
 @subprocessor_config_register('token_embedding')
 class TokenEmbeddingConfig(object):
@@ -52,7 +54,9 @@ class TokenEmbedding(ISubProcessor):
                 if i==0 and len(line.split())<=embedding_size:
                     continue
                 sp_line = line.split()
-                assert len(sp_line)>=embedding_size+1, f"the {i}th line len： {len(sp_line)}"
+                if len(sp_line)<=embedding_size:
+                    logger.warning(f"The {i}th line len： {len(sp_line)}")
+                    continue
                 word = sp_line[0]
                 vector = list(map(float, sp_line[-embedding_size:]))
                 embedding_dict[word] = vector
@@ -67,7 +71,8 @@ class TokenEmbedding(ISubProcessor):
         """
         for token in vocab:
             if token not in embedding_dict:
-                embedding_dict[token] = [np.random.normal(scale=2.0/self.config.embedding_size) for _ in range(self.config.embedding_size)]
+                bias = np.sqrt(3/self.config.embedding_size)
+                embedding_dict[token] = [np.random.uniform(-bias, bias) for _ in range(self.config.embedding_size)]
         return embedding_dict
 
     def process(self, data: Dict)->Dict:

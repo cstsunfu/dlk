@@ -3,9 +3,9 @@
     "loss": {
         "_base": "identity",
     },
-    "optimizer": {
-        "_base": "adamw@bias_nodecay",
-    },
+    //"optimizer": {
+    //    "_base": "adamw@bias_nodecay",
+    //},
     "scheduler": {
         "_base": "linear_warmup"
     },

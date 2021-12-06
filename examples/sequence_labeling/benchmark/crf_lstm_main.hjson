@@ -1,0 +1,75 @@
+{
+    "_name": "crf_lstm"
+    "root": {
+        "_name": "test_cls",
+        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
+        "_search": {},
+        "config": {
+            "save_dir": "output/benchmark",  # must provide
+            "data_path": "output/benchmark/processed_data.pkl",  # must provide
+            "meta_data": "output/benchmark/meta.pkl",  # must provide
+        },
+        "task": {
+            "_name": "test_token_cls",
+            "manager": {
+                "_base": "lightning@advance",
+                "config":{
+                    "max_epochs": 50,
+                    "_search": {"max_epochs": [80]},
+                    "gpus": 1
+                }
+            },
+            "imodel": {
+                "_base": "basic@crf_sequence_labeling",
+                "model": {
+                    "_base": "basic@lstmcrf4sequencelabeling",
+                    "config": {
+                        "embedding_dim": 100,
+                        "lstm_output_size": 200,
+                        "dropout": 0.5,
+                        "embedding_file": "*@*",
+                        "label_num": 9,
+                    },
+                },
+                "scheduler": {
+                    "_base": "linear_warmup",
+                    "config": {
+                        "num_warmup_steps": 0,
+                    }
+                },
+                "optimizer": {
+                    "_base": "adamw@bias_nodecay",
+                },
+                /*"optimizer": {*/
+                    /*"_base": "sgd",*/
+                    /*"config": {*/
+                        /*"lr": 1e-2,*/
+                        /*"weight_decay": 0.05,*/
+                        /*"momentum": 0.0,*/
+                        /*"_search": {"lr": [1.5e-2]},*/
+                    /*},*/
+                /*},*/
+                "postprocessor": {
+                    "config": {
+                        "meta": '*@*',
+                        "start_save_epoch": 20,
+                    }
+                },
+            },
+            "datamodule": {
+                "_base": "basic@test_token_cls",
+                "config":{
+                   "train_batch_size": 10,
+                   /*"_search": {"train_batch_size": [32, 64]},*/
+                   "predict_batch_size": 128, //predict、test batch_size is equals to valid_batch_size
+                }
+            },
+        },
+    },
+    "_focus": {
+        "root._name": "task.",
+        "root.task.manager.config.max_epochs": "epochs.",
+        "root.task.imodel.optimizer.config.lr": "lr.",
+        "root.task.datamodule.config.train_batch_size": "batch_size.",
+    },
+}

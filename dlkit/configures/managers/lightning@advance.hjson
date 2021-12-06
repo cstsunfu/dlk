@@ -4,7 +4,7 @@
         "_name": "early_stop",
         "config":{
             "monitor": "val_loss",
-            "patience": 3,
+            "patience": 50,
             "min_delta": 0.0,
             "check_on_train_epoch_end": null,
             "strict": true,
@@ -21,7 +21,7 @@
         /*}*/
     /*},*/
     "config":{
-        "callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar']
+        "callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor']
         /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar', 'weight_average'],*/
         "logger": true,
         "enable_checkpointing": true,

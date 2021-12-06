@@ -29,6 +29,8 @@ class BaseOptimizer(object):
         optimizer_special_groups = config.pop('optimizer_special_groups', [])
         params = []
         all_named_parameters = list(model.named_parameters())
+        total_all_named_parameters = len(all_named_parameters)
+        logger.info(f"All Named Params Num is {len(all_named_parameters)}")
         has_grouped_params = set()
         for special_group in optimizer_special_groups:
             assert len(special_group) == 2
@@ -48,6 +50,10 @@ class BaseOptimizer(object):
         reserve_params = [p for n, p in all_named_parameters if not n in has_grouped_params]
         params.append({"params": reserve_params})
         logger.info(f"Param Group Nums {len(params)}")
+        total_param = 0
+        for group in params:
+            total_param = total_param + len(group['params'])
+        assert total_param == total_all_named_parameters
 
         return optimizer(params=params, **config)
 

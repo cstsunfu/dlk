@@ -132,18 +132,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         """
         outputs = self.gather_outputs(outputs)
 
-        if self.local_rank in [0, -1]:
-            # key_all_ins_map = self.concat_list_of_dict_outputs(outputs)
-            # TODO: TODO
-            self.log_dict(
-                self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
-                    rt_config={
-                        "current_step": self.global_step,
-                        "current_epoch": self.current_epoch, 
-                        "total_steps": self.num_training_steps, 
-                        "total_epochs": self.num_training_epochs
-                    }),
-                prog_bar=True)
+        # if self.local_rank in [0, -1]:
+            # TODO: do postprocess only on rank 0
+        self.log_dict(
+            self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
+                rt_config={
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch, 
+                    "total_steps": self.num_training_steps, 
+                    "total_epochs": self.num_training_epochs
+                }),
+            prog_bar=True, rank_zero_only=True)
         return outputs
 
     def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
@@ -169,16 +168,16 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         """
         outputs = self.gather_outputs(outputs)
 
-        if self.local_rank in [0, -1]:
-            self.log_dict(
-                self.postprocessor(stage='test', list_batch_outputs=outputs, origin_data=self._origin_test_data,
-                    rt_config={
-                        "current_step": self.global_step,
-                        "current_epoch": self.current_epoch, 
-                        "total_steps": self.num_training_steps, 
-                        "total_epochs": self.num_training_epochs
-                    }),
-                prog_bar=True)
+        # if self.local_rank in [0, -1]:
+        self.log_dict(
+            self.postprocessor(stage='test', list_batch_outputs=outputs, origin_data=self._origin_test_data,
+                rt_config={
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch, 
+                    "total_steps": self.num_training_steps, 
+                    "total_epochs": self.num_training_epochs
+                }),
+            prog_bar=True, rank_zero_only=True)
         return outputs
 
     def predict_step(self, batch, batch_idx):
@@ -209,7 +208,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             num_devices = max(num_devices, self.trainer.tpu_cores)
 
         effective_accum = self.trainer.accumulate_grad_batches * num_devices
-        return (batches // effective_accum) * self.trainer.max_epochs
+        return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs
 
     def configure_optimizers(self):
 

@@ -1,5 +1,5 @@
 import torch
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Callable
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 from . import encoder_register, encoder_config_register
 from dlkit.core.modules import module_config_register, module_register
@@ -42,6 +42,14 @@ class Linear(SimpleModule):
         self.config = config
 
         self.linear = module_register.get('linear')(module_config_register.get('linear')(config.linear_config))
+
+    def init_weight(self, method: Callable):
+        """init  Module weight by `method`
+        :method: init method
+        :returns: None
+        """
+        for module in self.linear.children():
+            module.apply(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """

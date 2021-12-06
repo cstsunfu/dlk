@@ -5,7 +5,7 @@
             "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
             "embedding_dim": "*@*",
             //if the embedding_file is a dict, you should provide the dict trace to embedding
-            "embedding_trace": ".", //default the file itself is the embedding
+            "embedding_trace": "*@*", //default the file itself is the embedding
             /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
             /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
             "freeze": false, // is freeze
@@ -43,18 +43,21 @@
         "dropout": "*@*",
         "embedding_file": "*@*",
         "embedding_trace": "token_embedding",
-        "label_num": "*@*"
+        "label_num": "*@*",
+        "lstm_output_size": "*@*",
     },
     "_link": {
         "config.embedding_dim": ["embedding.config.embedding_dim", 
                                  "encoder.config.input_size", 
+                                ],
+        "config.lstm_output_size": [
                                  "encoder.config.output_size", 
-                                 "decoder.config.input_size"
+                                 "decoder.config.input_size",
                                 ],
         "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
         "config.embedding_file": ['embedding.config.embedding_file'],
-        "config.embedding_trace": ['embedding.config.embedding_trace']
-        "config.label_num": "decoder.config.output_size"
+        "config.embedding_trace": ['embedding.config.embedding_trace'],
+        "config.label_num": "decoder.config.output_size",
     }
     "_name": "basic"
 }

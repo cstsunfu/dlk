@@ -1,9 +1,11 @@
-
 import torch.nn as nn
 from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
+from dlkit.utils.logger import logger
+import numpy as np
 import torch
 
+logger = logger()
         
 # TODO: 
 @initmethod_config_register('default')
@@ -43,3 +45,44 @@ class RangeNormInit(object):
             torch.nn.init.kaiming_uniform_(module.weight)
         elif isinstance(module, nn.Conv3d):
             torch.nn.init.kaiming_uniform_(module.weight)
+        elif isinstance(module, nn.LSTM):
+            self.init_lstm(module)
+        else:
+            logger.info(f"{module} is not initialization.")
+
+    def init_lstm(self, lstm):
+        """
+        Initialize lstm
+        """
+        for ind in range(0, lstm.num_layers):
+            weight = eval('lstm.weight_ih_l' + str(ind))
+            bias = np.sqrt(6.0 / (weight.size(0) / 4 + weight.size(1)))
+            nn.init.uniform_(weight, -bias, bias)
+            weight = eval('lstm.weight_hh_l' + str(ind))
+            bias = np.sqrt(6.0 / (weight.size(0) / 4 + weight.size(1)))
+            nn.init.uniform_(weight, -bias, bias)
+        if lstm.bidirectional:
+            for ind in range(0, lstm.num_layers):
+                weight = eval('lstm.weight_ih_l' + str(ind) + '_reverse')
+                bias = np.sqrt(6.0 / (weight.size(0) / 4 + weight.size(1)))
+                nn.init.uniform_(weight, -bias, bias)
+                weight = eval('lstm.weight_hh_l' + str(ind) + '_reverse')
+                bias = np.sqrt(6.0 / (weight.size(0) / 4 + weight.size(1)))
+                nn.init.uniform_(weight, -bias, bias)
+
+        if lstm.bias:
+            for ind in range(0, lstm.num_layers):
+                weight = eval('lstm.bias_ih_l' + str(ind))
+                weight.data.zero_()
+                weight.data[lstm.hidden_size: 2 * lstm.hidden_size] = 1
+                weight = eval('lstm.bias_hh_l' + str(ind))
+                weight.data.zero_()
+                weight.data[lstm.hidden_size: 2 * lstm.hidden_size] = 1
+            if lstm.bidirectional:
+                for ind in range(0, lstm.num_layers):
+                    weight = eval('lstm.bias_ih_l' + str(ind) + '_reverse')
+                    weight.data.zero_()
+                    weight.data[lstm.hidden_size: 2 * lstm.hidden_size] = 1
+                    weight = eval('lstm.bias_hh_l' + str(ind) + '_reverse')
+                    weight.data.zero_()
+                    weight.data[lstm.hidden_size: 2 * lstm.hidden_size] = 1
