@@ -1,10 +1,10 @@
 {
     "config": {
         "lr": 1e-3,
-        "momentum": 0,
-        "dampending": 0,
+        "momentum": 0.9,
+        "dampening": 0,
         "weight_decay": 0,
-        "nesterov"=false,
+        "nesterov":false,
         "optimizer_special_groups":[  
         // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config. 
         // You should sort the config by priority(

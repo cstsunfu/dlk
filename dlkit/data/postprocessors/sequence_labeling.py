@@ -27,14 +27,13 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
             },
             "input_map": {
                 "logits": "logits",
-                "input_ids": "input_ids",
                 "predict_seq_label": "predict_seq_label",
-                "attention_mask": "attention_mask",
                 "_index": "_index",
             },
             "origin_input_map": {
                 "uuid": "uuid",
                 "sentence": "sentence",
+                "input_ids": "input_ids",
                 "entities_info": "entities_info",
                 "offsets": "offsets",
                 "special_tokens_mask": "special_tokens_mask",
@@ -66,10 +65,9 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         self.uuid = self.origin_input_map['uuid']
         self.word_ids = self.origin_input_map['word_ids']
         self.special_tokens_mask = self.origin_input_map['special_tokens_mask']
+        self.input_ids = self.origin_input_map['input_ids']
 
         self.logits = self.input_map['logits']
-        self.attention_mask = self.input_map['attention_mask']
-        self.input_ids = self.input_map['input_ids']
         self.predict_seq_label = self.input_map['predict_seq_label']
         self._index = self.input_map['_index']
 
@@ -300,23 +298,22 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         for outputs in list_batch_outputs:
             batch_predict = outputs[self.config.predict_seq_label]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
-            batch_attention_mask = outputs[self.config.attention_mask]
 
             indexes = list(outputs[self.config._index])
-            batch_input_ids = outputs[self.config.input_ids]
             outputs = []
 
             # for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
-            for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
+            for predict, index in zip(batch_predict, indexes):
                 one_ins = {}
                 origin_ins = origin_data.iloc[int(index)]
+                input_ids =origin_ins[self.config.input_ids]
 
                 one_ins["sentence"] = origin_ins[self.config.sentence]
                 one_ins["uuid"] = origin_ins[self.config.uuid]
                 one_ins["entities_info"] = origin_ins[self.config.entities_info]
 
                 word_ids = origin_ins[self.config.word_ids]
-                rel_token_len = int(attention_mask.sum())
+                rel_token_len = len(input_ids)
                 offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
 
                 predict = list(predict[:rel_token_len])
@@ -369,22 +366,21 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         for outputs in list_batch_outputs:
             batch_logits = outputs[self.config.logits]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
-            batch_attention_mask = outputs[self.config.attention_mask]
 
             indexes = list(outputs[self.config._index])
 
-            batch_input_ids = outputs[self.config.input_ids]
             outputs = []
 
-            for logits, index, input_ids, attention_mask in zip(batch_logits, indexes, batch_input_ids, batch_attention_mask):
+            for logits, index in zip(batch_logits, indexes):
                 one_ins = {}
                 origin_ins = origin_data.iloc[int(index)]
 
+                input_ids = origin_ins[self.config.input_ids]
                 one_ins["sentence"] = origin_ins[self.config.sentence]
                 one_ins["uuid"] = origin_ins[self.config.uuid]
                 one_ins["entities_info"] = origin_ins[self.config.entities_info]
 
-                rel_token_len = int(attention_mask.sum())
+                rel_token_len = len(input_ids)
 
                 special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
                 offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
@@ -401,7 +397,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
 
                 pre_entities = self.gather_pre_entities(
-                    one_ins["sentence"], input_ids[:rel_token_len], scores, offset_mapping, special_tokens_mask)
+                    one_ins["sentence"], input_ids, scores, offset_mapping, special_tokens_mask)
                 grouped_entities = self.aggregate(pre_entities, self.config.aggregation_strategy)
                 # Filter anything that is in self.ignore_labels
                 entities = [

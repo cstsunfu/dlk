@@ -9,13 +9,12 @@
         },
         "input_map": {
             "logits": "logits",
-            "input_ids": "input_ids",
             "predict_seq_label": "predict_seq_label",
-            "attention_mask": "attention_mask",
             "_index": "_index",
         },
         "origin_input_map": {
             "uuid": "uuid",
+            "input_ids": "input_ids",
             "sentence": "sentence",
             "entities_info": "entities_info",
             "offsets": "offsets",

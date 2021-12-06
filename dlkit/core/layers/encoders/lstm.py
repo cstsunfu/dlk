@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Callable
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 from . import encoder_register, encoder_config_register
 from dlkit.core.modules import module_config_register, module_register
@@ -46,6 +45,14 @@ class LSTM(SimpleModule):
         self.config = config
         self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
         self.i = 0
+
+    def init_weight(self, method: Callable):
+        """init  Module weight by `method`
+        :method: init method
+        :returns: None
+        """
+        for module in self.lstm.children():
+            module.apply(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """

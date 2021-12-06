@@ -52,7 +52,7 @@ class BertWrap(nn.Module):
         if self.config.pretrained_model_path:
             self.from_pretrained()
         else:
-            self.apply(method)
+            self.bert.init_weights()
 
     def from_pretrained(self):
         """TODO: Docstring for init.

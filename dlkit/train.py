@@ -106,6 +106,7 @@ class Train(object):
 
         # start training
         manager.fit(model=imodel, datamodule=datamodule)
+        manager.test(model=imodel, datamodule=datamodule)
 
     def get_data(self, config):
         """TODO: Docstring for get_data.

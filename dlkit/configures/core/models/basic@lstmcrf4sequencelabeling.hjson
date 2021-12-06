@@ -41,18 +41,21 @@
         "dropout": "*@*",
         "embedding_file": "*@*",
         "embedding_trace": "token_embedding",
-        "label_num": "*@*"
+        "label_num": "*@*",
+        "lstm_output_size": "*@*",
     },
     "_link": {
         "config.embedding_dim": ["embedding.config.embedding_dim", 
                                  "encoder.config.input_size", 
+                                ],
+        "config.lstm_output_size": [
                                  "encoder.config.output_size", 
-                                 "decoder.config.input_size"
+                                 "decoder.config.input_size",
                                 ],
         "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
         "config.embedding_file": ['embedding.config.embedding_file'],
-        "config.embedding_trace": ['embedding.config.embedding_trace']
-        "config.label_num": "decoder.config.output_size"
+        "config.embedding_trace": ['embedding.config.embedding_trace'],
+        "config.label_num": "decoder.config.output_size",
     }
     "_name": "basic"
 }

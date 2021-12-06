@@ -169,7 +169,8 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         :method: init method
         :returns: None
         """
-        self.apply(method)
+        for module in self.children():
+            module.apply(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """predict forward

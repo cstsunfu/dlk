@@ -1,5 +1,5 @@
 from . import embedding_register, embedding_config_register
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Callable
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
 import torch.nn as nn
@@ -44,6 +44,13 @@ class RandomEmbedding(SimpleModule):
         self.dropout = nn.Dropout(self.config.dropout)
         normal =  torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
         self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)))
+
+    def init_weight(self, method: Callable):
+        """init  Module weight by `method`
+        :method: init method
+        :returns: None
+        """
+        self.embedding.apply(method)
         
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
