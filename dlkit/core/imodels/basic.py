@@ -192,6 +192,14 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
     @property
     @lru_cache(maxsize=5) # the size should always == 1
+    def epoch_training_steps(self) -> int:
+        """every epoch training steps inferred from datamodule and devices.
+        """
+        batches = len(self.trainer.datamodule.train_dataloader())
+        return batches
+
+    @property
+    @lru_cache(maxsize=5) # the size should always == 1
     def num_training_steps(self) -> int:
         """Total training steps inferred from datamodule and devices.
         """
@@ -218,14 +226,24 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         })
 
         optimizer = self.get_optimizer()
-        num_warmup_steps = self.config.scheduler_config.num_warmup_steps
-        if num_warmup_steps>0 and num_warmup_steps<1:
-            self.config.scheduler_config.num_warmup_steps = self.num_training_steps * num_warmup_steps
-        self.config.scheduler_config.num_training_steps = self.num_training_steps
+        if "num_warmup_steps" in self.config.scheduler_config.__dict__:
+            num_warmup_steps = self.config.scheduler_config.num_warmup_steps
+            if num_warmup_steps>0 and num_warmup_steps<1:
+                self.config.scheduler_config.num_warmup_steps = self.num_training_steps * num_warmup_steps
+        if "num_training_steps" in self.config.scheduler_config.__dict__:
+            self.config.scheduler_config.num_training_steps = self.num_training_steps
+        if "epoch_training_steps" in self.config.scheduler_config.__dict__:
+            self.config.scheduler_config.epoch_training_steps = self.epoch_training_steps
+        if "num_training_epochs" in self.config.scheduler_config.__dict__:
+            self.config.scheduler_config.num_training_epochs = self.num_training_epochs
         # self.config.scheduler_config.last_epoch = -1
         scheduler = self.config.scheduler(optimizer, self.config.scheduler_config)()
 
         return { 
             "optimizer": optimizer,
-            "lr_scheduler": scheduler 
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step",
+                "frequency": 1
+            }
         }

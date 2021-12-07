@@ -24,6 +24,11 @@ class ConfigTool(object):
             # if item not in _base, or _base[item] is not Dict
                 _base[item] = _new[item]
             elif isinstance(_base[item], Dict) and isinstance(_new[item], Dict):
+                if "_name" in _base[item] and "_name" in _new[item]:
+                    if _base[item]['_name'] != _new[item]['_name']:
+                        logger.warning(f"The Higher Config for {_new[item]['_name']} Coverd the Base {_base[item]['_name']} ")
+                        _base[item] = _new[item]
+                        continue
                 ConfigTool._inplace_update_dict(_base[item], _new[item])
             else:
                 raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
@@ -36,6 +41,7 @@ class ConfigTool(object):
         :returns: updated config
 
         """
+        # TODO: if the config._name != update_config._name, should use the update_config conver the config wholely
         config = copy.deepcopy(config)
         ConfigTool._inplace_update_dict(config, update_config)
         return config
