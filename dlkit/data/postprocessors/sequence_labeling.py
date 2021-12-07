@@ -38,6 +38,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
                 "offsets": "offsets",
                 "special_tokens_mask": "special_tokens_mask",
                 "word_ids": "word_ids",
+                "label_ids": "label_ids",
             },
             "save_root_path": ".",  //save data root dir
             "save_path": {
@@ -48,6 +49,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
             "start_save_epoch": -1,
             "aggregation_strategy": "max", // AggregationStrategy item
             "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+            "bio_eval": true, // Out, Out, Start, End
         }
     }
     """
@@ -60,12 +62,14 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         self.ignore_labels = set(self.config['ignore_labels'])
 
         self.sentence = self.origin_input_map['sentence']
+        self.bio_eval = self.config['bio_eval']
         self.offsets = self.origin_input_map['offsets']
         self.entities_info = self.origin_input_map['entities_info']
         self.uuid = self.origin_input_map['uuid']
         self.word_ids = self.origin_input_map['word_ids']
         self.special_tokens_mask = self.origin_input_map['special_tokens_mask']
         self.input_ids = self.origin_input_map['input_ids']
+        self.label_ids = self.origin_input_map['label_ids']
 
         self.logits = self.input_map['logits']
         self.predict_seq_label = self.input_map['predict_seq_label']
@@ -149,10 +153,11 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         log_info = {}
         average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
         log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
+        bio_results = []
         if not self.config.use_crf:
             predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         else:
-            predicts = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+            predicts, bio_results = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
 
         metrics = {}
         if stage not in self.without_ground_truth_stage:
@@ -171,6 +176,15 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
             logger.info(f"Save the {stage} predict data at {save_file}")
             json.dump(predicts, open(save_file, 'w'), indent=4)
+            save_bio_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.txt")
+            with open(save_bio_file, 'w') as f:
+                for result in bio_results:
+                    for one_line in result:
+                        f.write('\t'.join(one_line)+'\n')
+                    f.write('\n')
+            # if self.config.bio_eval and not bio_results:
+                # logger.warning(f'No bio results, cannot be eval.')
+            
         return log_info
 
     def calc_score(self, predict_list, ground_truth_list):
@@ -294,6 +308,7 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             logger.error(f"{self.config.entities_info} not in the origin data")
             raise PermissionError(f"{self.config.entities_info} must be provided")
 
+        bio_results = []
         predicts = []
         for outputs in list_batch_outputs:
             batch_predict = outputs[self.config.predict_seq_label]
@@ -315,8 +330,10 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                 word_ids = origin_ins[self.config.word_ids]
                 rel_token_len = len(input_ids)
                 offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
-
                 predict = list(predict[:rel_token_len])
+                truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
+                if self.config.bio_eval:
+                    one_bio_result = []
                 # predict = list(origin_ins['label_ids'][:rel_token_len])
                 predict_entities_info = []
                 pre_label = ''
@@ -325,6 +342,8 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                     if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
                         continue
                     label = self.config.label_vocab[label_id]
+                    if self.config.bio_eval:
+                        one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
                     if label in self.config.ignore_labels \
                         or (label[0]=='B') \
                         or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
@@ -342,7 +361,9 @@ class SequenceLabelingPostProcessor(IPostProcessor):
                     predict_entities_info.append(entity_info)
                 one_ins['predict_entities_info'] = predict_entities_info
                 predicts.append(one_ins)
-        return predicts
+                if self.config.bio_eval:
+                    bio_results.append(one_bio_result)
+        return predicts, bio_results
 
     def predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for predict.

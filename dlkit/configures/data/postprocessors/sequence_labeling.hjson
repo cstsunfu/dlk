@@ -14,12 +14,13 @@
         },
         "origin_input_map": {
             "uuid": "uuid",
-            "input_ids": "input_ids",
             "sentence": "sentence",
+            "input_ids": "input_ids",
             "entities_info": "entities_info",
             "offsets": "offsets",
             "special_tokens_mask": "special_tokens_mask",
             "word_ids": "word_ids",
+            "label_ids": "label_ids",
         },
         "save_root_path": ".",  //save data root dir
         "save_path": {
@@ -30,5 +31,6 @@
         "start_save_epoch": -1,
         "aggregation_strategy": "max", // AggregationStrategy item
         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+        "bio_eval": true, // Out, Out, Start, End
     }
 }
