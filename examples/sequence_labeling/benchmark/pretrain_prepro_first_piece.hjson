@@ -1,0 +1,22 @@
+{
+    "_base": "basic@pretrained_ner",
+    "config": {
+        /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
+        "feed_order": ["load", "ner_prepro", "tokenizer", "ner_firstpiece_relabel", "token_gather", "label_to_id", "save"]
+        "tokenizer_config_path": "local_data/pretrained_model/roberta_base/tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+        "data_dir": "output/benchmark/pretrained/",  // save load data base dir
+    },
+    "subprocessor@ner_firstpiece_relabel":{
+        "_base": "ner_firstpiece_relabel",
+        "config": {
+            "train":{ //train、predict、online stage config,  using '&' split all stages
+                "start_label": "S",
+                "end_label": "E",
+                "output_map": {
+                    "labels": "labels",
+                    "gather_index": "gather_index",
+                },
+            }, //3
+        }
+    },
+}
