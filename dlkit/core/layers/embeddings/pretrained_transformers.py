@@ -11,7 +11,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
     """docstring for PretrainedTransformersConfig
     {
         "module": {
-            _base: "roberta",
+            "_base": "roberta",
         },
         "config": {
             "pretrained_model_path": "*@*",
@@ -26,7 +26,30 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "output_size": "*@*",
         },
         "_link": {
-            config.pretrained_model_path: [module.config.pretrained_model_path],
+            "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+        },
+        "_name": "pretrained_transformers",
+    }
+    for gather embedding
+    {
+        "module": {
+            "_base": "roberta",
+        },
+        "config": {
+            "pretrained_model_path": "*@*",
+            "input_map": {
+                "input_ids": "input_ids",
+                "attention_mask": "subword_mask",
+                "type_ids": "type_ids",
+                "gather_index": "gather_index",
+            },
+            "output_map": {
+                "embedding": "embedding",
+            },
+            "output_size": "*@*",
+        },
+        "_link": {
+            "config.pretrained_model_path": ["module.config.pretrained_model_path"],
         },
         "_name": "pretrained_transformers",
     }
@@ -73,6 +96,14 @@ class PretrainedTransformers(SimpleModule):
                 "inputs_embeds": inputs_embeds,
             }
         )
+        if 'gather_index' in self.config._input_map:
+            # gather_index.shape == bs*real_sent_len
+            gather_index = inputs[self.get_input_name("gather_index")]
+            g_bs, g_seq_len = gather_index.shape
+            bs, seq_len, hid_size = sequence_output.shape
+            assert g_bs == bs
+            assert g_seq_len <= seq_len
+            sequence_output = torch.gather(sequence_output[:, :, :], 1, gather_index.unsqueeze(-1).expand(bs, g_seq_len, hid_size))
         inputs[self.get_output_name('embedding')] = sequence_output
         inputs.update(self._logits_gather(all_hidden_states))
         return inputs
