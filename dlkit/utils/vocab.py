@@ -13,11 +13,13 @@ class Vocabulary(object):
         self.word_num = 0
         self.word_count = Counter() # reserved
         self.unknown = unknown
+        self.ignore = ignore
         if ignore:
             self.word2idx[ignore] = -1
             self.idx2word[-1] = ignore
+            self.word_count[ignore] += int(1e10)
         if unknown:
-            self.word_count[unknown] += 1
+            self.word_count[unknown] += int(1e10)
             self.word2idx[unknown] = self.word_num
             self.idx2word[self.word_num] = unknown
             self.word_num += 1
@@ -74,6 +76,25 @@ class Vocabulary(object):
             else:
                 raise KeyError('Unkown word: {}'.format(word))
 
+    def filter_rare(self, min_freq=1, most_common=-1):
+        """TODO: Docstring for filter_rare.
+        :returns: TODO
+
+        """
+        self.word2idx = {}
+        self.idx2word = {}
+        assert min_freq == 1 or most_common==-1, "You should set the min_freq=1 or most_common=-1."
+        if most_common != -1:
+            for i, (token, freq) in enumerate(self.word_count.most_common(most_common)):
+                self.word2idx[token] = i
+                self.idx2word[i] = token
+        else:
+            index = 0
+            for token in self.word_count:
+                if self.word_count[token]>=min_freq:
+                    self.word2idx[token] = index
+                    self.idx2word[index] = token
+                    index += 1
             
     def get_word(self, index):
         """get the word of index from this vocab

@@ -21,6 +21,8 @@ class TokenGatherConfig(object):
                     "ignore": "", // ignore the token, the id of this token will be -1
                     "update": null, // null or another Vocabulary object to update
                     "unk": "",
+                    "min_freq": 1,
+                    "most_common": -1, //-1 for all
                 }
             }
         }
@@ -37,6 +39,8 @@ class TokenGatherConfig(object):
             raise ValueError("The 'deliver' value must not be null.")
         self.update = self.config['update']
         self.unk = self.config['unk']
+        self.min_freq = self.config['min_freq']
+        self.most_common = self.config['most_common']
 
 @subprocessor_register('token_gather')
 class TokenGather(ISubProcessor):
@@ -63,6 +67,7 @@ class TokenGather(ISubProcessor):
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:
                 self.vocab.auto_update(data_set[column])
+        self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
         logger.info(f"The Vocab Num is {self.vocab.word_num}")
         data[self.config.deliver] = self.vocab.__dict__
         return data

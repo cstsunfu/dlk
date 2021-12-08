@@ -3,6 +3,7 @@
     "config": {
         "meta": "*@*",
         "use_crf": false, //use or not use crf
+        "word_ready": false, //already gather the subword first token as the word rep or not
         "meta_data": {
             "label_vocab": 'label_vocab',
             "tokenizer": "tokenizer",
@@ -31,6 +32,6 @@
         "start_save_epoch": -1,
         "aggregation_strategy": "max", // AggregationStrategy item
         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-        "bio_eval": true, // Out, Out, Start, End
+        "bio_eval": true, //do conver to bio file for evaluation like conll 2003
     }
 }

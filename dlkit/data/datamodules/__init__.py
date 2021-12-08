@@ -34,11 +34,11 @@ class DefaultCollate(object):
             for one_ins in batch:
                 data_map[key].append(one_ins[key])
         if self.gen_mask:
-            assert len(self.gen_mask) == 1
-            key = list(self.gen_mask)[0]
-            data_map[self.gen_mask[key]] = []
-            for item in data_map[key]:
-                data_map[self.gen_mask[key]].append(torch.tensor([1] * len(item), dtype=torch.int))
+            for key, mask in self.gen_mask.items():
+                key = list(self.gen_mask)[0]
+                data_map[mask] = []
+                for item in data_map[key]:
+                    data_map[mask].append(torch.tensor([1] * len(item), dtype=torch.int))
         for key in data_map:
             try:
                 data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0))

@@ -21,6 +21,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         "config": {
             "meta": "*@*",
             "use_crf": false, //use or not use crf
+            "word_ready": false, //already gather the subword first token as the word rep or not
             "meta_data": {
                 "label_vocab": 'label_vocab',
                 "tokenizer": "tokenizer",
@@ -49,7 +50,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
             "start_save_epoch": -1,
             "aggregation_strategy": "max", // AggregationStrategy item
             "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-            "bio_eval": true, // Out, Out, Start, End
+            "bio_eval": true, //do conver to bio file for evaluation like conll 2003
         }
     }
     """
@@ -58,6 +59,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
         super(SequenceLabelingPostProcessorConfig, self).__init__(config)
 
         self.use_crf = self.config['use_crf']
+        self.word_ready = self.config['word_ready']
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
 
@@ -154,10 +156,13 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
         log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
         bio_results = []
-        if not self.config.use_crf:
-            predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
-        else:
+        if self.config.use_crf:
             predicts, bio_results = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+        elif self.config.word_ready:
+            # TODO: TEST
+            predicts, bio_results = self.word_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+        else:
+            predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
 
         metrics = {}
         if stage not in self.without_ground_truth_stage:
@@ -238,8 +243,6 @@ class SequenceLabelingPostProcessor(IPostProcessor):
         f1 = _care_div(2*precision*recall, precision+recall)
         return precision, recall, f1
 
-
-
     def calc_metrics(self, predicts, stage)->Dict:
         """TODO: Docstring for calc_metrics.
         :predicts: TODO
@@ -290,6 +293,53 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             "labels": [pre_label]
         }
 
+    def _process4predict(self, predict, index, origin_data):
+        """TODO: Docstring for _process4predict.
+
+        :predict: TODO
+        :index: TODO
+        :returns: TODO
+        """
+        one_ins = {}
+        origin_ins = origin_data.iloc[int(index)]
+        one_ins["sentence"] = origin_ins[self.config.sentence]
+        one_ins["uuid"] = origin_ins[self.config.uuid]
+        one_ins["entities_info"] = origin_ins[self.config.entities_info]
+
+        word_ids = origin_ins[self.config.word_ids]
+        rel_token_len = len(word_ids)
+        offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
+        predict = list(predict[:rel_token_len])
+        truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
+        one_bio_result = []
+        # predict = list(origin_ins['label_ids'][:rel_token_len])
+        predict_entities_info = []
+        pre_label = ''
+        sub_tokens_index = []
+        for i, label_id in enumerate(predict):
+            if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
+                continue
+            label = self.config.label_vocab[label_id]
+            if self.config.bio_eval:
+                one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
+            if label in self.config.ignore_labels \
+                or (label[0]=='B') \
+                or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
+                entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+                if entity_info:
+                    predict_entities_info.append(entity_info)
+                pre_label = ''
+                sub_tokens_index = []
+            if label not in self.config.ignore_labels:
+                assert len(label.split('-')) == 2
+                pre_label = label.split('-')[-1]
+                sub_tokens_index.append(i)
+        entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+        if entity_info:
+            predict_entities_info.append(entity_info)
+        one_ins['predict_entities_info'] = predict_entities_info
+        return one_ins, one_bio_result
+
     def crf_predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for predict.
 
@@ -317,49 +367,90 @@ class SequenceLabelingPostProcessor(IPostProcessor):
             indexes = list(outputs[self.config._index])
             outputs = []
 
-            # for predict, index, input_ids, attention_mask in zip(batch_predict, indexes, batch_input_ids, batch_attention_mask):
             for predict, index in zip(batch_predict, indexes):
-                one_ins = {}
-                origin_ins = origin_data.iloc[int(index)]
-                input_ids =origin_ins[self.config.input_ids]
 
-                one_ins["sentence"] = origin_ins[self.config.sentence]
-                one_ins["uuid"] = origin_ins[self.config.uuid]
-                one_ins["entities_info"] = origin_ins[self.config.entities_info]
+                one_ins, one_bio_result = self._process4predict(predict, index, origin_data)
+                # one_ins = {}
+                # origin_ins = origin_data.iloc[int(index)]
+                # one_ins["sentence"] = origin_ins[self.config.sentence]
+                # one_ins["uuid"] = origin_ins[self.config.uuid]
+                # one_ins["entities_info"] = origin_ins[self.config.entities_info]
 
-                word_ids = origin_ins[self.config.word_ids]
-                rel_token_len = len(input_ids)
-                offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
-                predict = list(predict[:rel_token_len])
-                truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
+                # word_ids = origin_ins[self.config.word_ids]
+                # rel_token_len = len(word_ids)
+                # offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
+                # predict = list(predict[:rel_token_len])
+                # truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
+                # if self.config.bio_eval:
+                    # one_bio_result = []
+                # # predict = list(origin_ins['label_ids'][:rel_token_len])
+                # predict_entities_info = []
+                # pre_label = ''
+                # sub_tokens_index = []
+                # for i, label_id in enumerate(predict):
+                    # if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
+                        # continue
+                    # label = self.config.label_vocab[label_id]
+                    # if self.config.bio_eval:
+                        # one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
+                    # if label in self.config.ignore_labels \
+                        # or (label[0]=='B') \
+                        # or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
+                        # entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+                        # if entity_info:
+                            # predict_entities_info.append(entity_info)
+                        # pre_label = ''
+                        # sub_tokens_index = []
+                    # if label not in self.config.ignore_labels:
+                        # assert len(label.split('-')) == 2
+                        # pre_label = label.split('-')[-1]
+                        # sub_tokens_index.append(i)
+                # entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
+                # if entity_info:
+                    # predict_entities_info.append(entity_info)
+                # one_ins['predict_entities_info'] = predict_entities_info
+                predicts.append(one_ins)
                 if self.config.bio_eval:
-                    one_bio_result = []
-                # predict = list(origin_ins['label_ids'][:rel_token_len])
-                predict_entities_info = []
-                pre_label = ''
-                sub_tokens_index = []
-                for i, label_id in enumerate(predict):
-                    if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
-                        continue
-                    label = self.config.label_vocab[label_id]
-                    if self.config.bio_eval:
-                        one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
-                    if label in self.config.ignore_labels \
-                        or (label[0]=='B') \
-                        or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
-                        entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
-                        if entity_info:
-                            predict_entities_info.append(entity_info)
-                        pre_label = ''
-                        sub_tokens_index = []
-                    if label not in self.config.ignore_labels:
-                        assert len(label.split('-')) == 2
-                        pre_label = label.split('-')[-1]
-                        sub_tokens_index.append(i)
-                entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
-                if entity_info:
-                    predict_entities_info.append(entity_info)
-                one_ins['predict_entities_info'] = predict_entities_info
+                    bio_results.append(one_bio_result)
+        return predicts, bio_results
+
+    def word_predict(self, list_batch_outputs, origin_data):
+        """TODO: Docstring for word_predict.
+
+        :list_batch_outputs: TODO
+        :origin_data: TODO
+        :returns: TODO
+
+        """
+        if self.config.sentence not in origin_data:
+            logger.error(f"{self.config.sentence} not in the origin data")
+            raise PermissionError(f"{self.config.sentence} must be provided")
+        if self.config.uuid not in origin_data:
+            logger.error(f"{self.config.uuid} not in the origin data")
+            raise PermissionError(f"{self.config.uuid} must be provided")
+        if self.config.entities_info not in origin_data:
+            logger.error(f"{self.config.entities_info} not in the origin data")
+            raise PermissionError(f"{self.config.entities_info} must be provided")
+
+        predicts = []
+        bio_results = []
+        for outputs in list_batch_outputs:
+            batch_logits = outputs[self.config.logits]
+            # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
+
+            indexes = list(outputs[self.config._index])
+
+            outputs = []
+
+            for logits, index in zip(batch_logits, indexes):
+                origin_ins = origin_data.iloc[int(index)]
+                word_ids = origin_ins[self.config.word_ids]
+
+                rel_token_len = len(word_ids)
+                logits = logits[:rel_token_len].cpu().numpy()
+
+                predict = logits.argmax(-1)
+                one_ins, one_bio_result = self._process4predict(predict, index, origin_data)
                 predicts.append(one_ins)
                 if self.config.bio_eval:
                     bio_results.append(one_bio_result)
