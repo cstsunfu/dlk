@@ -13,6 +13,10 @@ This project is WIP, only provide some basic method, and is not been tested.
 
 WIP
 
+## TODAY TODO
+- [ ] Add token gather module for ner
+- [ ] refactor the postprocess for first piece
+- *add char embedding by cnn
 
 ## TODO
 
