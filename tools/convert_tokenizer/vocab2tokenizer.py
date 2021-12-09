@@ -2,6 +2,11 @@ import json
 import hjson
 import argparse
 
+pre_tokenizers = {
+    "bert": {"type": "BertPreTokenizer"},
+    "whitespacesplit": {"type": "WhitespaceSplit"}
+}
+
 template = {
     "version": "1.0",
     "truncation": None,
@@ -153,6 +158,12 @@ if __name__ == "__main__":
         default=True,
         help="Normalize do lowercase or not.",
     )
+    parser.add_argument(
+        "--pre_tokenizer",
+        type=str,
+        default='bert',
+        help="bert or whitespacesplit",
+    )
 
     parser.add_argument(
         "--do_bert_postprocess",
@@ -210,5 +221,8 @@ if __name__ == "__main__":
     tokenizer['model']['vocab'] = vocab
     tokenizer['model']['unk_token'] = args.unk
     tokenizer['normalizer'] = normalizer if args.do_norm else None
+    tokenizer['pre_tokenizer'] = pre_tokenizers[args.pre_tokenizer]
+    if not args.do_bert_postprocess:
+        tokenizer['post_processor'] = None
 
     json.dump(tokenizer, open(args.output, 'w'), indent=4)

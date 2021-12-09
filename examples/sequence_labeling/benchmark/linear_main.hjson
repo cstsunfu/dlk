@@ -22,6 +22,16 @@
                 "_base": "basic@sequence_labeling",
                 "model": {
                     "_base": "basic@linearlstm4sequencelabeling",
+                    "encoder": {
+                        "_base": "linear",
+                        "config": {
+                            "input_size": 100,
+                            "output_size": 200,
+                            "pool": null,
+                            "output_map": {},
+                            "input_map": {}, // required_key: provide_key
+                        },
+                    },
                     "config": {
                         "embedding_dim": 100,
                         "lstm_output_size": 200,
@@ -30,18 +40,18 @@
                         "label_num": 9,
                     },
                 },
-                /*"scheduler": {*/
-                    /*"_base": "linear_warmup",*/
-                    /*"config": {*/
-                        /*"num_warmup_steps": 0,*/
-                    /*}*/
-                /*},*/
                 "scheduler": {
-                    "_base": "rec_decay",
-                    /*"config": {*/
-                        /*"num_warmup_steps": 0,*/
-                    /*}*/
+                    "_base": "linear_warmup",
+                    "config": {
+                        "num_warmup_steps": 0,
+                    }
                 },
+                /*"scheduler": {*/
+                    /*"_base": "rec_decay",*/
+                    /*[>"config": {<]*/
+                        /*[>"num_warmup_steps": 0,<]*/
+                    /*[>}<]*/
+                /*},*/
                 "optimizer": {
                     "_base": "adamw@bias_nodecay",
                 },
@@ -64,7 +74,7 @@
             "datamodule": {
                 "_base": "basic@test_token_cls",
                 "config":{
-                   "train_batch_size": 16,
+                   "train_batch_size": 64,
                    /*"_search": {"train_batch_size": [32, 64]},*/
                    "predict_batch_size": 128, //predict、test batch_size is equals to valid_batch_size
                 }

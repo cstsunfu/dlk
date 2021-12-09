@@ -3,6 +3,7 @@
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "tokenizer_config_path": "./local_data/embeddings/glove_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+        /*"tokenizer_config_path": "./tools/convert_tokenizer/vocab_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "data_dir": "output/benchmark",  // save load data base dir
         "embedding_size": 100,  //the embedding size
         /*"embedding_file": "./local_data/embeddings/embedding.txt",*/

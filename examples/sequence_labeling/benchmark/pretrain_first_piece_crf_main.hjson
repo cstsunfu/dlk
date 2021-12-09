@@ -19,9 +19,9 @@
                 }
             },
             "imodel": {
-                "_base": "basic@sequence_labeling",
+                "_base": "basic@crf_sequence_labeling",
                 "model": {
-                    "_base": "basic@roberta4sequencelabeling",
+                    "_base": "basic@robertacrf4sequencelabeling",
                     "embedding": {
                         "_base": "pretrained_transformers@gather",
                         "module": {
@@ -32,7 +32,7 @@
                         },
                         "config": {
                             "pretrained_model_path": "*@*",
-                            "output_size": "*@*",
+                            "output_size": 768,
                             "input_map": {
                                 "input_ids": "input_ids",
                                 "attention_mask": "subword_mask",
@@ -46,19 +46,39 @@
                         "label_num": 11,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
                         "pretrained_model_path": "./local_data/pretrained_model/bert_case",
-                        /*"dropout": "*@*",*/
+                        "dropout": 0.3,
+                    },
+                    "_link": {
+                        "config.pretrained_model_path": "embedding.config.pretrained_model_path"
                     },
                 },
-                "optimizer": {
+                "postprocessor": {
                     "config": {
-                        "lr": 2e-5,
+                        "meta": '*@*',
+                        "start_save_epoch": 20,
+                    }
+                },
+                "scheduler": {
+                    "_base": "linear_warmup"
+                },
+                "optimizer": {
+                    "_base": "adamw@bias_nodecay",
+                    "config": {
+                        "lr": 3e-5,
+                        "optimizer_special_groups":[  
+                        // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config. 
+                        // You should sort the config by priority(
+                        //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
+                            ["bias & LayerNorm.bias & LayerNorm.weight", {weight_decay: 0}],
+                            ['crf', {"lr": 1e-3}],
+                        ]
                     },
                 },
                 "postprocessor": {
                     "config": {
                         "meta": '*@*'
-                        "use_crf": false, //use or not use crf
-                        "word_ready": true, //already gather the subword first token as the word rep or not
+                        "use_crf": true, //use or not use crf
+                        "word_ready": false, //already gather the subword first token as the word rep or not
                     }
                 },
             },

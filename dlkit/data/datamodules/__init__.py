@@ -35,7 +35,6 @@ class DefaultCollate(object):
                 data_map[key].append(one_ins[key])
         if self.gen_mask:
             for key, mask in self.gen_mask.items():
-                key = list(self.gen_mask)[0]
                 data_map[mask] = []
                 for item in data_map[key]:
                     data_map[mask].append(torch.tensor([1] * len(item), dtype=torch.int))

@@ -46,13 +46,13 @@
                 "optimizer": {
                     "_base": "sgd",
                     "config": {
-                        "lr": 1e-2,
-                        "weight_decay": 0.0,
+                        "lr": 1.5e-2,
+                        "weight_decay": 1e-8,
                         "momentum": 0.0,
-                        "_search": {
-                            "lr": [1.5e-2],
-                            "momentum": [0.9],
-                        },
+                        /*"_search": {*/
+                            /*"lr": [1.5e-2],*/
+                            /*"momentum": [0.9],*/
+                        /*},*/
                     },
                 },
                 "postprocessor": {

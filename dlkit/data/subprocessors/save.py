@@ -1,10 +1,12 @@
 from dlkit.utils.config import ConfigTool
+from dlkit.utils.logger import logger
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
 import copy
 import os
 
+logger = logger()
 
 @subprocessor_config_register('save')
 class SaveConfig(object):
@@ -47,6 +49,7 @@ class Save(ISubProcessor):
         """
         if not os.path.exists(self.base_dir):
             os.mkdir(self.base_dir)
+        logger.info(f"Saving file to {os.path.join(self.base_dir, path)}")
         return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
 
     def process(self, data: Dict)->Dict:

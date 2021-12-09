@@ -1,6 +1,6 @@
 from tokenizers.processors import TemplateProcessing
 from tokenizers.normalizers import Lowercase, NFD, NFC, StripAccents, Strip
-from tokenizers.pre_tokenizers import Whitespace, ByteLevel
+from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel
 
 
 class TokenizerPostprocessorFactory(object):
@@ -58,7 +58,7 @@ class PreTokenizerFactory(object):
         :returns: TODO
 
         """
-        return Whitespace
+        return WhitespaceSplit
 
     def get(self, name):
         """TODO: Docstring for get.

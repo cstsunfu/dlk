@@ -1,0 +1,277 @@
+{
+    "root": {
+        "task": {
+            "datamodule": {
+                "config": {
+                    "pin_memory": null,
+                    "collate_fn": "default",
+                    "shuffle": {
+                        "train": true,
+                        "predict": false,
+                        "valid": false,
+                        "test": false,
+                        "online": false
+                    },
+                    "key_type_pairs": {
+                        "input_ids": "int",
+                        "label_ids": "long",
+                        "type_ids": "long",
+                        "special_tokens_mask": "int"
+                    },
+                    "gen_mask": {
+                        "input_ids": "attention_mask"
+                    },
+                    "key_padding_pairs": {
+                        "input_ids": 0,
+                        "label_ids": -1,
+                        "special_tokens_mask": 0
+                    },
+                    "train_batch_size": 10,
+                    "predict_batch_size": 128,
+                    "online_batch_size": 1
+                },
+                "_name": "basic"
+            },
+            "imodel": {
+                "config": {},
+                "postprocessor": {
+                    "config": {
+                        "meta": "output/benchmark/meta.pkl",
+                        "use_crf": true,
+                        "word_ready": false,
+                        "meta_data": {
+                            "label_vocab": "label_vocab",
+                            "tokenizer": "tokenizer"
+                        },
+                        "input_map": {
+                            "logits": "logits",
+                            "predict_seq_label": "predict_seq_label",
+                            "_index": "_index"
+                        },
+                        "origin_input_map": {
+                            "uuid": "uuid",
+                            "sentence": "sentence",
+                            "input_ids": "input_ids",
+                            "entities_info": "entities_info",
+                            "offsets": "offsets",
+                            "special_tokens_mask": "special_tokens_mask",
+                            "word_ids": "word_ids",
+                            "label_ids": "label_ids"
+                        },
+                        "save_root_path": ".",
+                        "save_path": {
+                            "valid": "valid",
+                            "test": "test"
+                        },
+                        "start_save_step": 0,
+                        "start_save_epoch": 20,
+                        "aggregation_strategy": "max",
+                        "ignore_labels": [
+                            "O",
+                            "X",
+                            "S",
+                            "E"
+                        ],
+                        "bio_eval": true
+                    },
+                    "_name": "sequence_labeling"
+                },
+                "scheduler": {
+                    "config": {
+                        "last_epoch": -1,
+                        "num_training_steps": -1,
+                        "decay": 0.05,
+                        "epoch_training_steps": -1
+                    },
+                    "_name": "rec_decay"
+                },
+                "loss": {
+                    "config": {
+                        "schedule": [
+                            1
+                        ],
+                        "scale": [
+                            1
+                        ],
+                        "loss": "loss"
+                    },
+                    "_name": "identity"
+                },
+                "model": {
+                    "config": {
+                        "embedding_dim": 100,
+                        "dropout": 0.5,
+                        "embedding_file": "output/benchmark/meta.pkl",
+                        "embedding_trace": "token_embedding",
+                        "label_num": 9,
+                        "lstm_output_size": 400
+                    },
+                    "initmethod": {
+                        "config": {},
+                        "_name": "default"
+                    },
+                    "encoder": {
+                        "config": {
+                            "output_map": {},
+                            "input_map": {},
+                            "input_size": 100,
+                            "output_size": 400,
+                            "num_layers": 1,
+                            "dropout": 0.5,
+                            "return_logits": "encoder_logits"
+                        },
+                        "module": {
+                            "config": {
+                                "bidirectional": true,
+                                "output_size": 400,
+                                "input_size": 100,
+                                "num_layers": 1,
+                                "dropout": 0.5,
+                                "dropout_last": true
+                            },
+                            "_name": "lstm"
+                        },
+                        "_name": "lstm"
+                    },
+                    "decoder": {
+                        "config": {
+                            "input_size": 400,
+                            "output_size": 9,
+                            "reduction": "mean",
+                            "output_map": {},
+                            "input_map": {},
+                            "return_logits": "decoder_logits"
+                        },
+                        "module@crf": {
+                            "config": {
+                                "output_size": 9,
+                                "batch_first": true,
+                                "reduction": "mean"
+                            },
+                            "_name": "crf"
+                        },
+                        "module@linear": {
+                            "config": {
+                                "input_size": 400,
+                                "output_size": 9,
+                                "dropout": 0,
+                                "pool": null,
+                                "bias": true
+                            },
+                            "_name": "linear"
+                        },
+                        "_name": "linear_crf"
+                    },
+                    "embedding": {
+                        "config": {
+                            "embedding_file": "output/benchmark/meta.pkl",
+                            "embedding_dim": 100,
+                            "embedding_trace": "token_embedding",
+                            "freeze": false,
+                            "dropout": 0.5,
+                            "output_map": {},
+                            "input_map": {},
+                            "return_logits": "embedding_logits"
+                        },
+                        "_name": "static"
+                    },
+                    "_name": "basic"
+                },
+                "_name": "basic",
+                "optimizer": {
+                    "config": {
+                        "lr": 0.015,
+                        "momentum": 0,
+                        "dampening": 0,
+                        "weight_decay": 1e-08,
+                        "nesterov": false,
+                        "optimizer_special_groups": []
+                    },
+                    "_name": "sgd"
+                }
+            },
+            "manager": {
+                "config": {
+                    "callbacks": [
+                        "checkpoint@val_loss",
+                        "early_stop",
+                        "lr_monitor"
+                    ],
+                    "logger": true,
+                    "enable_checkpointing": true,
+                    "accelerator": null,
+                    "default_root_dir": null,
+                    "gradient_clip_val": 5,
+                    "gradient_clip_algorithm": null,
+                    "num_nodes": 1,
+                    "num_processes": 1,
+                    "devices": null,
+                    "gpus": 1,
+                    "auto_select_gpus": false,
+                    "tpu_cores": null,
+                    "ipus": null,
+                    "log_gpu_memory": null,
+                    "enable_progress_bar": true,
+                    "overfit_batches": "0.0",
+                    "track_grad_norm": -1,
+                    "check_val_every_n_epoch": 1,
+                    "fast_dev_run": false,
+                    "accumulate_grad_batches": 1,
+                    "max_epochs": 80,
+                    "min_epochs": null,
+                    "max_steps": -1,
+                    "min_steps": null,
+                    "max_time": null,
+                    "limit_train_batches": "1.0",
+                    "limit_val_batches": "1.0",
+                    "limit_test_batches": "1.0",
+                    "limit_predict_batches": "1.0",
+                    "val_check_interval": "1.0",
+                    "log_every_n_steps": 50,
+                    "strategy": "ddp",
+                    "sync_batchnorm": false,
+                    "precision": 32,
+                    "enable_model_summary": true,
+                    "weights_summary": "top",
+                    "weights_save_path": null,
+                    "num_sanity_val_steps": 2,
+                    "resume_from_checkpoint": null,
+                    "profiler": null,
+                    "benchmark": false,
+                    "deterministic": false,
+                    "reload_dataloaders_every_n_epochs": 0,
+                    "auto_lr_find": false,
+                    "replace_sampler_ddp": true,
+                    "detect_anomaly": false,
+                    "auto_scale_batch_size": false,
+                    "plugins": null,
+                    "amp_backend": "native",
+                    "amp_level": null,
+                    "move_metrics_to_cpu": false,
+                    "multiple_trainloader_mode": "max_size_cycle",
+                    "stochastic_weight_avg": false,
+                    "terminate_on_nan": null
+                },
+                "callback@early_stop": {
+                    "config": {
+                        "monitor": "val_loss",
+                        "patience": 50,
+                        "min_delta": 0,
+                        "check_on_train_epoch_end": null,
+                        "strict": true
+                    },
+                    "_name": "early_stop"
+                },
+                "_name": "lightning"
+            },
+            "_name": "test_token_cls"
+        },
+        "config": {
+            "save_dir": "output/benchmark",
+            "data_path": "output/benchmark/processed_data.pkl",
+            "meta_data": "output/benchmark/meta.pkl"
+        },
+        "_name": "test_cls"
+    },
+    "_name": "crf_lstm"
+}

@@ -30,7 +30,7 @@
         "config": {
             "return_logits": "encoder_logits",
             "output_map": {},
-            "input_size": *@*,
+            "input_size": "*@*",
             "output_size": "*@*",
             "num_layers": 1,
             "dropout": "*@*", // dropout between layers
@@ -56,6 +56,6 @@
         "config.embedding_file": ['embedding.config.embedding_file'],
         "config.embedding_trace": ['embedding.config.embedding_trace']
         "config.label_num": "decoder.config.output_size"
-    }
+    },
     "_name": "basic"
 }

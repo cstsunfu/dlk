@@ -22,10 +22,20 @@
                 "_base": "basic@sequence_labeling",
                 "model": {
                     "_base": "basic@roberta4sequencelabeling",
+                    "embedding": {
+                        "_base": "pretrained_transformers",
+                        "module": {
+                            "config": {
+                                "pretrained_model_path": "*@*",
+                            },
+                            "_name": "bert",
+                        },
+                    },
                     "config": {
                         "embedding_dim": 768,
                         "label_num": 11,
-                        "pretrained_model_path": "./local_data/pretrained_model/roberta_base",
+                        /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
+                        "pretrained_model_path": "./local_data/pretrained_model/bert_case",
                         /*"dropout": "*@*",*/
                     },
                 },
