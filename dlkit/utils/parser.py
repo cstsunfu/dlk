@@ -41,7 +41,7 @@ class LinkUnionTool(object):
             else:
                 return
         elif self.find(child): # only child has been linked
-            logger.warn(f"Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
+            logger.warning(f"Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
             self.link_union[parant] = self.find(child)
         elif self.find(parant): # only parant has been linked
             self.link_union[child] = self.find(parant)
