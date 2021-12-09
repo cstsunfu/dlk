@@ -1,9 +1,11 @@
 from dlkit.utils.config import ConfigTool
+from dlkit.utils.logger import logger
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
 import os
 
+logger = logger()
 
 @subprocessor_config_register('load')
 class LoadConfig(object):
@@ -44,6 +46,8 @@ class Load(ISubProcessor):
     def load(self, path):
         """TODO: Docstring for load.
         """
+
+        logger.info(f"Loading file from {os.path.join(self.base_dir, path)}")
         return pkl.load(open(os.path.join(self.base_dir, path), 'rb'))
 
     def process(self, data: Dict)->Dict:
