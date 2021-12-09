@@ -1,7 +1,7 @@
 {
     "_name": "crf_lstm"
     "root": {
-        "_name": "test_cls",
+        "_name": "crf_lstm",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
@@ -10,7 +10,7 @@
             "meta_data": "output/benchmark/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "test_token_cls",
+            "_name": "crf_lstm",
             "manager": {
                 "_base": "lightning@advance",
                 "config":{
@@ -20,19 +20,9 @@
                 }
             },
             "imodel": {
-                "_base": "basic@crf_sequence_labeling",
+                "_base": "basic@seq_lab#crf",
                 "model": {
-                    "_base": "basic@lstmcrf4sequencelabeling",
-                    "encoder": {
-                        "_base": "linear",
-                        "config": {
-                            "input_size": 100,
-                            "output_size": 200,
-                            "pool": null,
-                            "output_map": {},
-                            "input_map": {}, // required_key: provide_key
-                        },
-                    },
+                    "_base": "basic@seq_lab#lstm_crf",
                     "config": {
                         "embedding_dim": 100,
                         "lstm_output_size": 400,

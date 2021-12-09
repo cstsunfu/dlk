@@ -1,17 +1,17 @@
 {
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
-    "_name": "basic@simple_ner",
+    "_name": "basic@seq_lab_static",
     "config": {
-        /*"feed_order": ["load", "ner_prepro", "tokenizer", "ner_relabel", "token_gather", "save"]*/
-        "feed_order": ["load", "ner_prepro", "tokenizer", "ner_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
+        /*"feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", "token_gather", "save"]*/
+        "feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "embedding_size": "*@*",  //the embedding size
         "embedding_file": "*@*",
     },
     "_link": {
-        "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@ner_relabel.config.train.input_map.word_ids",
-        "subprocessor@ner_relabel.config.train.output_map.labels": "subprocessor@label_gather.config.train.gather_columns.0"
+        "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@seq_lab_relabel.config.train.input_map.word_ids",
+        "subprocessor@seq_lab_relabel.config.train.output_map.labels": "subprocessor@label_gather.config.train.gather_columns.0"
         "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer'],
         "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
         "config.embedding_size": "subprocessor@token_embedding.config.train.embedding_size"
@@ -36,8 +36,8 @@
             }
         }
     },
-    "subprocessor@ner_prepro":{
-        "_base": "ner_prepro",
+    "subprocessor@seq_lab_prepro":{
+        "_base": "seq_lab_prepro",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
@@ -57,8 +57,8 @@
             "online": "train"
         }
     },
-    "subprocessor@ner_relabel":{
-        "_base": "ner_relabel",
+    "subprocessor@seq_lab_relabel":{
+        "_base": "seq_lab_relabel",
         "config": {
             "train":{ //train、predict、online stage config,  using '&' split all stages
                 "start_label": "S",

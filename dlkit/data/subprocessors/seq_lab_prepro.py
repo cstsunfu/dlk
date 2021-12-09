@@ -8,11 +8,11 @@ from dlkit.utils.logger import logger
 
 logger = logger()
 
-@subprocessor_config_register('ner_prepro')
-class NerPreProConfig(object):
-    """docstring for NerPreProConfig
+@subprocessor_config_register('seq_lab_prepro')
+class SeqLabPreProConfig(object):
+    """docstring for SeqLabPreProConfig
         {
-            "_name": "ner_prepro",
+            "_name": "seq_lab_prepro",
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
                     "data_set": {                   // for different stage, this processor will process different part of data
@@ -31,7 +31,7 @@ class NerPreProConfig(object):
             }
         }
 
-        NOTE: the nerformat input is
+        NOTE: the seq_labformat input is
         {
             "uuid": '**-**-**-**'
             "sentence": "I have an apple",
@@ -56,12 +56,12 @@ class NerPreProConfig(object):
         self.output_map = self.config.get('output_map', {})
 
 
-@subprocessor_register('ner_prepro')
-class NerPrePro(ISubProcessor):
-    """docstring for NerPrePro
+@subprocessor_register('seq_lab_prepro')
+class SeqLabPrePro(ISubProcessor):
+    """docstring for SeqLabPrePro
     """
 
-    def __init__(self, stage: str, config: NerPreProConfig):
+    def __init__(self, stage: str, config: SeqLabPreProConfig):
         super().__init__()
         self.stage = stage
         self.config = config
@@ -80,7 +80,7 @@ class NerPrePro(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do ner_prepro on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_prepro on it.')
                 continue
             data_set = data['data'][data_set_name]
 

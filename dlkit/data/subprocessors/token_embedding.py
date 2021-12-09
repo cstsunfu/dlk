@@ -55,7 +55,7 @@ class TokenEmbedding(ISubProcessor):
                     continue
                 sp_line = line.split()
                 if len(sp_line)<=embedding_size:
-                    logger.warning(f"The {i}th line len： {len(sp_line)}")
+                    logger.warning(f"The {i}th line len： {len(sp_line)}, token is {sp_line[0]}")
                     continue
                 word = sp_line[0]
                 vector = list(map(float, sp_line[-embedding_size:]))
@@ -69,10 +69,13 @@ class TokenEmbedding(ISubProcessor):
         :vocab: List[str]
         :returns: updated embedding_dict
         """
+        without_embedding_tokens = 0
         for token in vocab:
             if token not in embedding_dict:
                 bias = np.sqrt(3/self.config.embedding_size)
                 embedding_dict[token] = [np.random.uniform(-bias, bias) for _ in range(self.config.embedding_size)]
+                without_embedding_tokens += 1
+        logger.info(f"All tokens number is {len(vocab)}, without pretrained token num is {without_embedding_tokens}")
         return embedding_dict
 
     def process(self, data: Dict)->Dict:

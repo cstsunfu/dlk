@@ -1,5 +1,5 @@
 {
-    "_name": "ner_relabel",
+    "_name": "seq_lab_relabel",
     "config": {
         "train":{ //train、predict、online stage config,  using '&' split all stages
             "input_map": {  // without necessery, don't change this
