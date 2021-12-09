@@ -15,11 +15,13 @@
         },
     },
     "decoder": {
-        "_base": "linear_crf",
+        "_base": "linear",
         "config": {
             "input_size": "*@*",
             "output_size": "*@*",
+            "pool": null,
             "return_logits": "decoder_logits",
+            "output_map": {}
         },
     },
     "encoder": {
@@ -27,7 +29,7 @@
         "config": {
             "return_logits": "encoder_logits",
             "output_map": {},
-            "input_size": *@*,
+            "input_size": "*@*",
             "output_size": "*@*",
             "num_layers": 1,
             "dropout": "*@*", // dropout between layers

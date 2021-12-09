@@ -10,7 +10,7 @@
             "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "test_token_cls",
+            "_name": "pretrained",
             "manager": {
                 "_base": "lightning",
                 "config":{
@@ -19,9 +19,9 @@
                 }
             },
             "imodel": {
-                "_base": "basic@sequence_labeling",
+                "_base": "basic@seq_lab",
                 "model": {
-                    "_base": "basic@roberta4sequencelabeling",
+                    "_base": "basic@seq_lab#roberta",
                     "embedding": {
                         "_base": "pretrained_transformers",
                         "module": {

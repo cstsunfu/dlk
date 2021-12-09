@@ -1,5 +1,5 @@
 {
-    "_base": "basic@pretrained_ner",
+    "_base": "basic@seq_lab#pretrained",
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         /*"tokenizer_config_path": "local_data/pretrained_model/bert_case/tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/

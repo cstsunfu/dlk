@@ -1,7 +1,7 @@
 {
-    "_name": "pretrained"
+    "_name": "pretrained_firstpiece_crf"
     "root": {
-        "_name": "pretrained",
+        "_name": "pretrained_firstpiece_crf",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
@@ -10,7 +10,7 @@
             "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "test_token_cls",
+            "_name": "pretrained_firstpiece_crf",
             "manager": {
                 "_base": "lightning",
                 "config":{
@@ -19,9 +19,9 @@
                 }
             },
             "imodel": {
-                "_base": "basic@crf_sequence_labeling",
+                "_base": "basic@seq_lab#crf",
                 "model": {
-                    "_base": "basic@robertacrf4sequencelabeling",
+                    "_base": "basic@seq_lab#roberta_crf",
                     "embedding": {
                         "_base": "pretrained_transformers@gather",
                         "module": {
@@ -83,7 +83,7 @@
                 },
             },
             "datamodule": {
-                "_base": "basic@test_token_cls_wordmask",
+                "_base": "basic@seq_lab#wordmask",
                 "config":{
                    "train_batch_size": 32,
                    "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size

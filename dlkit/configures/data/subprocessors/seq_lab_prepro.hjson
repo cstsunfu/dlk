@@ -1,5 +1,5 @@
 {
-    "_name": "ner_prepro",
+    "_name": "seq_lab_prepro",
     "config": {
         "train":{ //train、predict、online stage config,  using '&' split all stages
             "data_set": {                   // for different stage, this processor will process different part of data
