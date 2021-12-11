@@ -12,12 +12,12 @@ import torchmetrics
 logger = logger()
 
 
-@postprocessor_config_register('sequence_labeling')
-class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
-    """docstring for SequenceLabelingPostProcessorConfig
+@postprocessor_config_register('seq_lab')
+class SeqLabPostProcessorConfig(IPostProcessorConfig):
+    """docstring for SeqLabPostProcessorConfig
     config e.g.
     {
-        "_name": "sequence_labeling",
+        "_name": "seq_lab",
         "config": {
             "meta": "*@*",
             "use_crf": false, //use or not use crf
@@ -56,7 +56,7 @@ class SequenceLabelingPostProcessorConfig(IPostProcessorConfig):
     """
 
     def __init__(self, config: Dict):
-        super(SequenceLabelingPostProcessorConfig, self).__init__(config)
+        super(SeqLabPostProcessorConfig, self).__init__(config)
 
         self.use_crf = self.config['use_crf']
         self.word_ready = self.config['word_ready']
@@ -118,11 +118,11 @@ class AggregationStrategy(object):
     MAX = "max"
         
 
-@postprocessor_register('sequence_labeling')
-class SequenceLabelingPostProcessor(IPostProcessor):
+@postprocessor_register('seq_lab')
+class SeqLabPostProcessor(IPostProcessor):
     """docstring for DataSet"""
-    def __init__(self, config:    SequenceLabelingPostProcessorConfig):
-        super(   SequenceLabelingPostProcessor, self).__init__()
+    def __init__(self, config:    SeqLabPostProcessorConfig):
+        super(   SeqLabPostProcessor, self).__init__()
         self.config = config
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer

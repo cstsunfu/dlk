@@ -57,7 +57,7 @@ class Train(object):
             if config_name:
                 self.config_names.append('_'.join(config_name))
             else:
-                self.config_names.append(possible_config['_name'])
+                self.config_names.append(possible_config['root']['_name'])
 
         if len(self.config_names) != len(set(self.config_names)):
             for config, name in zip(self.configs, self.config_names):

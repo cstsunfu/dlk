@@ -28,6 +28,7 @@ class ConfigTool(object):
                     if _base[item]['_name'] != _new[item]['_name']:
                         logger.warning(f"The Higher Config for {_new[item]['_name']} Coverd the Base {_base[item]['_name']} ")
                         _base[item] = _new[item]
+
                         continue
                 ConfigTool._inplace_update_dict(_base[item], _new[item])
             else:
@@ -41,7 +42,7 @@ class ConfigTool(object):
         :returns: updated config
 
         """
-        # TODO: if the config._name != update_config._name, should use the update_config conver the config wholely
+        # BUG ?: if the config._name != update_config._name, should use the update_config conver the config wholely
         config = copy.deepcopy(config)
         ConfigTool._inplace_update_dict(config, update_config)
         return config

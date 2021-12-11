@@ -14,12 +14,12 @@ import torchmetrics
 logger = logger()
 
 
-@postprocessor_config_register('classification')
-class ClassificationPostProcessorConfig(IPostProcessorConfig):
+@postprocessor_config_register('txt_cls')
+class TxtClsPostProcessorConfig(IPostProcessorConfig):
     """docstring for IdentityPostProcessorConfig
     config e.g.
     {
-        "_name": "classification",
+        "_name": "txt_cls",
         "config": {
             "meta": "*@*",
             "meta_data": {
@@ -46,7 +46,7 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
     """
 
     def __init__(self, config: Dict):
-        super(ClassificationPostProcessorConfig, self).__init__(config)
+        super(TxtClsPostProcessorConfig, self).__init__(config)
 
         self.sentence = self.origin_input_map['sentence']
         self.uuid = self.origin_input_map['uuid']
@@ -57,7 +57,7 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
         else:
-            raise PermissionError("You must provide meta data for classification postprocess.")
+            raise PermissionError("You must provide meta data for txt_cls postprocess.")
         trace_path = []
         trace_path_str = self.config['meta_data']['label_vocab']
         if trace_path_str and trace_path_str.strip()!='.':
@@ -72,11 +72,11 @@ class ClassificationPostProcessorConfig(IPostProcessorConfig):
         self.start_save_step = self.config['start_save_step']
 
 
-@postprocessor_register('classification')
-class ClassificationPostProcessor(IPostProcessor):
+@postprocessor_register('txt_cls')
+class TxtClsPostProcessor(IPostProcessor):
     """docstring for DataSet"""
-    def __init__(self, config: ClassificationPostProcessorConfig):
-        super(ClassificationPostProcessor, self).__init__()
+    def __init__(self, config: TxtClsPostProcessorConfig):
+        super(TxtClsPostProcessor, self).__init__()
         self.config = config
         self.label_vocab = self.config.label_vocab
         self.acc_calc = torchmetrics.Accuracy()

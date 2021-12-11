@@ -1,5 +1,4 @@
 {
-    "_name": "pretrained"
     "root": {
         "_name": "pretrained",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
@@ -10,7 +9,6 @@
             "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "pretrained",
             "manager": {
                 "_base": "lightning",
                 "config":{

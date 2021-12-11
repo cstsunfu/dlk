@@ -7,11 +7,7 @@ import json
 
 pl.seed_everything(88)
 
-# trainer = Train('./tasks/test_cls.hjson')
-# trainer = Train('./examples/sequence_labeling/benchmark/pretrain_main.hjson')
-# trainer = Train('./examples/sequence_labeling/pretrained_ner/main.hjson')
-# trainer = Train('./examples/sequence_labeling/benchmark/pretrain_first_piece_main.hjson')
-# trainer = Train('./examples/sequence_labeling/benchmark/pretrain_main.hjson')
-trainer = Train('./examples/sequence_labeling/benchmark/crf_lstm_main.hjson')
-print(json.dumps(trainer.configs[0], indent=4))
-# trainer.run()
+# trainer = Train('./examples/sequence_labeling/benchmark/pretrained/first_piece_lstm_crf_main.hjson')
+trainer = Train('./examples/sequence_labeling/benchmark/static/crf_lstm_main.hjson')
+# print(json.dumps(trainer.configs[0], indent=4))
+trainer.run()

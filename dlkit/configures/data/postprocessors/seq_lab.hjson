@@ -1,5 +1,5 @@
 {
-    "_name": "sequence_labeling",
+    "_name": "seq_lab",
     "config": {
         "meta": "*@*",
         "use_crf": false, //use or not use crf
