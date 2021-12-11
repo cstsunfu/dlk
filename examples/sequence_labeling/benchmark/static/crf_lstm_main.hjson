@@ -1,5 +1,4 @@
 {
-    "_name": "crf_lstm"
     "root": {
         "_name": "crf_lstm",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
@@ -10,12 +9,11 @@
             "meta_data": "output/benchmark/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "crf_lstm",
             "manager": {
                 "_base": "lightning@advance",
                 "config":{
                     "max_epochs": 50,
-                    "_search": {"max_epochs": [80]},
+                    "_search": {"max_epochs": [100]},
                     "gpus": 1
                 }
             },
@@ -25,10 +23,10 @@
                     "_base": "basic@seq_lab#lstm_crf",
                     "config": {
                         "embedding_dim": 100,
-                        "lstm_output_size": 400,
+                        "lstm_output_size": 300,
                         "dropout": 0.5,
                         "_search": {
-                            "dropout": [0.5],
+                            "lstm_output_size": [300],
                         },
                         "embedding_file": "*@*",
                         "label_num": 9,
@@ -37,47 +35,64 @@
                 "scheduler": {
                     "_base": "rec_decay",
                     /*"config": {*/
-                        /*"num_warmup_steps": 0,*/
+                        /*"num_warmup_steps": 0.1,*/
                     /*}*/
                 },
-                /*"optimizer": {*/
-                    /*"_base": "adamw@bias_nodecay",*/
-                /*},*/
                 "optimizer": {
-                    "_base": "sgd",
                     "config": {
                         "lr": 1.5e-2,
-                        "weight_decay": 1e-8,
-                        "momentum": 0.0,
-                        /*"_search": {*/
-                            /*"lr": [1.5e-2],*/
-                            /*"momentum": [0.9],*/
-                        /*},*/
+                        "betas": [0.9, 0.999],
+                        "eps": 1e-8,
+                        "weight_decay": 1e-2,
+                        "_search": {
+                            "lr": [5e-3],
+                        },
+                        "optimizer_special_groups":[  
+                        // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config. 
+                        // You should sort the config by priority(
+                        //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
+                        ]
                     },
+                    "_name": "adamw",
                 },
+                /*"optimizer": {*/
+                    /*"_base": "sgd",*/
+                    /*"config": {*/
+                        /*"lr": 1.5e-2,*/
+                        /*"weight_decay": 1e-8,*/
+                        /*"momentum": 0.0,*/
+                        /*"_search": {*/
+                            /*"momentum": [0.0],*/
+                            /*[>"weight_decay": [0, 1e-8],<]*/
+                            /*"weight_decay": [1e-8],*/
+                        /*},*/
+                    /*},*/
+                /*},*/
                 "postprocessor": {
                     "config": {
                         "meta": '*@*',
-                        "start_save_epoch": 20,
+                        "start_save_epoch": -1,
                     }
                 },
             },
             "datamodule": {
-                "_base": "basic@test_token_cls",
+                "_base": "basic@seq_lab",
                 "config":{
-                   "train_batch_size": 10,
-                   /*"_search": {"train_batch_size": [32, 64]},*/
+                   "train_batch_size": 12,
+                   /*"_search": {"train_batch_size": [2, 4, 8]},*/
+                   "_search": {"train_batch_size": [64]},
                    "predict_batch_size": 128, //predict、test batch_size is equals to valid_batch_size
                 }
             },
         },
     },
     "_focus": {
-        "root._name": "task.",
-        "root.task.manager.config.max_epochs": "epochs.",
-        "root.task.imodel.optimizer.config.lr": "lr.",
-        "root.task.imodel.optimizer.config.momentum": "momentum.",
-        "root.task.datamodule.config.train_batch_size": "batch_size.",
-        "root.task.imodel.model.config.dropout": "dropout.",
+        "root._name": "textadamtask=",
+        /*"root.task.imodel.optimizer.config.momentum": "momentum=",*/
+        "root.task.imodel.optimizer.config.weight_decay": "weight_decay=",
+        /*"root.task.imodel.optimizer._name": "optimizer=",*/
+        /*"root.task.imodel.optimizer.config.momentum": "momentum.",*/
+        "root.task.datamodule.config.train_batch_size": "batch_size=",
+        "root.task.imodel.model.config.lstm_output_size": "lstm_output_size=",
     },
 }

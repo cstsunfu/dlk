@@ -3,6 +3,9 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from . import module_register, module_config_register
+from dlkit.utils.logger import logger
+
+logger = logger()
 
 @module_config_register("lstm")
 class LSTMConfig(object):
@@ -56,4 +59,5 @@ class LSTM(nn.Module):
         pack_seq_rep = pack_padded_sequence(input=input, lengths=seq_lens, batch_first=True, enforce_sorted=False)
         pack_seq_rep = self.lstm(pack_seq_rep)[0]
         output, _ = pad_packed_sequence(sequence=pack_seq_rep, batch_first=True, total_length=max_seq_len)
+
         return self.dropout_last(output)

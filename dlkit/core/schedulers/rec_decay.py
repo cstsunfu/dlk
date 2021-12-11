@@ -47,8 +47,6 @@ class RecDecaySchedule(BaseScheduler):
 
         def lr_lambda(current_step: int):
             cur_epoch = (current_step+1)//epoch_training_steps
-            if current_step%epoch_training_steps==0:
-                logger.warning(f"cur_epoch ={cur_epoch}, lr='{1/((1+decay)**cur_epoch)}'")
+            # return 1/(1+decay*cur_epoch)
             return 1/((1+decay)**cur_epoch)
-
         return LambdaLR(self.optimizer, lr_lambda, last_epoch)

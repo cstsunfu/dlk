@@ -1,8 +1,8 @@
 {
     "unk": "[UNK]",
-    "vocab": "./test/new_vocab.txt",
+    "vocab": "./test/vocab.txt",
     "do_norm": false,
-    "do_lowercase": true,
+    "do_lowercase": false,
     "do_bert_postprocess": false,
     "pre_tokenizer": 'whitespacesplit',
     "output": './vocab_tokenizer.json',
