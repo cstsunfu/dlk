@@ -1,6 +1,6 @@
 {
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
-    "_name": "basic@seq_lab_pretrained",
+    "_name": "basic@seq_lab#pretrained",
     "config": {
         "feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", "token_gather", "label_to_id", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)

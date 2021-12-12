@@ -1,0 +1,87 @@
+{
+    "root": {
+        "_name": "crf_lstm",
+        "_link": {"config.meta_data": ['task.imodel.model.config.char_embedding_file', 'task.imodel.model.config.word_embedding_file', 'task.imodel.postprocessor.config.meta']},
+        "_search": {},
+        "config": {
+            /*"save_dir": "output/benchmark",  # must provide*/
+            /*"data_path": "output/benchmark/processed_data.pkl",  # must provide*/
+            /*"meta_data": "output/benchmark/meta.pkl",  # must provide*/
+            "save_dir": "./examples/sequence_labeling/conll2003/norm_char_lstm_crf/output",  # must provide
+            "data_path": "./examples/sequence_labeling/conll2003/norm_char_lstm_crf/output/processed_data.pkl",  # must provide
+            "meta_data": "./examples/sequence_labeling/conll2003/norm_char_lstm_crf/output/meta.pkl",  # must provide
+        },
+        "task": {
+            "manager": {
+                "_base": "lightning@advance",
+                "config":{
+                    "max_epochs": 50,
+                    "_search": {"max_epochs": [100]},
+                    "gpus": 0
+                }
+            },
+            "imodel": {
+                "_base": "basic@seq_lab#crf",
+                "model": {
+                    "_base": "basic@seq_lab#lstm_cnn_crf",
+                    "config": {
+                        "embedding_dim": 130,
+                        "dropout": 0.5,
+                        "label_num": 9,
+                        "lstm_output_size": 100,
+                        "word_embedding_file": "*@*",
+                        "word_embedding_trace": "token_embedding",
+                        "word_embedding_dim": 100,
+                        "char_embedding_file": "*@*",
+                        "char_embedding_trace": "char_embedding",
+                        "char_embedding_dim": 30,
+                    },
+                },
+                "scheduler": {
+                    "_base": "rec_decay",
+                    /*"config": {*/
+                        /*"num_warmup_steps": 0.1,*/
+                    /*}*/
+                },
+                /*"optimizer": {*/
+                    /*"_base": "sgd",*/
+                    /*"config": {*/
+                        /*"lr": 2e-2,*/
+                        /*"weight_decay": 0,*/
+                        /*"momentum": 0.9,*/
+                    /*},*/
+                /*},*/
+                "optimizer": {
+                    "_base": "adamw",
+                    "config": {
+                        "lr": 1e-2,
+                    },
+                },
+                "postprocessor": {
+                    "config": {
+                        "meta": '*@*',
+                        "start_save_epoch": 50,
+                    }
+                },
+            },
+            "datamodule": {
+                "_base": "basic@seq_lab#with_char",
+                "config":{
+                   "train_batch_size": 10,
+                   /*"_search": {"train_batch_size": [2, 4, 8]},*/
+                   "_search": {"train_batch_size": [10]},
+                   "predict_batch_size": 128, //predict、test batch_size is equals to valid_batch_size
+                }
+            },
+        },
+    },
+    "_focus": {
+        "root._name": "textadamtask=",
+        /*"root.task.imodel.optimizer.config.momentum": "momentum=",*/
+        "root.task.imodel.optimizer.config.weight_decay": "weight_decay=",
+        /*"root.task.imodel.optimizer._name": "optimizer=",*/
+        /*"root.task.imodel.optimizer.config.momentum": "momentum.",*/
+        "root.task.datamodule.config.train_batch_size": "batch_size=",
+        "root.task.imodel.model.config.lstm_output_size": "lstm_output_size=",
+    },
+}

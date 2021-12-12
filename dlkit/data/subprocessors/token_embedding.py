@@ -16,7 +16,8 @@ class TokenEmbeddingConfig(object):
             "config": {
                 "train": { // only train stage using
                     "embedding_file": "*@*",
-                    "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                    "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                    "vocab": null, 
                     "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
                     "embedding_size": 200,
                 }
@@ -29,6 +30,7 @@ class TokenEmbeddingConfig(object):
 
         self.embedding_file = self.config.get("embedding_file")
         self.tokenizer = self.config.get("tokenizer")
+        self.vocab = self.config['vocab']
         self.deliver = self.config.get("deliver")
         self.embedding_size = self.config.get("embedding_size")
 
@@ -40,8 +42,14 @@ class TokenEmbedding(ISubProcessor):
         super().__init__()
         self.stage = stage
         self.config = config
-        self.tokenizer = Tokenizer.from_file(config.tokenizer)
-        self.origin_embedding = self.get_embedding(config.embedding_file, config.embedding_size)
+        if config.tokenizer:
+            self.tokenizer = Tokenizer.from_file(config.tokenizer)
+        else:
+            self.tokenizer = None
+        if config.embedding_file:
+            self.origin_embedding = self.get_embedding(config.embedding_file, config.embedding_size)
+        else:
+            self.origin_embedding = {}
 
     def get_embedding(self, file_path, embedding_size)->Dict[str, List[float]]:
         """TODO: Docstring for get_embedding.
@@ -87,8 +95,16 @@ class TokenEmbedding(ISubProcessor):
         return embedding_dict
 
     def process(self, data: Dict)->Dict:
-        token2id = self.tokenizer.get_vocab()
-        id2token = {value:key for key,value in token2id.items()}
+        if self.tokenizer is not None and self.config.vocab:
+            raise PermissionError(f"The tokenizer and vocab must provide one.")
+        if self.tokenizer:
+            token2id = self.tokenizer.get_vocab()
+            id2token = {value:key for key,value in token2id.items()}
+        else:
+            assert self.config.vocab, f"The tokenizer and vocab must provide one."
+            vocab = data[self.config.vocab]
+            token2id = vocab['word2idx']
+            id2token = vocab['idx2word']
         embedding_dict = self.update_embedding(self.origin_embedding, token2id)
         embedding_mat = [embedding_dict[id2token[id]] for id in range(len(id2token))]
         data[self.config.deliver] = np.array(embedding_mat)

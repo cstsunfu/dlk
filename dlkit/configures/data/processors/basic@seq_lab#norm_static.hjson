@@ -2,8 +2,8 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@seq_lab#static",
     "config": {
-        /*"feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", "token_gather", "save"]*/
-        "feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
+        /*"feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "token_gather", "save"]*/
+        "feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "embedding_size": "*@*",  //the embedding size
@@ -11,11 +11,12 @@
     },
     "_link": {
         "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@seq_lab_relabel.config.train.input_map.word_ids",
-        "subprocessor@seq_lab_relabel.config.train.output_map.labels": "subprocessor@label_gather.config.train.gather_columns.0"
-        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer'],
+        "subprocessor@seq_lab_relabel.config.train.output_map.labels": "subprocessor@label_gather.config.train.gather_columns.0",
+        "subprocessor@token_norm.config.train.data_pair.sentence": "subprocessor@tokenizer.config.train.input_map.sentence",
+        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer', "subprocessor@token_norm.config.train.tokenizer"],
         "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
         "config.embedding_size": "subprocessor@token_embedding.config.train.embedding_size",
-        "config.embedding_file": "subprocessor@token_embedding.config.train.embedding_file"
+        "config.embedding_file": "subprocessor@token_embedding.config.train.embedding_file",
     },
     "subprocessor@load": {
         "_base": "load",
@@ -27,7 +28,7 @@
             "train":{
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ['label_vocab', "tokenizer", 'token_embedding'] //only for next time use
+                    "meta.pkl": ['label_vocab', "tokenizer", 'token_embedding'], //only for next time use
                     /*"meta.pkl": ['token_vocab'] //only for next time use*/
                 }
             },
@@ -39,6 +40,19 @@
     "subprocessor@seq_lab_prepro":{
         "_base": "seq_lab_prepro",
     },
+    "subprocessor@token_norm":{
+        "_base": "token_norm",
+        "config": { 
+            "train": { 
+                "data_pair": {
+                    "sentence": "norm_sentence",
+                },
+                "tokenizer": "*@*", // "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line", 
+            },
+            "predict": "train",
+            "online": "train"
+        }
+    },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
         "config": { 
@@ -49,12 +63,10 @@
                 "process_data": { "is_pretokenized": false},
                 "input_map": {
                     "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
                 },
             },
             "predict": "train",
-            "online": "train"
+            "online": "train",
         }
     },
     "subprocessor@seq_lab_relabel":{
@@ -89,6 +101,8 @@
                     "train": ["train", "valid"]
                 },
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "unk": "",
+                "pad": "",
                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
             }
         }
@@ -98,7 +112,7 @@
         "config": {
             "train":{ //train、predict、online stage config,  using '&' split all stages
                 "data_pair": {
-                    "labels": "label_ids",
+                    "labels": "label_ids"
                 },
                 "vocab": "label_vocab", // usually provided by the "token_gather" module
             }, //3

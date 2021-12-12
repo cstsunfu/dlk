@@ -1,6 +1,7 @@
 {
+    "_name": "combine_word_char_cnn",
     "embedding@char": {
-        "_base": "combine_word_char_cnn",
+        "_base": "static_char_cnn",
     },
     "embedding@word": {
         "_base": "static",
@@ -26,26 +27,25 @@
             "input_map": {"char_ids": "char_ids"},
         },
         "dropout": 0, //dropout rate
-        "embedding_dim": 135, // this must equal to char.embedding_dim + word.embedding_dim
+        "embedding_dim": "*@*", // this must equal to char.embedding_dim + word.embedding_dim
         "output_map": {"embedding": "embedding"}, // this config do nothing, you can change this
         "input_map": {"char_embedding": "char_embedding", 'word_embedding': "word_embedding"}, // if the output of char and word embedding changed, you also should change this
     },
     "_link":{
-        "config.word.embedding_file": ["module@word.config.embedding_file"],
-        "config.word.embedding_dim": ["module@word.config.embedding_dim"],
-        "config.word.embedding_trace": ["module@word.config.embedding_trace"],
-        "config.word.freeze": ["module@word.config.freeze"],
-        "config.word.padding_idx": ["module@word.config.padding_idx"],
-        "config.word.output_map": ["module@word.config.output_map"],
-        "config.word.input_map": ["module@word.config.input_map"],
-        "config.char.embedding_file": ["module@char.config.embedding_file"],
-        "config.char.embedding_dim": ["module@char.config.embedding_dim"],
-        "config.char.embedding_trace": ["module@char.config.embedding_trace"],
-        "config.char.freeze": ["module@char.config.freeze"],
-        "config.char.kernel_sizes": ["module@char.config.kernel_sizes"],
-        "config.char.padding_idx": ["module@char.config.padding_idx"],
-        "config.char.output_map": ["module@char.config.output_map"],
-        "config.char.input_map": ["module@char.config.input_map"],
+        "config.word.embedding_file": ["embedding@word.config.embedding_file"],
+        "config.word.embedding_dim": ["embedding@word.config.embedding_dim"],
+        "config.word.embedding_trace": ["embedding@word.config.embedding_trace"],
+        "config.word.freeze": ["embedding@word.config.freeze"],
+        "config.word.padding_idx": ["embedding@word.config.padding_idx"],
+        "config.word.output_map": ["embedding@word.config.output_map"],
+        "config.word.input_map": ["embedding@word.config.input_map"],
+        "config.char.embedding_file": ["embedding@char.config.embedding_file"],
+        "config.char.embedding_dim": ["embedding@char.config.embedding_dim"],
+        "config.char.embedding_trace": ["embedding@char.config.embedding_trace"],
+        "config.char.freeze": ["embedding@char.config.freeze"],
+        "config.char.kernel_sizes": ["embedding@char.config.kernel_sizes"],
+        "config.char.padding_idx": ["embedding@char.config.padding_idx"],
+        "config.char.output_map": ["embedding@char.config.output_map"],
+        "config.char.input_map": ["embedding@char.config.input_map"],
     },
-    "_name": "combine_word_char_cnn",
 }
