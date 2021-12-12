@@ -1,5 +1,5 @@
 {
-    "_name": "classification",
+    "_name": "txt_cls",
     "config": {
         "meta": "*@*",
         "meta_data": {

@@ -70,12 +70,20 @@ class TokenEmbedding(ISubProcessor):
         :returns: updated embedding_dict
         """
         without_embedding_tokens = 0
+        fuzzy_match_tokens = 0
+        bias = np.sqrt(3/self.config.embedding_size)
         for token in vocab:
             if token not in embedding_dict:
-                bias = np.sqrt(3/self.config.embedding_size)
-                embedding_dict[token] = [np.random.uniform(-bias, bias) for _ in range(self.config.embedding_size)]
-                without_embedding_tokens += 1
-        logger.info(f"All tokens number is {len(vocab)}, without pretrained token num is {without_embedding_tokens}")
+                if (token.lower() not in embedding_dict) and (token.upper() not in embedding_dict):
+                    embedding_dict[token] = [np.random.uniform(-bias, bias) for _ in range(self.config.embedding_size)]
+                    without_embedding_tokens += 1
+                else:
+                    fuzzy_match_tokens += 1
+                    if token.lower() in embedding_dict:
+                        embedding_dict[token] = embedding_dict[token.lower()]
+                    else:
+                        embedding_dict[token] = embedding_dict[token.upper()]
+        logger.info(f"All tokens num is {len(vocab)}, fuzzy mathing(lower or upper match) num is {fuzzy_match_tokens}, OOV token num is {without_embedding_tokens}")
         return embedding_dict
 
     def process(self, data: Dict)->Dict:

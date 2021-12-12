@@ -1,7 +1,6 @@
 {
-    "_name": "pretrained_firstpiece_crf"
     "root": {
-        "_name": "pretrained_firstpiece_crf",
+        "_name": "pretrained_firstpiece_crf"
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
@@ -10,7 +9,6 @@
             "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "pretrained_firstpiece_crf",
             "manager": {
                 "_base": "lightning",
                 "config":{
