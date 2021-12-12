@@ -23,3 +23,4 @@ valid/**
 test_simple_ner/**
 output/**
 **/output/**
+**/conll2003/data/**

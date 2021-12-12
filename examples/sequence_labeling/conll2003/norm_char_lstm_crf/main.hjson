@@ -28,7 +28,7 @@
                         "embedding_dim": 130,
                         "dropout": 0.5,
                         "label_num": 9,
-                        "lstm_output_size": 100,
+                        "lstm_output_size": 200,
                         "word_embedding_file": "*@*",
                         "word_embedding_trace": "token_embedding",
                         "word_embedding_dim": 100,
@@ -54,7 +54,7 @@
                 "optimizer": {
                     "_base": "adamw",
                     "config": {
-                        "lr": 1e-2,
+                        "lr": 5e-3,
                     },
                 },
                 "postprocessor": {
