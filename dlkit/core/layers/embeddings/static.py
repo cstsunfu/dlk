@@ -3,8 +3,10 @@ from . import embedding_register, embedding_config_register
 from typing import Dict, List, Set
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
+from dlkit.utils.logger import logger
 import torch
 
+logger = logger()
         
 @embedding_config_register('static')
 class StaticEmbeddingConfig(BaseModuleConfig):

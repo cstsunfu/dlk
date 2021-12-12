@@ -1,5 +1,4 @@
 {
-    "_name": "pretrained_firstpiece"
     "root": {
         "_name": "pretrained_firstpiece",
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
@@ -10,7 +9,6 @@
             "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
         },
         "task": {
-            "_name": "pretrained_firstpiece",
             "manager": {
                 "_base": "lightning",
                 "config":{
