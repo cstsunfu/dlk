@@ -1,0 +1,22 @@
+{
+    "_name": "token_norm",
+    "config": {
+        "train":{
+            "data_set": {                   // for different stage, this processor will process different part of data
+                "train": ['train', 'valid', 'test'],
+                "predict": ['predict'],
+                "online": ['online']
+            },
+            "zero_digits_replaced": true,
+            "lowercase": false,
+            "unk": "[UNK]", //if the unk token is in your vocab, you can provide one to replace it
+            "vocab": "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line", 
+            "tokenizer": "whitespace_split",  //currently we only support use space split the setentce
+            "data_pair": {
+                "sentence": "norm_sentence"
+            },
+        },
+        "predict": "train",
+        "online": "train",
+    }
+}

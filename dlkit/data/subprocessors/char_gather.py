@@ -6,18 +6,18 @@ from dlkit.utils.logger import logger
 
 logger = logger()
 
-@subprocessor_config_register('token_gather')
-class TokenGatherConfig(object):
+@subprocessor_config_register('char_gather')
+class CharGatherConfig(object):
     """Config eg.
         {
-            "_name": "token_gather",
+            "_name": "char_gather",
             "config": {
                 "train": { // only train stage using
                     "data_set": {                   // for different stage, this processor will process different part of data
                         "train": ["train", "valid", 'test']
                     },
                     "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
                     "ignore": "", // ignore the token, the id of this token will be -1
                     "update": null, // null or another Vocabulary object to update
                     "unk": "[UNK]",
@@ -40,20 +40,30 @@ class TokenGatherConfig(object):
             raise ValueError("The 'deliver' value must not be null.")
         self.update = self.config['update']
         self.unk = self.config['unk']
-        self.pad = self.config['pad']
         self.min_freq = self.config['min_freq']
         self.most_common = self.config['most_common']
 
-@subprocessor_register('token_gather')
-class TokenGather(ISubProcessor):
+@subprocessor_register('char_gather')
+class CharGather(ISubProcessor):
     """
     """
-    def __init__(self, stage: str, config: TokenGatherConfig):
+    def __init__(self, stage: str, config: CharGatherConfig):
         super().__init__()
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
         self.update = config.update
+
+    def split_to_char(self, input):
+        """TODO: Docstring for split_to_char.
+
+        :input: auto detach the type of input and split it to char
+        :returns: TODO
+        """
+        if isinstance(input, str):
+            return [c for c in input]
+        else:
+            return [self.split_to_char(sub_input) for sub_input in input]
 
     def process(self, data: Dict)->Dict:
         if not self.data_set:
@@ -61,15 +71,15 @@ class TokenGather(ISubProcessor):
         if self.update:
             self.vocab = data[self.update]
         else:
-            self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk, ignore=self.config.ignore, pad=self.config.pad)
+            self.vocab = Vocabulary(do_strip=True, unknown=self.config.unk, ignore=self.config.ignore)
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
                 logger.info(f'The {data_set_name} not in data. We will skip gather tokens from it.')
                 continue
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:
-                self.vocab.auto_update(data_set[column])
+                self.vocab.auto_update(self.split_to_char(data_set[column]))
         self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
-        logger.info(f"The Vocab Num is {self.vocab.word_num}")
+        logger.info(f"The Char Vocab Num is {self.vocab.word_num}")
         data[self.config.deliver] = self.vocab.__dict__
         return data

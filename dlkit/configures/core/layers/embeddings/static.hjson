@@ -8,6 +8,7 @@
         /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
         /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
         "freeze": false, // is freeze
+        "padding_idx": 0, //dropout rate
         "dropout": 0, //dropout rate
         "output_map": {},
         "input_map": {}, // required_key: provide_key

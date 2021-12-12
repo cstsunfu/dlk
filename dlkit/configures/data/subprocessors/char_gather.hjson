@@ -1,12 +1,12 @@
 {
-    "_name": "token_gather",
+    "_name": "char_gather",
     "config": {
         "train": { // only train stage using
             "data_set": {                   // for different stage, this processor will process different part of data
-                "train": ["train", "valid", 'test'], //token gather for test sometimes is useful(the embedding of test token is pretrained)
+                "train": ["train", "valid", 'test']
             },
             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-            "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
+            "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
             "ignore": "", // ignore the token, the id of this token will be -1
             "update": null, // null or another Vocabulary object to update
             "unk": "[UNK]",

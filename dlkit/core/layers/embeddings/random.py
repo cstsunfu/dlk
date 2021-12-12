@@ -15,6 +15,7 @@ class RandomEmbeddingConfig(BaseModuleConfig):
             vocab_size: "*@*",
             embedding_dim: "*@*",
             dropout: 0, //dropout rate
+            padding_idx: 0, //dropout rate
             output_map: {},
             input_map: {},
         },
@@ -27,6 +28,7 @@ class RandomEmbeddingConfig(BaseModuleConfig):
         self.vocab_size = config.get('vocab_size', 1)
         self.embedding_dim = config.get('embedding_dim', 1)
         self.dropout = config.get('dropout', 0.0)
+        self.padding_idx = config.get('padding_idx', 0)
 
 
 @embedding_register('random')
@@ -43,7 +45,7 @@ class RandomEmbedding(SimpleModule):
         self.config = config
         self.dropout = nn.Dropout(self.config.dropout)
         normal =  torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
-        self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)))
+        self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)), padding_idx=self.config.padding_idx)
 
     def init_weight(self, method: Callable):
         """init  Module weight by `method`
