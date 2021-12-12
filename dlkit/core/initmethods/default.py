@@ -54,6 +54,23 @@ class RangeNormInit(object):
         """
         Initialize lstm
         """
+        # nn.init.xavier_uniform_(lstm.weight_hh_l0)
+        # nn.init.xavier_uniform_(lstm.weight_hh_l0_reverse)
+        # nn.init.xavier_uniform_(lstm.weight_ih_l0)
+        # nn.init.xavier_uniform_(lstm.weight_ih_l0_reverse)
+        # lstm.bias_hh_l0.data.fill_(0)
+        # lstm.bias_hh_l0_reverse.data.fill_(0)
+        # lstm.bias_ih_l0.data.fill_(0)
+        # lstm.bias_ih_l0_reverse.data.fill_(0)
+        # # Init forget gates to 1
+        # for names in lstm._all_weights:
+            # for name in filter(lambda n: 'bias' in n, names):
+                # bias = getattr(lstm, name)
+                # n = bias.size(0)
+                # start, end = n // 4, n // 2
+                # bias.data[start:end].fill_(1.)
+
+        # Another init method
         for ind in range(0, lstm.num_layers):
             weight = eval('lstm.weight_ih_l' + str(ind))
             bias = np.sqrt(6.0 / (weight.size(0) / 4 + weight.size(1)))

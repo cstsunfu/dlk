@@ -77,7 +77,7 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
             data_set[[self.config.output_labels, 
                 self.config.gather_index, 
                 self.config.word_word_ids, 
-                self.config.word_offsets]] = data_set.apply(self.relabel, axis=1, result_type="expand")
+                self.config.word_offsets]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
         return data
 
     def find_in_tuple(self, key, tuple_list, sub_word_ids, start, length, is_start=False):

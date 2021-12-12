@@ -148,6 +148,7 @@ class Conll03Reader:
 
 if __name__ == "__main__":
     ds_rd = Conll03Reader()
-    data = ds_rd.read("./conll2003")
+    base_dir = "./data"
+    data = ds_rd.read(base_dir)
     for key in data:
-        json.dump(data[key], open(key+'.json', 'w'), indent=4)
+        json.dump(data[key], open(os.path.join(base_dir, key+'.json'), 'w'), indent=4)

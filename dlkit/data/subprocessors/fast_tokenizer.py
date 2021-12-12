@@ -78,6 +78,9 @@ class FastTokenizerConfig(object):
             "type_ids": "type_ids",
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
+            "word_ids": "word_ids",
+            "overflowing": "overflowing",
+            "sequence_ids": "sequence_ids",
         })
         self.process_data = self.config['process_data']
         self.data_type = self.config["data_type"]
@@ -99,9 +102,9 @@ class FastTokenizer(ISubProcessor):
         self.config = config
 
         if self.config.data_type=='single':
-            self._process = self._single
+            self._tokenize = self._single_tokenize
         elif self.config.data_type == 'pair':
-            self._process = self._pair
+            self._tokenize = self._pair_tokenize
         else:
             raise KeyError('We only support single or pair data now.')
 
@@ -147,53 +150,47 @@ class FastTokenizer(ISubProcessor):
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
     
-    def _extend_encoded_token(self, all_tokens, output_map):
-        """TODO: Docstring for _extend_encoded_token.
+    def _single_tokenize(self, one_line):
+        """TODO: Docstring for _single_tokenize.
 
-        :all_tokens: TODO
-        :output_map: TODO
+        :one_line: TODO
         :returns: TODO
 
         """
-        targets_map = {}
-        for k in output_map:
-            targets_map[output_map[k]] = []
-        for token in all_tokens:
-            for k in output_map:
-                targets_map[output_map[k]].append(getattr(token, k))
-        return targets_map
+        sentence = one_line[self.config.input_map['sentence']]
+        encode = self.tokenizer.encode(sentence, **self.config.process_data)
+        return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
 
-    def _single(self, data):
+    def _pair_tokenize(self, one_line):
+        """TODO: Docstring for _single_tokenize.
+
+        :one_line: TODO
+        :returns: TODO
+
+        """
+        sentence_a = one_line[self.config.input_map['sentence_a']]
+        sentence_b = one_line[self.config.input_map['sentence_b']]
+        encode = self.tokenizer.encode([sentence_a, sentence_b], **self.config.process_data)
+        return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
+        
+    def _process(self, data):
         """TODO: Docstring for _single.
 
         :data: TODO
         :returns: TODO
 
         """
-        config = self.config.process_data
-        process_column_name = self.config.input_map.get('sentence', 'sentence')
-
-        process_column_data = data[process_column_name]
-        all_token = self.tokenizer.encode_batch(process_column_data, **config)
-        token_filed_name_value_map = self._extend_encoded_token(all_token, self.config.output_map)
-        for k in token_filed_name_value_map:
-            data[k] = token_filed_name_value_map[k]
-        return data
-
-    def _pair(self, data):
-        """TODO: Docstring for _pair.
-
-        :data: TODO
-        :returns: TODO
-
-        """
-        config = self.config.process_data
-        process_column_name_a, process_column_name_b = self.config.input_map["sentence_a"], self.config.input_map['sentence_b']
-        process_column_data = list(data[[process_column_name_a, process_column_name_b]].values)
-        all_token = self.tokenizer.encode_batch(process_column_data, **config)
-        token_filed_name_value_map = self._extend_encoded_token(all_token, self.config.output_map)
-        for k in token_filed_name_value_map:
-            data[k] = token_filed_name_value_map[k]
+        output_map = self.config.output_map
+        data[[output_map['tokens'], 
+            output_map['ids'],
+            output_map['attention_mask'],
+            output_map['type_ids'],
+            output_map['special_tokens_mask'],
+            output_map['offsets'],
+            output_map['word_ids'],
+            output_map['overflowing'],
+            output_map['sequence_ids']]] = data.apply(self._tokenize, axis=1, result_type='expand')
+            # WARNING: Using parallel_apply in tokenizers==0.10.3 is not fast than apply
         return data
 
     def process(self, data: Dict)->Dict:

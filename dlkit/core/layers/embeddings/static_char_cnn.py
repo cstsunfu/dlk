@@ -76,14 +76,14 @@ class StaticCharCNNEmbedding(SimpleModule):
         self.dropout = nn.Dropout(self.config.dropout)
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=0)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
-        self.cnn = module_register.get(self.cnn_module_name)(self.cnn_config)
+        self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
         
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
-        char_ids = inputs[self.get_input_name(['char_ids'])]
+        char_ids = inputs[self.get_input_name('char_ids')]
         char_mask = (char_ids == 0).byte()
         char_embedding = self.embedding(char_ids)
         bs, seq_len, token_len, emb_dim = char_embedding.shape

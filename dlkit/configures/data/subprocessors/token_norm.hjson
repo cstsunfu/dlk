@@ -8,10 +8,9 @@
                 "online": ['online']
             },
             "zero_digits_replaced": true,
-            "lowercase": false,
-            "unk": "[UNK]", //if the unk token is in your vocab, you can provide one to replace it
-            "vocab": "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line", 
-            "tokenizer": "whitespace_split",  //currently we only support use space split the setentce
+            "lowercase": true,
+            "extend_vocab": null, //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
+            "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
             "data_pair": {
                 "sentence": "norm_sentence"
             },

@@ -22,3 +22,4 @@ token.json
 valid/**
 test_simple_ner/**
 output/**
+**/output/**
