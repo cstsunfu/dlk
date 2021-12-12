@@ -1,0 +1,9 @@
+{
+    "config": {
+        "in_channels": "*@*",
+        "out_channels": "*@*",
+        "dropout": 0.0, //the module output no need dropout
+        "kernel_sizes": [3],
+    },
+    "_name": "conv1d",
+}

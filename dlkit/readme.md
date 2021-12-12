@@ -10,7 +10,8 @@ The output named:
     "attention_mask",
     "special_tokens_mask",
     "type_ids", 
-    "sequence_ids"
+    "sequence_ids",
+    "char_ids",
     
 
 # The main file tree:

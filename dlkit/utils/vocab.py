@@ -6,7 +6,7 @@ class Vocabulary(object):
     r"""vocabulary doc:
     """
     
-    def __init__(self, do_strip: bool=False, unknown: str='', ignore: str=""):
+    def __init__(self, do_strip: bool=False, unknown: str='', ignore: str="", pad: str=''):
         self.word2idx = {}
         self.idx2word = {}
         self.do_strip = do_strip
@@ -14,10 +14,17 @@ class Vocabulary(object):
         self.word_count = Counter() # reserved
         self.unknown = unknown
         self.ignore = ignore
+        self.pad = pad
         if ignore:
             self.word2idx[ignore] = -1
             self.idx2word[-1] = ignore
             self.word_count[ignore] += int(1e10)
+        if pad:
+            assert self.word_num == 0, f"The pad id must be 0"
+            self.word_count[pad] += int(1e10)
+            self.word2idx[pad] = self.word_num
+            self.idx2word[self.word_num] = pad
+            self.word_num += 1
         if unknown:
             self.word_count[unknown] += int(1e10)
             self.word2idx[unknown] = self.word_num

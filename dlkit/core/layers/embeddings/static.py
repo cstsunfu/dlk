@@ -10,19 +10,21 @@ import torch
 class StaticEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
     {
-        config: {
-            embedding_file: "*@*", //the embedding file, must be saved as numpy array by pickle
+        "config": {
+            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
 
+            "embedding_dim": "*@*",
             //if the embedding_file is a dict, you should provide the dict trace to embedding
-            embedding_trace: ".", //default the file itself is the embedding
+            "embedding_trace": ".", //default the file itself is the embedding
             /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
             /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
-            freeze: false, // is freeze
-            dropout: 0, //dropout rate
-            output_map: {},
-            input_map: {},
+            "freeze": false, // is freeze
+            "padding_idx": 0, //dropout rate
+            "dropout": 0, //dropout rate
+            "output_map": {},
+            "input_map": {}, // required_key: provide_key
         },
-        _name: "static",
+        "_name": "static",
     }
     """
     def __init__(self, config: Dict):
@@ -39,6 +41,8 @@ class StaticEmbeddingConfig(BaseModuleConfig):
         self.embedding = embedding_file
         self.freeze = config['freeze']
         self.dropout = config['dropout']
+        self.padding_idx = config['padding_idx']
+        self.embedding_dim = config['embedding_dim']
 
 
 @embedding_register('static')
@@ -54,7 +58,8 @@ class StaticEmbedding(SimpleModule):
         self._required_keys = {'input_ids'} # required by this module
         self.config = config
         self.dropout = nn.Dropout(self.config.dropout)
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze)
+        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=self.config.padding_idx)
+        assert self.embedding.weight.shape[-1] == self.config.embedding_dim
         
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
