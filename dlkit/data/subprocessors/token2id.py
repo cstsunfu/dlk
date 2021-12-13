@@ -34,6 +34,8 @@ class Token2IDConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.data_pair = self.config.pop('data_pair', {})
         if self.data_set and (not self.data_pair):
             raise ValueError("You must provide 'data_pair' for token2id.")
@@ -52,19 +54,23 @@ class Token2ID(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
+        if not self.data_set:
+            logger.info(f"Skip 'token2id' at stage {self.stage}")
+            return
         self.data_pair = config.data_pair
 
 
     def process(self, data: Dict)->Dict:
+
+        if not self.data_set:
+            return data
+
         vocab = Vocabulary.load(data[self.config.vocab])
 
         def get_index_wrap(key, x):
             """TODO: Docstring for get_index_wrap.
             """
             return vocab.auto_get_index(x[key])
-
-        if not self.data_set:
-            return data
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:

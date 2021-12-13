@@ -41,7 +41,7 @@ class Predict(object):
         self.focus = config.pop('_focus', {})
         self.config = config
         # self.configs = config_parser_register.get('root')(config).parser_with_check()
-        self.configs = BaseConfigParser(config).parser_with_check()
+        # self.configs = BaseConfigParser(config).parser_with_check()
         self.ckpt = torch.load(checkpoint)
         config_name = []
         for source, to in self.focus.items():
@@ -53,7 +53,7 @@ class Predict(object):
         if config_name:
             name_str = '_'.join(config_name)
         else:
-            name_str = config['_name']
+            name_str = config['root']['_name']
         self.name_str = name_str
 
     def dump_config(self, config, name):
@@ -87,7 +87,7 @@ class Predict(object):
 
         # start training
         predict_result = manager.predict(model=imodel, datamodule=datamodule)
-        imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={}),
+        print(len(imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={})))
 
     def get_data(self, config):
         """TODO: Docstring for get_data.
@@ -129,4 +129,5 @@ class Predict(object):
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
         imodel = IModel(IModelConfig)
         imodel.load_state_dict(self.ckpt['state_dict'])
+        imodel.eval()
         return imodel

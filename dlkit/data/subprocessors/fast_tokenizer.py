@@ -56,20 +56,23 @@ class FastTokenizerConfig(object):
                 "process_data": { "is_pretokenized": false},
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
             },
-            "predict": "train",
-            "online": "train"
+            "predict": ["train", {"deliver": null}],
+            "online": ["train", {"deliver": null}],
         }
     }
     """
     def __init__(self, stage, config):
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.config_path = self.config.get('config_path')
         self.normalizer = self.config.get('normalizer', "default")
         self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
         self.truncation = self.config["truncation"]
         self.deliver = self.config['deliver']
+        self.load = self.config.get('load', None)
         self.input_map = self.config['input_map']
         self.output_map = self.config.get('output_map', { # default
             "tokens": "tokens",
@@ -95,11 +98,14 @@ class FastTokenizer(ISubProcessor):
     def __init__(self, stage: str, config: FastTokenizerConfig):
         super().__init__()
         self.stage = stage
-        self.tokenizer = Tokenizer.from_file(config.config_path)
+        self.config = config
+        if not self.config.data_set:
+            logger.info(f"Skip 'fast_tokenizer' at stage {self.stage}")
+            return
+        self.tokenizer = Tokenizer.from_file(self.config.config_path)
         pretokenizer_factory = PreTokenizerFactory()
         tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()
         tokenizer_normalizer_factory = TokenizerNormalizerFactory()
-        self.config = config
 
         if self.config.data_type=='single':
             self._tokenize = self._single_tokenize
@@ -194,6 +200,8 @@ class FastTokenizer(ISubProcessor):
         return data
 
     def process(self, data: Dict)->Dict:
+        if not self.config.data_set:
+            return data
         for data_set_name in self.config.data_set:
             if data_set_name not in data['data']:
                 logger.info(f'The {data_set_name} not in data. We will skip tokenize it.')

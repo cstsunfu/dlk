@@ -32,7 +32,8 @@ class CharGatherConfig(object):
     def __init__(self, stage: str, config: Dict):
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
-
+        if not self.data_set:
+            return
         self.ignore = self.config['ignore']
         self.gather_columns = self.config["gather_columns"]
         self.deliver = self.config["deliver"]
@@ -52,6 +53,9 @@ class CharGather(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
+        if not self.data_set:
+            logger.info(f"Skip 'char_gather' at stage {self.stage}")
+            return
         self.update = config.update
 
     def split_to_char(self, input):

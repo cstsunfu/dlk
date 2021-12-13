@@ -39,6 +39,8 @@ class SeqLabRelabelConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
@@ -57,6 +59,9 @@ class SeqLabRelabel(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
+        if not self.data_set:
+            logger.info(f"Skip 'seq_lab_relabel' at stage {self.stage}")
+            return
 
     def process(self, data: Dict)->Dict:
 

@@ -38,7 +38,7 @@
             "process_data": { "is_pretokenized": false},
             "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
         },
-        "predict": "train",
-        "online": "train"
+        "predict": ["train", {"deliver": null}],
+        "online": ["train", {"deliver": null}],
     }
 }

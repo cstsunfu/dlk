@@ -41,6 +41,9 @@ class Load(ISubProcessor):
         super().__init__()
         self.stage = stage
         self.config = config.config
+        if not self.config:
+            logger.info(f"Skip 'load' at stage {self.stage}")
+            return
         self.base_dir = config.base_dir
 
     def load(self, path):
@@ -51,8 +54,8 @@ class Load(ISubProcessor):
         return pkl.load(open(os.path.join(self.base_dir, path), 'rb'))
 
     def process(self, data: Dict)->Dict:
-        for key, value in self.config.items():
-            meta = self.load(value)
-            for key, value in meta:
+        for _, path in self.config.items():
+            meta = self.load(path)
+            for key, value in meta.items():
                 data[key] = value
         return data

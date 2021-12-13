@@ -28,7 +28,8 @@ class TokenEmbeddingConfig(object):
 
     def __init__(self, stage, config):
         self.config = ConfigTool.get_config_by_stage(stage, config)
-
+        if not self.config:
+            return
         self.embedding_file = self.config.get("embedding_file")
         self.tokenizer = self.config.get("tokenizer")
         self.bias_clip_range = self.config['bias_range']
@@ -44,6 +45,9 @@ class TokenEmbedding(ISubProcessor):
         super().__init__()
         self.stage = stage
         self.config = config
+        if not self.config.config:
+            logger.info(f"Skip 'token_embedding' at stage {self.stage}")
+            return
         if config.tokenizer:
             self.tokenizer = Tokenizer.from_file(config.tokenizer)
         else:
@@ -110,6 +114,8 @@ class TokenEmbedding(ISubProcessor):
         return embedding_dict
 
     def process(self, data: Dict)->Dict:
+        if not self.config.config:
+            return data
         if self.tokenizer is not None and self.config.vocab:
             raise PermissionError(f"The tokenizer and vocab must provide one.")
         if self.tokenizer:

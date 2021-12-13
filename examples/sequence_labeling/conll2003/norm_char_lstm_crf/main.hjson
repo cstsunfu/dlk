@@ -17,7 +17,7 @@
                 "config":{
                     "max_epochs": 50,
                     "_search": {"max_epochs": [60]},
-                    "gpus": 1
+                    "gpus": 0
                 }
             },
             "imodel": {
