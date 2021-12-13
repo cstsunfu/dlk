@@ -1,6 +1,6 @@
 import pickle as pkl
 import json
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 import os
 import numpy as np
 from typing import Dict
@@ -137,7 +137,7 @@ class SeqLabPostProcessor(IPostProcessor):
         }
         return map.get(stage, stage)
 
-    def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
+    def process(self, stage, list_batch_outputs, origin_data, rt_config)->Union[Dict, List]:
         """ This script is mostly copied from Transformers
         :list_batch_outputs: 
             list of batch outputs
@@ -164,6 +164,8 @@ class SeqLabPostProcessor(IPostProcessor):
         metrics = {}
         if stage not in self.without_ground_truth_stage:
             metrics = self.calc_metrics(predicts, stage)
+        else:
+            return predicts
 
         log_info.update(metrics)
 

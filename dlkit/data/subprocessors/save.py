@@ -42,6 +42,9 @@ class Save(ISubProcessor):
         super().__init__()
         self.stage = stage
         self.config = config.config
+        if not self.config:
+            logger.info(f"Skip 'save' at stage {self.stage}")
+            return
         self.base_dir = config.base_dir
 
     def save(self, data, path):

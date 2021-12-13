@@ -128,7 +128,15 @@ class BasicProcessor(IProcessor):
         self.stage = stage
         self.feed_order = config.feed_order
         assert len(self.feed_order) > 0
-        self.subprocessors = config.subprocessors
+
+        self.subprocessors = {}
+        for name in self.feed_order:
+            subprocessor_config_dict = config.subprocessors[f'subprocessor@{name}']
+            logger.info(f"Init '{name}' ....")
+            subprocessor_name = subprocessor_config_dict["_name"]
+            subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
+            subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
+            self.subprocessors[name] = subprocessor
 
     def process(self, data: Dict)->Dict:
         """TODO: Docstring for process.
@@ -137,13 +145,10 @@ class BasicProcessor(IProcessor):
         :returns: TODO
         """
         logger.info(f"Start Data Processing....")
-        for subprocessor_name in self.feed_order:
-            subprocessor_config_dict = self.subprocessors[f'subprocessor@{subprocessor_name}']
-            logger.info(f"Processing on '{subprocessor_name}' ....")
-            subprocessor_name = subprocessor_config_dict["_name"]
-            subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
-            subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
-            data = subprocessor.process(data)
+        for name in self.feed_order:
+            if self.stage != 'online':
+                logger.info(f"Processing on '{name}' ....")
+            data = self.subprocessors[name].process(data)
         logger.info(f"Data Processed.")
 
         return data

@@ -53,6 +53,8 @@ class SeqLabPreProConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.output_map = self.config.get('output_map', {})
 
 
@@ -66,7 +68,9 @@ class SeqLabPrePro(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
-
+        if not self.data_set:
+            logger.info(f"Skip 'seq_lab_prepro' at stage {self.stage}")
+            return
 
     def process(self, data: Dict)->Dict:
         '''

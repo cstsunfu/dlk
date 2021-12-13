@@ -35,6 +35,8 @@ class Token2CharIDConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.data_pair = self.config.pop('data_pair', {})
 
         if self.data_set and (not self.data_pair):
@@ -55,11 +57,16 @@ class Token2CharID(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
+        if not self.data_set:
+            logger.info(f"Skip 'token2charid' at stage {self.stage}")
+            return
         self.data_pair = config.data_pair
 
 
     def process(self, data: Dict)->Dict:
-        vocab = Vocabulary.load(data[self.config.vocab])
+
+        if not self.data_set:
+            return data
 
         def get_index_wrap(sentence_name, offset_name, x):
             """TODO: Docstring for get_index_wrap.
@@ -73,8 +80,7 @@ class Token2CharID(ISubProcessor):
                 char_ids.append([vocab.get_index(c) for c in token])
             return char_ids
 
-        if not self.data_set:
-            return data
+        vocab = Vocabulary.load(data[self.config.vocab])
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:

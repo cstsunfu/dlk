@@ -47,6 +47,8 @@ class TokenNormConfig(object):
 
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
+        if not self.data_set:
+            return
         self.data_pair = self.config.pop('data_pair', {})
         self.zero_digits_replaced = self.config.pop('zero_digits_replaced', True)
         self.lowercase = self.config.pop('lowercase', True)
@@ -74,6 +76,9 @@ class TokenNorm(ISubProcessor):
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
+        if not self.data_set:
+            logger.info(f"Skip 'token_norm' at stage {self.stage}")
+            return
         if self.config.do_extend_vocab:
             self.extend_vocab = set()
         self._zero_digits_replaced_num = 0
