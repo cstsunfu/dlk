@@ -88,6 +88,13 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         self.word_embedding = embedding_register[self.config.word_module_name](self.config.word_config)
         self.char_embedding = embedding_register[self.config.char_module_name](self.config.char_config)
 
+    def init_weight(self, method):
+        """TODO: Docstring for init_weight.
+        :arg1: TODO
+        :returns: TODO
+        """
+        self.word_embedding.init_weight(method)
+        self.char_embedding.init_weight(method)
         
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward

@@ -79,7 +79,9 @@ class TokenEmbedding(ISubProcessor):
         """
         without_embedding_tokens = 0
         fuzzy_match_tokens = 0
-        bias = np.sqrt(3/self.config.embedding_size)
+        # xavier_uniform_ init method
+        bias = np.sqrt(6.0 / (len(vocab) + self.config.embedding_size))
+        # bias = np.sqrt(3/self.config.embedding_size)
         for token in vocab:
             if token not in embedding_dict:
                 if (token.lower() not in embedding_dict) and (token.upper() not in embedding_dict):

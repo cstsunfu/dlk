@@ -16,8 +16,8 @@
                 "_base": "lightning@advance",
                 "config":{
                     "max_epochs": 50,
-                    "_search": {"max_epochs": [100]},
-                    "gpus": 0
+                    "_search": {"max_epochs": [60]},
+                    "gpus": 1
                 }
             },
             "imodel": {
@@ -28,6 +28,7 @@
                         "embedding_dim": 100,
                         "lstm_output_size": 200,
                         "dropout": 0.5,
+                        "_search": {"dropout": [0.5], "lstm_output_size": [200]},
                         "embedding_file": "*@*",
                         "label_num": 9,
                     },
@@ -43,6 +44,7 @@
                     "config": {
                         "lr": 2e-2,
                         "weight_decay": 0,
+                        "_search": {"lr": [1e-2, 1.5e-2]},
                         "momentum": 0.9,
                     },
                 },
@@ -50,6 +52,7 @@
                     "config": {
                         "meta": '*@*',
                         "start_save_epoch": 50,
+                        "save_root_path": "./examples/sequence_labeling/conll2003/norm_lstm_crf/"
                     }
                 },
             },
@@ -65,10 +68,11 @@
         },
     },
     "_focus": {
-        "root._name": "textadamtask=",
+        "root._name": "task=",
         /*"root.task.imodel.optimizer.config.momentum": "momentum=",*/
-        "root.task.imodel.optimizer.config.weight_decay": "weight_decay=",
-        /*"root.task.imodel.optimizer._name": "optimizer=",*/
+        "root.task.imodel.model.config.dropout": "dropout=",
+        "root.task.imodel.optimizer.config.lr": "lr=",
+        "root.task.imodel.optimizer._name": "optimizer=",
         /*"root.task.imodel.optimizer.config.momentum": "momentum.",*/
         "root.task.datamodule.config.train_batch_size": "batch_size=",
         "root.task.imodel.model.config.lstm_output_size": "lstm_output_size=",
