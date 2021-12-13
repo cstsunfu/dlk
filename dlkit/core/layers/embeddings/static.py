@@ -62,6 +62,13 @@ class StaticEmbedding(SimpleModule):
         self.dropout = nn.Dropout(self.config.dropout)
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=self.config.padding_idx)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
+
+    def init_weight(self, method):
+        """init  Module weight by `method`
+        :method: init method
+        :returns: None
+        """
+        logger.info(f'The static embedding is loaded the pretrained.')
         
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward

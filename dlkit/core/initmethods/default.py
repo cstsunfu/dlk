@@ -31,11 +31,10 @@ class RangeNormInit(object):
     def __call__(self, module):
         """Initialize the weights"""
         if isinstance(module, nn.Linear):
-            pass
             # use the default kaiming init method
-            # torch.nn.init.xavier_uniform_(module.weight)
-            # if module.bias is not None:
-                # module.bias.data.zero_()
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
         elif isinstance(module, nn.Embedding):
             torch.nn.init.xavier_uniform_(module.weight)
         elif isinstance(module, nn.LayerNorm):
@@ -49,6 +48,12 @@ class RangeNormInit(object):
             torch.nn.init.kaiming_uniform_(module.weight)
         elif isinstance(module, nn.LSTM):
             self.init_lstm(module)
+        elif isinstance(module, nn.ModuleList) or isinstance(module, nn.Sequential):
+            for sub_module in module:
+                self(sub_module)
+        elif isinstance(module, nn.ModuleDict):
+            for sub_module in module:
+                self(module[sub_module])
         else:
             logger.info(f"{module} is not initialization.")
 

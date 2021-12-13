@@ -4,8 +4,10 @@ from dlkit.core.modules import module_register, module_config_register
 from typing import Dict, List, Set
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
+from dlkit.utils.logger import logger
 import torch
 
+logger = logger()
         
 @embedding_config_register('static_char_cnn')
 class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
@@ -60,7 +62,6 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
         self.dropout = config['dropout']
 
 
-
 @embedding_register('static_char_cnn')
 class StaticCharCNNEmbedding(SimpleModule):
     """
@@ -78,13 +79,22 @@ class StaticCharCNNEmbedding(SimpleModule):
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
         self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
         
+    def init_weight(self, method):
+        """TODO: Docstring for init_weight.
+        :returns: TODO
+
+        """
+        for module in self.cnn.children():
+            module.apply(method)
+        logger.info(f'The static embedding is loaded the pretrained.')
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
         char_ids = inputs[self.get_input_name('char_ids')]
-        char_mask = (char_ids == 0).byte()
+        char_mask = (char_ids == 0).bool()
         char_embedding = self.embedding(char_ids)
         bs, seq_len, token_len, emb_dim = char_embedding.shape
         char_embedding = char_embedding.view(bs*seq_len, token_len, emb_dim)
