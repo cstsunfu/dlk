@@ -32,6 +32,5 @@
         "start_save_epoch": -1,
         "aggregation_strategy": "max", // AggregationStrategy item
         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-        "bio_eval": true, //do conver to bio file for evaluation like conll 2003
     }
 }

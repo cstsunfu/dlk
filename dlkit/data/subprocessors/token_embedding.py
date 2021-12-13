@@ -20,6 +20,7 @@ class TokenEmbeddingConfig(object):
                     "vocab": null, 
                     "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
                     "embedding_size": 200,
+                    "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
                 }
             }
         }
@@ -30,9 +31,10 @@ class TokenEmbeddingConfig(object):
 
         self.embedding_file = self.config.get("embedding_file")
         self.tokenizer = self.config.get("tokenizer")
+        self.bias_clip_range = self.config['bias_range']
         self.vocab = self.config['vocab']
         self.deliver = self.config.get("deliver")
-        self.embedding_size = self.config.get("embedding_size")
+        self.embedding_size = self.config["embedding_size"]
 
 @subprocessor_register('token_embedding')
 class TokenEmbedding(ISubProcessor):
@@ -79,13 +81,24 @@ class TokenEmbedding(ISubProcessor):
         """
         without_embedding_tokens = 0
         fuzzy_match_tokens = 0
-        # xavier_uniform_ init method
-        bias = np.sqrt(6.0 / (len(vocab) + self.config.embedding_size))
-        # bias = np.sqrt(3/self.config.embedding_size)
+        bias = 0.1
+        if len(self.config.bias_clip_range) == 1:
+            bias = self.config.bias_clip_range[0]
+        else:
+            assert len(self.config.bias_clip_range) == 2, "You must provide the clip range, one or two value"
+            low:float = min(self.config.bias_clip_range)
+            up:float = max(self.config.bias_clip_range)
+            # xavier_uniform_ init method
+            bias:float = np.sqrt(6.0 / (len(vocab) + self.config.embedding_size))
+            if bias>up:
+                bias = up
+            elif bias<low:
+                bias = low
+            # bias = np.sqrt(3/self.config.embedding_size)
         for token in vocab:
             if token not in embedding_dict:
                 if (token.lower() not in embedding_dict) and (token.upper() not in embedding_dict):
-                    embedding_dict[token] = [np.random.uniform(-bias, bias) for _ in range(self.config.embedding_size)]
+                    embedding_dict[token] = list(np.random.uniform(-bias, bias, self.config.embedding_size))
                     without_embedding_tokens += 1
                 else:
                     fuzzy_match_tokens += 1

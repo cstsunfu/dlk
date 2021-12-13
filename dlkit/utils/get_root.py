@@ -16,7 +16,7 @@ def get_root():
         :returns: TODO
 
         """
-        root_sign_list = ['.git', '.root', 'requirements.txt']
+        root_sign_list = ['.git', '.root', 'requirements.txt', 'requirement.txt']
         for root_sign in root_sign_list:
             if os.path.exists(os.path.join(cur_dir, root_sign)):
                 return True

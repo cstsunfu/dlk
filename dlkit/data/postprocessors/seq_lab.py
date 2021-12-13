@@ -50,7 +50,6 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
             "start_save_epoch": -1,
             "aggregation_strategy": "max", // AggregationStrategy item
             "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-            "bio_eval": true, //do conver to bio file for evaluation like conll 2003
         }
     }
     """
@@ -64,7 +63,6 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         self.ignore_labels = set(self.config['ignore_labels'])
 
         self.sentence = self.origin_input_map['sentence']
-        self.bio_eval = self.config['bio_eval']
         self.offsets = self.origin_input_map['offsets']
         self.entities_info = self.origin_input_map['entities_info']
         self.uuid = self.origin_input_map['uuid']
@@ -155,12 +153,11 @@ class SeqLabPostProcessor(IPostProcessor):
         log_info = {}
         average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
         log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
-        bio_results = []
         if self.config.use_crf:
-            predicts, bio_results = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+            predicts = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         elif self.config.word_ready:
             # TODO: TEST
-            predicts, bio_results = self.word_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+            predicts = self.word_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         else:
             predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
 
@@ -181,14 +178,6 @@ class SeqLabPostProcessor(IPostProcessor):
             save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
             logger.info(f"Save the {stage} predict data at {save_file}")
             json.dump(predicts, open(save_file, 'w'), indent=4)
-            save_bio_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.txt")
-            with open(save_bio_file, 'w') as f:
-                for result in bio_results:
-                    for one_line in result:
-                        f.write('\t'.join(one_line)+'\n')
-                    f.write('\n')
-            # if self.config.bio_eval and not bio_results:
-                # logger.warning(f'No bio results, cannot be eval.')
             
         return log_info
 
@@ -311,7 +300,6 @@ class SeqLabPostProcessor(IPostProcessor):
         offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
         predict = list(predict[:rel_token_len])
         truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
-        one_bio_result = []
         # predict = list(origin_ins['label_ids'][:rel_token_len])
         predict_entities_info = []
         pre_label = ''
@@ -320,8 +308,6 @@ class SeqLabPostProcessor(IPostProcessor):
             if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
                 continue
             label = self.config.label_vocab[label_id]
-            if self.config.bio_eval:
-                one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
             if label in self.config.ignore_labels \
                 or (label[0]=='B') \
                 or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
@@ -338,7 +324,7 @@ class SeqLabPostProcessor(IPostProcessor):
         if entity_info:
             predict_entities_info.append(entity_info)
         one_ins['predict_entities_info'] = predict_entities_info
-        return one_ins, one_bio_result
+        return one_ins
 
     def crf_predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for predict.
@@ -358,7 +344,6 @@ class SeqLabPostProcessor(IPostProcessor):
             logger.error(f"{self.config.entities_info} not in the origin data")
             raise PermissionError(f"{self.config.entities_info} must be provided")
 
-        bio_results = []
         predicts = []
         for outputs in list_batch_outputs:
             batch_predict = outputs[self.config.predict_seq_label]
@@ -368,51 +353,9 @@ class SeqLabPostProcessor(IPostProcessor):
             outputs = []
 
             for predict, index in zip(batch_predict, indexes):
-
-                one_ins, one_bio_result = self._process4predict(predict, index, origin_data)
-                # one_ins = {}
-                # origin_ins = origin_data.iloc[int(index)]
-                # one_ins["sentence"] = origin_ins[self.config.sentence]
-                # one_ins["uuid"] = origin_ins[self.config.uuid]
-                # one_ins["entities_info"] = origin_ins[self.config.entities_info]
-
-                # word_ids = origin_ins[self.config.word_ids]
-                # rel_token_len = len(word_ids)
-                # offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
-                # predict = list(predict[:rel_token_len])
-                # truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
-                # if self.config.bio_eval:
-                    # one_bio_result = []
-                # # predict = list(origin_ins['label_ids'][:rel_token_len])
-                # predict_entities_info = []
-                # pre_label = ''
-                # sub_tokens_index = []
-                # for i, label_id in enumerate(predict):
-                    # if offset_mapping[i] == (0, 0): # added token like [CLS]/<s>/..
-                        # continue
-                    # label = self.config.label_vocab[label_id]
-                    # if self.config.bio_eval:
-                        # one_bio_result.append([one_ins['sentence'][offset_mapping[i][0]: offset_mapping[i][1]].strip(), self.config.label_vocab[truth_ids[i]], label])
-                    # if label in self.config.ignore_labels \
-                        # or (label[0]=='B') \
-                        # or (label.split('-')[-1] != pre_label):   # label == "O" or label=='B' or label.tail != previor_label
-                        # entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
-                        # if entity_info:
-                            # predict_entities_info.append(entity_info)
-                        # pre_label = ''
-                        # sub_tokens_index = []
-                    # if label not in self.config.ignore_labels:
-                        # assert len(label.split('-')) == 2
-                        # pre_label = label.split('-')[-1]
-                        # sub_tokens_index.append(i)
-                # entity_info = self.get_entity_info(sub_tokens_index, offset_mapping, word_ids, pre_label)
-                # if entity_info:
-                    # predict_entities_info.append(entity_info)
-                # one_ins['predict_entities_info'] = predict_entities_info
+                one_ins = self._process4predict(predict, index, origin_data)
                 predicts.append(one_ins)
-                if self.config.bio_eval:
-                    bio_results.append(one_bio_result)
-        return predicts, bio_results
+        return predicts
 
     def word_predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for word_predict.
@@ -433,7 +376,6 @@ class SeqLabPostProcessor(IPostProcessor):
             raise PermissionError(f"{self.config.entities_info} must be provided")
 
         predicts = []
-        bio_results = []
         for outputs in list_batch_outputs:
             batch_logits = outputs[self.config.logits]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
@@ -450,11 +392,9 @@ class SeqLabPostProcessor(IPostProcessor):
                 logits = logits[:rel_token_len].cpu().numpy()
 
                 predict = logits.argmax(-1)
-                one_ins, one_bio_result = self._process4predict(predict, index, origin_data)
+                one_ins = self._process4predict(predict, index, origin_data)
                 predicts.append(one_ins)
-                if self.config.bio_eval:
-                    bio_results.append(one_bio_result)
-        return predicts, bio_results
+        return predicts
 
     def predict(self, list_batch_outputs, origin_data):
         """TODO: Docstring for predict.
