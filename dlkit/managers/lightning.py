@@ -84,6 +84,7 @@ class LightningManagerConfig(BaseConfig):
         self.stochastic_weight_avg = manager_config["stochastic_weight_avg"] # False
         self.terminate_on_nan = manager_config["terminate_on_nan"] # None
         self.post_check(manager_config, used=[ 
+            "callbacks",
             "logger",
             "enable_checkpointing",
             "accelerator",
@@ -171,7 +172,7 @@ class LightningManager(object):
             config.logger = TensorBoardLogger(save_dir=os.path.join(rt_config["save_dir"], rt_config["name"]), version='')
         if config.callbacks:
             config.callbacks = self.get_callbacks(config.callbacks, rt_config)
-
+        config.__dict__.pop('_name')
         self.manager = pl.Trainer(**config.__dict__)
 
     def get_callbacks(self, callback_configs, rt_config):

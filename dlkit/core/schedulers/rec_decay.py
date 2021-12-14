@@ -53,7 +53,7 @@ class RecDecaySchedule(BaseScheduler):
         logger.warning(f"The calculated Total Traning Num is {num_training_steps}, the Epoch training Steps is {epoch_training_steps}. Please check it carefully.")
 
         def lr_lambda(current_step: int):
-            cur_epoch = (current_step+1)//epoch_training_steps
+            cur_epoch = (current_step+1)//epoch_training_steps if epoch_training_steps!=0 else 0
             # return 1/(1+decay*cur_epoch)
             return 1/((1+decay)**cur_epoch)
         return LambdaLR(self.optimizer, lr_lambda, last_epoch)

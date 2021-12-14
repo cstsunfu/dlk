@@ -109,5 +109,6 @@ class PretrainedTransformers(SimpleModule):
             assert g_seq_len <= seq_len
             sequence_output = torch.gather(sequence_output[:, :, :], 1, gather_index.unsqueeze(-1).expand(bs, g_seq_len, hid_size))
         inputs[self.get_output_name('embedding')] = sequence_output
-        inputs.update(self._logits_gather(all_hidden_states))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather(all_hidden_states))
         return inputs

@@ -26,10 +26,12 @@ class LogitsGatherConfig(BaseConfig):
     }
     """
     def __init__(self, config: Dict):
+        if '_name' not in config:
+            config['_name'] = 'logits_gather'
         super(LogitsGatherConfig, self).__init__(config)
-        config = config['config']
-        self.gather_layer = config['gather_layer']
-        self.prefix = config["prefix"]
+        config = config.get('config', {})
+        self.gather_layer = config.get('gather_layer', {})
+        self.prefix = config.get("prefix", '')
         self.post_check(config, used=[ 
             "gather_layer",
             "prefix"
@@ -42,7 +44,7 @@ class LogitsGather(nn.Module):
         super(LogitsGather, self).__init__()
         gather_layer_num = len(config.gather_layer)
         self.layers_scale = nn.ModuleDict()
-        self.layer_map = {}
+        self.layer_map: Dict[str, str] = {}
         self.prefix = config.prefix
         for layer, layer_config in config.gather_layer.items():
             self.layer_map[str(layer)] = str(layer_config['map'])
@@ -52,12 +54,12 @@ class LogitsGather(nn.Module):
                 for from_dim, to_dim in scale.items:
                     self.layers_scale[str(layer)] = nn.Linear(int(from_dim), int(to_dim))
 
-
     def forward(self, input: List[torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        # assert isinstance(input, List) or isinstance(input, tuple), f"type: {type(input)}, len: {len(input)}"
-        result = {}
+        result: Dict[str, torch.Tensor] = {"a": torch.tensor([0])}
+        if not self.layer_map:
+            return result
         for layer, layer_suffix in self.layer_map.items():
             result[self.prefix+layer_suffix] = self.layers_scale[layer](input[int(layer)])
 

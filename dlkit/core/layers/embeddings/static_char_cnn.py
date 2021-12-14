@@ -83,7 +83,7 @@ class StaticCharCNNEmbedding(SimpleModule):
         self._provide_keys = {'char_embedding'} # provide by this module
         self._required_keys = {'char_ids'} # required by this module
         self.config = config
-        self.dropout = nn.Dropout(self.config.dropout)
+        self.dropout = nn.Dropout(float(self.config.dropout))
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=0)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
         self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
@@ -112,5 +112,6 @@ class StaticCharCNNEmbedding(SimpleModule):
         word_embedding = char_embedding.masked_fill_(char_mask.view(bs*seq_len, 1, token_len), -1000).max(-1)[0].view(bs, seq_len, emb_dim).contiguous()
 
         inputs[self.get_output_name('char_embedding')] = self.dropout(word_embedding)
-        inputs.update(self._logits_gather([inputs[self.get_output_name('char_embedding')]]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([inputs[self.get_output_name('char_embedding')]]))
         return inputs

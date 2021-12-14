@@ -13,9 +13,9 @@ class BaseModuleConfig(BaseConfig):
     """docstring for BaseLayerConfig"""
     def __init__(self, config: Dict):
         super(BaseModuleConfig, self).__init__(config)
-        self._output_map = config['config'].pop("output_map")
-        self._input_map = config['config'].pop('input_map')
-        self._logits_gather_config = module_config_register.get("logits_gather")(config['config'].pop("logits_gather_config"))
+        self._output_map = config['config'].pop("output_map", {})
+        self._input_map = config['config'].pop('input_map', {})
+        self._logits_gather_config = module_config_register.get("logits_gather")(config['config'].pop("logits_gather_config", {}))
 
 
 class ModuleOutputRenameMixin:

@@ -1,6 +1,6 @@
 from . import model_register, model_config_register
 from typing import Dict, List
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from dlkit.core.base_module import BaseModel
 import torch
 from dlkit.core.layers.embeddings import embedding_config_register, embedding_register
@@ -10,7 +10,7 @@ from dlkit.core.layers.decoders import decoder_config_register, decoder_register
 
         
 @model_config_register('basic')
-class BasicModelConfig(object):
+class BasicModelConfig(BaseConfig):
     """docstring for BasicIModelConfig
     {
         embedding: {
@@ -73,7 +73,7 @@ class BasicModelConfig(object):
     }
     """
     def __init__(self, config):
-        super(BasicModelConfig, self).__init__()
+        super(BasicModelConfig, self).__init__(config)
 
         self.embedding, self.embedding_config = self.get_embedding(config["embedding"])
         self.encoder, self.encoder_config = self.get_encoder(config["encoder"])
@@ -123,18 +123,18 @@ class BasicModel(BaseModel):
     Sequence labeling model
     """
 
-    def __init__(self, config: BasicModelConfig):
+    def __init__(self, config: BasicModelConfig, checkpoint):
         super().__init__()
 
         self.embedding = config.embedding(config.embedding_config)
         self.encoder = config.encoder(config.encoder_config)
         self.decoder = config.decoder(config.decoder_config)
 
-        init_method = config.init_method(config.init_method_config)
-
-        self.embedding.init_weight(init_method)
-        self.encoder.init_weight(init_method)
-        self.decoder.init_weight(init_method)
+        if not checkpoint:
+            init_method = config.init_method(config.init_method_config)
+            self.embedding.init_weight(init_method)
+            self.encoder.init_weight(init_method)
+            self.decoder.init_weight(init_method)
 
         self.config = config.config
         self._provided_keys = self.config.get("provided_keys", [])

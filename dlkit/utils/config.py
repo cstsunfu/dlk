@@ -18,7 +18,27 @@ class BaseConfig(object):
         :config: TODO
         :returns: TODO
         """
-        # TODO: data/** managers/**
+        def rec_pop(cur_node, trace):
+            """TODO: Docstring for rec_pop.
+            """
+            if len(trace) > 1:
+                rec_pop(cur_node[trace[0]], trace[1:])
+            if len(trace) == 1:
+                if cur_node.get(trace[0], {}) == {}:
+                    cur_node.pop(trace[0])
+
+        config = copy.deepcopy(config)
+        parant_traces = set()
+        for key in used:
+            sp_key = key.split('.')
+            parant_traces.add(tuple(sp_key[:-1]))
+            cur_root = config
+            for key in sp_key[:-1]:
+                cur_root = cur_root[key]
+            cur_root.pop(sp_key[-1], None)
+        for trace in parant_traces:
+            rec_pop(config, trace)
+
         if config:
             logger.warning(f"In module '{self._name}', there are some params not be used: {config}")
 

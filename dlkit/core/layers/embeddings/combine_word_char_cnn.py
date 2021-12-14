@@ -104,7 +104,7 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         self._provide_keys = {'char_embedding'} # provide by this module
         self._required_keys = {'char_ids'} # required by this module
         self.config = config
-        self.dropout = nn.Dropout(self.config.dropout)
+        self.dropout = nn.Dropout(float(self.config.dropout))
         self.word_embedding = embedding_register[self.config.word_module_name](self.config.word_config)
         self.char_embedding = embedding_register[self.config.char_module_name](self.config.char_config)
 
@@ -128,5 +128,6 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         word_embedding = inputs[self.get_input_name("word_embedding")]
         combine_embedding = torch.cat([char_embedding, word_embedding], dim=-1)
         inputs[self.get_output_name('embedding')] = self.dropout(combine_embedding)
-        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs

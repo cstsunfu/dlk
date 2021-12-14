@@ -6,9 +6,8 @@ from dlkit.core.models import model_register, model_config_register
 from dlkit.core.optimizers import optimizer_register, optimizer_config_register
 from dlkit.core.schedulers import scheduler_register, scheduler_config_register
 from dlkit.core.losses import loss_register, loss_config_register
-from dlkit.core.base_module import BaseModuleConfig
 from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
 from dlkit.utils.logger import logger
 from functools import lru_cache
@@ -17,7 +16,7 @@ logger = logger()
 import pytorch_lightning as pl
 
 @imodel_config_register('basic')
-class BasicIModelConfig(BaseModuleConfig):
+class BasicIModelConfig(BaseConfig):
     """docstring for IModelConfig"""
     def __init__(self, config):
         super(BasicIModelConfig, self).__init__(config)
@@ -77,11 +76,11 @@ class BasicIModelConfig(BaseModuleConfig):
 class BasicIModel(pl.LightningModule, GatherOutputMixin):
     """
     """
-    def __init__(self, config: BasicIModelConfig):
+    def __init__(self, config: BasicIModelConfig, checkpoint=False):
         super().__init__()
         self.config = config  # scheduler will init in configure_optimizers, because it will use the datamodule info
 
-        self.model = config.model(config.model_config)
+        self.model = config.model(config.model_config, checkpoint)
 
 
         self.calc_loss = config.loss(config.loss_config)
@@ -196,7 +195,10 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     def epoch_training_steps(self) -> int:
         """every epoch training steps inferred from datamodule and devices.
         """
-        batches = len(self.trainer.datamodule.train_dataloader())
+        if self.trainer.datamodule.train_dataloader() is None:
+            batches = 0
+        else:
+            batches = len(self.trainer.datamodule.train_dataloader())
         return batches
 
     @property
@@ -209,7 +211,10 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             return self.trainer.max_steps
 
         limit_batches = self.trainer.limit_train_batches
-        batches = len(self.trainer.datamodule.train_dataloader())
+        if self.trainer.datamodule.train_dataloader() is None:
+            batches = 0
+        else:
+            batches = len(self.trainer.datamodule.train_dataloader())
         batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)     
 
         num_devices = max(1, self.trainer.num_gpus, self.trainer.num_processes)

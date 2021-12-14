@@ -67,7 +67,7 @@ class StaticEmbedding(SimpleModule):
         self._provide_keys = {'embedding'} # provide by this module
         self._required_keys = {'input_ids'} # required by this module
         self.config = config
-        self.dropout = nn.Dropout(self.config.dropout)
+        self.dropout = nn.Dropout(float(self.config.dropout))
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=self.config.padding_idx)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
 
@@ -84,6 +84,7 @@ class StaticEmbedding(SimpleModule):
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))
-        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
 
         return inputs

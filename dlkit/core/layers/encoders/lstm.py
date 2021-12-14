@@ -65,5 +65,6 @@ class LSTM(SimpleModule):
         """
         """
         inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
-        inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs
