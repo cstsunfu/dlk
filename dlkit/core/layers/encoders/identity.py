@@ -18,6 +18,7 @@ class IdentityEncoderConfig(BaseModuleConfig):
     """
     def __init__(self, config):
         super(IdentityEncoderConfig, self).__init__(config)
+        self.post_check(config)
 
 @encoder_register('identity')
 class IdentityEncoder(SimpleModule):

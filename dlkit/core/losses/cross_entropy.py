@@ -4,15 +4,16 @@ from . import loss_register, loss_config_register
 from packaging import version
 import torch.nn as nn
 from dlkit.utils.logger import logger
+from dlkit.core.base_module import BaseModuleConfig
 import torch
 
 logger = logger()
 
 @loss_config_register("cross_entropy")
-class CrossEntropyLossConfig(object):
+class CrossEntropyLossConfig(BaseModuleConfig):
     """docstring for CrossEntropyLossConfig
     {
-        config: {
+        "config": {
             "ignore_index": -1,
             "weight": null, # or a list of value for every class
             "label_smoothing": 0.0, # torch>=1.10
@@ -22,12 +23,12 @@ class CrossEntropyLossConfig(object):
             // "schdeule": [0.3, 1.0], # can be a list or str
             // "scale": "[0.5, 1]",
         },
-        _name: "cross_entropy",
+        "_name": "cross_entropy",
     }
     """
     def __init__(self, config: Dict):
-        super(CrossEntropyLossConfig, self).__init__()
-        config = config.get('config', {})
+        super(CrossEntropyLossConfig, self).__init__(config)
+        config = config['config']
 
         self.scale = config['scale']
         self.schedule = config['schedule']
@@ -46,12 +47,20 @@ class CrossEntropyLossConfig(object):
         assert len(self.schedule) == len(self.scale)
         assert self.schedule[-1] - 1 < 0.00001
 
-        self.weight = config.get('weight', None)
-        self.ignore_index = config.get('ignore_index', -1)
-        self.label_smoothing = config.get('label_smoothing', 0.0)
-        self.pred_truth_pair = config.get('pred_truth_pair', [])
+        self.weight = config['weight']
+        self.ignore_index = config['ignore_index']
+        self.label_smoothing = config['label_smoothing']
+        self.pred_truth_pair = config['pred_truth_pair']
         if not self.pred_truth_pair:
             raise PermissionError(f"You must provide the pred_truth_pair for loss.")
+        self.post_check(config, used=[
+            "ignore_index",
+            "weight",
+            "label_smoothing",
+            "pred_truth_pair",
+            "schedule",
+            "scale",
+        ])
 
 
 @loss_register("cross_entropy")

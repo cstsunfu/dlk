@@ -1,11 +1,12 @@
 from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
+from dlkit.utils.config import BaseConfig
 from . import optimizer_register, optimizer_config_register, BaseOptimizer
 
 
 @optimizer_config_register("sgd")
-class SGDOptimizerConfig(object):
+class SGDOptimizerConfig(BaseConfig):
     """
     {
         "config": {
@@ -25,9 +26,17 @@ class SGDOptimizerConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(SGDOptimizerConfig, self).__init__()
+        super(SGDOptimizerConfig, self).__init__(config)
         self.config = config['config']
-        
+        self.post_check(self.config, used=[ 
+            "lr",
+            "momentum",
+            "dampening",
+            "weight_decay",
+            "nesterov",
+            "optimizer_special_groups",
+        ])
+
 
 @optimizer_register("sgd")
 class SGDOptimizer(BaseOptimizer):

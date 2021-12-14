@@ -25,7 +25,6 @@ class BasicModelConfig(object):
                 freeze: false, // is freeze
                 dropout: 0, //dropout rate
                 output_map: {},
-                return_logits: "embedding_logits",
             },
         },
         decoder: {
@@ -35,14 +34,12 @@ class BasicModelConfig(object):
                 output_size: "*@*",
                 pool: null,
                 dropout: "*@*", //the decoder output no need dropout
-                return_logits: "decoder_logits",
                 output_map: {}
             },
         },
         encoder: {
             _base: "lstm",
             config: {
-                return_logits: "encoder_logits",
                 output_map: {},
                 hidden_size: "*@*",
                 input_size: *@*,

@@ -2,29 +2,38 @@ import torch.nn as nn
 import torch
 from typing import Dict, List
 from . import module_register, module_config_register
+from dlkit.utils.config import BaseConfig
+
 
 @module_config_register("linear")
-class LinearConfig(object):
+class LinearConfig(BaseConfig):
     """docstring for LinearConfig
     {
-        config: {
-            input_size: 256,
-            output_size: 2,
-            dropout: 0.0, //the module output no need dropout
-            bias: true, // use bias or not in linear , if set to false, all the bias will be set to 0
-            pool: null, // pooling output or not
+        "config": {
+            "input_size": 256,
+            "output_size": 2,
+            "dropout": 0.0, //the module output no need dropout
+            "bias": true, // use bias or not in linear , if set to false, all the bias will be set to 0
+            "pool": null, // pooling output or not
         },
-        _name: "linear",
+        "_name": "linear",
     }
     """
     def __init__(self, config: Dict):
-        super(LinearConfig, self).__init__()
+        super(LinearConfig, self).__init__(config)
         config = config['config']
         self.input_size = config['input_size']
         self.output_size = config['output_size']
         self.dropout = config['dropout']
         self.bias = config['bias']
         self.pool = config['pool']
+        self.post_check(config, used=[ 
+            "input_size",
+            "output_size",
+            "dropout",
+            "bias",
+            "pool",
+        ])
         
 
 @module_register("linear")

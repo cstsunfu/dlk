@@ -34,6 +34,7 @@ class LinearCRFConfig(BaseModuleConfig):
         super(LinearCRFConfig, self).__init__(config)
         self.linear_config = config["module@linear"]
         self.crf_config = config["module@crf"]
+        self.post_check(config['config'], used=['input_size', 'output_size', 'reduction'])
 
 
 @decoder_register("linear_crf")

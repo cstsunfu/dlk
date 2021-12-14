@@ -60,6 +60,15 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
         self.embedding_dim = config['embedding_dim']
         self.freeze = config['freeze']
         self.dropout = config['dropout']
+        self.post_check(config, used=[
+            "embedding_file",
+            "embedding_trace",
+            "freeze",
+            "dropout",
+            "embedding_dim",
+            "kernel_sizes",
+            "padding_idx",
+        ])
 
 
 @embedding_register('static_char_cnn')

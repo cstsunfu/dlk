@@ -45,6 +45,14 @@ class StaticEmbeddingConfig(BaseModuleConfig):
         self.dropout = config['dropout']
         self.padding_idx = config['padding_idx']
         self.embedding_dim = config['embedding_dim']
+        self.post_check(config, used=[
+            "embedding_file",
+            "embedding_dim",
+            "embedding_trace",
+            "freeze",
+            "padding_idx",
+            "dropout"
+        ])
 
 
 @embedding_register('static')

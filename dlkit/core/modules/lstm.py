@@ -2,41 +2,50 @@ import torch.nn as nn
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
+from dlkit.utils.config import BaseConfig
 from . import module_register, module_config_register
 from dlkit.utils.logger import logger
 
 logger = logger()
 
 @module_config_register("lstm")
-class LSTMConfig(object):
+class LSTMConfig(BaseConfig):
     """docstring for LSTMConfig
     {
-        config: {
-            bidirectional: true,
-            output_size: 200, //the output is 2*hidden_size if use
-            input_size: 200,
-            num_layers: 1,
-            dropout: 0.1, // dropout between layers
-            dropout_last: true, //dropout the last layer output or not
+        "config": {
+            "bidirectional": true,
+            "output_size": 200, //the output is 2*hidden_size if use
+            "input_size": 200,
+            "num_layers": 1,
+            "dropout": 0.1, // dropout between layers
+            "dropout_last": true, //dropout the last layer output or not
         },
-        _name: "lstm",
+        "_name": "lstm",
     }
     """
 
     def __init__(self, config: Dict):
-        super(LSTMConfig, self).__init__()
-        config = config.get('config', {})
-        self.num_layers = config.get('num_layers', 1)
-        self.bidirectional= config.get('bidirectional', False)
-        self.input_size = config.get('input_size', 128)
-        self.output_size = config.get('output_size', 128)
+        super(LSTMConfig, self).__init__(config)
+        config = config['config']
+        self.num_layers = config['num_layers']
+        self.bidirectional= config['bidirectional']
+        self.input_size = config['input_size']
+        self.output_size = config['output_size']
         self.hidden_size = self.output_size
         if self.bidirectional:
             assert self.output_size % 2 == 0
             self.hidden_size = self.output_size // 2
-        self.dropout = config.get('dropout', 0.1)
-        self.dropout_last = config.get('dropout_last', False)
-        
+        self.dropout = config['dropout']
+        self.dropout_last = config['dropout_last']
+        self.post_check(config, used=[ 
+            "bidirectional",
+            "output_size",
+            "input_size",
+            "num_layers",
+            "dropout",
+            "dropout_last",
+        ])
+
 
 @module_register("lstm")
 class LSTM(nn.Module):

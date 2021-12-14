@@ -29,6 +29,12 @@ class LinearConfig(BaseModuleConfig):
     def __init__(self, config: Dict):
         super(LinearConfig, self).__init__(config)
         self.linear_config = config["module"]
+        config = config['config']
+        self.post_check(config['config'], used=[ 
+            "input_size",
+            "output_size",
+            "pool",
+        ])
         
 
 @decoder_register("linear")

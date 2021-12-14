@@ -1,11 +1,12 @@
 from typing import Dict
 import torch.nn as nn
 from . import loss_register, loss_config_register
+from dlkit.core.base_module import BaseModuleConfig
 import torch.nn as nn
 
 
 @loss_config_register("identity")
-class IdentityLossConfig(object):
+class IdentityLossConfig(BaseModuleConfig):
     """docstring for IdentityLossConfig
     {
         config: {
@@ -19,8 +20,8 @@ class IdentityLossConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(IdentityLossConfig, self).__init__()
-        config = config.get('config', {})
+        super(IdentityLossConfig, self).__init__(config)
+        config = config['config']
 
         self.scale = config['scale']
         self.schedule = config['schedule']
@@ -39,6 +40,11 @@ class IdentityLossConfig(object):
             self.schedule = [self.schedule]
         assert len(self.schedule) == len(self.scale)
         assert self.schedule[-1] - 1 < 0.00001
+        self.post_check(config, used=[
+            "loss",
+            "schedule",
+            "scale",
+        ])
 
 @loss_register("identity")
 class IdentityLoss(object):

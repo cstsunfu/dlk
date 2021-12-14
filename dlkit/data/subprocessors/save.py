@@ -1,4 +1,4 @@
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import ConfigTool, BaseConfig
 from dlkit.utils.logger import logger
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
@@ -9,7 +9,7 @@ import os
 logger = logger()
 
 @subprocessor_config_register('save')
-class SaveConfig(object):
+class SaveConfig(BaseConfig):
     """
     Config eg.
     {
@@ -30,8 +30,13 @@ class SaveConfig(object):
     """
 
     def __init__(self, stage, config):
+        super(SaveConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.base_dir:str = config.get('config').get("base_dir", ".")
+        self.post_check(self.config, used=[ 
+            "processed",
+            "meta",
+        ])
 
 @subprocessor_register('save')
 class Save(ISubProcessor):

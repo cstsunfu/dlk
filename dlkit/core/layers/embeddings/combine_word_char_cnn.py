@@ -72,6 +72,26 @@ class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
         self.embedding_dim = config['config']['embedding_dim']
         assert self.embedding_dim == self.char_config.embedding_dim + self.word_config.embedding_dim, f"The combine embedding_dim must equals to char_embedding+word_embedding, but {self.embedding_dim}!= {self.char_config.embedding_dim+self.word_config.embedding_dim}"
 
+        self.post_check(config['config'], used=[ 
+            "word.embedding_file",
+            "word.embedding_dim",
+            "word.embedding_trace",
+            "word.freeze",
+            "word.padding_idx",
+            "word.output_map",
+            "word.input_map",
+            "char.embedding_file",
+            "char.embedding_dim",
+            "char.embedding_trace",
+            "char.freeze",
+            "char.padding_idx",
+            "char.output_map",
+            "char.input_map",
+            "dropout",
+            "embedding_dim",
+        ])
+
+
 @embedding_register('combine_word_char_cnn')
 class CombineWordCharCNNEmbedding(SimpleModule):
     """

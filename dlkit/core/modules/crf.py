@@ -2,27 +2,31 @@ import torch
 import torch.nn as nn
 from typing import Dict
 from . import module_register, module_config_register
+from dlkit.utils.config import BaseConfig
 
 @module_config_register("crf")
-class CRFConfig(object):
+class CRFConfig(BaseConfig):
     """docstring for LinearConfig
     {
-        config: {
-            output_size: 2,
-            batch_first: true,
-            reduction: "mean", //none|sum|mean|token_mean
+        "config": {
+            "output_size": 2,
+            "batch_first": true,
+            "reduction": "mean", //none|sum|mean|token_mean
         },
-        _name: "crf",
+        "_name": "crf",
     }
     """
     def __init__(self, config: Dict):
-        super(CRFConfig, self).__init__()
+        super(CRFConfig, self).__init__(config)
         config = config['config']
         self.output_size = config['output_size']
         if self.output_size <= 0:
             raise ValueError(f'invalid number of tags: {self.output_size}')
-        self.batch_first = config.get("batch_first", True)
-        self.reduction = config.get("reduction", 'mean')
+        self.post_check(config, used=[ 
+            "output_size",
+            "batch_first",
+            "reduction",
+        ])
 
 
 @module_register("crf")

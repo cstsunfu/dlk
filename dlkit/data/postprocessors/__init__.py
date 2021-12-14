@@ -4,12 +4,13 @@ import importlib
 import os
 from typing import Callable, Dict, Type
 from dlkit.utils.register import Register
+from dlkit.utils.config import BaseConfig
 import abc
 
-class IPostProcessorConfig(object):
+class IPostProcessorConfig(BaseConfig):
     """docstring for PostProcessorConfigBase"""
     def __init__(self, config):
-        super(IPostProcessorConfig, self).__init__()
+        super(IPostProcessorConfig, self).__init__(config)
         self.config = config.get('config', {})
 
     @property

@@ -59,6 +59,10 @@ class PretrainedTransformersConfig(BaseModuleConfig):
         super(PretrainedTransformersConfig, self).__init__(config)
         self.pretrained_transformers_config = config["module"]
         assert config['_name'] == "pretrained_transformers"
+        self.post_check(config['config'], used=[
+            "pretrained_model_path",
+            "output_size",
+            ])
         
 
 @embedding_register("pretrained_transformers")

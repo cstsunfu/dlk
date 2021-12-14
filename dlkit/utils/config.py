@@ -7,6 +7,21 @@ from dlkit.utils.register import Register
 
 logger = logger()
 
+class BaseConfig(object):
+    """docstring for BaseLayerConfig"""
+    def __init__(self, config: Dict):
+        super(BaseConfig, self).__init__()
+        self._name = config.pop('_name')
+
+    def post_check(self, config, used=[]):
+        """check all the params are useful
+        :config: TODO
+        :returns: TODO
+        """
+        # TODO: data/** managers/**
+        if config:
+            logger.warning(f"In module '{self._name}', there are some params not be used: {config}")
+
 
 class ConfigTool(object):
     """

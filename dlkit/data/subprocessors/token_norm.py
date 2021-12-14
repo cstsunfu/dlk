@@ -6,7 +6,7 @@ Token norm:
 """
 from logging import PercentStyle
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
@@ -19,7 +19,7 @@ from tokenizers.pre_tokenizers import WhitespaceSplit
 logger = logger()
 
 @subprocessor_config_register('token_norm')
-class TokenNormConfig(object):
+class TokenNormConfig(BaseConfig):
     """docstring for TokenNormConfig
         {
             "_name": "token_norm",
@@ -45,6 +45,7 @@ class TokenNormConfig(object):
     """
     def __init__(self, stage, config: Dict):
 
+        super(TokenNormConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -57,6 +58,14 @@ class TokenNormConfig(object):
         self.vocab = self.tokenizer.get_vocab()
         self.do_extend_vocab = self.config['extend_vocab']
         self.prefix = self.tokenizer.model.continuing_subword_prefix
+        self.post_check(self.config, used=[ 
+            "data_set",
+            "zero_digits_replaced",
+            "lowercase",
+            "extend_vocab",
+            "tokenizer",
+            "data_pair",
+        ])
 
     def tokenize(self, seq):
         """TODO: Docstring for whitespace_split.

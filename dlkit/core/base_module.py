@@ -2,16 +2,21 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Callable, Any, Set
 from dlkit.core.modules import module_register, module_config_register
+from dlkit.utils.logger import logger
+from dlkit.utils.config import BaseConfig
 import abc
 
-class BaseModuleConfig(object):
+logger = logger()
+
+
+class BaseModuleConfig(BaseConfig):
     """docstring for BaseLayerConfig"""
     def __init__(self, config: Dict):
-        super(BaseModuleConfig, self).__init__()
-        self._output_map = config['config'].get("output_map", {})
-        self._input_map = config['config'].get('input_map', {})
-        self._logits_gather_config = module_config_register.get("logits_gather")(config['config'].get("logits_gather_config", {}))
-        
+        super(BaseModuleConfig, self).__init__(config)
+        self._output_map = config['config'].pop("output_map")
+        self._input_map = config['config'].pop('input_map')
+        self._logits_gather_config = module_config_register.get("logits_gather")(config['config'].pop("logits_gather_config"))
+
 
 class ModuleOutputRenameMixin:
     """Just rename the output key name by config to adapt the input field of downstream module."""

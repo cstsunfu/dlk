@@ -1,5 +1,5 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from dlkit.utils.logger import logger
@@ -9,7 +9,7 @@ import numpy as np
 logger = logger()
 
 @subprocessor_config_register('token_embedding')
-class TokenEmbeddingConfig(object):
+class TokenEmbeddingConfig(BaseConfig):
     """Config eg.
         {
             "_name": "token_embedding",
@@ -27,6 +27,7 @@ class TokenEmbeddingConfig(object):
     """
 
     def __init__(self, stage, config):
+        super(TokenEmbeddingConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         if not self.config:
             return
@@ -36,6 +37,14 @@ class TokenEmbeddingConfig(object):
         self.vocab = self.config['vocab']
         self.deliver = self.config.get("deliver")
         self.embedding_size = self.config["embedding_size"]
+        self.post_check(self.config, used=[ 
+            "embedding_file",
+            "tokenizer",
+            "vocab",
+            "deliver",
+            "embedding_size",
+            "bias_clip_range",
+        ])
 
 @subprocessor_register('token_embedding')
 class TokenEmbedding(ISubProcessor):

@@ -106,6 +106,21 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         self.start_save_epoch = self.config['start_save_epoch']
         self.start_save_step = self.config['start_save_step']
 
+        self.post_check(self.config, used=[ 
+            "meta",
+            "use_crf",
+            "word_ready",
+            "meta_data",
+            "input_map",
+            "origin_input_map",
+            "save_root_path",
+            "save_path",
+            "start_save_step",
+            "start_save_epoch",
+            "aggregation_strategy",
+            "ignore_labels",
+        ])
+
 
 class AggregationStrategy(object):
     """docstring for AggregationStrategy"""

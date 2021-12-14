@@ -18,6 +18,7 @@ class IdentityEmbeddingConfig(BaseModuleConfig):
     """
     def __init__(self, config):
         super(IdentityEmbeddingConfig, self).__init__(config)
+        self.post_check(config['config'])
 
 
 @embedding_register('identity')

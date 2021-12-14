@@ -4,25 +4,27 @@ import json
 
 import os
 import torch.nn as nn
-import torch
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
+from dlkit.utils.config import BaseConfig
 from . import module_register, module_config_register
 
+
 @module_config_register("roberta")
-class RobertaWrapConfig(object):
+class RobertaWrapConfig(BaseConfig):
     """docstring for RobertaWrapConfig
     {
         config: {
             "pretrained_model_path": "*@*",
+            "from_pretrain": true
         },
         _name: "roberta",
     }
     """
 
     def __init__(self, config: Dict):
-        super(RobertaWrapConfig, self).__init__()
+        super(RobertaWrapConfig, self).__init__(config)
         self.pretrained_model_path = config['config']['pretrained_model_path']
+        self.from_pretrain = config['config']['from_pretrain']
         if os.path.isdir(self.pretrained_model_path):
             if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
                 self.roberta_config = RobertaConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
@@ -34,6 +36,7 @@ class RobertaWrapConfig(object):
                     self.reberta_config = RobertaConfig(**json.load(open(self.pretrained_model_path, 'r')))
                 except:
                     raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
+        self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain'])
         
 
 @module_register("roberta")
@@ -49,7 +52,7 @@ class RobertaWrap(nn.Module):
         :returns: TODO
 
         """
-        if self.config.pretrained_model_path:
+        if self.config.from_pretrain:
             self.from_pretrained()
         else:
             self.roberta.init_weights()

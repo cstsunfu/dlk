@@ -1,12 +1,13 @@
 from typing import Dict
 import math
+from dlkit.utils.config import BaseConfig
 from . import scheduler_register, scheduler_config_register, BaseScheduler
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 
 
 @scheduler_config_register("cosine_warmup")
-class CosineWarmupScheduleConfig(object):
+class CosineWarmupScheduleConfig(BaseConfig):
     """
     {
         config: {
@@ -19,12 +20,18 @@ class CosineWarmupScheduleConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(CosineWarmupScheduleConfig, self).__init__()
+        super(CosineWarmupScheduleConfig, self).__init__(config)
         config = config['config']
         self.last_epoch = config["last_epoch"]
         self.num_warmup_steps = config["num_warmup_steps"]
         self.num_training_steps = config["num_training_steps"]
         self.num_cycles = config['num_cycles']
+        self.post_check(config, used=[ 
+            "last_epoch",
+            "num_warmup_steps",
+            "num_training_steps",
+            "num_cycles",
+        ])
         
 
 @scheduler_register("cosine_warmup")

@@ -1,10 +1,11 @@
 import torch.nn as nn
+from dlkit.utils.config import BaseConfig
 import torch
 from typing import Dict, List, Collection
 from . import module_register, module_config_register
 
 @module_config_register("conv1d")
-class Conv1dConfig(object):
+class Conv1dConfig(BaseConfig):
     """docstring for Conv1dConfig
     {
         "config": {
@@ -17,7 +18,7 @@ class Conv1dConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(Conv1dConfig, self).__init__()
+        super(Conv1dConfig, self).__init__(config)
         config = config['config']
         self.kernel_sizes = config['kernel_sizes']
         out_channels = config['out_channels']
@@ -26,7 +27,12 @@ class Conv1dConfig(object):
         self.in_channels = config['in_channels']
         self.out_channels = out_channels // len(self.kernel_sizes)
         self.dropout = config['dropout']
-
+        self.post_check(config, used=[ 
+            "in_channels",
+            "out_channels",
+            "dropout",
+            "kernel_sizes",
+        ])
 
 @module_register("conv1d")
 class Conv1d(nn.Module):
