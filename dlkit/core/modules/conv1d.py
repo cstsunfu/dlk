@@ -44,7 +44,7 @@ class Conv1d(nn.Module):
                              padding=(kernel_size - 1) // 2)
             convs.append(nn.Sequential(conv, nn.GELU()))
         self.convs = nn.ModuleList(convs)
-        self.dropout = nn.Dropout(p=config.dropout)
+        self.dropout = nn.Dropout(p=float(config.dropout))
 
     def forward(self, x):
         return self.dropout(torch.cat([conv(x) for conv in self.convs], dim=-1))

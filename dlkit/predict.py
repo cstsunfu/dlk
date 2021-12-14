@@ -84,10 +84,18 @@ class Predict(object):
 
         # init imodel and inject the origin test and valid data
         imodel = self.get_imodel(config, data)
+        dataloader = datamodule.train_dataloader()
+        for data in dataloader:
+            script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
+            # script = torch.jit.script(imodel.model, example_inputs=data, strict=False)
+            print(script)
+            print(script(data))
+            # imodel.model(data)
+            break
 
         # start training
-        predict_result = manager.predict(model=imodel, datamodule=datamodule)
-        print(len(imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={})))
+        # predict_result = manager.predict(model=imodel, datamodule=datamodule)
+        # print(len(imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={})))
 
     def get_data(self, config):
         """TODO: Docstring for get_data.
@@ -127,7 +135,7 @@ class Predict(object):
 
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
-        imodel = IModel(IModelConfig)
+        imodel = IModel(IModelConfig, checkpoint=True)
         imodel.load_state_dict(self.ckpt['state_dict'])
         imodel.eval()
         return imodel

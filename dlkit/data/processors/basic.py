@@ -118,7 +118,7 @@ class BasicProcessorConfig(BaseConfig):
         self.feed_order = config["config"]['feed_order']
         self.subprocessors = config
         self.stage = stage
-        self.post_check(config['config'], used=['feed_order'])
+        # self.post_check(config['config'], used=['feed_order'])
 
 
 @processor_register('basic')

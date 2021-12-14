@@ -61,5 +61,6 @@ class Linear(SimpleModule):
         """
         """
         inputs[self.get_output_name("logits")] = self.linear(inputs[self.get_input_name('embedding')])
-        inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
         return inputs

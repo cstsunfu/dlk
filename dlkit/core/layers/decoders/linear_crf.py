@@ -68,7 +68,8 @@ class LinearCRF(BaseModule):
         """
 
         logits = self.linear(inputs[self.get_input_name('embedding')])
-        inputs.update(self._logits_gather([logits]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name("predict_seq_label")] = self.crf(logits, inputs[self.get_input_name('attention_mask')])
         return inputs
 
@@ -80,7 +81,8 @@ class LinearCRF(BaseModule):
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
         loss = self.crf.training_step(logits, inputs[self.get_input_name('label_ids')], inputs[self.get_input_name('attention_mask')])
-        inputs.update(self._logits_gather([logits]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name('loss')] = loss
         return inputs
 
@@ -93,7 +95,8 @@ class LinearCRF(BaseModule):
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
         loss = self.crf.training_step(logits, inputs[self.get_input_name('label_ids')], inputs[self.get_input_name('attention_mask')])
-        inputs.update(self._logits_gather([logits]))
+        if self._logits_gather.layer_map:
+            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name('loss')] = loss
         inputs[self.get_output_name("predict_seq_label")] = self.crf(logits, inputs[self.get_input_name('attention_mask')])
         return inputs

@@ -24,7 +24,7 @@ class LinearConfig(BaseConfig):
         config = config['config']
         self.input_size = config['input_size']
         self.output_size = config['output_size']
-        self.dropout = config['dropout']
+        self.dropout = float(config['dropout'])
         self.bias = config['bias']
         self.pool = config['pool']
         self.post_check(config, used=[ 
@@ -41,7 +41,7 @@ class Linear(nn.Module):
     def __init__(self, config: LinearConfig):
         super(Linear, self).__init__()
         self.linear = nn.Linear(in_features=config.input_size, out_features=config.output_size, )
-        self.dropout = nn.Dropout(p=config.dropout)
+        self.dropout = nn.Dropout(p=float(config.dropout))
         self.config = config
 
 

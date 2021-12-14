@@ -33,7 +33,7 @@ class TokenEmbeddingConfig(BaseConfig):
             return
         self.embedding_file = self.config.get("embedding_file")
         self.tokenizer = self.config.get("tokenizer")
-        self.bias_clip_range = self.config['bias_range']
+        self.bias_clip_range = self.config['bias_clip_range']
         self.vocab = self.config['vocab']
         self.deliver = self.config.get("deliver")
         self.embedding_size = self.config["embedding_size"]

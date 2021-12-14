@@ -57,7 +57,7 @@ class LSTM(nn.Module):
         else:
             inlstm_dropout = config.dropout
         self.lstm = nn.LSTM(input_size=config.input_size, hidden_size=config.hidden_size, num_layers=config.num_layers, batch_first=True, bidirectional=config.bidirectional, dropout=inlstm_dropout)
-        self.dropout_last = nn.Dropout(p=config.dropout if config.dropout_last else 0)
+        self.dropout_last = nn.Dropout(p=float(config.dropout) if config.dropout_last else 0)
 
     def forward(self, input: torch.Tensor, mask: torch.Tensor)->torch.Tensor:
         """
