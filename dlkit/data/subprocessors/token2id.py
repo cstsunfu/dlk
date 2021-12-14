@@ -1,5 +1,5 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
@@ -8,7 +8,7 @@ from dlkit.utils.logger import logger
 logger = logger()
 
 @subprocessor_config_register('token2id')
-class Token2IDConfig(object):
+class Token2IDConfig(BaseConfig):
     """docstring for Token2IDConfig
         {
             "_name": "token2id",
@@ -32,6 +32,7 @@ class Token2IDConfig(object):
 
     def __init__(self, stage, config: Dict):
 
+        super(Token2IDConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -42,6 +43,12 @@ class Token2IDConfig(object):
         self.vocab = self.config.get('vocab', "")
         if self.data_set and (not self.vocab):
             raise ValueError("You must provide 'vocab' for token2id.")
+        self.post_check(self.config, used=[ 
+            "data_pair",
+            "data_set",
+            "vocab",
+            "max_token_len",
+        ])
 
 
 @subprocessor_register('token2id')

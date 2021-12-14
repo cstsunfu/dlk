@@ -1,7 +1,7 @@
 import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union, Any
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from dlkit.data.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
 from dlkit.utils.logger import logger
 # from pytorch_lightning import LightningDataModule
@@ -11,9 +11,9 @@ import copy
 logger = logger()
 
 @datamodule_config_register('basic')
-class BasicDatamoduleConfig(object):
+class BasicDatamoduleConfig(BaseConfig):
     """docstring for BasicDatamoduleConfig
-       datamodule: {
+       {
            "_name": "basic",
            "config": {
                "pin_memory": None,
@@ -43,7 +43,7 @@ class BasicDatamoduleConfig(object):
        }, 
     """
     def __init__(self, config):
-        super(BasicDatamoduleConfig, self).__init__()
+        super(BasicDatamoduleConfig, self).__init__(config)
         config = config['config']
         self.key_type_pairs = config.get('key_type_pairs', {})
 
@@ -67,6 +67,17 @@ class BasicDatamoduleConfig(object):
         self.valid_batch_size = config.get('predict_batch_size', 32)
         self.predict_batch_size = config.get('predict_batch_size', 32)
         self.online_batch_size = config.get('online_batch_size', 1)
+        self.post_check(config, used=[
+               "pin_memory",
+               "collate_fn",
+               "shuffle",
+               "key_type_pairs",
+               "gen_mask",
+               "key_padding_pairs",
+               "train_batch_size",
+               "predict_batch_size",
+               "online_batch_size",
+        ])
 
 
 class BasicDataset(Dataset):

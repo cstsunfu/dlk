@@ -1,10 +1,12 @@
 import torch.nn as nn
 import torch
 from typing import Dict, List
+from dlkit.utils.config import BaseConfig
 from . import module_register, module_config_register
 
+
 @module_config_register("logits_gather")
-class LogitsGatherConfig(object):
+class LogitsGatherConfig(BaseConfig):
     """docstring for LogitsGatherConfig
     {
         "config": {
@@ -24,10 +26,14 @@ class LogitsGatherConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(LogitsGatherConfig, self).__init__()
-        config = config.get('config', {})
-        self.gather_layer = config.get('gather_layer', {})
-        self.prefix = config.get("prefix", "gather_logits_")
+        super(LogitsGatherConfig, self).__init__(config)
+        config = config['config']
+        self.gather_layer = config['gather_layer']
+        self.prefix = config["prefix"]
+        self.post_check(config, used=[ 
+            "gather_layer",
+            "prefix"
+        ])
         
 
 @module_register("logits_gather")

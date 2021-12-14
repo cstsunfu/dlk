@@ -1,13 +1,13 @@
 from typing import Dict
 import torch.nn as nn
+from dlkit.utils.config import BaseConfig
 from . import scheduler_register, scheduler_config_register, BaseScheduler
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
-import copy
 
 
 @scheduler_config_register("constant")
-class ConstantScheduleConfig(object):
+class ConstantScheduleConfig(BaseConfig):
     """
     {
         config: {
@@ -17,9 +17,12 @@ class ConstantScheduleConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(ConstantScheduleConfig, self).__init__()
+        super(ConstantScheduleConfig, self).__init__(config)
         config = config['config']
         self.last_epoch = config["last_epoch"]
+        self.post_check(config, used=[ 
+            "last_epoch",
+        ])
         
 
 @scheduler_register("constant")

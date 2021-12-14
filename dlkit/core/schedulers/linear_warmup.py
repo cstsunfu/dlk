@@ -1,4 +1,5 @@
 from typing import Dict
+from dlkit.utils.config import BaseConfig
 from . import scheduler_register, scheduler_config_register, BaseScheduler
 from torch.optim.lr_scheduler import LambdaLR
 from dlkit.utils.logger import logger
@@ -7,7 +8,7 @@ logger = logger()
 
 
 @scheduler_config_register("linear_warmup")
-class LinearWarmupScheduleConfig(object):
+class LinearWarmupScheduleConfig(BaseConfig):
     """
     {
         config: {
@@ -19,11 +20,16 @@ class LinearWarmupScheduleConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(LinearWarmupScheduleConfig, self).__init__()
+        super(LinearWarmupScheduleConfig, self).__init__(config)
         config = config['config']
         self.last_epoch = config["last_epoch"]
         self.num_warmup_steps = config["num_warmup_steps"]
         self.num_training_steps = config["num_training_steps"]
+        self.post_check(config, used=[ 
+            "last_epoch",
+            "num_warmup_steps",
+            "num_training_steps",
+        ])
         
 
 @scheduler_register("linear_warmup")

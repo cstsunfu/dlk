@@ -18,6 +18,7 @@ class IdentityDecoderConfig(BaseModuleConfig):
     """
     def __init__(self, config):
         super(IdentityDecoderConfig, self).__init__(config)
+        self.post_check(config)
 
 
 @decoder_register('identity')

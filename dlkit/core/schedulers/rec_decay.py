@@ -1,4 +1,5 @@
 from typing import Dict
+from dlkit.utils.config import BaseConfig
 from . import scheduler_register, scheduler_config_register, BaseScheduler
 from torch.optim.lr_scheduler import LambdaLR
 from dlkit.utils.logger import logger
@@ -7,7 +8,7 @@ logger = logger()
 
 
 @scheduler_config_register("rec_decay")
-class RecDecayScheduleConfig(object):
+class RecDecayScheduleConfig(BaseConfig):
     """ the lr=lr*1/(1+decay)
     {
         "config": {
@@ -20,12 +21,18 @@ class RecDecayScheduleConfig(object):
     }
     """
     def __init__(self, config: Dict):
-        super(RecDecayScheduleConfig, self).__init__()
+        super(RecDecayScheduleConfig, self).__init__(config)
         config = config['config']
         self.last_epoch = config["last_epoch"]
         self.epoch_training_steps = config["epoch_training_steps"]
         self.decay = config["decay"]
         self.num_training_steps = config["num_training_steps"]
+        self.post_check(config, used=[ 
+            "last_epoch",
+            "num_training_steps",
+            "decay",
+            "epoch_training_steps",
+        ])
 
 
 @scheduler_register("rec_decay")

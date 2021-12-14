@@ -1,5 +1,5 @@
 from dlkit.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import ConfigTool, BaseConfig
 from typing import Dict, Callable
 import json
 from dlkit.utils.logger import logger
@@ -16,7 +16,7 @@ logger = logger()
 
 
 @subprocessor_config_register('fast_tokenizer')
-class FastTokenizerConfig(object):
+class FastTokenizerConfig(BaseConfig):
     """
     docstring for GeneralTokenizerConfig
     {
@@ -62,6 +62,7 @@ class FastTokenizerConfig(object):
     }
     """
     def __init__(self, stage, config):
+        super(FastTokenizerConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -88,6 +89,19 @@ class FastTokenizerConfig(object):
         self.process_data = self.config['process_data']
         self.data_type = self.config["data_type"]
         assert self.data_type in ['single', 'pair']
+        self.post_check(self.config, used=[ 
+            "data_set",
+            "config_path",
+            "truncation",
+            "normalizer",
+            "pre_tokenizer",
+            "post_processor",
+            "output_map",
+            "input_map",
+            "deliver",
+            "process_data",
+            "data_type",
+        ])
 
 
 @subprocessor_register('fast_tokenizer')

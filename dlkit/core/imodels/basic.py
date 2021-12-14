@@ -6,6 +6,7 @@ from dlkit.core.models import model_register, model_config_register
 from dlkit.core.optimizers import optimizer_register, optimizer_config_register
 from dlkit.core.schedulers import scheduler_register, scheduler_config_register
 from dlkit.core.losses import loss_register, loss_config_register
+from dlkit.core.base_module import BaseModuleConfig
 from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlkit.utils.config import ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
@@ -16,17 +17,17 @@ logger = logger()
 import pytorch_lightning as pl
 
 @imodel_config_register('basic')
-class BasicIModelConfig(object):
+class BasicIModelConfig(BaseModuleConfig):
     """docstring for IModelConfig"""
     def __init__(self, config):
-        super(BasicIModelConfig, self).__init__()
-        self.model, self.model_config = self.get_model(config.get("model"))
-        self.loss, self.loss_config = self.get_loss(config.get("loss"))
+        super(BasicIModelConfig, self).__init__(config)
+        self.model, self.model_config = self.get_model(config.pop("model"))
+        self.loss, self.loss_config = self.get_loss(config.pop("loss"))
 
-        self.optimizer, self.optimizer_config = self.get_optimizer(config.get("optimizer", 'adamw'))
+        self.optimizer, self.optimizer_config = self.get_optimizer(config.pop("optimizer", 'adamw'))
 
-        self.scheduler, self.scheduler_config = self.get_scheduler(config.get("scheduler", "basic"))
-        self.postprocess, self.postprocess_config = self.get_postprocessor(config.get("postprocessor", 'identity'))
+        self.scheduler, self.scheduler_config = self.get_scheduler(config.pop("scheduler", "basic"))
+        self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor", 'identity'))
 
         self.config = config.pop('config', {})
 

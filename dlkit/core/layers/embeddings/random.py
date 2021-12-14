@@ -24,11 +24,17 @@ class RandomEmbeddingConfig(BaseModuleConfig):
     """
     def __init__(self, config: Dict):
         super(RandomEmbeddingConfig, self).__init__(config)
-        config = config.get('config', {})
-        self.vocab_size = config.get('vocab_size', 1)
-        self.embedding_dim = config.get('embedding_dim', 1)
-        self.dropout = config.get('dropout', 0.0)
-        self.padding_idx = config.get('padding_idx', 0)
+        config = config['config']
+        self.vocab_size = config['vocab_size']
+        self.embedding_dim = config['embedding_dim']
+        self.dropout = config['dropout']
+        self.padding_idx = config['padding_idx']
+        self.post_check(config, used=[
+            "vocab_size",
+            "embedding_dim",
+            "padding_idx",
+            "dropout"
+        ])
 
 
 @embedding_register('random')

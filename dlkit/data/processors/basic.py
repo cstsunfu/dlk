@@ -4,13 +4,13 @@ from typing import Union, Dict
 from dlkit.utils.parser import BaseConfigParser
 from dlkit.data.processors import IProcessor, processor_config_register, processor_register
 from dlkit.data.subprocessors import subprocessor_config_register, subprocessor_register
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig
 from dlkit.utils.logger import logger
 
 logger = logger()
 
 @processor_config_register('basic')
-class BasicProcessorConfig(object):
+class BasicProcessorConfig(BaseConfig):
     """docstring for BasicProcessorConfig
     config e.g.
     {
@@ -112,11 +112,13 @@ class BasicProcessorConfig(object):
     """
 
     def __init__(self, stage, config: Dict):
+        super(BasicProcessorConfig, self).__init__(config)
         if isinstance(config, str):
             config = hjson.load(open(config), object_pairs_hook=dict)
-        self.feed_order = config.pop("config", {}).pop('feed_order', [])
+        self.feed_order = config["config"]['feed_order']
         self.subprocessors = config
         self.stage = stage
+        self.post_check(config['config'], used=['feed_order'])
 
 
 @processor_register('basic')

@@ -4,6 +4,8 @@ from typing import Dict, List, Set, Callable
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 from . import encoder_register, encoder_config_register
 from dlkit.core.modules import module_config_register, module_register
+from dlkit.utils.logger import logger
+logger = logger()
 
 @encoder_config_register("lstm")
 class LSTMConfig(BaseModuleConfig):
@@ -33,6 +35,12 @@ class LSTMConfig(BaseModuleConfig):
         super(LSTMConfig, self).__init__(config)
         self.lstm_config = config["module"]
         assert self.lstm_config['_name'] == "lstm"
+        self.post_check(config['config'], used=[ 
+            "input_size",
+            "output_size",
+            "num_layers",
+            "dropout",
+        ])
         
 
 @encoder_register("lstm")
@@ -44,7 +52,6 @@ class LSTM(SimpleModule):
         self._provided_keys = set()
         self.config = config
         self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
-        self.i = 0
 
     def init_weight(self, method: Callable):
         """init  Module weight by `method`

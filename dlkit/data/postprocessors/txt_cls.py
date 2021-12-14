@@ -1,3 +1,4 @@
+# TODO ref to seq lab to complete
 import hjson
 import pickle as pkl
 import os
@@ -5,7 +6,6 @@ import json
 from typing import Union, Dict, Any
 from dlkit.utils.parser import BaseConfigParser, PostProcessorConfigParser
 from dlkit.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
-from dlkit.utils.config import ConfigTool
 from dlkit.utils.logger import logger
 import torch
 from dlkit.utils.vocab import Vocabulary

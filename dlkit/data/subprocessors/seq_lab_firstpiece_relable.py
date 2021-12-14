@@ -1,5 +1,5 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
@@ -8,7 +8,7 @@ from dlkit.utils.logger import logger
 logger = logger()
 
 @subprocessor_config_register('seq_lab_firstpiece_relabel')
-class SeqLabFirstPieceRelabelConfig(object):
+class SeqLabFirstPieceRelabelConfig(BaseConfig):
     """docstring for SeqLabFirstPieceRelabelConfig
         {
             "_name": "seq_lab_firstpiece_relabel",
@@ -40,6 +40,7 @@ class SeqLabFirstPieceRelabelConfig(object):
     """
     def __init__(self, stage, config: Dict):
 
+        super(SeqLabFirstPieceRelabelConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -53,6 +54,13 @@ class SeqLabFirstPieceRelabelConfig(object):
         self.end_label = self.config['end_label']
         self.gather_index = self.config['output_map']['gather_index']
         self.output_labels = self.config['output_map']['labels']
+        self.post_check(self.config, used=[ 
+            "input_map",
+            "data_set",
+            "output_map",
+            "start_label",
+            "end_label",
+        ])
 
 
 @subprocessor_register('seq_lab_firstpiece_relabel')

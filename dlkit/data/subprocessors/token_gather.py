@@ -1,5 +1,5 @@
 from dlkit.utils.vocab import Vocabulary
-from dlkit.utils.config import ConfigTool
+from dlkit.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlkit.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from dlkit.utils.logger import logger
@@ -7,7 +7,7 @@ from dlkit.utils.logger import logger
 logger = logger()
 
 @subprocessor_config_register('token_gather')
-class TokenGatherConfig(object):
+class TokenGatherConfig(BaseConfig):
     """Config eg.
         {
             "_name": "token_gather",
@@ -30,6 +30,7 @@ class TokenGatherConfig(object):
     """
 
     def __init__(self, stage: str, config: Dict):
+        super(TokenGatherConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -44,6 +45,17 @@ class TokenGatherConfig(object):
         self.pad = self.config['pad']
         self.min_freq = self.config['min_freq']
         self.most_common = self.config['most_common']
+        self.post_check(self.config, used=[ 
+            "data_set",
+            "gather_columns",
+            "deliver",
+            "ignore",
+            "update",
+            "unk",
+            "pad",
+            "min_freq",
+            "most_common",
+        ])
 
 @subprocessor_register('token_gather')
 class TokenGather(ISubProcessor):
