@@ -15,6 +15,7 @@
             "manager": {
                 "_base": "lightning@advance",
                 "config":{
+                    "callbacks": ['lr_monitor', 'weight_average'],
                     "max_epochs": 50,
                     "_search": {"max_epochs": [60]},
                     "gpus": 0

@@ -11,7 +11,6 @@
             "freeze": false, // is freeze
             "dropout": 0, //dropout rate
             "output_map": {},
-            "return_logits": "embedding_logits",
         },
     },
     "decoder": {
@@ -21,14 +20,12 @@
             "output_size": "*@*",
             "pool": 'first',
             "dropout": 0.0, //the decoder output no need dropout
-            "return_logits": "decoder_logits",
             "output_map": {}
         },
     },
     "encoder": {
         "_base": "lstm",
         "config": {
-            "return_logits": "encoder_logits",
             "output_map": {},
             "input_size": "*@*",
             "output_size": "*@*",

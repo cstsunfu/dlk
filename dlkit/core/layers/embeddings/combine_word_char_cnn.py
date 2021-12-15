@@ -87,6 +87,7 @@ class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
             "char.padding_idx",
             "char.output_map",
             "char.input_map",
+            "char.kernel_sizes",
             "dropout",
             "embedding_dim",
         ])
