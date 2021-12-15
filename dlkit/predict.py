@@ -86,6 +86,7 @@ class Predict(object):
         imodel = self.get_imodel(config, data)
         dataloader = datamodule.train_dataloader()
         for data in dataloader:
+            # script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
             script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
             # script = torch.jit.script(imodel.model, example_inputs=data, strict=False)
             print(script)
