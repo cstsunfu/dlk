@@ -10,19 +10,20 @@
             "strict": true,
         }
     },
-    /*"callback@weight_average":{*/
-        /*"_name": "weight_average",*/
-        /*"config": {*/
-            /*"swa_epoch_start": 0.8,*/
-            /*"swa_lrs": null,*/
-            /*"annealing_epochs": 10,*/
-            /*"annealing_strategy": 'cos',*/
-            /*"device": 'cpu',*/
-        /*}*/
-    /*},*/
+    "callback@weight_average":{
+        "_name": "weight_average",
+        "config": {
+            "swa_epoch_start": 0.8,
+            "swa_lrs": null,
+            "annealing_epochs": 10,
+            "annealing_strategy": 'cos',
+            "device": 'cpu',
+        }
+    },
     "config":{
         /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor']*/
         "callbacks": ['lr_monitor'],
+        /*"callbacks": ['lr_monitor', 'weight_average'],*/
         /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar', 'weight_average'],*/
         "logger": true,
         "enable_checkpointing": true,

@@ -129,11 +129,12 @@ class BaseConfigParser(object):
 
         self.config_name = self.config_file.pop('_name', "")
         self.search = self.config_file.pop('_search', {})
-
         base = self.config_file.pop('_base', "")
         self.base_config = {}
         if base:
             self.base_config = self.get_base_config(base)
+        if "_focus" in self.config_file:
+            self.base_config['_focus'] = self.config_file.pop('_focus')
 
         # merge base and current config _link
         link_union = LinkUnionTool()

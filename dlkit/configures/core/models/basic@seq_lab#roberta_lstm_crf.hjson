@@ -14,13 +14,11 @@
         "config": {
             "input_size": "*@*",
             "output_size": "*@*",
-            "return_logits": "decoder_logits",
         },
     },
     "encoder": {
         "_base": "lstm",
         "config": {
-            "return_logits": "encoder_logits",
             "output_map": {},
             "input_size": "*@*",
             "output_size": "*@*",

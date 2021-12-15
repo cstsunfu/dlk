@@ -15,14 +15,12 @@
             "input_size": "*@*",
             "output_size": "*@*",
             "pool": null,
-            "return_logits": "decoder_logits",
             "output_map": {}
         },
     },
     /*"encoder": {*/
         /*"_base": "lstm",*/
         /*"config": {*/
-            /*"return_logits": "encoder_logits",*/
             /*"output_map": {},*/
             /*"input_size": *@*,*/
             /*"output_size": "*@*",*/
