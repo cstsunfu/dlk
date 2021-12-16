@@ -13,32 +13,26 @@ import torchmetrics
 logger = logger()
 
 
-@postprocessor_config_register('txt_cls')
-class TxtClsPostProcessorConfig(IPostProcessorConfig):
-    """docstring for TxtClsPostProcessorConfig
+@postprocessor_config_register('txt_reg')
+class TxtRegPostProcessorConfig(IPostProcessorConfig):
+    """docstring for TxtRegPostProcessorConfig
     config e.g.
     {
-        "_name": "txt_cls",
+        "_name": "txt_reg",
         "config": {
-            "meta": "*@*",
-            "meta_data": {
-                "label_vocab": 'label_vocab',
-            },
             "input_map": {
                 "logits": "logits",
-                "label_ids": "label_ids"
                 "_index": "_index",
             },
             "origin_input_map": {
                 "sentence": "sentence",
                 "sentence_a": "sentence_a", // for pair
                 "sentence_b": "sentence_b",
+                "value": "value",
                 "uuid": "uuid"
             },
-            "save_root_path": ".",  //save data root dir
-            "top_k": 1, //the result return top k result
-            "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == [1], then the predict value always return the logits[1], and the label always be label_vocab[1]
             "txt_type": "single", //single or pair
+            "save_root_path": ".",  //save data root dir
             "save_path": {
                 "valid": "valid",  // relative dir for valid stage
                 "test": "test",    // relative dir for test stage
@@ -50,7 +44,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
     """
 
     def __init__(self, config: Dict):
-        super(TxtClsPostProcessorConfig, self).__init__(config)
+        super(TxtRegPostProcessorConfig, self).__init__(config)
 
         self.txt_type = self.config['txt_type']
         assert self.txt_type in {'single', 'pair'}
@@ -60,51 +54,31 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
         else:
             self.sentence = self.origin_input_map['sentence']
         self.uuid = self.origin_input_map['uuid']
+        self.value = self.origin_input_map['value']
 
         self.logits = self.input_map['logits']
-        self.label_ids = self.input_map['label_ids']
         self._index = self.input_map['_index']
-        self.top_k = self.config['top_k']
-        self.focus = self.config['focus']
-        if isinstance(self.config['meta'], str):
-            meta = pkl.load(open(self.config['meta'], 'rb'))
-        else:
-            raise PermissionError("You must provide meta data for txt_cls postprocess.")
-        trace_path = []
-        trace_path_str = self.config['meta_data']['label_vocab']
-        if trace_path_str and trace_path_str.strip()!='.':
-            trace_path = trace_path_str.split('.')
-        self.label_vocab = meta
-        for trace in trace_path:
-            self.label_vocab = self.label_vocab[trace]
-        self.label_vocab = Vocabulary.load(self.label_vocab)
         self.save_path = self.config['save_path']
         self.save_root_path = self.config['save_root_path']
         self.start_save_epoch = self.config['start_save_epoch']
         self.start_save_step = self.config['start_save_step']
         self.post_check(self.config, used=[
-            "meta",
-            "meta_data",
             "input_map",
             "origin_input_map",
             "save_root_path",
-            "top_k",
-            "focus",
-            "txt_type",
             "save_path",
+            "txt_type",
             "start_save_step",
             "start_save_epoch",
         ])
 
 
-@postprocessor_register('txt_cls')
-class TxtClsPostProcessor(IPostProcessor):
-    """docstring for TxtClsPostProcessor"""
-    def __init__(self, config: TxtClsPostProcessorConfig):
-        super(TxtClsPostProcessor, self).__init__()
+@postprocessor_register('txt_reg')
+class TxtRegPostProcessor(IPostProcessor):
+    """docstring for TxtRegPostProcessor"""
+    def __init__(self, config: TxtRegPostProcessorConfig):
+        super(TxtRegPostProcessor, self).__init__()
         self.config = config
-        self.label_vocab = self.config.label_vocab
-        self.acc_calc = torchmetrics.Accuracy()
 
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for do_predict.
@@ -121,11 +95,11 @@ class TxtClsPostProcessor(IPostProcessor):
             # predict_indexes = list(torch.argmax(logits, 1))
             indexes = list(outputs[self.config._index])
 
-            if self.config.label_ids in outputs:
-                label_ids = outputs[self.config.label_ids]
+            if self.config.value in outputs:
+                values = outputs[self.config.value]
             else:
-                label_ids = [None] * len(indexes)
-            for one_logits, index, label_id in zip(logits, indexes, label_ids):
+                values = [0.0] * len(indexes)
+            for one_logits, index, value in zip(logits, indexes, values):
                 one_ins = {}
                 origin_data = origin_data.iloc[int(index)]
                 if self.config.txt_type == 'single':
@@ -136,25 +110,11 @@ class TxtClsPostProcessor(IPostProcessor):
                     one_ins['sentence_a'] = sentence_a
                     sentence_b = origin_data[self.config.sentence_b]
                     one_ins['sentence_b'] = sentence_b
+                    
                 uuid = origin_data[self.config.uuid]
-                if self.config.focus:
-                    label_values, label_indeies = [], []
-                    for label_index in self.config.focus:
-                        label_values.append(one_logits[label_index])
-                        label_indeies.append(label_index)
-                else:
-                    label_values, label_indeies = torch.topk(one_logits, self.config.top_k, dim=-1)
-                predict = []
-                for label_value, label_index in zip(label_values, label_indeies):
-                    label_name = self.label_vocab.get_word(label_index)
-                    predict.append([label_name, float(label_value)])
-                if label_id is None:
-                    ground_truth = ""
-                else:
-                    ground_truth = self.label_vocab.get_word(label_id)
                 one_ins['uuid'] = uuid
-                one_ins['labels'] = ground_truth
-                one_ins['predict_labels'] = predict
+                one_ins['value'] = value
+                one_ins['predict_value'] = float(one_logits)
                 results.append(one_ins)
         return results
 
@@ -163,12 +123,7 @@ class TxtClsPostProcessor(IPostProcessor):
         :returns: TODO
 
         """
-        for outputs in list_batch_outputs:
-            logits = outputs[self.config.logits]
-            label_ids = outputs[self.config.label_ids]
-            self.acc_calc.update(logits, label_ids)
-        real_name = self.loss_name_map(stage)
-        return {f'{real_name}_acc': self.acc_calc.compute()}
+        return {}
 
     def do_save(self, predicts, stage, list_batch_outputs, origin_data, rt_config={}, save_condition=False):
         """TODO: Docstring for do_save.
