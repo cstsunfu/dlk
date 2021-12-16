@@ -19,7 +19,7 @@ class IProcessor(metaclass=abc.ABCMeta):
 
         """
         raise NotImplementedError
-        
+
 
 processor_config_register = Register('Processor config register')
 processor_register = Register("Processor register")

@@ -106,7 +106,7 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         self.start_save_epoch = self.config['start_save_epoch']
         self.start_save_step = self.config['start_save_step']
 
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "meta",
             "use_crf",
             "word_ready",
@@ -129,7 +129,7 @@ class AggregationStrategy(object):
     FIRST = "first"
     AVERAGE = "average"
     MAX = "max"
-        
+
 
 @postprocessor_register('seq_lab')
 class SeqLabPostProcessor(IPostProcessor):
@@ -154,13 +154,13 @@ class SeqLabPostProcessor(IPostProcessor):
 
     def process(self, stage, list_batch_outputs, origin_data, rt_config)->Union[Dict, List]:
         """ This script is mostly copied from Transformers
-        :list_batch_outputs: 
+        :list_batch_outputs:
             list of batch outputs
-        :rt_config: 
+        :rt_config:
             {
                 "current_step": self.global_step,
-                "current_epoch": self.current_epoch, 
-                "total_steps": self.num_training_steps, 
+                "current_epoch": self.current_epoch,
+                "total_steps": self.num_training_steps,
                 "total_epochs": self.num_training_epochs
             }
         :returns: log info dict
@@ -188,14 +188,14 @@ class SeqLabPostProcessor(IPostProcessor):
             self.config.start_save_step = rt_config['total_steps'] - 1
             self.config.start_save_epoch = rt_config['total_epochs'] - 1
         if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
-            
+
             save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
             if not os.path.exists(save_path):
                 os.makedirs(save_path, exist_ok=True)
             save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
             logger.info(f"Save the {stage} predict data at {save_file}")
             json.dump(predicts, open(save_file, 'w'), indent=4)
-            
+
         return log_info
 
     def calc_score(self, predict_list, ground_truth_list):
@@ -210,7 +210,7 @@ class SeqLabPostProcessor(IPostProcessor):
             if b==0:
                 return 0.0
             return a/b
-            
+
 
         def calc_num(pred, ground_truth):
             """TODO: Docstring for calc_num.
@@ -269,7 +269,7 @@ class SeqLabPostProcessor(IPostProcessor):
                     info[label] = []
                 info[label].append(text[item['start']: item['end']].strip())
             return info
-            
+
         all_predicts = []
         all_ground_truths = []
         for predict in predicts:

@@ -35,13 +35,13 @@ class LSTMConfig(BaseModuleConfig):
         super(LSTMConfig, self).__init__(config)
         self.lstm_config = config["module"]
         assert self.lstm_config['_name'] == "lstm"
-        self.post_check(config['config'], used=[ 
+        self.post_check(config['config'], used=[
             "input_size",
             "output_size",
             "num_layers",
             "dropout",
         ])
-        
+
 
 @encoder_register("lstm")
 class LSTM(SimpleModule):

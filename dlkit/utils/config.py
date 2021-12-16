@@ -111,7 +111,7 @@ class ConfigTool(object):
 
     @staticmethod
     def get_config_by_stage(stage:str, config:Dict)->Dict:
-        """TODO: if config[stage] is a string, like 'train', 'predict' etc., 
+        """TODO: if config[stage] is a string, like 'train', 'predict' etc.,
             it means the config of this stage equals to config[stage]
             return config[config[stage]]
             e.g.
@@ -139,7 +139,7 @@ class ConfigTool(object):
         if isinstance(stage_config, str):
             stage_config = config.get(stage_config, {})
         elif isinstance(stage_config, list):
-            assert len(stage_config) == 2 
+            assert len(stage_config) == 2
             assert isinstance(stage_config[0], str)
             assert isinstance(stage_config[1], dict)
             stage_config = config.get(stage_config[0], {})

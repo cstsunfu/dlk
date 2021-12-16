@@ -72,7 +72,7 @@ class IBaseDataModule(LightningDataModule):
     @abc.abstractmethod
     def online_dataloader(self):
         raise NotImplementedError(f"You must implementation the online_dataloader for your own datamodule.")
-        
+
 
 def import_datamodules(datamodules_dir, namespace):
     for file in os.listdir(datamodules_dir):

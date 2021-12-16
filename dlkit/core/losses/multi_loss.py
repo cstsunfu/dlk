@@ -22,7 +22,7 @@ class MultiLossConfig(object):
                 // "scale": [0, 1, 0.5], # scale the loss
             },
             _name: "cross_entropy",
-        }, 
+        },
         "loss@the_second": {
             config: {
                 "pred_truth_pair": ["logits2", "label2"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
@@ -75,8 +75,8 @@ class MultiLoss(object):
         :returns: TODO
          rt_config={
              "current_step": self.global_step,
-             "current_epoch": self.current_epoch, 
-             "total_steps": self.num_training_steps, 
+             "current_epoch": self.current_epoch,
+             "total_steps": self.num_training_steps,
              "total_epochs": self.num_training_epochs
          }),
         """

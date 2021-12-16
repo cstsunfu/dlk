@@ -17,7 +17,7 @@ class LinkUnionTool(object):
     """
     def __init__(self):
         self.link_union = {}
-    
+
     def find(self, key):
         if key not in self.link_union:
             return None
@@ -84,7 +84,7 @@ class LinkUnionTool(object):
             else:
                 self.low_level_union(source, target)
         return self
-            
+
     def get_links(self):
         """
             return the registed links as a dict
@@ -145,7 +145,7 @@ class BaseConfigParser(object):
         if self.base_config and self.config_name:
             raise PermissionError("You should put the _name to the leaf config.")
         self.modules = self.config_file
-            
+
 
     @classmethod
     def get_base_config(cls, config_file)->Dict:
@@ -193,7 +193,7 @@ class BaseConfigParser(object):
                 if isinstance(source_config, list):
                     assert (source_list[-1][0]=='-' and str.isdigit(source_list[-1][1:])) or str.isdigit(source_list[-1]), "list index must be int"
                     source_list[-1] = int(source_list[-1])
-                    
+
                 to_config[to_list[-1]] = source_config[source_list[-1]]
             except Exception as e:
                 logger.error(f"Can not link from '{source}' to '{to}'")
@@ -219,10 +219,10 @@ class BaseConfigParser(object):
         trace_str = ".".join(trace)
         if trace_str:
             # except the top level, all add the '.' suffix
-            trace_str = trace_str + '.' 
+            trace_str = trace_str + '.'
         def add_trace(origin_link: Dict)->Dict:
             """add the root of the config to current config trace to current level para of links
-            :returns: the origin_link added trace 
+            :returns: the origin_link added trace
 
             """
             added_trace_link = {}
@@ -255,7 +255,7 @@ class BaseConfigParser(object):
     def parser(self, parser_link=True) -> List:
         """ root parser
         return a list of para dicts for all possible combinations
-        :parser_link: whether parser the link of config 
+        :parser_link: whether parser the link of config
         :returns: list[possible config dict]
         """
         if self.config_file == '*@*':
@@ -317,7 +317,7 @@ class BaseConfigParser(object):
 
     def map_to_submodule(self, config: dict, map_fun: Callable) -> Dict:
         """use the map_fun to process all the modules
-        :returns: depend on 
+        :returns: depend on
 
         """
         modules_config = {}
@@ -416,6 +416,9 @@ class BaseConfigParser(object):
         dict_of_list = copy.deepcopy(dict_of_list)
         cur_name, cur_paras  = dict_of_list.popitem()
         cur_para_search_list = []
+        if isinstance(cur_paras, str):
+            cur_paras = eval(cur_paras)
+        assert isinstance(cur_paras, list), f"The search options must be list, but you provide {cur_paras}({type(cur_paras)})"
         for para in cur_paras:
             cur_para_search_list.append({cur_name: para})
         if len(dict_of_list) == 0:
@@ -489,7 +492,7 @@ class LinkConfigParser(object):
         """
         assert parser_link is False, f"The parser_link para must be False when parser the _link"
         return [self.config]
-        
+
 
 @config_parser_register('task')
 class TaskConfigParser(BaseConfigParser):
@@ -538,7 +541,7 @@ class ModelConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""
     def __init__(self, config_file):
         super(ModelConfigParser, self).__init__(config_file, config_base_dir='dlkit/configures/core/models/')
-        
+
 
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):

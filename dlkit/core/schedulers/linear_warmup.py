@@ -11,12 +11,12 @@ logger = logger()
 class LinearWarmupScheduleConfig(BaseConfig):
     """
     {
-        config: {
+        "config": {
             "last_epoch": -1,
             "num_warmup_steps": 0,
             "num_training_steps": -1,
         },
-        _name: "linear_warmup",
+        "_name": "linear_warmup",
     }
     """
     def __init__(self, config: Dict):
@@ -25,12 +25,12 @@ class LinearWarmupScheduleConfig(BaseConfig):
         self.last_epoch = config["last_epoch"]
         self.num_warmup_steps = config["num_warmup_steps"]
         self.num_training_steps = config["num_training_steps"]
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "last_epoch",
             "num_warmup_steps",
             "num_training_steps",
         ])
-        
+
 
 @scheduler_register("linear_warmup")
 class LinearWarmupSchedule(BaseScheduler):

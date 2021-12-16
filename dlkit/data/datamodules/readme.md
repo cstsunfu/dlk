@@ -16,7 +16,7 @@ datamodule: {
         "key_type_pair": [('x', 'float'), ('y', 'int')],
         "batch_size": 32,
     }
-}, 
+},
 ```
 
 
@@ -42,7 +42,7 @@ datamodule@train: {
             "key_type_pair": [('x', 'float'), ('y', 'int')],
         }
     },
-}, 
+},
 datamodule@predict:{
     "_name": "predict_base",
     "dataloader": {

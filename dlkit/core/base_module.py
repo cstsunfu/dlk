@@ -67,7 +67,7 @@ class ModuleOutputRenameMixin:
             return output
         else:
             raise PermissionError("Not Defined")
-        
+
 
 class IModuleIO(metaclass=abc.ABCMeta):
     """docstring for IModuleIO"""
@@ -112,7 +112,7 @@ class IModuleStep(metaclass=abc.ABCMeta):
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
         raise NotImplementedError
-        
+
     @abc.abstractmethod
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """training
@@ -197,7 +197,7 @@ class SimpleModule(BaseModule):
         :returns: Dict[str: torch.Tensor], one mini-batch outputs
         """
         return self(inputs)
-        
+
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """training
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

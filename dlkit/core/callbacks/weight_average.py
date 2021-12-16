@@ -3,7 +3,7 @@ from . import callback_register, callback_config_register
 from typing import Dict, List
 import os
 from pytorch_lightning.callbacks import StochasticWeightAveraging
-        
+
 
 @callback_config_register('weight_average')
 class StochasticWeightAveragingCallbackConfig(object):

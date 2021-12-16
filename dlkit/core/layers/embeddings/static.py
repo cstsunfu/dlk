@@ -7,7 +7,7 @@ from dlkit.utils.logger import logger
 import torch
 
 logger = logger()
-        
+
 @embedding_config_register('static')
 class StaticEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
@@ -77,7 +77,7 @@ class StaticEmbedding(SimpleModule):
         :returns: None
         """
         logger.info(f'The static embedding is loaded the pretrained.')
-        
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

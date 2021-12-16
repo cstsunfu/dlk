@@ -4,7 +4,7 @@ from typing import Dict, List, Set
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import torch
 
-        
+
 @encoder_config_register('identity')
 class IdentityEncoderConfig(BaseModuleConfig):
     """docstring for IdentityEncoderConfig

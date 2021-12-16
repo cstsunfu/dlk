@@ -8,7 +8,7 @@ from dlkit.utils.logger import logger
 import torch
 
 logger = logger()
-        
+
 @embedding_config_register('static_char_cnn')
 class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
@@ -87,7 +87,7 @@ class StaticCharCNNEmbedding(SimpleModule):
         self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=0)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
         self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
-        
+
     def init_weight(self, method):
         """TODO: Docstring for init_weight.
         :returns: TODO

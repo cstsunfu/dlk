@@ -32,7 +32,7 @@ class Sentences(object):
     def __init__(self, file_names, max_sentence_length=MAX_WORDS_IN_BATCH):
         self.file_names = file_names
         self.max_sentence_length = max_sentence_length
- 
+
     def __iter__(self):
         for fname in self.file_names:
             print(f"Training on {fname}")
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     if args.config:
         config_json = hjson.load(open(args.config), object_pairs_hook=dict)
         for key, value in config_json.items():
-           setattr(args, key, value) 
+           setattr(args, key, value)
     if not args.workers:
         args.workers = multiprocessing.cpu_count()
     # print(args)

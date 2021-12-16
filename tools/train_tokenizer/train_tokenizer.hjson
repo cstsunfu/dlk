@@ -7,5 +7,5 @@
     /*"train_files": ['./wikitext-103-raw/wiki.test.raw'],*/
     "normalizer": ["nfd", "lowercase", "strip_accents"], // if don't set this, will use the default normalizer from config
     "pre_tokenizer": ["whitespace"], // if don't set this, will use the default normalizer from config
-    "post_processor": null, 
+    "post_processor": null,
 }

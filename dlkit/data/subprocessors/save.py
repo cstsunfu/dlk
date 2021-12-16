@@ -33,7 +33,7 @@ class SaveConfig(BaseConfig):
         super(SaveConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.base_dir:str = config.get('config').get("base_dir", ".")
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "processed",
             "meta",
         ])

@@ -7,30 +7,30 @@ from dlkit.processors import PROCESSOR_CONFIG_REGISTRY, PROCESSOR_REGISTRY
 
 
 config= {
-    'data_set': {   
+    'data_set': {
         'train': ['train', 'dev'],
         'predict': ['predict'],
         'online': ['online']
     },
     'config_path': '../dlkit/processors/wp_token.json',
-    "normalizer": ['nfd', 'lowercase', 'strip_accents'], 
+    "normalizer": ['nfd', 'lowercase', 'strip_accents'],
     "pre_tokenizer": [{"whitespace": {}}],
-    'post_tokenizer': 'bert', 
-    "filed_map": { 
+    'post_tokenizer': 'bert',
+    "filed_map": {
         "tokens": "tokens",
         "ids": "ids",
         "attention_mask": "attention_mask",
         "type_ids": "type_ids",
         "special_tokens_mask": "special_tokens_mask",
         "offsets": "offsets",
-    }, 
-    "data_type": "single", 
+    },
+    "data_type": "single",
     "process_data": [
-        ['sentence', { "is_pretokenizerd": False}], 
+        ['sentence', { "is_pretokenizerd": False}],
     ],
     # "data_type": "pair",
     # "process_data": [
-        # ['sentence_a', { "is_pretokenizerd": false}],  
+        # ['sentence_a', { "is_pretokenizerd": false}],
         # ['sentence_b', {}],
     # ],
 }
@@ -42,7 +42,7 @@ data = {}
 data['data'] = {}
 data['data']['online']
 
-# df = 
+# df =
 
     # def process(self, data: Dict)->Dict:
         # for data_set_name in self.data_set:

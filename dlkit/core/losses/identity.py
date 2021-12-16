@@ -56,8 +56,8 @@ class IdentityLoss(object):
         """TODO: Docstring for update_config.
         :rt_config: TODO
          {
-             "total_steps": self.num_training_steps, 
-             "total_epochs": self.num_training_epochs 
+             "total_steps": self.num_training_steps,
+             "total_epochs": self.num_training_epochs
          }
         :returns: TODO
 
@@ -80,8 +80,8 @@ class IdentityLoss(object):
         :returns: TODO
          rt_config={
              "current_step": self.global_step,
-             "current_epoch": self.current_epoch, 
-             "total_steps": self.num_training_steps, 
+             "current_epoch": self.current_epoch,
+             "total_steps": self.num_training_steps,
              "total_epochs": self.num_training_epochs
          }),
         """

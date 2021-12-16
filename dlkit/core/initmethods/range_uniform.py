@@ -1,22 +1,23 @@
 import torch.nn as nn
+from dlkit.utils.config import BaseConfig
 from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
 import torch
 
-        
+
 @initmethod_config_register('range_uniform')
-class RangeNormInitConfig(object):
+class RangeNormInitConfig(BaseConfig):
     """
         {
-            _name: range_uniform,
-            config: {
-                range: 0.01,
+            "_name": "range_uniform",
+            "config": {
+                "range": 0.1,
             }
         }
     """
     def __init__(self, config):
-        super(RangeNormInitConfig, self).__init__()
-        range = config.get("range", 0.01)
+        super(RangeNormInitConfig, self).__init__(config)
+        range = config.get("range", 0.1)
         if isinstance(range, list):
             assert len(range) == 2
             self.range_from = range[0]
@@ -25,6 +26,7 @@ class RangeNormInitConfig(object):
             assert isinstance(range, float)
             self.range_from = -abs(range)
             self.range_to = abs(range)
+        self.post_check(config['config'], used='range')
 
 @initmethod_register('range_uniform')
 class RangeNormInit(object):
@@ -34,7 +36,7 @@ class RangeNormInit(object):
     def __init__(self, config: RangeNormInitConfig):
         super().__init__()
         self.config = config
-        
+
 
     def __call__(self, module):
         """Initialize the weights"""

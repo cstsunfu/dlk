@@ -1,7 +1,7 @@
 {
     "_name": "token2charid",
     "config": {
-        "train":{ 
+        "train":{
             "data_pair": {
                 "sentence & offsets": "char_ids"
             },

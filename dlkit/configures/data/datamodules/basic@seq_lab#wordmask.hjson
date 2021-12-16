@@ -11,19 +11,19 @@
            "online": false
        },
        "key_type_pairs": {
-            'input_ids': 'int', 
-            'label_ids': 'long', 
-            'type_ids': 'long', 
-            'gather_index': 'long', 
+            'input_ids': 'int',
+            'label_ids': 'long',
+            'type_ids': 'long',
+            'gather_index': 'long',
             "special_tokens_mask": "int",
         },
        "gen_mask": {
-            'label_ids': 'attention_mask', 
-            'input_ids': 'subword_mask', 
+            'label_ids': 'attention_mask',
+            'input_ids': 'subword_mask',
         },
        "key_padding_pairs": { //default all 0
-            'input_ids': 0, 
-            'label_ids': -1, 
+            'input_ids': 0,
+            'label_ids': -1,
             "special_tokens_mask": 0,
         },
        "train_batch_size": 32,

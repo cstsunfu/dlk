@@ -116,7 +116,7 @@ class Predict(object):
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
         datamodule = DataModule(DataModuleConfig, data)
         return datamodule
-        
+
     def get_manager(self, config, name):
         """TODO: Docstring for get_manager.
 

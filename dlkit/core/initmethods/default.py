@@ -2,23 +2,25 @@ import torch.nn as nn
 from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
 from dlkit.utils.logger import logger
+from dlkit.utils.config import BaseConfig
 import numpy as np
 import torch
 
 logger = logger()
-        
-# TODO: 
+
+# TODO:
 @initmethod_config_register('default')
-class RangeNormInitConfig(object):
+class RangeNormInitConfig(BaseConfig):
     """
         {
-            _name: default,
-            config: {
+            "_name": "default",
+            "config": {
             }
         }
     """
     def __init__(self, config):
-        super(RangeNormInitConfig, self).__init__()
+        super(RangeNormInitConfig, self).__init__(config)
+        self.post_check(config['config'])
 
 @initmethod_register('default')
 class RangeNormInit(object):

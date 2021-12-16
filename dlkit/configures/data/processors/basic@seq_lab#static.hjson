@@ -41,8 +41,8 @@
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
-        "config": { 
-            "train": { 
+        "config": {
+            "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
@@ -77,7 +77,7 @@
                     "train": ["train", "valid", 'test']
                 },
                 "gather_columns": ["tokens"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
@@ -89,7 +89,7 @@
                     "train": ["train", "valid"]
                 },
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
@@ -113,7 +113,7 @@
             "train": { // only train stage using
                 "embedding_file": "*@*",
                 "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
                 "embedding_size": "*@*",
             }
         }

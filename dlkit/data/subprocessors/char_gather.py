@@ -18,7 +18,7 @@ class CharGatherConfig(BaseConfig):
                         "train": ["train", "valid", 'test']
                     },
                     "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name.
                     "ignore": "", // ignore the token, the id of this token will be -1
                     "update": null, // null or another Vocabulary object to update
                     "unk": "[UNK]",
@@ -45,7 +45,7 @@ class CharGatherConfig(BaseConfig):
         self.unk = self.config['unk']
         self.min_freq = self.config['min_freq']
         self.most_common = self.config['most_common']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_set",
             "gather_columns",
             "deliver",

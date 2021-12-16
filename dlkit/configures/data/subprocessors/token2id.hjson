@@ -1,7 +1,7 @@
 {
     "_name": "token2id",
     "config": {
-        "train":{ 
+        "train":{
             /*"data_pair": {*/
                 /*"label": "label_ids",  //use "vocab" map the id of "label" to "label_id"*/
              /*},*/

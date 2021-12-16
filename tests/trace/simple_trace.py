@@ -7,7 +7,7 @@ class Module(nn.Module):
         super(Module, self).__init__()
         self.linear = nn.Linear(3, 4)
         self.linear2 = nn.Linear(4, 3)
-        
+
     def forward(self, inp, out):
         """TODO: Docstring for forward.
 

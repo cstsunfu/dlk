@@ -43,7 +43,7 @@ class Token2IDConfig(BaseConfig):
         self.vocab = self.config.get('vocab', "")
         if self.data_set and (not self.vocab):
             raise ValueError("You must provide 'vocab' for token2id.")
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_pair",
             "data_set",
             "vocab",

@@ -3,7 +3,7 @@ from . import callback_register, callback_config_register
 from typing import Dict, List
 import os
 from pytorch_lightning.callbacks import EarlyStopping
-        
+
 
 @callback_config_register('early_stop')
 class EarlyStoppingCallbackConfig(object):

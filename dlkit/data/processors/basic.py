@@ -50,13 +50,13 @@ class BasicProcessorConfig(BaseConfig):
         },
         "subprocessor@tokenizer":{
             "_base": "fast_tokenizer",
-            "config": { 
-                "train": { 
+            "config": {
+                "train": {
                     "config_path": "*@*",
                     "prefix": ""
                     "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
                     "process_data": [
-                        ["sentence", { "is_pretokenized": false}], 
+                        ["sentence", { "is_pretokenized": false}],
                     ],
                     "post_processor": "default"
                     "filed_map": { // this is the default value, you can provide other name
@@ -75,7 +75,7 @@ class BasicProcessorConfig(BaseConfig):
                         "train": ["train", "valid"]
                     },
                     "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
                 }
             }
         },
@@ -103,7 +103,7 @@ class BasicProcessorConfig(BaseConfig):
                 "train": { // only train stage using
                     "embedding_file": "*@*",
                     "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
                     "embedding_size": 200,
                 }
             }

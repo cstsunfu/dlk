@@ -37,7 +37,7 @@ class QuickSearch(object):
             end_index = end_index + 1
             result.append({"start": start_index, "end": end_index, "str": original_value})
         return result
-            
+
     def has(self, key: str)->bool:
         """find key is in our data
         :key: str
@@ -49,7 +49,7 @@ class QuickSearch(object):
         except:
             return False
         return True
-            
+
     def add_word(self, word: str):
         """add a single word to QuickSearch
         :word: str
@@ -58,7 +58,7 @@ class QuickSearch(object):
         self.ac.add_word(word, (self.next_index, word))
         self.next_index += 1
         self.ac.make_automaton()
-        
+
     def add_words(self, words: Iterable=[]):
         """add words from iterator to the ac
         :words: Iterable

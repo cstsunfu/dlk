@@ -39,7 +39,7 @@
         "label_num": "*@*",
     },
     "_link": {
-        "config.embedding_dim": ["embedding.config.output_size", 
+        "config.embedding_dim": ["embedding.config.output_size",
                                  /*"encoder.config.input_size", */
                                  /*"encoder.config.output_size", */
                                  "decoder.config.input_size",

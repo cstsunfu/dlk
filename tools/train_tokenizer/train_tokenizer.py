@@ -117,7 +117,7 @@ if __name__ == "__main__":
     if args.config:
         config_json = hjson.load(open(args.config), object_pairs_hook=dict)
         for key, value in config_json.items():
-           setattr(args, key, value) 
+           setattr(args, key, value)
 
     # print(args)
     Trainer = get_trainer(args.tokenizer_type)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         # print(pre_tokenizers_list)
 
     if args.post_processor:
-        assert isinstance(args.post_processor, str) or isinstance(args.post_processor, dict) 
+        assert isinstance(args.post_processor, str) or isinstance(args.post_processor, dict)
         tokenizer.post_processor = get_processor(tokenizer_postprocessor_factory, args.post_processor)
 
     if args.normalizer:

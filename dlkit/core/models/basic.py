@@ -8,7 +8,7 @@ from dlkit.core.initmethods import initmethod_config_register, initmethod_regist
 from dlkit.core.layers.encoders import encoder_config_register, encoder_register
 from dlkit.core.layers.decoders import decoder_config_register, decoder_register
 
-        
+
 @model_config_register('basic')
 class BasicModelConfig(BaseConfig):
     """docstring for BasicIModelConfig
@@ -58,11 +58,11 @@ class BasicModelConfig(BaseConfig):
             "embedding_trace": "token_embedding",
         },
         _link: {
-            "config.embedding_dim": ["embedding.config.embedding_dim", 
-                                     "encoder.config.input_size", 
-                                     "encoder.config.output_size", 
-                                     "encoder.config.hidden_size", 
-                                     "decoder.config.output_size", 
+            "config.embedding_dim": ["embedding.config.embedding_dim",
+                                     "encoder.config.input_size",
+                                     "encoder.config.output_size",
+                                     "encoder.config.hidden_size",
+                                     "decoder.config.output_size",
                                      "decoder.config.input_size"
                                     ],
             "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
@@ -89,7 +89,7 @@ class BasicModelConfig(BaseConfig):
 
         """
         return ConfigTool.get_leaf_module(embedding_register, embedding_config_register, "embedding", config)
-        
+
     def get_init_method(self, config):
         """get embedding config and embedding module
 
@@ -98,7 +98,7 @@ class BasicModelConfig(BaseConfig):
 
         """
         return ConfigTool.get_leaf_module(initmethod_register, initmethod_config_register, "init method", config)
-        
+
     def get_encoder(self, config):
         """get encoder config and encoder module
 
@@ -107,7 +107,7 @@ class BasicModelConfig(BaseConfig):
 
         """
         return ConfigTool.get_leaf_module(encoder_register, encoder_config_register, "encoder", config)
-        
+
     def get_decoder(self, config):
         """get decoder config and decoder module
 
@@ -171,7 +171,7 @@ class BasicModel(BaseModel):
         encode_outputs = self.encoder.predict_step(embedding_outputs)
         decode_outputs = self.decoder.predict_step(encode_outputs)
         return decode_outputs
-        
+
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """training
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

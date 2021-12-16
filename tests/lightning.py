@@ -361,7 +361,7 @@ if __name__ == "__main__":
         # pass
     # # init model
     autoencoder = LitAutoEncoder()
-    # optimizer = optim.AdamW(params=[ 
+    # optimizer = optim.AdamW(params=[
         # { "params": [p for p in autoencoder.encoder.parameters()], "lr": 0.3},
         # { "params": autoencoder.decoder.parameters(), "lr": 0.3},
         # { "params": autoencoder.other.parameters()},
@@ -383,7 +383,7 @@ if __name__ == "__main__":
     # trainer = pl.Trainer(profiler="simple", max_steps=100, val_check_interval=0.5, log_every_n_steps=10)
     logger = TensorBoardLogger(save_dir="tb_logger", version="", name="", sub_dir='test_sub_dir_2')
     # trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, accelerator="cpu", strategy="ddp", num_processes=3, default_root_dir='root_dir', logger=logger)
-    
+
     trainer = pl.Trainer(max_steps=20, val_check_interval=0.5, log_every_n_steps=2, logger=logger, default_root_dir='test_sub_dir_2', callbacks=[ModelCheckpoint(dirpath='checkpoint_dirpath', filename='checkpoint_filename')])
 
 # # default logger used by trainer

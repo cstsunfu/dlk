@@ -15,8 +15,8 @@ class SGDOptimizerConfig(BaseConfig):
             "dampening": 0,
             "weight_decay": 0,
             "nesterov":false,
-            "optimizer_special_groups":[  
-            // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config. 
+            "optimizer_special_groups":[
+            // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config.
             // You should sort the config by priority(
             //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
             // ["bias & LayerNorm.bias & LayerNorm.weight", {weight_decay: 0}]
@@ -28,7 +28,7 @@ class SGDOptimizerConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(SGDOptimizerConfig, self).__init__(config)
         self.config = config['config']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "lr",
             "momentum",
             "dampening",

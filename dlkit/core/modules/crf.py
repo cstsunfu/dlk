@@ -22,7 +22,7 @@ class CRFConfig(BaseConfig):
         self.output_size = config['output_size']
         if self.output_size <= 0:
             raise ValueError(f'invalid number of tags: {self.output_size}')
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "output_size",
             "batch_first",
             "reduction",

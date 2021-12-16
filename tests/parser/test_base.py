@@ -2,7 +2,7 @@ import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
 # from models import MODEL_REGISTRY, MODEL_CONFIG_REGISTRY
-from dlkit.utils.parser import CONFIG_PARSER_REGISTRY 
+from dlkit.utils.parser import CONFIG_PARSER_REGISTRY
 import json
 
 #TODO: parser应该返回完整的参数

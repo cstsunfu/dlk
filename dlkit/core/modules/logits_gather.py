@@ -32,11 +32,11 @@ class LogitsGatherConfig(BaseConfig):
         config = config.get('config', {})
         self.gather_layer = config.get('gather_layer', {})
         self.prefix = config.get("prefix", '')
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "gather_layer",
             "prefix"
         ])
-        
+
 
 @module_register("logits_gather")
 class LogitsGather(nn.Module):

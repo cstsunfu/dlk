@@ -83,7 +83,7 @@ class LightningManagerConfig(BaseConfig):
         self.multiple_trainloader_mode = manager_config["multiple_trainloader_mode"] # 'max_size_cycle'
         self.stochastic_weight_avg = manager_config["stochastic_weight_avg"] # False
         self.terminate_on_nan = manager_config["terminate_on_nan"] # None
-        self.post_check(manager_config, used=[ 
+        self.post_check(manager_config, used=[
             "callbacks",
             "logger",
             "enable_checkpointing",

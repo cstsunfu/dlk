@@ -12,7 +12,7 @@
             config: {
                 _search: {
                     input_size:[1,2]
-                } 
+                }
             },
         }
     },

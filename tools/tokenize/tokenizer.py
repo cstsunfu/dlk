@@ -40,7 +40,7 @@ if __name__ == "__main__":
     if args.config:
         config_json = hjson.load(open(args.config), object_pairs_hook=dict)
         for key, value in config_json.items():
-           setattr(args, key, value) 
+           setattr(args, key, value)
 
     tokenizer = Tokenizer.from_file(args.tokenizer_config)
     # print(tokenizer.padding)

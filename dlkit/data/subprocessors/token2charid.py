@@ -13,7 +13,7 @@ class Token2CharIDConfig(BaseConfig):
         {
             "_name": "token2charid",
             "config": {
-                "train":{ 
+                "train":{
                     "data_pair": {
                         "sentence & offsets": "char_ids"
                     },
@@ -46,7 +46,7 @@ class Token2CharIDConfig(BaseConfig):
         if self.data_set and (not self.vocab):
             raise ValueError("You must provide 'vocab' for token2charid.")
         self.max_token_len = self.config['max_token_len']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_pair",
             "data_set",
             "vocab",
