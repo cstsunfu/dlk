@@ -1,5 +1,5 @@
 {
-    "_name": "seq_lab_prepro",
+    "_name": "txt_cls_prepro",
     "config": {
         "train":{
             "data_set": {                   // for different stage, this processor will process different part of data
@@ -8,16 +8,21 @@
                 "online": ['online']
             },
             "input_map": {   // without necessery don't change this
-                "sentence": "sentence",
+                "sentence": "sentence", //for single
+                "sentence_a": "sentence_a",  // for pair
+                "sentence_b": "sentence_b",
                 "uuid": "uuid",
-                "entities_info": "entities_info",
+                "labels": "labels",
             },
             "output_map": {   // without necessery don't change this
-                "sentence": "sentence",
+                "sentence": "sentence", //for single
+                "sentence_a": "sentence_a", //for pair
+                "sentence_b": "sentence_b",
                 "uuid": "uuid",
-                "entities_info": "entities_info",
+                "labels": "labels",
             },
-        }, //3
+            "data_type": "single", // single or pair
+        },
         "predict": "train",
         "online": "train",
     }

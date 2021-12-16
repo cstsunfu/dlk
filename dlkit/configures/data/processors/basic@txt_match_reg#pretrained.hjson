@@ -1,8 +1,8 @@
 {
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
-    "_name": "basic@txt_cls#pretrained",
+    "_name": "basic@txt_match_reg#pretrained",
     "config": {
-        "feed_order": ["load", "txt_cls_prepro", "tokenizer", "label_gather", "label_to_id", "save"]
+        "feed_order": ["load", "txt_reg_prepro", "tokenizer", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "truncation": {     // if this is set to None or empty, will not do trunc
@@ -25,7 +25,7 @@
             "train":{
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ['label_vocab', "tokenizer"] //only for next time use
+                    "meta.pkl": ["tokenizer"] //only for next time use
                 }
             },
             "predict": {
@@ -33,8 +33,11 @@
             }
         }
     },
-    "subprocessor@txt_cls_prepro":{
-        "_base": "txt_cls_prepro",
+    "subprocessor@txt_reg_prepro":{
+        "_base": "txt_reg_prepro",
+        "config":{
+            "data_type": "pair",
+        }
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
@@ -42,7 +45,7 @@
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "data_type": "pair", // single or pair, if not provide, will calc by len(process_data)
                 "process_data": { "is_pretokenized": false},
                 "input_map": {
                     "sentence": "sentence", //for sigle input, tokenizer the "sentence"
@@ -52,31 +55,6 @@
             },
             "predict": "train",
             "online": "train"
-        }
-    },
-    "subprocessor@label_gather":{
-        "_base": "token_gather",
-        "config": {
-            "train": { // only train stage using
-                "data_set": {      // for different stage, this processor will process different part of data
-                    "train": ["train", "valid", 'test']
-                },
-                "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
-            }
-        }
-    },
-    "subprocessor@label_to_id":{
-        "_base": "token2id",
-        "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "data_pair": {
-                    "labels": "label_ids"
-                },
-                "vocab": "label_vocab", // usually provided by the "token_gather" module
-            }, //3
-            "predict": "train",
-            "online": "train",
         }
     },
 }

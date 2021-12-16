@@ -174,8 +174,34 @@ class SeqLabPostProcessor(IPostProcessor):
         :returns: TODO
 
         """
-        metrics = self.calc_metrics(predicts, stage)
-        return metrics
+        def _flat_entities_info(entities_info, text):
+            """TODO: Docstring for _flat_entity_info.
+
+            :entities_info: TODO
+            :returns: TODO
+
+            """
+            info = {}
+            for item in entities_info:
+                label = item['labels'][0]
+                if label not in info:
+                    info[label] = []
+                info[label].append(text[item['start']: item['end']].strip())
+            return info
+
+        all_predicts = []
+        all_ground_truths = []
+        for predict in predicts:
+            text = predict['sentence']
+            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
+            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
+            all_predicts.append(predict_ins)
+            all_ground_truths.append(ground_truth_ins)
+
+        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
+        real_name = self.loss_name_map(stage)
+        logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
+        return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
     def do_save(self, predicts, stage, rt_config={}, save_condition=False):
         """TODO: Docstring for do_save.
@@ -252,41 +278,6 @@ class SeqLabPostProcessor(IPostProcessor):
         f1 = _care_div(2*precision*recall, precision+recall)
         return precision, recall, f1
 
-    def calc_metrics(self, predicts, stage)->Dict:
-        """TODO: Docstring for calc_metrics.
-        :predicts: TODO
-        :returns: scores for logging
-        """
-
-        def _flat_entities_info(entities_info, text):
-            """TODO: Docstring for _flat_entity_info.
-
-            :entities_info: TODO
-            :returns: TODO
-
-            """
-            info = {}
-            for item in entities_info:
-                label = item['labels'][0]
-                if label not in info:
-                    info[label] = []
-                info[label].append(text[item['start']: item['end']].strip())
-            return info
-
-        all_predicts = []
-        all_ground_truths = []
-        for predict in predicts:
-            text = predict['sentence']
-            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
-            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
-            all_predicts.append(predict_ins)
-            all_ground_truths.append(ground_truth_ins)
-
-        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
-        real_name = self.loss_name_map(stage)
-        logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
-        return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
-
     def get_entity_info(self, sub_tokens_index, offset_mapping, word_ids, pre_label):
         """gather sub_tokens to get the start and end
         :returns: start, end info
@@ -319,7 +310,6 @@ class SeqLabPostProcessor(IPostProcessor):
         rel_token_len = len(word_ids)
         offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
         predict = list(predict[:rel_token_len])
-        truth_ids = list(origin_ins[self.config.label_ids][:rel_token_len])
         # predict = list(origin_ins['label_ids'][:rel_token_len])
         predict_entities_info = []
         pre_label = ''
