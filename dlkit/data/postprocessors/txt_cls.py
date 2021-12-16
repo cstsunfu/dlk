@@ -1,4 +1,3 @@
-# TODO ref to seq lab to complete
 import hjson
 import pickle as pkl
 import os
@@ -16,7 +15,7 @@ logger = logger()
 
 @postprocessor_config_register('txt_cls')
 class TxtClsPostProcessorConfig(IPostProcessorConfig):
-    """docstring for IdentityPostProcessorConfig
+    """docstring for TxtClsPostProcessorConfig
     config e.g.
     {
         "_name": "txt_cls",
@@ -74,7 +73,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
 
 @postprocessor_register('txt_cls')
 class TxtClsPostProcessor(IPostProcessor):
-    """docstring for DataSet"""
+    """docstring for TxtClsPostProcessor"""
     def __init__(self, config: TxtClsPostProcessorConfig):
         super(TxtClsPostProcessor, self).__init__()
         self.config = config

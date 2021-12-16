@@ -152,51 +152,54 @@ class SeqLabPostProcessor(IPostProcessor):
         }
         return map.get(stage, stage)
 
-    def process(self, stage, list_batch_outputs, origin_data, rt_config)->Union[Dict, List]:
-        """ This script is mostly copied from Transformers
-        :list_batch_outputs:
-            list of batch outputs
-        :rt_config:
-            {
-                "current_step": self.global_step,
-                "current_epoch": self.current_epoch,
-                "total_steps": self.num_training_steps,
-                "total_epochs": self.num_training_epochs
-            }
-        :returns: log info dict
+    def do_predict(self, stage, list_batch_outputs, origin_data, rt_config)->List:
+        """TODO: Docstring for do_predict.
+        :stage: TODO
+        :list_batch_outputs: TODO
+        :origin_data: TODO
+        :rt_config: TODO
+        :returns: TODO
         """
-        log_info = {}
-        average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
-        log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
+        predicts = []
         if self.config.use_crf:
             predicts = self.crf_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         elif self.config.word_ready:
-            # TODO: TEST
             predicts = self.word_predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         else:
             predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
+        return predicts
 
-        metrics = {}
-        if stage not in self.without_ground_truth_stage:
-            metrics = self.calc_metrics(predicts, stage)
-        else:
-            return predicts
+    def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
+        """TODO: Docstring for do_calc_metrics.
+        :returns: TODO
 
-        log_info.update(metrics)
+        """
+        metrics = self.calc_metrics(predicts, stage)
+        return metrics
 
+    def do_save(self, predicts, stage, rt_config={}, save_condition=False):
+        """TODO: Docstring for do_save.
+
+        :predicts: TODO
+        :rt_config: TODO
+        :condition: when the save condition is True, do save
+        :returns: TODO
+        """
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
-            self.config.start_save_step = rt_config['total_steps'] - 1
-            self.config.start_save_epoch = rt_config['total_epochs'] - 1
+            self.config.start_save_step = rt_config.get('total_steps', 0) - 1
+            self.config.start_save_epoch = rt_config.get('total_epochs', 0) - 1
         if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
-
+            save_condition = True
+        if save_condition:
             save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
             if not os.path.exists(save_path):
                 os.makedirs(save_path, exist_ok=True)
-            save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
+            if "current_step" in rt_config:
+                save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
+            else:
+                save_file = os.path.join(save_path, 'predict.json')
             logger.info(f"Save the {stage} predict data at {save_file}")
             json.dump(predicts, open(save_file, 'w'), indent=4)
-
-        return log_info
 
     def calc_score(self, predict_list, ground_truth_list):
         """TODO: Docstring for calc_score.

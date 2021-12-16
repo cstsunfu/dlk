@@ -8,11 +8,11 @@ from dlkit.utils.logger import logger
 
 logger = logger()
 
-@subprocessor_config_register('seq_lab_prepro')
-class SeqLabPreProConfig(BaseConfig):
-    """docstring for SeqLabPreProConfig
+@subprocessor_config_register('txt_cls_prepro')
+class TxtClsPreProConfig(BaseConfig):
+    """docstring for TxtClsPreProConfig
         {
-            "_name": "seq_lab_prepro",
+            "_name": "txt_cls_prepro",
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
                     "data_set": {                   // for different stage, this processor will process different part of data
@@ -23,12 +23,12 @@ class SeqLabPreProConfig(BaseConfig):
                     "input_map": {   // without necessery don't change this
                         "sentence": "sentence",
                         "uuid": "uuid",
-                        "entities_info": "entities_info",
+                        "labels": ["label_name"],
                     },
                     "output_map": {   // without necessery don't change this
                         "sentence": "sentence",
                         "uuid": "uuid",
-                        "entities_info": "entities_info",
+                        "labels": ["label_name"],
                     },
                 }, //3
                 "predict": "train",
@@ -36,27 +36,16 @@ class SeqLabPreProConfig(BaseConfig):
             }
         }
 
-        NOTE: the seq_labformat input is
+        NOTE: the txt_clsformat input is
         {
             "uuid": '**-**-**-**'
             "sentence": "I have an apple",
-            "labels": [
-                        {
-                            "end": 15,
-                            "start": 10,
-                            "labels": [
-                                "Fruit"
-                            ]
-                        },
-                        ...,
-                    ]
-                },
-            ],
+            "labels":  ["label_name"]
         }
     """
     def __init__(self, stage, config: Dict):
 
-        super(SeqLabPreProConfig, self).__init__(config)
+        super(TxtClsPreProConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -69,18 +58,18 @@ class SeqLabPreProConfig(BaseConfig):
         ])
 
 
-@subprocessor_register('seq_lab_prepro')
-class SeqLabPrePro(ISubProcessor):
-    """docstring for SeqLabPrePro
+@subprocessor_register('txt_cls_prepro')
+class TxtClsPrePro(ISubProcessor):
+    """docstring for TxtClsPrePro
     """
 
-    def __init__(self, stage: str, config: SeqLabPreProConfig):
+    def __init__(self, stage: str, config: TxtClsPreProConfig):
         super().__init__()
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
         if not self.data_set:
-            logger.info(f"Skip 'seq_lab_prepro' at stage {self.stage}")
+            logger.info(f"Skip 'txt_cls_prepro' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
@@ -95,25 +84,25 @@ class SeqLabPrePro(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_prepro on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do txt_cls_prepro on it.')
                 continue
             data_set = data['data'][data_set_name]
 
             sentences = []
             uuids = []
-            entities_infos = []
+            labels = []
 
             for one_ins in data_set:
                 try:
                     sentences.append(one_ins[self.config.input_map['sentence']])
                     uuids.append(one_ins[self.config.input_map['uuid']])
-                    entities_infos.append(one_ins[self.config.input_map['entities_info']])
+                    labels.append(one_ins[self.config.input_map['labels']])
                 except:
-                    raise PermissionError(f"You must provide the data as requests, we need 'sentence', 'uuid' and 'entities_info', or you can provide the input_map to map the origin data to this format")
+                    raise PermissionError(f"You must provide the data as requests, we need 'sentence', 'uuid' and 'labels', or you can provide the input_map to map the origin data to this format")
             data_df = pd.DataFrame(data= {
                 self.config.output_map["sentence"]: sentences,
                 self.config.output_map["uuid"]: uuids,
-                self.config.output_map["entities_info"]: entities_infos,
+                self.config.output_map["labels"]: labels,
             })
             data['data'][data_set_name] = data_df
 
