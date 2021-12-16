@@ -10,7 +10,7 @@ imodel_register = Register("IModel register.")
 
 class GatherOutputMixin(object):
     """gather all the small batches output to a big batch"""
-        
+
 
     @staticmethod
     def proc_dist_outputs(dist_outputs):

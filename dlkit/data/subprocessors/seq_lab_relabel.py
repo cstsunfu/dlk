@@ -48,7 +48,7 @@ class SeqLabRelabelConfig(BaseConfig):
         self.start_label = self.config['start_label']
         self.end_label = self.config['end_label']
         self.output_labels = self.config['output_map']['labels']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "input_map",
             "data_set",
             "output_map",
@@ -151,7 +151,7 @@ class SeqLabRelabel(ISubProcessor):
         assert cur_token_index<=offset_length
         for _ in range(offset_length-cur_token_index):
             sub_labels.append('O')
-                
+
         if sub_word_ids[0] is None:
             sub_labels[0] = self.config.start_label
 

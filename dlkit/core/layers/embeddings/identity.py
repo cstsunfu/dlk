@@ -4,7 +4,7 @@ from typing import Dict, List, Set
 from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import torch
 
-        
+
 @embedding_config_register('identity')
 class IdentityEmbeddingConfig(BaseModuleConfig):
     """docstring for IdentityEmbeddingConfig

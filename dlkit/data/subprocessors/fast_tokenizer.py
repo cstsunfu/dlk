@@ -22,7 +22,7 @@ class FastTokenizerConfig(BaseConfig):
     {
         "_name": "fast_tokenizer",
         "config": {
-            "train": { // you can add some whitespace surround the '&' 
+            "train": { // you can add some whitespace surround the '&'
                 "data_set": {                   // for different stage, this processor will process different part of data
                     "train": ["train", "valid", 'test'],
                     "predict": ["predict"],
@@ -89,7 +89,7 @@ class FastTokenizerConfig(BaseConfig):
         self.process_data = self.config['process_data']
         self.data_type = self.config["data_type"]
         assert self.data_type in ['single', 'pair']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_set",
             "config_path",
             "truncation",
@@ -169,7 +169,7 @@ class FastTokenizer(ISubProcessor):
         else:
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
-    
+
     def _single_tokenize(self, one_line):
         """TODO: Docstring for _single_tokenize.
 
@@ -192,7 +192,7 @@ class FastTokenizer(ISubProcessor):
         sentence_b = one_line[self.config.input_map['sentence_b']]
         encode = self.tokenizer.encode([sentence_a, sentence_b], **self.config.process_data)
         return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
-        
+
     def _process(self, data):
         """TODO: Docstring for _single.
 
@@ -201,7 +201,7 @@ class FastTokenizer(ISubProcessor):
 
         """
         output_map = self.config.output_map
-        data[[output_map['tokens'], 
+        data[[output_map['tokens'],
             output_map['ids'],
             output_map['attention_mask'],
             output_map['type_ids'],

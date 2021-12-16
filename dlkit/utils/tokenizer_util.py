@@ -5,7 +5,7 @@ from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel
 
 class TokenizerPostprocessorFactory(object):
     """docstring for TokenizerPostprocessorFactory"""
-        
+
     @property
     def bert(self):
         """TODO: Docstring for bert.
@@ -39,7 +39,7 @@ class TokenizerPostprocessorFactory(object):
 
 class PreTokenizerFactory(object):
     """docstring for PreTokenizerFactory"""
-        
+
     @property
     def bytelevel(self):
         """TODO: Docstring for bytelevel.
@@ -72,7 +72,7 @@ class PreTokenizerFactory(object):
 
 class TokenizerNormalizerFactory(object):
     """docstring for TokenizerNormalizerFactory"""
-        
+
     @property
     def lowercase(self):
         """TODO: Docstring for lowercase.

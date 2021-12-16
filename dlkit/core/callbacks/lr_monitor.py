@@ -1,7 +1,7 @@
 from typing import Dict
 from . import callback_register, callback_config_register
 from pytorch_lightning.callbacks import LearningRateMonitor
-        
+
 
 @callback_config_register('lr_monitor')
 class LearningRateMonitorCallbackConfig(object):

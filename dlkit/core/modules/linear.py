@@ -27,14 +27,14 @@ class LinearConfig(BaseConfig):
         self.dropout = float(config['dropout'])
         self.bias = config['bias']
         self.pool = config['pool']
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "input_size",
             "output_size",
             "dropout",
             "bias",
             "pool",
         ])
-        
+
 
 @module_register("linear")
 class Linear(nn.Module):

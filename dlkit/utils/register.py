@@ -24,7 +24,7 @@ class Register(object):
             self.registry[name] = module
             return module
         return decorator
-    
+
     def __call__(self, name:str="")->Callable:
         """you can directly call the object, the behavior is the same as object.register(name)
 
@@ -35,7 +35,7 @@ class Register(object):
         return self.register(name)
 
     def get(self, name: str='')->Any:
-        """the name could be the real name or name+@+sub_name, and the 
+        """the name could be the real name or name+@+sub_name, and the
         :name: str: TODO
         :returns: TODO
 

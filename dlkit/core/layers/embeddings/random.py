@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch
 import numpy as np
 
-        
+
 @embedding_config_register('random')
 class RandomEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
@@ -59,7 +59,7 @@ class RandomEmbedding(SimpleModule):
         :returns: None
         """
         self.embedding.apply(method)
-        
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

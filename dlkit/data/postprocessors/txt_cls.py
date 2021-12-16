@@ -92,7 +92,7 @@ class TxtClsPostProcessor(IPostProcessor):
             self.acc_calc.update(logits, label_ids)
         real_name = self.loss_name_map(stage)
         return {f'{real_name}_acc': self.acc_calc.compute()}
-        
+
 
     def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
     # def process(self, stage, outputs, origin_input_map, rt_config: Dict[str, Any])->Dict:
@@ -100,8 +100,8 @@ class TxtClsPostProcessor(IPostProcessor):
         :data: TODO
          rt_config={
              "current_step": self.global_step,
-             "current_epoch": self.current_epoch, 
-             "total_steps": self.num_training_steps, 
+             "current_epoch": self.current_epoch,
+             "total_steps": self.num_training_steps,
              "total_epochs": self.num_training_epochs
          }),
         :returns: TODO

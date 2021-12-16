@@ -17,8 +17,8 @@ class TokenEmbeddingConfig(BaseConfig):
                 "train": { // only train stage using
                     "embedding_file": "*@*",
                     "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "vocab": null, 
-                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
+                    "vocab": null,
+                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
                     "embedding_size": 200,
                     "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
                 }
@@ -37,7 +37,7 @@ class TokenEmbeddingConfig(BaseConfig):
         self.vocab = self.config['vocab']
         self.deliver = self.config.get("deliver")
         self.embedding_size = self.config["embedding_size"]
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "embedding_file",
             "tokenizer",
             "vocab",

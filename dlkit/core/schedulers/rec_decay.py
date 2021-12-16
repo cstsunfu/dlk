@@ -27,7 +27,7 @@ class RecDecayScheduleConfig(BaseConfig):
         self.epoch_training_steps = config["epoch_training_steps"]
         self.decay = config["decay"]
         self.num_training_steps = config["num_training_steps"]
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "last_epoch",
             "num_training_steps",
             "decay",

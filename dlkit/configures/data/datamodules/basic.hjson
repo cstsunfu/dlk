@@ -18,4 +18,4 @@
     "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
     "online_batch_size": 1,
     }
-} 
+}

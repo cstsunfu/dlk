@@ -54,7 +54,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         self.end_label = self.config['end_label']
         self.gather_index = self.config['output_map']['gather_index']
         self.output_labels = self.config['output_map']['labels']
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "input_map",
             "data_set",
             "output_map",
@@ -87,9 +87,9 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_firstpiece_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[[self.config.output_labels, 
-                self.config.gather_index, 
-                self.config.word_word_ids, 
+            data_set[[self.config.output_labels,
+                self.config.gather_index,
+                self.config.word_word_ids,
                 self.config.word_offsets]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
         return data
 
@@ -178,7 +178,7 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
         assert cur_token_index<=offset_length
         for _ in range(offset_length-cur_token_index):
             sub_labels.append('O')
-                
+
         if word_ids[0] is None:
             sub_labels[0] = self.config.start_label
 

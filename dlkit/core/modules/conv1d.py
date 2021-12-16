@@ -27,7 +27,7 @@ class Conv1dConfig(BaseConfig):
         self.in_channels = config['in_channels']
         self.out_channels = out_channels // len(self.kernel_sizes)
         self.dropout = config['dropout']
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "in_channels",
             "out_channels",
             "dropout",

@@ -12,30 +12,30 @@ def test_wordpiece():
 
     """
     config= {
-        'data_set': {   
+        'data_set': {
             'train': ['train', 'dev'],
             'predict': ['predict'],
             'online': ['online']
         },
         'config_path': './tests/processors/wp_token.json',
-        "normalizer": ['nfd', 'lowercase', 'strip_accents'], 
+        "normalizer": ['nfd', 'lowercase', 'strip_accents'],
         "pre_tokenizer": [{"whitespace": {}}],
-        'post_processor': 'bert', 
-        "filed_map": { 
+        'post_processor': 'bert',
+        "filed_map": {
             "tokens": "tokens",
             "ids": "ids",
             "attention_mask": "attention_mask",
             "type_ids": "type_ids",
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
-        }, 
-        # "data_type": "single", 
+        },
+        # "data_type": "single",
         # "process_data": [
-            # ['sentence', { "is_pretokenized": False}], 
+            # ['sentence', { "is_pretokenized": False}],
         # ],
         "data_type": "pair",
         "process_data": [
-            ['sentence_a', { "is_pretokenized": False}],  
+            ['sentence_a', { "is_pretokenized": False}],
             ['sentence_b', {}],
         ],
     }

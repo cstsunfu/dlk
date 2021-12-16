@@ -31,7 +31,7 @@ def align(sentence, labels):
         label_start = labels[cur_label]['start']
         label_end = labels[cur_label]['end']
         label = labels[cur_label]['labels'][0]
-        
+
         token_start = offsets[cur_token][0]
         token_end = offsets[cur_token][1]
 

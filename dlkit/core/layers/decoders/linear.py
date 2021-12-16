@@ -30,12 +30,12 @@ class LinearConfig(BaseModuleConfig):
         super(LinearConfig, self).__init__(config)
         self.linear_config = config["module"]
         config = config['config']
-        self.post_check(config['config'], used=[ 
+        self.post_check(config['config'], used=[
             "input_size",
             "output_size",
             "pool",
         ])
-        
+
 
 @decoder_register("linear")
 class Linear(SimpleModule):

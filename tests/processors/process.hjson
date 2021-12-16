@@ -32,15 +32,15 @@
                 }, // the tokenizer output(the key) map to the value
                 "data_type": "single", // single or pair
                 "process_data": [
-                    ['sentence', { "is_pretokenized": false}], 
+                    ['sentence', { "is_pretokenized": false}],
                 ],
                 /*"data_type": "pair", // single or pair*/
                 /*"process_data": [*/
-                    /*['sentence_a', { "is_pretokenized": false}], */ 
-                    /*['sentence_b', {}], the config of the second data must as same as the first*/ 
+                    /*['sentence_a', { "is_pretokenized": false}], */
+                    /*['sentence_b', {}], the config of the second data must as same as the first*/
                 /*],*/
             },
-        }, 
+        },
         {
             "_name": "token_gather"
             "_status": ["train"],

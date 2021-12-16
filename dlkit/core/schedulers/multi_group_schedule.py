@@ -45,7 +45,7 @@
         # super(ConstantScheduleConfig, self).__init__()
         # config = config['config']
         # self.last_epoch = config["last_epoch"]
-        
+
 
 # @scheduler_register("constant")
 # class ConstantSchedule(BaseScheduler):

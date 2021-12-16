@@ -5,7 +5,7 @@ from dlkit.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
 import torch
 
-        
+
 @embedding_config_register('combine_word_char_cnn')
 class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig, this exp. is for static word embedding and cnn char embedding
@@ -72,7 +72,7 @@ class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
         self.embedding_dim = config['config']['embedding_dim']
         assert self.embedding_dim == self.char_config.embedding_dim + self.word_config.embedding_dim, f"The combine embedding_dim must equals to char_embedding+word_embedding, but {self.embedding_dim}!= {self.char_config.embedding_dim+self.word_config.embedding_dim}"
 
-        self.post_check(config['config'], used=[ 
+        self.post_check(config['config'], used=[
             "word.embedding_file",
             "word.embedding_dim",
             "word.embedding_trace",
@@ -116,7 +116,7 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         """
         self.word_embedding.init_weight(method)
         self.char_embedding.init_weight(method)
-        
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """forward
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

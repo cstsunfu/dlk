@@ -21,11 +21,11 @@ class ConstantWarmupScheduleConfig(BaseConfig):
         config = config['config']
         self.last_epoch = config["last_epoch"]
         self.num_warmup_steps = config["num_warmup_steps"]
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "last_epoch",
             "num_warmup_steps",
         ])
-        
+
 
 @scheduler_register("constant_warmup")
 class ConstantWarmupSchedule(BaseScheduler):

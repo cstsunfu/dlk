@@ -10,13 +10,13 @@ import torch.optim as optim
 class CosineWarmupScheduleConfig(BaseConfig):
     """
     {
-        config: {
+        "config": {
             "last_epoch": -1,
             "num_warmup_steps": 0,
             "num_training_steps": -1,
             "num_cycles": 0.5,
         },
-        _name: "cosine_warmup",
+        "_name": "cosine_warmup",
     }
     """
     def __init__(self, config: Dict):
@@ -26,13 +26,13 @@ class CosineWarmupScheduleConfig(BaseConfig):
         self.num_warmup_steps = config["num_warmup_steps"]
         self.num_training_steps = config["num_training_steps"]
         self.num_cycles = config['num_cycles']
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "last_epoch",
             "num_warmup_steps",
             "num_training_steps",
             "num_cycles",
         ])
-        
+
 
 @scheduler_register("cosine_warmup")
 class CosineWarmupSchedule(BaseScheduler):

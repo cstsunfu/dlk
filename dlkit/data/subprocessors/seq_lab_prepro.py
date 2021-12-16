@@ -57,7 +57,7 @@ class SeqLabPreProConfig(BaseConfig):
         if not self.data_set:
             return
         self.output_map = self.config.get('output_map', {})
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_set",
             "output_map",
         ])

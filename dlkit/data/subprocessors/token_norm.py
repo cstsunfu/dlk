@@ -58,7 +58,7 @@ class TokenNormConfig(BaseConfig):
         self.vocab = self.tokenizer.get_vocab()
         self.do_extend_vocab = self.config['extend_vocab']
         self.prefix = self.tokenizer.model.continuing_subword_prefix
-        self.post_check(self.config, used=[ 
+        self.post_check(self.config, used=[
             "data_set",
             "zero_digits_replaced",
             "lowercase",
@@ -154,7 +154,7 @@ class TokenNorm(ISubProcessor):
                 assert len(norm_token) == token_offset[1] - token_offset[0], f"Prenorm '{prenorm_token}', postnorm: '{norm_token}' and {len(norm_token)}!= {token_offset[1]} - {token_offset[0]}"
                 norm_seq[token_offset[0]: token_offset[1]] = norm_token
         return ''.join(norm_seq)
-        
+
     def process(self, data: Dict)->Dict:
         '''
         '''

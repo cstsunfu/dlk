@@ -19,9 +19,9 @@
         }
     },
     "subprocessor@token_norm":{
-        "config": { 
-            "train": { 
-                "extend_vocab": "extend_vocab", // "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line", 
+        "config": {
+            "train": {
+                "extend_vocab": "extend_vocab", // "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line",
             },
         }
     },

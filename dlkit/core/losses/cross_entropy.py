@@ -71,23 +71,23 @@ class CrossEntropyLoss(object):
         if (version.parse(torch.__version__)>=version.parse("1.10")):
             self.cross_entropy = nn.CrossEntropyLoss(
                 weight=config.weight,
-                ignore_index=config.ignore_index, 
-                label_smoothing=config.label_smoothing 
+                ignore_index=config.ignore_index,
+                label_smoothing=config.label_smoothing
             )
         else:
             if config.label_smoothing:
                 logger.info("Torch version is <1.10, so ignore label_smoothing")
             self.cross_entropy = nn.CrossEntropyLoss(
                 weight=config.weight,
-                ignore_index=config.ignore_index, 
+                ignore_index=config.ignore_index,
             )
 
     def update_config(self, rt_config):
         """TODO: Docstring for update_config.
         :rt_config: TODO
          {
-             "total_steps": self.num_training_steps, 
-             "total_epochs": self.num_training_epochs 
+             "total_steps": self.num_training_steps,
+             "total_epochs": self.num_training_epochs
          }
         :returns: TODO
 
@@ -116,8 +116,8 @@ class CrossEntropyLoss(object):
         :returns: TODO
          rt_config={
              "current_step": self.global_step,
-             "current_epoch": self.current_epoch, 
-             "total_steps": self.num_training_steps, 
+             "current_epoch": self.current_epoch,
+             "total_steps": self.num_training_steps,
              "total_epochs": self.num_training_epochs
          }),
         """

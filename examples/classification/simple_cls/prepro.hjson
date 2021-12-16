@@ -12,12 +12,12 @@
         }
     },
     "subprocessor@tokenizer":{
-        "config": { 
-            "train": { 
+        "config": {
+            "train": {
                 /*"config_path": "../tokenizer.json",*/
                 "config_path": "./utils/tokenizer/xlmr_tokenizer.json",
                 "process_data": [
-                    ["sentence", { "is_pretokenized": true}], 
+                    ["sentence", { "is_pretokenized": true}],
                 ],
             },
         }

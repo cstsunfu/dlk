@@ -20,10 +20,10 @@ class ConstantScheduleConfig(BaseConfig):
         super(ConstantScheduleConfig, self).__init__(config)
         config = config['config']
         self.last_epoch = config["last_epoch"]
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "last_epoch",
         ])
-        
+
 
 @scheduler_register("constant")
 class ConstantSchedule(BaseScheduler):

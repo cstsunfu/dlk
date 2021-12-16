@@ -121,7 +121,7 @@ class Conll03Reader:
                 entities_info.append(entity_info)
             for entity in entities_info:
                 assert len(text[entity['start']: entity['end']].strip()) == entity['end'] - entity['start'], f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
-                
+
             format_data.append({'uuid': str(uuid.uuid1()),  "sentence": text, "entities_info": entities_info})
         return format_data
 

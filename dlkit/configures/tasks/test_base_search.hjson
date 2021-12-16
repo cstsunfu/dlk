@@ -14,7 +14,7 @@ TODO: multi_models model 选择 如何search?
                         config: {
                             _search: {
                                 output_size:[3,8]
-                            } 
+                            }
                         },
                     }
                 },
@@ -44,7 +44,7 @@ TODO: multi_models model 选择 如何search?
                         config: {
                             _search: {
                                 input_size:[1,2]
-                            } 
+                            }
                         },
                     }
                 },

@@ -37,7 +37,7 @@ class LSTMConfig(BaseConfig):
             self.hidden_size = self.output_size // 2
         self.dropout = config['dropout']
         self.dropout_last = config['dropout_last']
-        self.post_check(config, used=[ 
+        self.post_check(config, used=[
             "bidirectional",
             "output_size",
             "input_size",

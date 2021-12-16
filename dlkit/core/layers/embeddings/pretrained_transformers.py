@@ -63,7 +63,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "pretrained_model_path",
             "output_size",
             ])
-        
+
 
 @embedding_register("pretrained_transformers")
 class PretrainedTransformers(SimpleModule):
@@ -76,7 +76,7 @@ class PretrainedTransformers(SimpleModule):
 
     def init_weight(self, method):
         """init  Module weight by `method`
-        :method: init method, with pretrained 
+        :method: init method, with pretrained
         :returns: None
         """
         self.pretrained_transformers.init_weight(method)
@@ -84,7 +84,7 @@ class PretrainedTransformers(SimpleModule):
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-        
+
         input_ids = inputs[self.get_input_name('input_ids')] if "input_ids" in self.config._input_map else None
         attention_mask = inputs[self.get_input_name('attention_mask')] if "attention_mask" in self.config._input_map else None
         type_ids = inputs[self.get_input_name('type_ids')] if "type_ids" in self.config._input_map else None

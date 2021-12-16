@@ -19,7 +19,7 @@ class Module(BaseModule):
         # self._name_map = {"inp":"map_inp"}
         self.provide = {''}
         self.required = {''}
-        
+
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """training
         :inputs: Dict[str: torch.Tensor], one mini-batch inputs

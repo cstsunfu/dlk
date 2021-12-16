@@ -44,11 +44,11 @@
         "lstm_output_size": "*@*",
     },
     "_link": {
-        "config.embedding_dim": ["embedding.config.embedding_dim", 
-                                 "encoder.config.input_size", 
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 "encoder.config.input_size",
                                 ],
         "config.lstm_output_size": [
-                                 "encoder.config.output_size", 
+                                 "encoder.config.output_size",
                                  "decoder.config.input_size",
                                 ],
         "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],

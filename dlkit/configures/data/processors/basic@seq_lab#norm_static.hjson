@@ -42,12 +42,12 @@
     },
     "subprocessor@token_norm":{
         "_base": "token_norm",
-        "config": { 
-            "train": { 
+        "config": {
+            "train": {
                 "data_pair": {
                     "sentence": "norm_sentence",
                 },
-                "tokenizer": "*@*", // "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line", 
+                "tokenizer": "*@*", // "the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line",
             },
             "predict": "train",
             "online": "train"
@@ -55,8 +55,8 @@
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
-        "config": { 
-            "train": { 
+        "config": {
+            "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
@@ -89,7 +89,7 @@
                     "train": ["train", "valid", 'test']
                 },
                 "gather_columns": ["tokens"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
@@ -103,7 +103,7 @@
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "unk": "",
                 "pad": "",
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
@@ -127,7 +127,7 @@
             "train": { // only train stage using
                 "embedding_file": "*@*",
                 "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name. 
+                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
                 "embedding_size": "*@*",
             }
         }

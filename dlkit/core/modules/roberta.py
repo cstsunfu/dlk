@@ -13,11 +13,11 @@ from . import module_register, module_config_register
 class RobertaWrapConfig(BaseConfig):
     """docstring for RobertaWrapConfig
     {
-        config: {
+        "config": {
             "pretrained_model_path": "*@*",
             "from_pretrain": true
         },
-        _name: "roberta",
+        "_name": "roberta",
     }
     """
 
@@ -37,7 +37,7 @@ class RobertaWrapConfig(BaseConfig):
                 except:
                     raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
         self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain'])
-        
+
 
 @module_register("roberta")
 class RobertaWrap(nn.Module):
@@ -67,7 +67,6 @@ class RobertaWrap(nn.Module):
     def forward(self, inputs):
         """
         """
-        # No padding necessary.
         outputs = self.roberta(
             input_ids = inputs.get("input_ids", None),
             attention_mask = inputs.get("attention_mask", None),
@@ -83,5 +82,6 @@ class RobertaWrap(nn.Module):
             output_hidden_states = True,
             return_dict = False
         )
+        assert len(outputs) == 4, f"Please check transformers version, the len(outputs) is 4 in version == 4.12, or check your config and remove the 'add_cross_attention'"
         sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[2], outputs[3]
         return sequence_output, all_hidden_states, all_self_attentions

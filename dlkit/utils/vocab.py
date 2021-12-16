@@ -5,7 +5,7 @@ import pandas as pd
 class Vocabulary(object):
     r"""vocabulary doc:
     """
-    
+
     def __init__(self, do_strip: bool=False, unknown: str='', ignore: str="", pad: str=''):
         self.word2idx = {}
         self.idx2word = {}
@@ -102,7 +102,7 @@ class Vocabulary(object):
                     self.word2idx[token] = index
                     self.idx2word[index] = token
                     index += 1
-            
+
     def get_word(self, index):
         """get the word of index from this vocab
         """
@@ -122,7 +122,7 @@ class Vocabulary(object):
             self.word_num += 1
         self.word_count[word] += 1
         return self
-    
+
     def auto_update(self, data):
         """auto detect data type to update the vocab
 
@@ -139,7 +139,7 @@ class Vocabulary(object):
 
     def __len__(self):
         return len(self.word2idx)
-    
+
     def add_from_iter(self, iterator):
         r"""add a list or set of words
         """

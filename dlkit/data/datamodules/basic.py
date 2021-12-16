@@ -26,21 +26,21 @@ class BasicDatamoduleConfig(BaseConfig):
                    "online": false
                },
                "key_type_pairs": {
-                    'input_ids': 'int', 
-                    'label_ids': 'long', 
-                    'type_ids': 'long', 
+                    'input_ids': 'int',
+                    'label_ids': 'long',
+                    'type_ids': 'long',
                 },
                "gen_mask": {
-                    'input_ids': 'attention_mask', 
+                    'input_ids': 'attention_mask',
                 },
                "key_padding_pairs": { //default all 0
-                    'input_ids': 0, 
+                    'input_ids': 0,
                 },
                "train_batch_size": 32,
                "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
                "online_batch_size": 1,
            }
-       }, 
+       },
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__(config)
@@ -55,12 +55,12 @@ class BasicDatamoduleConfig(BaseConfig):
         self.pin_memory = config.get('pin_memory', False)
         if self.pin_memory is None:
             self.pin_memory = torch.cuda.is_available()
-        self.shuffle = config.get('shuffle', { 
-            "train": True, 
-            "predict": False, 
+        self.shuffle = config.get('shuffle', {
+            "train": True,
+            "predict": False,
             "valid": False,
             "test": False,
-            "online": False 
+            "online": False
         })
         self.train_batch_size = config.get('train_batch_size', 32)
         self.test_batch_size = config.get('predict_batch_size', 32)
@@ -83,7 +83,7 @@ class BasicDatamoduleConfig(BaseConfig):
 class BasicDataset(Dataset):
     def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
         self.data = data
-        self.type_map = {"float": torch.float, "int": torch.int, 'bool': torch.bool, "long": torch.long} 
+        self.type_map = {"float": torch.float, "int": torch.int, 'bool': torch.bool, "long": torch.long}
 
         self.key_type_pairs = key_type_pairs
 

@@ -6,7 +6,7 @@
                 "train": ["train", "valid", 'test'], //token gather for test sometimes is useful(the embedding of test token is pretrained)
             },
             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-            "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name. 
+            "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name.
             "ignore": "", // ignore the token, the id of this token will be -1
             "update": null, // null or another Vocabulary object to update
             "unk": "[UNK]",

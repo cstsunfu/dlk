@@ -84,7 +84,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
 
         """
         return self.process(stage, list_batch_outputs, origin_data, rt_config)
-        
+
 
 postprocessor_config_register = Register('PostProcessor config register')
 postprocessor_register = Register("PostProcessor register")
