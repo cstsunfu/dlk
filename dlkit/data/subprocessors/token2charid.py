@@ -18,7 +18,7 @@ class Token2CharIDConfig(BaseConfig):
                         "sentence & offsets": "char_ids"
                     },
                     "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test'],
+                        "train": ['train', 'valid', 'test', 'predict'],
                         "predict": ['predict'],
                         "online": ['online']
                     },

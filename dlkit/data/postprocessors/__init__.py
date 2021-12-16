@@ -59,6 +59,33 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             sum_loss += batch_output.get('loss', 0)
         return sum_loss / len(list_batch_outputs)
 
+    def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
+        """TODO: Docstring for do_predict.
+        :stage: TODO
+        :list_batch_outputs: TODO
+        :origin_data: TODO
+        :rt_config: TODO
+        :returns: TODO
+
+        """
+        raise NotImplementedError
+
+    def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
+        """TODO: Docstring for do_calc_metrics.
+        :returns: TODO
+
+        """
+        raise NotImplementedError
+
+    def do_save(self, predicts, stage, list_batch_outputs, origin_data, rt_config={}, save_condition=False):
+        """TODO: Docstring for do_save.
+
+        :predicts: TODO
+        :rt_config: TODO
+        :condition: when the save condition is True, do save
+        :returns: TODO
+        """
+        raise NotImplementedError
 
     @property
     def without_ground_truth_stage(self):
@@ -76,7 +103,20 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         :returns: TODO
 
         """
-        raise NotImplementedError
+        log_info = {}
+        if stage not in self.without_ground_truth_stage:
+            average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
+            log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
+        predicts = self.do_predict(stage, list_batch_outputs, origin_data, rt_config)
+        if stage not in self.without_ground_truth_stage:
+            log_info.update(self.do_calc_metrics(predicts, stage, list_batch_outputs, origin_data, rt_config))
+        if stage == 'online':
+            return predicts
+        if stage == 'predict':
+            self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=True)
+        else:
+            self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=False)
+        return log_info
 
     def __call__(self, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for __call.
