@@ -3,7 +3,7 @@
 """
 import json
 from tokenizers import Token, Tokenizer
-tokenizer = Tokenizer.from_file('../../dkit/local_data/embeddings/glove_tokenizer.json')
+tokenizer = Tokenizer.from_file('../../dlk/local_data/embeddings/glove_tokenizer.json')
 
 data = json.load(open('./predict.json', 'r'))
 

@@ -6,7 +6,7 @@ import numpy as np
 import abc
 import sys
 sys.path.append('../../')
-from dkit.utils.base_module import BaseModule
+from dlk.utils.base_module import BaseModule
 
 class Module(BaseModule):
     """docstring for Module"""

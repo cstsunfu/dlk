@@ -1,9 +1,9 @@
-from dkit.utils.logger import setting_logger
+from dlk.utils.logger import setting_logger
 import pytorch_lightning as pl
 # setting_logger("./benchmark.log")
 # setting_logger("./conll_norm_lstm_crf.log")
 setting_logger("./conll_norm_char_lstm_crf.log")
-from dkit.train import Train
+from dlk.train import Train
 import json
 
 pl.seed_everything(88)
