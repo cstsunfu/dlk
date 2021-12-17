@@ -8,7 +8,7 @@ from tokenizers import normalizers
 from tokenizers import pre_tokenizers
 import sys
 sys.path.append('../')
-from dkit.utils.tokenizer_util import TokenizerNormalizerFactory, PreTokenizerFactory, TokenizerPostprocessorFactory
+from dlk.utils.tokenizer_util import TokenizerNormalizerFactory, PreTokenizerFactory, TokenizerPostprocessorFactory
 
 
 def get_trainer(trainer_name:str):

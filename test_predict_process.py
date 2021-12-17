@@ -9,13 +9,13 @@
 
 
 import pandas as pd
-from dkit.utils.logger import setting_logger
+from dlk.utils.logger import setting_logger
 setting_logger('process.log')
-from dkit.utils.parser import config_parser_register
+from dlk.utils.parser import config_parser_register
 import copy
 import json
 import hjson
-from dkit.data.processors import processor_config_register, processor_register
+from dlk.data.processors import processor_config_register, processor_register
 
 # train_data = json.load(open('./local_data/tasks_data/title/title_train.json', 'r'))
 # valid_data = json.load(open('./local_data/tasks_data/title/title_valid.json', 'r'))

@@ -3,7 +3,7 @@ from gensim.models import Word2Vec
 from gensim.models.callbacks import CallbackAny2Vec
 import hjson
 import argparse
-# Data can from https://pytorch.org/text/_modules/torchtext/datasets/language_modeling.html
+# Data from https://pytorch.org/text/_modules/torchtext/datasets/language_modeling.html
 from gensim.models.word2vec_inner import MAX_WORDS_IN_BATCH
 
 def any2unicode(text, encoding='utf8', errors='strict'):

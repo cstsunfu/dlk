@@ -2,7 +2,7 @@ import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
 # from models import MODEL_REGISTRY, MODEL_CONFIG_REGISTRY
-from dkit.utils.parser import CONFIG_PARSER_REGISTRY
+from dlk.utils.parser import CONFIG_PARSER_REGISTRY
 import json
 
 #TODO: parser应该返回完整的参数
@@ -61,6 +61,6 @@ def test_base():
 
 test_base()
 # Train('simple_ner')
-# Train('./dkit/configures/tasks/simple_ner.hjson')
+# Train('./dlk/configures/tasks/simple_ner.hjson')
 # Train('lstm_linear_ner')
 
