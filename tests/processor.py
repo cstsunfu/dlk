@@ -2,8 +2,8 @@ import sys
 import pandas as pd
 sys.path.append('../')
 
-from dlkit.processors import PROCESSOR_CONFIG_REGISTRY, PROCESSOR_REGISTRY
-# from dlkit.models import DECODER_CONFIG_REGISTRY
+from dkit.processors import PROCESSOR_CONFIG_REGISTRY, PROCESSOR_REGISTRY
+# from dkit.models import DECODER_CONFIG_REGISTRY
 
 
 config= {
@@ -12,7 +12,7 @@ config= {
         'predict': ['predict'],
         'online': ['online']
     },
-    'config_path': '../dlkit/processors/wp_token.json',
+    'config_path': '../dkit/processors/wp_token.json',
     "normalizer": ['nfd', 'lowercase', 'strip_accents'],
     "pre_tokenizer": [{"whitespace": {}}],
     'post_tokenizer': 'bert',

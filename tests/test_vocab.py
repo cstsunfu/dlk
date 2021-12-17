@@ -2,8 +2,8 @@ import sys
 sys.path.append('../')
 import pickle as pkl
 
-# from dlkit.utils.vocab import Vocabulary
-# from dlkit.models import DECODER_CONFIG_REGISTRY
+# from dkit.utils.vocab import Vocabulary
+# from dkit.models import DECODER_CONFIG_REGISTRY
 
 # a = Vocabulary()
 # a.auto_update(['ni', 'hao'])

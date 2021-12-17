@@ -23,5 +23,5 @@ valid/**
 test_simple_ner/**
 output/**
 **/output/**
-**/conll2003/data/**
+**/conll2003/data/*.txt
 *.DS_Store
