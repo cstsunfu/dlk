@@ -2,8 +2,8 @@ import sys
 import pandas as pd
 # sys.path.append('../../../')
 
-from dlkit.processors import processor_register, processor_config_register
-# from dlkit.models import DECODER_CONFIG_REGISTRY
+from dkit.processors import processor_register, processor_config_register
+# from dkit.models import DECODER_CONFIG_REGISTRY
 
 
 def test_wordpiece():
