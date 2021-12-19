@@ -1,8 +1,9 @@
-A *D*eep *L*earning *K*it
+# A Deep Learning Kit
 
 ```
 This project is WIP, only provide some basic method, and is not been tested.
 ```
+
 ## What is this project?
 
 * Provide a templete for deep learning (especially for nlp) training and deploy.
@@ -13,16 +14,10 @@ This project is WIP, only provide some basic method, and is not been tested.
 
 ## Config example
 
-WIP
-
-## TODAY TODO
-- [ ] post_check 
-- [ ]
-
 ## TODO
 
-- [ ] Add documents
-- [ ] distill struct and *api* setting
+- [ ] Add more documents
+- [ ] distill struct
 - [ ] Add disable tokenizer post process
 - [o] Predict
   - [X] make the main code.
@@ -35,10 +30,6 @@ WIP
      - [ ] how to get best checkpoint by loss
 
 - [ ] main entry? 
-  - [ ] how to apply
-
 
 - [ ] LightGBM
  - [ ]  It's necessary？
-
-## NOTE
