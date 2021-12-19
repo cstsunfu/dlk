@@ -2,6 +2,7 @@
     "config": {
         "pretrained_model_path": "*@*",
         "from_pretrain": true,
+        "freeze": false,
     },
     "_name": "bert",
 }

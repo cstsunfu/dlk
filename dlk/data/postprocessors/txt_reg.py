@@ -31,7 +31,7 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
                 "value": "value",
                 "uuid": "uuid"
             },
-            "txt_type": "single", //single or pair
+            "data_type": "single", //single or pair
             "save_root_path": ".",  //save data root dir
             "save_path": {
                 "valid": "valid",  // relative dir for valid stage
@@ -46,9 +46,9 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
     def __init__(self, config: Dict):
         super(TxtRegPostProcessorConfig, self).__init__(config)
 
-        self.txt_type = self.config['txt_type']
-        assert self.txt_type in {'single', 'pair'}
-        if self.txt_type == 'pair':
+        self.data_type = self.config['data_type']
+        assert self.data_type in {'single', 'pair'}
+        if self.data_type == 'pair':
             self.sentence_a = self.origin_input_map['sentence_a']
             self.sentence_b = self.origin_input_map['sentence_b']
         else:
@@ -67,7 +67,7 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
             "origin_input_map",
             "save_root_path",
             "save_path",
-            "txt_type",
+            "data_type",
             "start_save_step",
             "start_save_epoch",
         ])
@@ -101,17 +101,17 @@ class TxtRegPostProcessor(IPostProcessor):
                 values = [0.0] * len(indexes)
             for one_logits, index, value in zip(logits, indexes, values):
                 one_ins = {}
-                origin_data = origin_data.iloc[int(index)]
-                if self.config.txt_type == 'single':
-                    sentence = origin_data[self.config.sentence]
+                one_origin = origin_data.iloc[int(index)]
+                if self.config.data_type == 'single':
+                    sentence = one_origin[self.config.sentence]
                     one_ins['sentence'] = sentence
                 else:
-                    sentence_a = origin_data[self.config.sentence_a]
+                    sentence_a = one_origin[self.config.sentence_a]
                     one_ins['sentence_a'] = sentence_a
-                    sentence_b = origin_data[self.config.sentence_b]
+                    sentence_b = one_origin[self.config.sentence_b]
                     one_ins['sentence_b'] = sentence_b
                     
-                uuid = origin_data[self.config.uuid]
+                uuid = one_origin[self.config.uuid]
                 one_ins['uuid'] = uuid
                 one_ins['value'] = value
                 one_ins['predict_value'] = float(one_logits)

@@ -1,3 +1,6 @@
+"""
+Loader the data from dict and generator DataFrame
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -8,11 +11,11 @@ from dlk.utils.logger import logger
 
 logger = logger.get_logger()
 
-@subprocessor_config_register('txt_reg_prepro')
-class TxtRegPreProConfig(BaseConfig):
-    """docstring for TxtRegPreProConfig
+@subprocessor_config_register('txt_reg_loader')
+class TxtRegLoaderConfig(BaseConfig):
+    """docstring for TxtRegLoaderConfig
         {
-            "_name": "txt_reg_prepro",
+            "_name": "txt_reg_loader",
             "config": {
                 "train":{ 
                     "data_set": {                   // for different stage, this processor will process different part of data
@@ -49,7 +52,7 @@ class TxtRegPreProConfig(BaseConfig):
     """
     def __init__(self, stage, config: Dict):
 
-        super(TxtRegPreProConfig, self).__init__(config)
+        super(TxtRegLoaderConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -63,12 +66,12 @@ class TxtRegPreProConfig(BaseConfig):
         ])
 
 
-@subprocessor_register('txt_reg_prepro')
-class TxtRegPrePro(ISubProcessor):
-    """docstring for TxtRegPrePro
+@subprocessor_register('txt_reg_loader')
+class TxtRegLoader(ISubProcessor):
+    """docstring for TxtRegLoader
     """
 
-    def __init__(self, stage: str, config: TxtRegPreProConfig):
+    def __init__(self, stage: str, config: TxtRegLoaderConfig):
         super().__init__()
         self.stage = stage
         self.config = config
@@ -76,7 +79,7 @@ class TxtRegPrePro(ISubProcessor):
         self.data_type = config.data_type
         assert self.data_type in {'single', 'pair'}
         if not self.data_set:
-            logger.info(f"Skip 'txt_reg_prepro' at stage {self.stage}")
+            logger.info(f"Skip 'txt_reg_loader' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
@@ -91,7 +94,7 @@ class TxtRegPrePro(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do txt_reg_prepro on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do txt_reg_loader on it.')
                 continue
             data_set = data['data'][data_set_name]
 

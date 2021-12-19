@@ -16,23 +16,24 @@ with open('README.md', encoding='utf-8') as f:
 with open('LICENSE', encoding='utf-8') as f:
     license = f.read()
 
-with open('requirement.txt', encoding='utf-8') as f:
-    requirement = f.read()
+with open('requirements.txt', encoding='utf-8') as f:
+    requirements = f.read()
 
 pkgs = [p for p in find_packages() if p.startswith('dlk')]
 
 setup(
     name='dlk',
-    version='0.1.0',
+    version='0.0.1',
     url='https://github.com/cstsunfu/dlk',
-    description='dlk: Deep Learning Toolkit',
+    description='dlk: Deep Learning Kit',
     long_description=readme,
     long_description_content_type='text/markdown',
     license=license,
     author='cstsunfu',
-    python_requires='>=3.7',
+    author_email='cstsunfu@gmail.com',
+    python_requires='>=3.8',
     package_data={"": configures},
     include_package_data=True,
     packages=pkgs,
-    install_requires=requirement.strip().split('\n'),
+    install_requires=requirements.strip().split('\n'),
 )

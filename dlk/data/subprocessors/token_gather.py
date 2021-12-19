@@ -1,3 +1,6 @@
+"""
+gather all tokens from the 'gather_columns' and deliver a vocab named 'token_vocab'
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List

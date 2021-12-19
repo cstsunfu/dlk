@@ -9,11 +9,11 @@ import torch.optim as optim
 class ConstantWarmupScheduleConfig(BaseConfig):
     """
     {
-        config: {
+        “config“: {
             "last_epoch": -1,
             "num_warmup_steps": 0,
         },
-        _name: "constant_warmup",
+        “_name“: "constant_warmup",
     }
     """
     def __init__(self, config: Dict):

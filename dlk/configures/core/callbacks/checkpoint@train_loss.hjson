@@ -2,8 +2,6 @@
     "_base": "checkpoint",
     "config": {
         "monitor": "train_loss",
-        "save_weights_only": true,
-        "save_top_k": 3,
-        "every_n_epochs": 1,
+        "mode": "min", //"max" or "min" select topk min or max checkpoint, min for loss, max for acc
     }
 }

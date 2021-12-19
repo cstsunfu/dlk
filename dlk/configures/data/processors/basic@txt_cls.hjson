@@ -71,6 +71,8 @@
                 },
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                "unk": "",
+                "pad": "",
             }
         }
     },

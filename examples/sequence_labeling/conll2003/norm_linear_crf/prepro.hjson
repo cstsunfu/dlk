@@ -2,8 +2,8 @@
     "_base": "basic@seq_lab#static",
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
-        "feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", "token_gather", "save"]
-        /*"feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]*/
+        "feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", "token_gather", "save"]
+        /*"feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]*/
         "tokenizer_config_path": "./data/examples/sequence_labeling/conll2003/data/tokenizer_conll2003_glove6b100d.json", // the tokenizer config path (the tokenizer.json path)
         /*"tokenizer_config_path": "./tools/convert_tokenizer/vocab_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "data_dir": "output/benchmark",  // save load data base dir

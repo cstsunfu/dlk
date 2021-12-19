@@ -11,15 +11,15 @@ import numpy as np
 class RandomEmbeddingConfig(BaseModuleConfig):
     """docstring for BasicModelConfig
     {
-        config: {
-            vocab_size: "*@*",
-            embedding_dim: "*@*",
-            dropout: 0, //dropout rate
-            padding_idx: 0, //dropout rate
-            output_map: {},
-            input_map: {},
+        "config": {
+            "vocab_size": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": 0, //dropout rate
+            "padding_idx": 0, //dropout rate
+            "output_map": {},
+            "input_map": {},
         },
-        _name: "random",
+        "_name": "random",
     }
     """
     def __init__(self, config: Dict):

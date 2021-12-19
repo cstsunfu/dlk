@@ -1,0 +1,63 @@
+{
+    "root": {
+        "_name": "pretrained",
+        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
+        "_search": {},
+        "config": {
+            "save_dir": "distil_bert/data/output",  # must provide
+            "data_path": "distil_bert/data/output/processed_data.pkl",  # must provide
+            "meta_data": "distil_bert/data/output/meta.pkl",  # must provide
+        },
+        "task": {
+            "manager": {
+                "_base": "lightning",
+                "config":{
+                    "max_epochs": 4,
+                    "gpus": 0,
+                }
+            },
+            "imodel": {
+                "_base": "basic@txt_cls",
+                "model": {
+                    "_base": "basic@txt_cls#pretrained_transformers",
+                    "embedding": {
+                        "_base": "pretrained_transformers",
+                        "module": {
+                            "config": {
+                                "pretrained_model_path": "*@*",
+                            },
+                            "_base": "distil_bert",
+                        },
+                    },
+                    "config": {
+                        "embedding_dim": 768,
+                        "label_num": 2,
+                        /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
+                        "pretrained_model_path": "./distil_bert/data/model",
+                        "dropout": 0.3,
+                    },
+                },
+                "optimizer": {
+                    "config": {
+                        "lr": 2e-5,
+                    },
+                },
+                "postprocessor": {
+                    "config": {
+                        "meta": '*@*'
+                    }
+                },
+            },
+            "datamodule": {
+                "_base": "basic@txt_cls",
+                "config":{
+                   "train_batch_size": 32,
+                   "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+                }
+            },
+        },
+    },
+    "_focus": {
+        "root._name": "task."
+    },
+}

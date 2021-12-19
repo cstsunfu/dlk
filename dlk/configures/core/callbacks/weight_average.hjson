@@ -1,11 +1,13 @@
-
 {   //weight_average default
     "_name": "weight_average",
     "config": {
-        "swa_epoch_start": 0.8,
+        "swa_epoch_start": 0.8, // swa start epoch
         "swa_lrs": null,
+            //None. Use the current learning rate of the optimizer at the time the SWA procedure starts.
+            //float. Use this value for all parameter groups of the optimizer.
+            //List[float]. A list values for each parameter group of the optimizer.
         "annealing_epochs": 10,
         "annealing_strategy": 'cos',
-        "device": 'cpu',
+        "device": null, // save device, null for auto detach, if the gpu is oom, you should change this to 'cpu'
     }
 }

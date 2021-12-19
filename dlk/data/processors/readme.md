@@ -1,5 +1,4 @@
-%% TODO: Must be refactor process feed
-
+## The subprocessor config format
 In subprocessors, the config is based on the progress stage(train, predict, online, etc.). 
 
 The stage config could be a dict, a str, or a tuple, for different type of config, we will parser the configure the different way. 
@@ -9,7 +8,7 @@ The stage config could be a dict, a str, or a tuple, for different type of confi
 
 Some config value set to "*@*", this means you must provided this key-value pair in your own config
 
-## Config Example
+## Processor Config Example
 ```hjson
 {
     "processor": {
@@ -110,7 +109,7 @@ Some config value set to "*@*", this means you must provided this key-value pair
                         "online": ['online']
                     },
                     "vocab": "label_vocab", // usually provided by the "token_gather" module
-                }, //3
+                },
                 "predict": "train",
                 "online": "train",
             }
@@ -123,6 +122,8 @@ Some config value set to "*@*", this means you must provided this key-value pair
 
 
 ## To Process Data Format Example
+
+You can provide dataframe format by yourself, or use the task_name_loader(if provided or you can write one) to load your dict format data to dataframe
 
 ```hjson
 {
@@ -142,11 +143,9 @@ Some config value set to "*@*", this means you must provided this key-value pair
         "train": pd.DataFrame, // may include these columns "uuid"、"origin"、"labels"、"origin_tokens"、"label_ids"、"origin_token_ids"
         "dev": pd.DataFrame, // may include these columns "uuid"、"origin"、"labels"、"origin_tokens"、"label_ids"、"origin_token_ids"
     },
-    "all_tokens": [..],
-    "embedding": [..],
-    "token_id_map": {"token": "id"},
-    "id_token_map": {"id": "token"},
-    "id_label_map": {"id": "label"},
-    "label_id_map": {"label": "id"}
+    "embedding": ..,
+    "token_vocab": ..,
+    "label_vocab": ..,
+    ...
 }
 ```

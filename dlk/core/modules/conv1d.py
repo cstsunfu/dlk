@@ -11,7 +11,7 @@ class Conv1dConfig(BaseConfig):
         "config": {
             "in_channels": "*@*",
             "out_channels": "*@*",
-            "dropout": 0.0, //the module output no need dropout
+            "dropout": 0.0,
             "kernel_sizes": [3],
         },
         "_name": "conv1d",

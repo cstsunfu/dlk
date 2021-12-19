@@ -1,3 +1,7 @@
+"""
+Gather tokens embedding from pretrained 'embedding_file' or init embedding(xavier_uniform init, and the range clip in 'bias_clip_range')
+The tokens are from 'Tokenizer'(get_vocab) or 'Vocabulary'(word2idx) object(the two must provide only one)
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List

@@ -38,7 +38,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
             "save_root_path": ".",  //save data root dir
             "top_k": 1, //the result return top k result
             "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == [1], then the predict value always return the logits[1], and the label always be label_vocab[1]
-            "txt_type": "single", //single or pair
+            "data_type": "single", //single or pair
             "save_path": {
                 "valid": "valid",  // relative dir for valid stage
                 "test": "test",    // relative dir for test stage
@@ -52,9 +52,9 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
     def __init__(self, config: Dict):
         super(TxtClsPostProcessorConfig, self).__init__(config)
 
-        self.txt_type = self.config['txt_type']
-        assert self.txt_type in {'single', 'pair'}
-        if self.txt_type == 'pair':
+        self.data_type = self.config['data_type']
+        assert self.data_type in {'single', 'pair'}
+        if self.data_type == 'pair':
             self.sentence_a = self.origin_input_map['sentence_a']
             self.sentence_b = self.origin_input_map['sentence_b']
         else:
@@ -90,7 +90,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
             "save_root_path",
             "top_k",
             "focus",
-            "txt_type",
+            "data_type",
             "save_path",
             "start_save_step",
             "start_save_epoch",
@@ -127,16 +127,17 @@ class TxtClsPostProcessor(IPostProcessor):
                 label_ids = [None] * len(indexes)
             for one_logits, index, label_id in zip(logits, indexes, label_ids):
                 one_ins = {}
-                origin_data = origin_data.iloc[int(index)]
-                if self.config.txt_type == 'single':
-                    sentence = origin_data[self.config.sentence]
+                one_logits = torch.softmax(one_logits, -1)
+                one_origin = origin_data.iloc[int(index)]
+                if self.config.data_type == 'single':
+                    sentence = one_origin[self.config.sentence]
                     one_ins['sentence'] = sentence
                 else:
-                    sentence_a = origin_data[self.config.sentence_a]
+                    sentence_a = one_origin[self.config.sentence_a]
                     one_ins['sentence_a'] = sentence_a
-                    sentence_b = origin_data[self.config.sentence_b]
+                    sentence_b = one_origin[self.config.sentence_b]
                     one_ins['sentence_b'] = sentence_b
-                uuid = origin_data[self.config.uuid]
+                uuid = one_origin[self.config.uuid]
                 if self.config.focus:
                     label_values, label_indeies = [], []
                     for label_index in self.config.focus:

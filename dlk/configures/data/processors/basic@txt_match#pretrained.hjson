@@ -2,7 +2,7 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_match#pretrained",
     "config": {
-        "feed_order": ["load", "txt_cls_prepro", "tokenizer", "label_gather", "label_to_id", "save"]
+        "feed_order": ["load", "txt_cls_loader", "tokenizer", "label_gather", "label_to_id", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "truncation": {     // if this is set to None or empty, will not do trunc
@@ -33,8 +33,8 @@
             }
         }
     },
-    "subprocessor@txt_cls_prepro":{
-        "_base": "txt_cls_prepro",
+    "subprocessor@txt_cls_loader":{
+        "_base": "txt_cls_loader",
         "config": {
             "data_type": "pair"
         }
@@ -70,6 +70,8 @@
                 },
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                "unk": "",
+                "pad": "",
             }
         }
     },

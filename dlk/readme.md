@@ -1,9 +1,13 @@
 # Appointments
 
+## Data format
+### Input
 For one sentence processor:
 
 The input one sentence named "sentence", label named "labels"
+
 The output named:
+```
     "input_ids",
     "label_ids",
     "word_ids",
@@ -12,7 +16,32 @@ The output named:
     "type_ids", 
     "sequence_ids",
     "char_ids",
+```
+
+
+The input two sentence named "sentence_a", "sentence_b", label named "labels"
+
+The output named:
+```
+    "input_ids",
+    "label_ids",
+    "word_ids",
+    "attention_mask",
+    "special_tokens_mask",
+    "type_ids", 
+    "sequence_ids",
+    "char_ids",
+```
+### MASK
+We set mask==1 for used data, mask==0 for useless data
+
+### Batch First
+All data set batch_first=True
     
+## Model appointments
+
+* All dropout put on output or intern of the module, no dropout for the module input
+
 
 # The main file tree:
 

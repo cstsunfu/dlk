@@ -9,8 +9,8 @@ class LearningRateMonitorCallbackConfig(object):
         {
             "_name": "lr_monitor",
             "config": {
-                "logging_interval": null,
-                "log_momentum": false,
+                "logging_interval": null, // set to None to log at individual interval according to the interval key of each scheduler. other value : step, epoch
+                "log_momentum": true, // log momentum or not
             }
         }
     """

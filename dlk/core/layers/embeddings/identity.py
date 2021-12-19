@@ -9,11 +9,9 @@ import torch
 class IdentityEmbeddingConfig(BaseModuleConfig):
     """docstring for IdentityEmbeddingConfig
     {
-        config: {
-            output_map: {},
-            input_map: {},
+        "config": {
         },
-        _name: "identity",
+        "_name": "identity",
     }
     """
     def __init__(self, config):

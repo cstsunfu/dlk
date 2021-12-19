@@ -7,7 +7,7 @@
         "output_size": "*@*",
         "pool": null,
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {},
     },
     "_link":{
         "config.input_size": ["module.config.input_size"],

@@ -19,7 +19,7 @@
             "imodel": {
                 "_base": "basic@seq_lab",
                 "model": {
-                    "_base": "basic@seq_lab#roberta",
+                    "_base": "basic@seq_lab#pretrained_transformers",
                     "embedding": {
                         "_base": "pretrained_transformers@gather",
                         "module": {
@@ -44,7 +44,7 @@
                         "label_num": 11,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
                         "pretrained_model_path": "./local_data/pretrained_model/bert_case",
-                        /*"dropout": "*@*",*/
+                        "dropout": 0.3,
                     },
                 },
                 "optimizer": {

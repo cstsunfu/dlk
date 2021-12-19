@@ -2,7 +2,7 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_match_reg#pretrained",
     "config": {
-        "feed_order": ["load", "txt_reg_prepro", "tokenizer", "save"]
+        "feed_order": ["load", "txt_reg_loader", "tokenizer", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "truncation": {     // if this is set to None or empty, will not do trunc
@@ -33,8 +33,8 @@
             }
         }
     },
-    "subprocessor@txt_reg_prepro":{
-        "_base": "txt_reg_prepro",
+    "subprocessor@txt_reg_loader":{
+        "_base": "txt_reg_loader",
         "config":{
             "data_type": "pair",
         }

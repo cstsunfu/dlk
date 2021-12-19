@@ -5,6 +5,7 @@ from typing import Dict, List
 import hjson
 import pytorch_lightning as pl
 from dlk.utils.config import BaseConfig, ConfigTool
+from dlk.utils.get_root import get_root
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint
 from dlk.core.callbacks import callback_register, callback_config_register
@@ -151,7 +152,7 @@ class LightningManagerConfig(BaseConfig):
         for callback_name in callback_names:
             callback_config = config.get(f"callback@{callback_name}", {})
             if not callback_config:
-                callback_config = hjson.load(open(f'dlk/configures/core/callbacks/{callback_name}.hjson', 'r'), object_pairs_hook=dict)
+                callback_config = hjson.load(open(os.path.join(get_root(), f'dlk/configures/core/callbacks/{callback_name}.hjson'), 'r'), object_pairs_hook=dict)
                 parser_callback_config = config_parser_register.get('callback')(callback_config).parser_with_check(parser_link=False)
                 assert len(parser_callback_config) == 1, f"Don't support multi callback config for one callback."
                 callback_config = parser_callback_config[0]
@@ -162,10 +163,13 @@ class LightningManagerConfig(BaseConfig):
 
 @manager_register('lightning')
 class LightningManager(object):
-    """
+    """pytorch-lightning traning manager
     """
 
     def __init__(self, config: LightningManagerConfig, rt_config: Dict):
+        """
+            rt_config: {"save_dir": 'different process save to diff dir', "name": 'this config name(generally generate from _focus)'}
+        """
         super().__init__()
 
         if config.logger:

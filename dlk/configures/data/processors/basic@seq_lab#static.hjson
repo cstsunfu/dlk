@@ -2,8 +2,8 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@seq_lab#static",
     "config": {
-        /*"feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", "token_gather", "save"]*/
-        "feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
+        /*"feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", "token_gather", "save"]*/
+        "feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "embedding_size": "*@*",  //the embedding size
@@ -36,8 +36,8 @@
             }
         }
     },
-    "subprocessor@seq_lab_prepro":{
-        "_base": "seq_lab_prepro",
+    "subprocessor@seq_lab_loader":{
+        "_base": "seq_lab_loader",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
@@ -90,6 +90,8 @@
                 },
                 "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                "unk": "",
+                "pad": "",
             }
         }
     },

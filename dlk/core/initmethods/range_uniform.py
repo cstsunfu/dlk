@@ -30,13 +30,12 @@ class RangeNormInitConfig(BaseConfig):
 
 @initmethod_register('range_uniform')
 class RangeNormInit(object):
-    """
+    """for transformers
     """
 
     def __init__(self, config: RangeNormInitConfig):
         super().__init__()
         self.config = config
-
 
     def __call__(self, module):
         """Initialize the weights"""

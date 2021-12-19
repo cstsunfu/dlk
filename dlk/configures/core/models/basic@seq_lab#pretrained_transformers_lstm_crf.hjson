@@ -6,7 +6,8 @@
         },
         "config": {
             "pretrained_model_path": "*@*",
-            "output_size": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
         },
     },
     "decoder": {
@@ -32,16 +33,16 @@
     "config": {
         "embedding_dim": "*@*",
         "pretrained_model_path": "*@*",
-        /*"dropout": "*@*",*/
+        "dropout": "*@*",
         "label_num": "*@*",
     },
     "_link": {
-        "config.embedding_dim": ["embedding.config.output_size",
+        "config.embedding_dim": ["embedding.config.embedding_dim",
                                  /*"encoder.config.input_size", */
                                  /*"encoder.config.output_size", */
                                  "decoder.config.input_size",
                                 ],
-        /*"config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],*/
+        "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
         "config.label_num": "decoder.config.output_size",
         "config.pretrained_model_path": "embedding.config.pretrained_model_path"
     },

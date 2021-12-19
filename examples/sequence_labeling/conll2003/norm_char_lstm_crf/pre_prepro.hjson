@@ -28,8 +28,8 @@
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "sentence": "sentence",
-        "feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "token_gather", "save"]
-        /*"feed_order": ["load", "seq_lab_prepro", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]*/
+        "feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "token_gather", "save"]
+        /*"feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]*/
         "tokenizer_config_path": "./examples/sequence_labeling/conll2003/norm_lstm_crf/glove6b100d_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
         /*"tokenizer_config_path": "./tools/convert_tokenizer/vocab_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "data_dir": "./examples/sequence_labeling/conll2003/norm_lstm_crf/output",  // save load data base dir

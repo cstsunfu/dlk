@@ -1,3 +1,7 @@
+"""
+Relabel the json data to bio.
+And gather the firstpiece subword index to deliver $gather_index; for get the firstpiece index we must use the $word_ids(generator by tokenizer)
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List

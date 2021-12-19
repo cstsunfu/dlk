@@ -1,6 +1,6 @@
 import torch.nn as nn
 from . import embedding_register, embedding_config_register
-from typing import Dict, List, Set
+from typing import Callable, Dict, List, Set
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
 import torch
@@ -109,7 +109,7 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         self.word_embedding = embedding_register[self.config.word_module_name](self.config.word_config)
         self.char_embedding = embedding_register[self.config.char_module_name](self.config.char_config)
 
-    def init_weight(self, method):
+    def init_weight(self, method: Callable):
         """TODO: Docstring for init_weight.
         :arg1: TODO
         :returns: TODO
