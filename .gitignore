@@ -23,6 +23,8 @@ token.json
 valid/**
 test_simple_ner/**
 output/**
+examples/**/data/**
+examples/**/output/**
 **/output/**
 **/conll2003/data/*.txt
 *.DS_Store
