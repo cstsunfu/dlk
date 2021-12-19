@@ -3,7 +3,8 @@ import pandas as pd
 
 
 class Vocabulary(object):
-    r"""vocabulary doc:
+    """generate vocab from tokens(token or Iterable tokens)
+       you can dumps the object to dict and load from dict
     """
 
     def __init__(self, do_strip: bool=False, unknown: str='', ignore: str="", pad: str=''):

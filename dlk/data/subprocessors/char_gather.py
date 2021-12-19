@@ -1,3 +1,6 @@
+"""
+gather all character from the 'gather_columns' and deliver a vocab named 'char_vocab'
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import ConfigTool
 from typing import Dict, Callable, Set, List
@@ -72,8 +75,7 @@ class CharGather(ISubProcessor):
         self.update = config.update
 
     def split_to_char(self, input):
-        """TODO: Docstring for split_to_char.
-
+        """the char is from token or sentence, so we need split them to List[char]
         :input: auto detach the type of input and split it to char
         :returns: TODO
         """

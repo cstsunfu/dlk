@@ -16,6 +16,7 @@ local_data/**
 *.sc
 *.bin
 **/logs/**
+**/data/model/**
 *tokenizer.json
 token.json
 **/test_cls/**

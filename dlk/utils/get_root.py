@@ -1,3 +1,6 @@
+"""
+Get the dlk package root path
+"""
 import os
 
 ROOT = os.path.join('/')

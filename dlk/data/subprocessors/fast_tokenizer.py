@@ -1,3 +1,8 @@
+"""
+Tokenizer the single $sentence
+Or tokenizer the pair $sentence_a, $sentence_b
+Generator $tokens, $input_ids, $type_ids, $special_tokens_mask, $offsets, $word_ids, $overflowing, $sequence_ids
+"""
 from dlk.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
 from dlk.utils.config import ConfigTool, BaseConfig
 from typing import Dict, Callable

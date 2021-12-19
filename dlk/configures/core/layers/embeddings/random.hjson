@@ -5,7 +5,7 @@
         "dropout": 0, //dropout rate
         "padding_idx": 0, //dropout rate
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {},
     },
     "_name": "random",
 }

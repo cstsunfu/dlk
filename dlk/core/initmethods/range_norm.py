@@ -22,7 +22,7 @@ class RangeNormInitConfig(BaseConfig):
 
 @initmethod_register('range_norm')
 class RangeNormInit(object):
-    """
+    """for transformers
     """
 
     def __init__(self, config: RangeNormInitConfig):

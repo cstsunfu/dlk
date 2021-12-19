@@ -17,8 +17,9 @@ import pytorch_lightning as pl
 
 @imodel_config_register('basic')
 class BasicIModelConfig(BaseConfig):
-    """docstring for IModelConfig"""
-    def __init__(self, config):
+    """ basic imodel config will provide all the config for model/optimizer/loss/scheduler/postprocess
+    """
+    def __init__(self, config: Dict):
         super(BasicIModelConfig, self).__init__(config)
         self.model, self.model_config = self.get_model(config.pop("model"))
         self.loss, self.loss_config = self.get_loss(config.pop("loss"))
@@ -37,7 +38,7 @@ class BasicIModelConfig(BaseConfig):
         """
         return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config)
 
-    def get_model(self, config):
+    def get_model(self, config: Dict):
         """get embedding config and embedding module
 
         :config: TODO
@@ -46,7 +47,7 @@ class BasicIModelConfig(BaseConfig):
         """
         return ConfigTool.get_leaf_module(model_register, model_config_register, "model", config)
 
-    def get_loss(self, config):
+    def get_loss(self, config: Dict):
         """get encoder config and encoder module
 
         :config: TODO
@@ -55,7 +56,7 @@ class BasicIModelConfig(BaseConfig):
         """
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
 
-    def get_optimizer(self, config):
+    def get_optimizer(self, config: Dict):
         """get optimizer
 
         :config: TODO
@@ -63,7 +64,7 @@ class BasicIModelConfig(BaseConfig):
         """
         return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
 
-    def get_scheduler(self, config):
+    def get_scheduler(self, config: Dict):
         """get decoder config and decoder module
 
         :config: TODO
@@ -77,6 +78,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     """
     """
     def __init__(self, config: BasicIModelConfig, checkpoint=False):
+        """ init all modules except scheduler which requires the information from datamodule(training steps and every epoch steps)
+        """
         super().__init__()
         self.config = config  # scheduler will init in configure_optimizers, because it will use the datamodule info
 
@@ -132,8 +135,6 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         """
         outputs = self.gather_outputs(outputs)
 
-        # if self.local_rank in [0, -1]:
-            # TODO: do postprocess only on rank 0
         self.log_dict(
             self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
                 rt_config={

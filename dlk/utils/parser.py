@@ -6,8 +6,9 @@ from dlk.utils.register import Register
 from dlk.utils.config import ConfigTool
 from dlk.utils.logger import logger
 from dlk.utils.get_root import get_root
-logger = logger.get_logger()
 import json
+
+logger = logger.get_logger()
 
 config_parser_register = Register("Config parser register")
 

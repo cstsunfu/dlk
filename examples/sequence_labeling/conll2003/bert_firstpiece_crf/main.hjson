@@ -19,7 +19,7 @@
             "imodel": {
                 "_base": "basic@seq_lab#crf",
                 "model": {
-                    "_base": "basic@seq_lab#roberta_crf",
+                    "_base": "basic@seq_lab#pretrained_transformers_crf",
                     "embedding": {
                         "_base": "pretrained_transformers@gather",
                         "module": {
@@ -30,7 +30,7 @@
                         },
                         "config": {
                             "pretrained_model_path": "*@*",
-                            "output_size": 768,
+                            "embedding_dim": 768,
                             "input_map": {
                                 "input_ids": "input_ids",
                                 "attention_mask": "subword_mask",

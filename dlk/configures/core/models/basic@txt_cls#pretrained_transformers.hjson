@@ -1,0 +1,41 @@
+{
+    "embedding": {
+        "_base": "pretrained_transformers",
+        "config": {
+            "pretrained_model_path": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
+        },
+    },
+    "decoder": {
+        "_base": "linear",
+        "config": {
+            "input_size": "*@*",
+            "output_size": "*@*",
+            "pool": 'first',
+            "dropout": 0.0, //the decoder output no need dropout
+            "output_map": {}
+        },
+    },
+    "encoder": {
+        "_base": "identity",
+    },
+    "initmethod": {
+        "_base": "default",
+    },
+    "config": {
+        "embedding_dim": "*@*",
+        "dropout": "*@*",
+        "label_num": "*@*"
+        "pretrained_model_path": "*@*",
+    },
+    "_link": {
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 "decoder.config.input_size"
+                                ],
+        "config.dropout": ["embedding.config.dropout"],
+        "config.label_num": "decoder.config.output_size"
+        "config.pretrained_model_path": "embedding.config.pretrained_model_path"
+    },
+    "_name": "basic"
+}

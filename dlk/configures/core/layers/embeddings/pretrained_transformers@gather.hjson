@@ -13,10 +13,12 @@
         "output_map": {
             "embedding": "embedding",
         },
-        "output_size": "*@*",
+        "embedding_dim": "*@*",
+        "dropout": "*@*",
     },
     "_link": {
         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+        "config.dropout": ["module.config.dropout"],
     },
     "_name": "pretrained_transformers",
 }

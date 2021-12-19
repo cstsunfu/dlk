@@ -12,10 +12,14 @@ class EarlyStoppingCallbackConfig(object):
             "_name": "early_stop",
             "config":{
                 "monitor": "val_loss",
+                "mode": "*@*", // min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
                 "patience": 3,
                 "min_delta": 0.0,
                 "check_on_train_epoch_end": null,
-                "strict": true,
+                "strict": true, // if the monitor is not right, raise error
+                "stopping_threshold": null, // float, if the value is good enough, stop
+                "divergence_threshold": null, // float,  if the value is so bad, stop
+                "verbose": true, //verbose mode print more info
             }
         }
     """
@@ -23,10 +27,14 @@ class EarlyStoppingCallbackConfig(object):
         super(EarlyStoppingCallbackConfig, self).__init__()
         config = config['config']
         self.monitor = config['monitor']
-        self.min_delta = config['min_delta']
+        self.mode = config['mode']
         self.patience = config["patience"]
+        self.min_delta = config['min_delta']
+        self.strict = config['strict']
+        self.verbose = config['verbose']
+        self.stopping_threshold = config['stopping_threshold']
+        self.divergence_threshold = config['divergence_threshold']
         self.check_on_train_epoch_end = config["check_on_train_epoch_end"]
-        self.strict = config["strict"]
 
 @callback_register('early_stop')
 class EarlyStoppingCallback(object):

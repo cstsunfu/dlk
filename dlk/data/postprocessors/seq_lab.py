@@ -140,17 +140,6 @@ class SeqLabPostProcessor(IPostProcessor):
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
-    def loss_name_map(self, stage):
-        """TODO: Docstring for loss_name_map.
-        :returns: TODO
-
-        """
-        map = {
-            "valid": 'val',
-            'train': 'train',
-            "test": "test",
-        }
-        return map.get(stage, stage)
 
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config)->List:
         """TODO: Docstring for do_predict.

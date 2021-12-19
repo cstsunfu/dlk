@@ -4,7 +4,7 @@
     },
     "config": {
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {},
         "input_size": "*@*",
         "output_size": "*@*",
         "num_layers": 1,

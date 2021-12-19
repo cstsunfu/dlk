@@ -1,3 +1,6 @@
+"""
+Loader the data from dict and generator DataFrame
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -8,11 +11,11 @@ from dlk.utils.logger import logger
 
 logger = logger.get_logger()
 
-@subprocessor_config_register('txt_cls_prepro')
-class TxtClsPreProConfig(BaseConfig):
-    """docstring for TxtClsPreProConfig
+@subprocessor_config_register('txt_cls_loader')
+class TxtClsLoaderConfig(BaseConfig):
+    """docstring for TxtClsLoaderConfig
         {
-            "_name": "txt_cls_prepro",
+            "_name": "txt_cls_loader",
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
                     "data_set": {                   // for different stage, this processor will process different part of data
@@ -50,7 +53,7 @@ class TxtClsPreProConfig(BaseConfig):
     """
     def __init__(self, stage, config: Dict):
 
-        super(TxtClsPreProConfig, self).__init__(config)
+        super(TxtClsLoaderConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -61,15 +64,17 @@ class TxtClsPreProConfig(BaseConfig):
         self.post_check(self.config, used=[
             "data_set",
             "output_map",
+            "input_map",
+            "data_type",
         ])
 
 
-@subprocessor_register('txt_cls_prepro')
-class TxtClsPrePro(ISubProcessor):
-    """docstring for TxtClsPrePro
+@subprocessor_register('txt_cls_loader')
+class TxtClsLoader(ISubProcessor):
+    """docstring for TxtClsLoader
     """
 
-    def __init__(self, stage: str, config: TxtClsPreProConfig):
+    def __init__(self, stage: str, config: TxtClsLoaderConfig):
         super().__init__()
         self.stage = stage
         self.config = config
@@ -77,7 +82,7 @@ class TxtClsPrePro(ISubProcessor):
         self.data_type = config.data_type
         assert self.data_type in {'single', 'pair'}
         if not self.data_set:
-            logger.info(f"Skip 'txt_cls_prepro' at stage {self.stage}")
+            logger.info(f"Skip 'txt_cls_loader' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
@@ -92,7 +97,7 @@ class TxtClsPrePro(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do txt_cls_prepro on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do txt_cls_loader on it.')
                 continue
             data_set = data['data'][data_set_name]
 

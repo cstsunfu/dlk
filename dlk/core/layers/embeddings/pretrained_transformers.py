@@ -23,7 +23,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "output_map": {
                 "embedding": "embedding",
             },
-            "output_size": "*@*",
+            "embedding_dim": "*@*",
         },
         "_link": {
             "config.pretrained_model_path": ["module.config.pretrained_model_path"],
@@ -46,7 +46,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "output_map": {
                 "embedding": "embedding",
             },
-            "output_size": "*@*",
+            "embedding_dim": "*@*",
         },
         "_link": {
             "config.pretrained_model_path": ["module.config.pretrained_model_path"],
@@ -58,10 +58,11 @@ class PretrainedTransformersConfig(BaseModuleConfig):
     def __init__(self, config: Dict):
         super(PretrainedTransformersConfig, self).__init__(config)
         self.pretrained_transformers_config = config["module"]
-        assert config['_name'] == "pretrained_transformers"
         self.post_check(config['config'], used=[
             "pretrained_model_path",
-            "output_size",
+            "embedding_dim",
+            "output_map",
+            "input_map",
             ])
 
 

@@ -2,7 +2,7 @@
     "_base": "basic@seq_lab#norm_static",
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
-        "feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
+        "feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "save"]
         "tokenizer_config_path": "./examples/sequence_labeling/conll2003/data/tokenizer_conll2003_glove6b100d.json", // the tokenizer config path (the tokenizer.json path)
         /*"tokenizer_config_path": "./tools/convert_tokenizer/vocab_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "data_dir": "./examples/sequence_labeling/conll2003/norm_lstm_crf/output",  // save load data base dir

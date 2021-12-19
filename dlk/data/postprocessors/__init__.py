@@ -33,19 +33,17 @@ class IPostProcessorConfig(BaseConfig):
 class IPostProcessor(metaclass=abc.ABCMeta):
     """docstring for IPostProcessor"""
 
-    def loss_name_map(self, stage_name):
+    def loss_name_map(self, stage):
         """TODO: Docstring for loss_name_map.
-
-        :stage: TODO
         :returns: TODO
 
         """
-        loss_name_map = {
-            "valid": "val_loss",
-            "train": "train_loss",
-            "test": "test_loss"
+        map = {
+            "valid": 'val',
+            'train': 'train',
+            "test": "test",
         }
-        return loss_name_map.get(stage_name, stage_name+'_loss')
+        return map.get(stage, stage)
 
     def average_loss(self, list_batch_outputs):
         """TODO: Docstring for average_loss.
@@ -59,6 +57,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             sum_loss += batch_output.get('loss', 0)
         return sum_loss / len(list_batch_outputs)
 
+    @abc.abstractmethod
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for do_predict.
         :stage: TODO
@@ -70,6 +69,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for do_calc_metrics.
         :returns: TODO
@@ -77,6 +77,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def do_save(self, predicts, stage, list_batch_outputs, origin_data, rt_config={}, save_condition=False):
         """TODO: Docstring for do_save.
 
@@ -95,7 +96,6 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         return {'predict', 'online'}
 
-    @abc.abstractmethod
     def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
         """TODO: Docstring for process.
 

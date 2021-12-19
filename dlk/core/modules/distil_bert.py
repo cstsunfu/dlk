@@ -1,7 +1,6 @@
 from transformers.models.distilbert.modeling_distilbert import DistilBertModel
 from transformers.models.distilbert.configuration_distilbert import DistilBertConfig
 import json
-
 import os
 import torch.nn as nn
 import torch
@@ -17,7 +16,9 @@ class DistilBertWrapConfig(BaseConfig):
         "config": {
             "pretrained_model_path": "*@*",
             "from_pretrain": true,
+            "freeze": false,
         },
+
         "_name": "distil_bert",
     }
     """
@@ -26,6 +27,7 @@ class DistilBertWrapConfig(BaseConfig):
         super(DistilBertWrapConfig, self).__init__(config)
         self.pretrained_model_path = config['config']['pretrained_model_path']
         self.from_pretrain = config['config']['from_pretrain']
+        self.freeze = config['config']['freeze']
         if os.path.isdir(self.pretrained_model_path):
             if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
                 self.distil_bert_config = DistilBertConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
@@ -68,15 +70,28 @@ class DistilBertWrap(nn.Module):
     def forward(self, inputs):
         """
         """
-        outputs = self.distil_bert(
-            input_ids = inputs.get("input_ids", None),
-            attention_mask = inputs.get("attention_mask", None),
-            head_mask = inputs.get("head_mask", None),
-            inputs_embeds = inputs.get("inputs_embeds", None),
-            output_attentions = True,
-            output_hidden_states = True,
-            return_dict = False
-        )
+        if self.config.freeze:
+            self.distil_bert.eval()
+            with torch.no_grad():
+                outputs = self.distil_bert(
+                    input_ids = inputs.get("input_ids", None),
+                    attention_mask = inputs.get("attention_mask", None),
+                    head_mask = inputs.get("head_mask", None),
+                    inputs_embeds = inputs.get("inputs_embeds", None),
+                    output_attentions = True,
+                    output_hidden_states = True,
+                    return_dict = False
+                )
+        else:
+            outputs = self.distil_bert(
+                input_ids = inputs.get("input_ids", None),
+                attention_mask = inputs.get("attention_mask", None),
+                head_mask = inputs.get("head_mask", None),
+                inputs_embeds = inputs.get("inputs_embeds", None),
+                output_attentions = True,
+                output_hidden_states = True,
+                return_dict = False
+            )
         assert len(outputs) == 3, f"Please check transformers version, the len(outputs) is 3 for version == 4.12, and this version the output logistic of distil_bert is not as the same as bert and roberta."
         sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[2]
         return sequence_output, all_hidden_states, all_self_attentions

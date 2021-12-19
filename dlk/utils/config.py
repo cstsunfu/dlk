@@ -1,3 +1,6 @@
+"""
+Provide BaseConfig which provide the basic method for configs, and ConfigTool a general config(dict) process tool
+"""
 from typing import Any, Dict, Union, Callable, List, Tuple, Type
 import json
 import copy
@@ -126,13 +129,13 @@ class ConfigTool(object):
                         "online": ['online']
                     },
                     "vocab": "label_vocab", // usually provided by the "token_gather" module
-                }, //3
+                },
                 "predict": "train",
                 "online": ["train",
                 {"vocab": "new_label_vocab"}
                 ]
             }
-            config.get_config['predict'] == config[config['predict']] == config['train']
+            config.get_config['predict'] == config['predict'] == config['train']
         """
         config = config['config']
         stage_config = config.get(stage, {})

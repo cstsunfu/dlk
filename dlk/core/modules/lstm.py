@@ -62,7 +62,6 @@ class LSTM(nn.Module):
     def forward(self, input: torch.Tensor, mask: torch.Tensor)->torch.Tensor:
         """
         """
-        # No padding necessary.
         max_seq_len = input.size(1)
         seq_lens = mask.sum(1).cpu()
         pack_seq_rep = pack_padded_sequence(input=input, lengths=seq_lens, batch_first=True, enforce_sorted=False)

@@ -2,8 +2,8 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@seq_lab#norm_static_word_char",
     "config": {
-        /*"feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "token_gather", "save"]*/
-        "feed_order": ["load", "seq_lab_prepro", "token_norm", "tokenizer", "char_gather", "token2charid", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "char_embedding", "save"]
+        /*"feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "token_gather", "save"]*/
+        "feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "char_gather", "token2charid", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "char_embedding", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "embedding_size": "*@*",  //the embedding size
@@ -39,8 +39,8 @@
             }
         }
     },
-    "subprocessor@seq_lab_prepro":{
-        "_base": "seq_lab_prepro",
+    "subprocessor@seq_lab_loader":{
+        "_base": "seq_lab_loader",
     },
     "subprocessor@token_norm":{
         "_base": "token_norm",

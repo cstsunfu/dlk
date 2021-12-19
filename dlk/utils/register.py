@@ -10,10 +10,8 @@ class Register(object):
 
     def register(self, name: str='')->Callable:
         """TODO: Docstring for register.
-
         :name: str: TODO
         :returns: TODO
-
         """
         def decorator(module):
             if name.strip() == "":

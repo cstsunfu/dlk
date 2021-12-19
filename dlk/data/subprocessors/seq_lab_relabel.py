@@ -1,3 +1,6 @@
+"""
+Relabel the json data to bio
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List

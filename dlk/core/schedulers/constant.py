@@ -10,10 +10,10 @@ import torch.optim as optim
 class ConstantScheduleConfig(BaseConfig):
     """
     {
-        config: {
+        "config": {
             "last_epoch": -1
         },
-        _name: "constant",
+        "_name": "constant",
     }
     """
     def __init__(self, config: Dict):

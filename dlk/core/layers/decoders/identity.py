@@ -9,16 +9,14 @@ import torch
 class IdentityDecoderConfig(BaseModuleConfig):
     """docstring for IdentityDecoderConfig
     {
-        config: {
-            output_map: {},
-            input_map: {},
+        "config": {
         },
-        _name: "identity",
+        "_name": "identity",
     }
     """
     def __init__(self, config):
         super(IdentityDecoderConfig, self).__init__(config)
-        self.post_check(config)
+        self.post_check(config['config'])
 
 
 @decoder_register('identity')

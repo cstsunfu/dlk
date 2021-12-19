@@ -1,3 +1,6 @@
+"""
+Loader the data from dict and generator DataFrame
+"""
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -8,11 +11,11 @@ from dlk.utils.logger import logger
 
 logger = logger.get_logger()
 
-@subprocessor_config_register('seq_lab_prepro')
-class SeqLabPreProConfig(BaseConfig):
-    """docstring for SeqLabPreProConfig
+@subprocessor_config_register('seq_lab_loader')
+class SeqLabLoaderConfig(BaseConfig):
+    """docstring for SeqLabLoaderConfig
         {
-            "_name": "seq_lab_prepro",
+            "_name": "seq_lab_loader",
             "config": {
                 "train":{ //train、predict、online stage config,  using '&' split all stages
                     "data_set": {                   // for different stage, this processor will process different part of data
@@ -56,7 +59,7 @@ class SeqLabPreProConfig(BaseConfig):
     """
     def __init__(self, stage, config: Dict):
 
-        super(SeqLabPreProConfig, self).__init__(config)
+        super(SeqLabLoaderConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -65,22 +68,23 @@ class SeqLabPreProConfig(BaseConfig):
         self.input_map = self.config.get('input_map', {})
         self.post_check(self.config, used=[
             "data_set",
+            "input_map",
             "output_map",
         ])
 
 
-@subprocessor_register('seq_lab_prepro')
-class SeqLabPrePro(ISubProcessor):
-    """docstring for SeqLabPrePro
+@subprocessor_register('seq_lab_loader')
+class SeqLabLoader(ISubProcessor):
+    """docstring for SeqLabLoader
     """
 
-    def __init__(self, stage: str, config: SeqLabPreProConfig):
+    def __init__(self, stage: str, config: SeqLabLoaderConfig):
         super().__init__()
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
         if not self.data_set:
-            logger.info(f"Skip 'seq_lab_prepro' at stage {self.stage}")
+            logger.info(f"Skip 'seq_lab_loader' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
@@ -95,7 +99,7 @@ class SeqLabPrePro(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_prepro on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_loader on it.')
                 continue
             data_set = data['data'][data_set_name]
 

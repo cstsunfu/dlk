@@ -1,3 +1,7 @@
+"""
+Save the processed data to $base_dir/$processed
+Save the meta data(like vocab, embedding, etc.) to $base_dir/$meta
+"""
 from dlk.utils.config import ConfigTool, BaseConfig
 from dlk.utils.logger import logger
 from typing import Dict, Callable, Set, List
