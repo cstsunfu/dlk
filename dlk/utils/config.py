@@ -5,10 +5,10 @@ from typing import Any, Dict, Union, Callable, List, Tuple, Type
 import json
 import copy
 import os
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.utils.register import Register
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 class BaseConfig(object):
     """docstring for BaseLayerConfig"""

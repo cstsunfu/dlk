@@ -1,21 +1,21 @@
 {
     "_name": "basic",
     "config": {
-    "pin_memory": null,
-    "collate_fn": "default",
-    "shuffle": {
-        "train": true,
-        "predict": false,
-        "valid": false,
-        "test": false,
-        "online": false
-    },
-    "key_type_pairs": {
-    },
-    "key_padding_pairs": { //default all 0
-    },
-    "train_batch_size": 32,
-    "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
-    "online_batch_size": 1,
+        "pin_memory": null,
+        "collate_fn": "default",
+        "shuffle": {
+            "train": true,
+            "predict": false,
+            "valid": false,
+            "test": false,
+            "online": false
+        },
+        "key_type_pairs": {
+        },
+        "key_padding_pairs": { //default all 0
+        },
+        "train_batch_size": 32,
+        "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+        "online_batch_size": 1,
     }
 }

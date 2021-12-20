@@ -7,9 +7,9 @@ from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 import pandas as pd
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @subprocessor_config_register('txt_reg_loader')
 class TxtRegLoaderConfig(BaseConfig):

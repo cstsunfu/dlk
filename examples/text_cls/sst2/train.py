@@ -1,4 +1,4 @@
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 import pytorch_lightning as pl
 from dlk.train import Train
 import json

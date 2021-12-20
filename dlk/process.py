@@ -22,4 +22,4 @@ class Processor(object):
 
         """
         processor = processor_register.get(self.config.get('_name'))(stage=stage, config=processor_config_register.get(self.config.get('_name'))(stage=stage, config=self.config))
-        processor.process(data)
+        return processor.process(data)

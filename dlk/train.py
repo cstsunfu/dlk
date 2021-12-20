@@ -9,10 +9,10 @@ from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
 import uuid
 import json
-from dlk.utils.logger import logger as log
+from dlk.utils.logger import Logger
 import logging
 
-logger: logging.Logger = log.get_logger()
+logger = Logger.get_logger()
 
 
 class Train(object):

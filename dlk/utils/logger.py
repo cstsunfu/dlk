@@ -3,7 +3,7 @@ import os
 import colorlog
 
 
-class logger(object):
+class Logger(object):
     """docstring for logger"""
     global_logger = None
     global_log_file = None
@@ -25,7 +25,7 @@ class logger(object):
     }
 
     def __init__(self, log_file: str='', base_dir: str='logs', log_level: str='debug', log_name='dlk'):
-        super(logger, self).__init__()
+        super(Logger, self).__init__()
         self.log_file = log_file
         self.base_dir = base_dir
         if self.base_dir and not os.path.isdir(self.base_dir):
@@ -40,10 +40,10 @@ class logger(object):
         :returns: TODO
 
         """
-        if logger.global_logger is None:
-            logger.init_global_logger()
-            logger.global_logger.warning("You didn't init the logger, so we use the default logger setting to output to terminal, you can always set the file logger by yourself.")
-        return logger.global_logger
+        if Logger.global_logger is None:
+            Logger.init_global_logger()
+            Logger.global_logger.warning("You didn't init the logger, so we use the default logger setting to output to terminal, you can always set the file logger by yourself.")
+        return Logger.global_logger
 
     @staticmethod
     def init_file_logger(log_file, base_dir='logs', log_level: str='debug'):
@@ -55,31 +55,31 @@ class logger(object):
         """
         if log_file:
             log_file = os.path.join(base_dir, log_file)
-        if log_file and log_file != logger.global_log_file:
-            if logger.global_file_handler is not None:
-                logger.global_logger.removeHandler(logger.global_file_handler)
+        if log_file and log_file != Logger.global_log_file:
+            if Logger.global_file_handler is not None:
+                Logger.global_logger.removeHandler(Logger.global_file_handler)
             file_handler = logging.FileHandler(filename=log_file, mode='a', encoding='utf8')
-            file_handler.setLevel(logger.level_map[log_level])
+            file_handler.setLevel(Logger.level_map[log_level])
 
             file_formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                                                       datefmt='%m/%d/%Y %H:%M:%S')
             file_handler.setFormatter(file_formatter)
-            logger.global_file_handler = file_handler
-            logger.global_logger.addHandler(file_handler)
+            Logger.global_file_handler = file_handler
+            Logger.global_logger.addHandler(file_handler)
 
     @staticmethod
     def init_global_logger(log_level: str='debug', log_name: str='dlk'):
         """TODO: Docstring for init_global_logger.
         :returns: TODO
         """
-        if logger.global_logger is None:
-            logger.global_logger = logging.getLogger(log_name)
-            logger.global_logger.setLevel(logger.level_map[log_level])
+        if Logger.global_logger is None:
+            Logger.global_logger = logging.getLogger(log_name)
+            Logger.global_logger.setLevel(Logger.level_map[log_level])
             console_handler = logging.StreamHandler()
-            console_handler.setLevel(logger.level_map[log_level])
+            console_handler.setLevel(Logger.level_map[log_level])
             console_formatter = colorlog.ColoredFormatter(
                 fmt='%(log_color)s%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                 datefmt='%m/%d/%Y %H:%M:%S',
-                log_colors=logger.color_config)
+                log_colors=Logger.color_config)
             console_handler.setFormatter(console_formatter)
-            logger.global_logger.addHandler(console_handler)
+            Logger.global_logger.addHandler(console_handler)

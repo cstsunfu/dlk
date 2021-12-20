@@ -3,14 +3,14 @@ Save the processed data to $base_dir/$processed
 Save the meta data(like vocab, embedding, etc.) to $base_dir/$meta
 """
 from dlk.utils.config import ConfigTool, BaseConfig
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
 import copy
 import os
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @subprocessor_config_register('save')
 class SaveConfig(BaseConfig):

@@ -1,12 +1,12 @@
 import torch.nn as nn
 from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.utils.config import BaseConfig
 import numpy as np
 import torch
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 # TODO:
 @initmethod_config_register('default')

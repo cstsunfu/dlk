@@ -6,9 +6,9 @@ from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(BaseConfig):

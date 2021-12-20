@@ -5,12 +5,12 @@ import json
 from typing import Union, Dict, Any
 from dlk.utils.parser import BaseConfigParser, PostProcessorConfigParser
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 import torch
 from dlk.utils.vocab import Vocabulary
 import torchmetrics
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 
 @postprocessor_config_register('txt_cls')

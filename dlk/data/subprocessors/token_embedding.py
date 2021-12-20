@@ -6,11 +6,11 @@ from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from tokenizers import Tokenizer
 import numpy as np
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @subprocessor_config_register('token_embedding')
 class TokenEmbeddingConfig(BaseConfig):

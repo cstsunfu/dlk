@@ -9,7 +9,7 @@
 
 
 import pandas as pd
-# from dlk.utils.logger import logger
+# from dlk.utils.logger import Logger
 # setting_logger('process.log')
 # logger = 
 from dlk.utils.parser import config_parser_register

@@ -5,11 +5,11 @@ import os
 import numpy as np
 from typing import Dict
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.utils.vocab import Vocabulary
 from tokenizers import Tokenizer
 import torchmetrics
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 
 @postprocessor_config_register('seq_lab')

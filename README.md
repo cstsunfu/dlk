@@ -19,17 +19,18 @@ This project is WIP, only provide some basic method, and is not been tested.
 - [ ] Add more documents
 - [ ] distill struct
 - [ ] Add disable tokenizer post process
-- [o] Predict
+
+- [X] Predict
   - [X] make the main code.
-  - [ ] test
+  - [X] test
+
 * [X] when the high config change the _name of the basic config, the base config should be coverd
+
 - [ ] one Optimizer different Para Group use different Schedulers.
   
   - [ ] Ref  https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR
-  - [ ] add loss schedule, 
-     - [ ] how to get best checkpoint by loss
+  - [ ] add loss schedule, get best checkpoint by loss
 
 - [ ] main entry? 
 
-- [ ] LightGBM
- - [ ]  It's necessary？
+- [ ] LightGBM, it's necessary？
