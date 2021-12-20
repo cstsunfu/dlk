@@ -21,6 +21,10 @@ local_data/**
 token.json
 **/test_cls/**
 valid/**
+data/**
+build/**
+dist/**
+dlk.egg-info/**
 test_simple_ner/**
 output/**
 examples/**/data/**
