@@ -5,9 +5,9 @@ from dlk.utils.parser import BaseConfigParser
 from dlk.data.processors import IProcessor, processor_config_register, processor_register
 from dlk.data.subprocessors import subprocessor_config_register, subprocessor_register
 from dlk.utils.config import BaseConfig
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @processor_config_register('basic')
 class BasicProcessorConfig(BaseConfig):

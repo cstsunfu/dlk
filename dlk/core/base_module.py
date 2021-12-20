@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Callable, Any, Set
 from dlk.core.modules import module_register, module_config_register
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.utils.config import BaseConfig
 import abc
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 
 class BaseModuleConfig(BaseConfig):

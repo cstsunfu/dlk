@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 import copy
 import json
 import hjson

@@ -4,9 +4,9 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from dlk.utils.config import BaseConfig
 from . import module_register, module_config_register
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @module_config_register("lstm")
 class LSTMConfig(BaseConfig):

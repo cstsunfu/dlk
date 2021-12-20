@@ -10,9 +10,9 @@ import pickle as pkl
 import torch
 import uuid
 import json
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 
 class Predict(object):

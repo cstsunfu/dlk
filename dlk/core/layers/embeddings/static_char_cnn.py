@@ -4,10 +4,10 @@ from dlk.core.modules import module_register, module_config_register
 from typing import Dict, List, Set
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 import torch
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @embedding_config_register('static_char_cnn')
 class StaticCharCNNEmbeddingConfig(BaseModuleConfig):

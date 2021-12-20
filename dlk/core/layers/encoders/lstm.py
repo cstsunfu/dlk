@@ -4,8 +4,8 @@ from typing import Dict, List, Set, Callable
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
 from . import encoder_register, encoder_config_register
 from dlk.core.modules import module_config_register, module_register
-from dlk.utils.logger import logger
-logger = logger.get_logger()
+from dlk.utils.logger import Logger
+logger = Logger.get_logger()
 
 @encoder_config_register("lstm")
 class LSTMConfig(BaseModuleConfig):

@@ -3,11 +3,11 @@ import torch.nn as nn
 from . import loss_register, loss_config_register
 from packaging import version
 import torch.nn as nn
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.core.base_module import BaseModuleConfig
 import torch
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @loss_config_register("mse")
 class MSELossConfig(BaseModuleConfig):

@@ -9,9 +9,9 @@ from dlk.core.losses import loss_register, loss_config_register
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlk.utils.config import BaseConfig, ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from functools import lru_cache
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 import pytorch_lightning as pl
 

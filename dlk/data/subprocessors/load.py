@@ -2,13 +2,13 @@
 Loader the $meta, etc. to data
 """
 from dlk.utils.config import ConfigTool, BaseConfig
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
 import os
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 @subprocessor_config_register('load')
 class LoadConfig(BaseConfig):

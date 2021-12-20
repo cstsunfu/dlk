@@ -4,11 +4,11 @@ import copy
 from typing import Callable, List, Dict, Union
 from dlk.utils.register import Register
 from dlk.utils.config import ConfigTool
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 from dlk.utils.get_root import get_root
 import json
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 config_parser_register = Register("Config parser register")
 

@@ -7,7 +7,7 @@ from dlk.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessor
 from dlk.utils.config import ConfigTool, BaseConfig
 from typing import Dict, Callable
 import json
-from dlk.utils.logger import logger
+from dlk.utils.logger import Logger
 
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from tokenizers import normalizers
@@ -17,7 +17,7 @@ import pandas as pd
 from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
 
-logger = logger.get_logger()
+logger = Logger.get_logger()
 
 
 @subprocessor_config_register('fast_tokenizer')
