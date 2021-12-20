@@ -9,6 +9,7 @@
         "input_size": "*@*",
         "output_size": "*@*",
         "reduction": "mean",
+        "dropout": 0.0,
         "output_map": {}, //provide_key: output_key
         "input_map": {}, // required_key: provide_key
     },

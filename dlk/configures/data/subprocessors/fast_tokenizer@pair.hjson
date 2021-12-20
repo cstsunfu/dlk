@@ -1,0 +1,44 @@
+{
+    "_name": "fast_tokenizer@pair",
+    "config": {
+        "train": {
+            "data_set": {                   // for different stage, this processor will process different part of data
+                "train": ["train", "valid", 'test', 'predict'],
+                "predict": ["predict"],
+                "online": ["online"]
+            },
+            "config_path": "*@*",
+            "truncation": {     // if this is set to None or empty, will not do trunc
+                "max_length": 512,
+                "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
+            },
+            /*"normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config*/
+            "normalizer": 'default', // if don't set this, will use the default normalizer from config
+            "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
+            /*"pre_tokenizer": "default", // if don't set this, will use the default normalizer from config*/
+            /*"post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)*/
+            "post_processor": "default", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+            "output_map": { // this is the default value, you can provide other name
+                "tokens": "tokens",
+                "ids": "input_ids",
+                "attention_mask": "attention_mask",
+                "type_ids": "type_ids",
+                "special_tokens_mask": "special_tokens_mask",
+                "offsets": "offsets",
+                "word_ids": "word_ids",
+                "overflowing": "overflowing",
+                "sequence_ids": "sequence_ids",
+            }, // the tokenizer output(the key) map to the value
+            "input_map": {
+                "sentence": "sentence", //for sigle input, tokenizer the "sentence"
+                "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                "sentence_b": "sentence_b", //for pair inputs
+            },
+            "deliver": "tokenizer",
+            "process_data": { "is_pretokenized": false},
+            "data_type": "pair", // single or pair, if not provide, will calc by len(process_data)
+        },
+        "predict": ["train", {"deliver": null}],
+        "online": ["train", {"deliver": null}],
+    }
+}

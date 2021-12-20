@@ -17,6 +17,7 @@ class RobertaWrapConfig(BaseConfig):
             "pretrained_model_path": "*@*",
             "from_pretrain": true
             "freeze": false,
+            "dropout": 0.0,
         },
         "_name": "roberta",
     }
@@ -27,6 +28,7 @@ class RobertaWrapConfig(BaseConfig):
         self.pretrained_model_path = config['config']['pretrained_model_path']
         self.from_pretrain = config['config']['from_pretrain']
         self.freeze = config['config']['freeze']
+        self.dropout = config['config']['dropout']
         if os.path.isdir(self.pretrained_model_path):
             if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
                 self.roberta_config = RobertaConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
@@ -38,7 +40,7 @@ class RobertaWrapConfig(BaseConfig):
                     self.reberta_config = RobertaConfig(**json.load(open(self.pretrained_model_path, 'r')))
                 except:
                     raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
-        self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain'])
+        self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain', 'freeze', 'dropout'])
 
 
 @module_register("roberta")
@@ -48,6 +50,7 @@ class RobertaWrap(nn.Module):
         self.config = config
 
         self.roberta = RobertaModel(config.roberta_config, add_pooling_layer=False)
+        self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):
         """TODO: Docstring for init_weight.
@@ -105,4 +108,5 @@ class RobertaWrap(nn.Module):
             )
         assert len(outputs) == 4, f"Please check transformers version, the len(outputs) is 4 in version == 4.12, or check your config and remove the 'add_cross_attention'"
         sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[2], outputs[3]
+        sequence_output = self.dropout(sequence_output)
         return sequence_output, all_hidden_states, all_self_attentions

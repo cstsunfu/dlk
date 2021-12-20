@@ -1,0 +1,24 @@
+{
+    "model": "*@*",
+    "loss": {
+        "_base": "mse",
+        "config":{
+            "pred_truth_pair": ["logits", 'values'], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        }
+    },
+    "optimizer": {
+        "_base": "adamw@bias_nodecay",
+    },
+    "scheduler": {
+        "_base": "linear_warmup"
+    },
+    "postprocessor": {
+        "_base": "txt_reg"
+        "config":{
+            "log_reg": false,
+        }
+    },
+    "config": {
+    },
+    "_name": "basic"
+}

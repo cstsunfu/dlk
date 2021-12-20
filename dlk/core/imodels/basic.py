@@ -233,10 +233,6 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         })
 
         optimizer = self.get_optimizer()
-        if "num_warmup_steps" in self.config.scheduler_config.__dict__:
-            num_warmup_steps = self.config.scheduler_config.num_warmup_steps
-            if num_warmup_steps>0 and num_warmup_steps<1:
-                self.config.scheduler_config.num_warmup_steps = self.num_training_steps * num_warmup_steps
         if "num_training_steps" in self.config.scheduler_config.__dict__:
             self.config.scheduler_config.num_training_steps = self.num_training_steps
         if "epoch_training_steps" in self.config.scheduler_config.__dict__:

@@ -1,7 +1,7 @@
 {
-    "_name": "txt_reg_loader",
+    "_name": "txt_cls_loader@pair",
     "config": {
-        "train":{ 
+        "train":{
             "data_set": {                   // for different stage, this processor will process different part of data
                 "train": ['train', 'valid', 'test', 'predict'],
                 "predict": ['predict'],
@@ -12,16 +12,16 @@
                 "sentence_a": "sentence_a",  // for pair
                 "sentence_b": "sentence_b",
                 "uuid": "uuid",
-                "values": "values",
+                "labels": "labels",
             },
             "output_map": {   // without necessery don't change this
                 "sentence": "sentence", //for single
                 "sentence_a": "sentence_a", //for pair
                 "sentence_b": "sentence_b",
                 "uuid": "uuid",
-                "values": "values",
+                "labels": "labels",
             },
-            "data_type": "single", // single or pair
+            "data_type": "pair", // single or pair
         },
         "predict": "train",
         "online": "train",

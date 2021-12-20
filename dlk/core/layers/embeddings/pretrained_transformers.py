@@ -23,6 +23,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "output_map": {
                 "embedding": "embedding",
             },
+            "dropout": 0, //dropout rate
             "embedding_dim": "*@*",
         },
         "_link": {
@@ -47,6 +48,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
                 "embedding": "embedding",
             },
             "embedding_dim": "*@*",
+            "dropout": 0, //dropout rate
         },
         "_link": {
             "config.pretrained_model_path": ["module.config.pretrained_model_path"],
@@ -63,6 +65,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "embedding_dim",
             "output_map",
             "input_map",
+            "dropout",
             ])
 
 
@@ -85,7 +88,6 @@ class PretrainedTransformers(SimpleModule):
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
         """
-
         input_ids = inputs[self.get_input_name('input_ids')] if "input_ids" in self.config._input_map else None
         attention_mask = inputs[self.get_input_name('attention_mask')] if "attention_mask" in self.config._input_map else None
         type_ids = inputs[self.get_input_name('type_ids')] if "type_ids" in self.config._input_map else None

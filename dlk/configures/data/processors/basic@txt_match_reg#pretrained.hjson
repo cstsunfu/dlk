@@ -34,27 +34,9 @@
         }
     },
     "subprocessor@txt_reg_loader":{
-        "_base": "txt_reg_loader",
-        "config":{
-            "data_type": "pair",
-        }
+        "_base": "txt_reg_loader@pair",
     },
     "subprocessor@tokenizer":{
-        "_base": "fast_tokenizer",
-        "config": {
-            "train": {
-                "config_path": "*@*",
-                "deliver": "tokenizer",
-                "data_type": "pair", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": { "is_pretokenized": false},
-                "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
-                },
-            },
-            "predict": "train",
-            "online": "train"
-        }
+        "_base": "fast_tokenizer@pair",
     },
 }

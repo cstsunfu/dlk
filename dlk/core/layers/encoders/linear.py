@@ -15,6 +15,7 @@ class LinearConfig(BaseModuleConfig):
             "input_size": "*@*",
             "output_size": "*@*",
             "pool": null,
+            "dropout": 0.0,
             "output_map": {},
             "input_map": {}, // required_key: provide_key
         },
@@ -33,6 +34,7 @@ class LinearConfig(BaseModuleConfig):
             "input_size",
             "output_size",
             "pool",
+            "dropout",
         ])
 
 

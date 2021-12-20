@@ -3,17 +3,18 @@
     "config": {
         "input_map": {
             "logits": "logits",
+            "values": "values",
             "_index": "_index",
         },
         "origin_input_map": {
             "sentence": "sentence",
             "sentence_a": "sentence_a", // for pair
             "sentence_b": "sentence_b",
-            "value": "value",
             "uuid": "uuid"
         },
         "data_type": "single", //single or pair
         "save_root_path": ".",  //save data root dir
+        "log_reg": false,  //save data root dir
         "save_path": {
             "valid": "valid",  // relative dir for valid stage
             "test": "test",    // relative dir for test stage

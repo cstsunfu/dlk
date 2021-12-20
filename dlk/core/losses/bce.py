@@ -1,3 +1,6 @@
+"""
+BCEWithLogitsLoss
+"""
 from typing import Dict
 import torch.nn as nn
 from . import loss_register, loss_config_register
@@ -9,9 +12,9 @@ import torch
 
 logger = Logger.get_logger()
 
-@loss_config_register("mse")
-class MSELossConfig(BaseModuleConfig):
-    """docstring for MSELossConfig
+@loss_config_register("bce")
+class BCEWithLogitsLossConfig(BaseModuleConfig):
+    """docstring for BCEWithLogitsLossConfig
     {
         "config": {
             "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
@@ -21,11 +24,11 @@ class MSELossConfig(BaseModuleConfig):
             // "schdeule": [0.3, 1.0], # can be a list or str
             // "scale": "[0.5, 1]",
         },
-        "_name": "mse",
+        "_name": "bce",
     }
     """
     def __init__(self, config: Dict):
-        super(MSELossConfig, self).__init__(config)
+        super(BCEWithLogitsLossConfig, self).__init__(config)
         config = config['config']
 
         self.scale = config['scale']
@@ -57,12 +60,12 @@ class MSELossConfig(BaseModuleConfig):
         ])
 
 
-@loss_register("mse")
-class MSELoss(object):
-    def __init__(self, config: MSELossConfig):
-        super(MSELoss, self).__init__()
+@loss_register("bce")
+class BCEWithLogitsLoss(object):
+    def __init__(self, config: BCEWithLogitsLossConfig):
+        super(BCEWithLogitsLoss, self).__init__()
         self.config = config
-        self.mse = nn.MSELoss(reduction='sum') # we will use masked_select, and apply reduction=batchmean (sum/batch_size)
+        self.bce = nn.BCEWithLogitsLoss(reduction='mean')
 
     def update_config(self, rt_config):
         """TODO: Docstring for update_config.
@@ -91,7 +94,7 @@ class MSELoss(object):
         if self.config.masked_select is not None:
             pred = torch.masked_select(pred, inputs[self.config.masked_select])
             target = torch.masked_select(target, inputs[self.config.masked_select])
-        loss = self.mse(pred, target) * scale / batch_size # batch mean
+        loss = self.bce(torch.sigmoid(pred), target) * scale
         return loss
 
     def __call__(self, result, inputs, rt_config):

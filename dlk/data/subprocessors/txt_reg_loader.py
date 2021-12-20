@@ -28,14 +28,14 @@ class TxtRegLoaderConfig(BaseConfig):
                         "sentence_a": "sentence_a",  // for pair
                         "sentence_b": "sentence_b",
                         "uuid": "uuid",
-                        "value": "value",
+                        "values": "values",
                     },
                     "output_map": {   // without necessery don't change this
                         "sentence": "sentence", //for single
                         "sentence_a": "sentence_a", //for pair
                         "sentence_b": "sentence_b",
                         "uuid": "uuid",
-                        "value": "value",
+                        "values": "values",
                     },
                     "data_type": "single", // single or pair
                 },
@@ -47,7 +47,7 @@ class TxtRegLoaderConfig(BaseConfig):
         {
             "uuid": '**-**-**-**'
             "sentence": "I have an apple",
-            "value":  0.0
+            "values":  [0.0]
         }
     """
     def __init__(self, stage, config: Dict):
@@ -63,6 +63,8 @@ class TxtRegLoaderConfig(BaseConfig):
         self.post_check(self.config, used=[
             "data_set",
             "output_map",
+            "input_map",
+            "data_type",
         ])
 
 
@@ -99,7 +101,7 @@ class TxtRegLoader(ISubProcessor):
             data_set = data['data'][data_set_name]
 
             uuids = []
-            values = []
+            valueses = []
             # for pair
             sentences_a = []
             sentences_b = []
@@ -114,21 +116,21 @@ class TxtRegLoader(ISubProcessor):
                     else:
                         sentences.append(one_ins[self.config.input_map['sentence']])
                     uuids.append(one_ins[self.config.input_map['uuid']])
-                    values.append(one_ins[self.config.input_map['value']])
+                    valueses.append(one_ins[self.config.input_map['values']])
                 except:
-                    raise PermissionError(f"You must provide the data as requests, we need 'sentence', 'uuid' and 'labels', or you can provide the input_map to map the origin data to this format")
+                    raise PermissionError(f"You must provide the data as requests, we need 'sentence', 'uuid' and 'values', or you can provide the input_map to map the origin data to this format")
             if self.data_type == 'pair':
                 data_df = pd.DataFrame(data= {
                     self.config.output_map["sentence_a"]: sentences_a,
                     self.config.output_map["sentence_b"]: sentences_b,
                     self.config.output_map["uuid"]: uuids,
-                    self.config.output_map["values"]: values,
+                    self.config.output_map["values"]: valueses,
                 })
             else:
                 data_df = pd.DataFrame(data= {
                     self.config.output_map["sentence"]: sentences,
                     self.config.output_map["uuid"]: uuids,
-                    self.config.output_map["values"]: values,
+                    self.config.output_map["values"]: valueses,
                 })
             data['data'][data_set_name] = data_df
 
