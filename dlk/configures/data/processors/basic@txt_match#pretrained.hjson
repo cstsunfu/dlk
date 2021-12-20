@@ -34,32 +34,10 @@
         }
     },
     "subprocessor@txt_cls_loader":{
-        "_base": "txt_cls_loader",
-        "config": {
-            "data_type": "pair"
-        }
+        "_base": "txt_cls_loader@pair",
     },
     "subprocessor@tokenizer":{
-        "_base": "fast_tokenizer",
-        "config": {
-            "train": {
-                "config_path": "*@*",
-                "deliver": "tokenizer",
-                "data_type": "pair", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": { "is_pretokenized": false},
-                "truncation": {     // if this is set to None or empty, will not do trunc
-                    "max_length": 512,
-                    "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
-                },
-                "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
-                },
-            },
-            "predict": "train",
-            "online": "train"
-        }
+        "_base": "fast_tokenizer@pair",
     },
     "subprocessor@label_gather":{
         "_base": "token_gather",

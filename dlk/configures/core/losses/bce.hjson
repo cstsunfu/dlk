@@ -1,0 +1,11 @@
+{
+    "config": {
+        "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        "schedule": [1],
+        "masked_select": null, // if provide, only select the masked(=1) data
+        "scale": [1], # scale the loss for every schedule stage
+        // "schdeule": [0.3, 1.0], # can be a list or str
+        // "scale": "[0.5, 1]",
+    },
+    "_name": "bce", //this is BCEWithLogitsLoss
+}

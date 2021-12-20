@@ -144,8 +144,8 @@ class SeqLabPostProcessor(IPostProcessor):
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config)->List:
         """TODO: Docstring for do_predict.
         :stage: TODO
-        :list_batch_outputs: TODO
-        :origin_data: TODO
+        :list_batch_outputs: the batch_output means the input
+        :origin_data: the origin_data means the origin_input
         :rt_config: TODO
         :returns: TODO
         """
@@ -376,7 +376,7 @@ class SeqLabPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits]
+            batch_logits = outputs[self.config.logits].detach()
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
@@ -415,7 +415,7 @@ class SeqLabPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits]
+            batch_logits = outputs[self.config.logits].detach()
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])

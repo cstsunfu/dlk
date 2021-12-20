@@ -1,0 +1,9 @@
+{
+    "_base": "basic@txt_match#pretrained",
+    "config": {
+        /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
+        /*"tokenizer_config_path": "local_data/pretrained_model/bert_case/tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
+        "tokenizer_config_path": "./distil_bert/data/model/tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+        "data_dir": "./distil_bert/data/output/",  // save load data base dir
+    },
+}

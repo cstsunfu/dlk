@@ -81,7 +81,7 @@ class Train(object):
         log_path = os.path.join(config.get('config').get('save_dir'), name)
         os.makedirs(log_path, exist_ok=True)
         json.dump({"root":config, "_focus": self.focus}, open(os.path.join(config.get('config').get('save_dir'), name, "config.json"), 'w'), ensure_ascii=False, indent=4)
-        log.init_file_logger("log.txt", log_path)
+        Logger.init_file_logger("log.txt", log_path)
 
     def run_oneturn(self, config, name):
         """TODO: Docstring for run_oneturn.

@@ -3,6 +3,7 @@
         "pretrained_model_path": "*@*",
         "from_pretrain": true,
         "freeze": false,
+        "dropout": 0.0,
     },
     "_name": "roberta",
 }

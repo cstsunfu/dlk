@@ -25,6 +25,9 @@ test_simple_ner/**
 output/**
 examples/**/data/**
 examples/**/output/**
+examples/**/test/**
+examples/**/log.txt
+examples/**/valid/**
 **/output/**
 **/conll2003/data/*.txt
 *.DS_Store

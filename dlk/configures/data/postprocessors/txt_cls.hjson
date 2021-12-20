@@ -18,7 +18,7 @@
         },
         "save_root_path": ".",  //save data root dir
         "top_k": 1, //the result return top k result
-        "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == [1], then the predict value always return the logits[1], and the label always be label_vocab[1]
+        "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == 'pos', then the predict value always return the logits[vocab.get_index('pos')], and the label always be 'pos'
         "data_type": "single", //single or pair
         "save_path": {
             "valid": "valid",  // relative dir for valid stage

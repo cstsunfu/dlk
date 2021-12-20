@@ -195,7 +195,7 @@ class FastTokenizer(ISubProcessor):
         """
         sentence_a = one_line[self.config.input_map['sentence_a']]
         sentence_b = one_line[self.config.input_map['sentence_b']]
-        encode = self.tokenizer.encode([sentence_a, sentence_b], **self.config.process_data)
+        encode = self.tokenizer.encode(sentence_a, sentence_b, **self.config.process_data)
         return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
 
     def _process(self, data):

@@ -4,6 +4,7 @@
     },
     "config": {
         "input_size": "*@*",
+        "dropout": 0.0,
         "output_size": "*@*",
         "pool": null,
         "output_map": {},

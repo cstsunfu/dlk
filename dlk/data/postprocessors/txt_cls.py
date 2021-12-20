@@ -37,7 +37,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
             },
             "save_root_path": ".",  //save data root dir
             "top_k": 1, //the result return top k result
-            "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == [1], then the predict value always return the logits[1], and the label always be label_vocab[1]
+            "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == 'pos', then the predict value always return the logits[vocab.get_index('pos')], and the label always be 'pos'
             "data_type": "single", //single or pair
             "save_path": {
                 "valid": "valid",  // relative dir for valid stage
@@ -109,14 +109,14 @@ class TxtClsPostProcessor(IPostProcessor):
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for do_predict.
         :stage: TODO
-        :list_batch_outputs: TODO
-        :origin_data: TODO
+        :list_batch_outputs: the batch_output means the input
+        :origin_data: the origin_data means the origin_input
         :rt_config: TODO
         :returns: TODO
         """
         results = []
         for outputs in list_batch_outputs:
-            logits = outputs[self.config.logits]
+            logits = outputs[self.config.logits].detach()
             assert len(logits.shape) == 2
             # predict_indexes = list(torch.argmax(logits, 1))
             indexes = list(outputs[self.config._index])
@@ -140,7 +140,8 @@ class TxtClsPostProcessor(IPostProcessor):
                 uuid = one_origin[self.config.uuid]
                 if self.config.focus:
                     label_values, label_indeies = [], []
-                    for label_index in self.config.focus:
+                    for label_name in self.config.focus:
+                        label_index = self.label_vocab.get_index(label_name)
                         label_values.append(one_logits[label_index])
                         label_indeies.append(label_index)
                 else:
@@ -166,7 +167,7 @@ class TxtClsPostProcessor(IPostProcessor):
         """
         for outputs in list_batch_outputs:
             logits = outputs[self.config.logits]
-            label_ids = outputs[self.config.label_ids]
+            label_ids = outputs[self.config.label_ids].squeeze(-1)
             self.acc_calc.update(logits, label_ids)
         real_name = self.loss_name_map(stage)
         return {f'{real_name}_acc': self.acc_calc.compute()}

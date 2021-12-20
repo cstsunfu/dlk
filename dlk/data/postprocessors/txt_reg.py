@@ -22,13 +22,13 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
         "config": {
             "input_map": {
                 "logits": "logits",
+                "values": "values",
                 "_index": "_index",
             },
             "origin_input_map": {
                 "sentence": "sentence",
                 "sentence_a": "sentence_a", // for pair
                 "sentence_b": "sentence_b",
-                "value": "value",
                 "uuid": "uuid"
             },
             "data_type": "single", //single or pair
@@ -37,6 +37,7 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
                 "valid": "valid",  // relative dir for valid stage
                 "test": "test",    // relative dir for test stage
             },
+            "log_reg": false, // whether logistic regression
             "start_save_step": 0,  // -1 means the last
             "start_save_epoch": -1,
         }
@@ -54,8 +55,9 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
         else:
             self.sentence = self.origin_input_map['sentence']
         self.uuid = self.origin_input_map['uuid']
-        self.value = self.origin_input_map['value']
+        self.log_reg = self.config['log_reg']
 
+        self.value = self.input_map['values']
         self.logits = self.input_map['logits']
         self._index = self.input_map['_index']
         self.save_path = self.config['save_path']
@@ -70,6 +72,7 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
             "data_type",
             "start_save_step",
             "start_save_epoch",
+            "log_reg",
         ])
 
 
@@ -83,14 +86,16 @@ class TxtRegPostProcessor(IPostProcessor):
     def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
         """TODO: Docstring for do_predict.
         :stage: TODO
-        :list_batch_outputs: TODO
-        :origin_data: TODO
+        :list_batch_outputs: the batch_output means the input
+        :origin_data: the origin_data means the origin_input
         :rt_config: TODO
         :returns: TODO
         """
         results = []
         for outputs in list_batch_outputs:
-            logits = outputs[self.config.logits]
+            logits = outputs[self.config.logits].detach()
+            if self.config.log_reg:
+                logits = torch.sigmoid(logits)
             assert len(logits.shape) == 2
             # predict_indexes = list(torch.argmax(logits, 1))
             indexes = list(outputs[self.config._index])
@@ -113,8 +118,8 @@ class TxtRegPostProcessor(IPostProcessor):
                     
                 uuid = one_origin[self.config.uuid]
                 one_ins['uuid'] = uuid
-                one_ins['value'] = value
-                one_ins['predict_value'] = float(one_logits)
+                one_ins['values'] = [float(value)]
+                one_ins['predict_values'] = [float(one_logits)]
                 results.append(one_ins)
         return results
 
