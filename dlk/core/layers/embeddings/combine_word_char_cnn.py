@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 from . import embedding_register, embedding_config_register
 from typing import Callable, Dict, List, Set
@@ -8,7 +22,9 @@ import torch
 
 @embedding_config_register('combine_word_char_cnn')
 class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
-    """docstring for BasicModelConfig, this exp. is for static word embedding and cnn char embedding
+    """Config for CombineWordCharCNNEmbedding
+
+    Paras:
     {
         "_name": "combine_word_char_cnn",
         "embedding@char": {
@@ -95,8 +111,7 @@ class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
 
 @embedding_register('combine_word_char_cnn')
 class CombineWordCharCNNEmbedding(SimpleModule):
-    """
-    from 'input_ids' generate 'embedding'
+    """ from 'input_ids' and 'char_ids' generate 'embedding'
     """
 
     def __init__(self, config: CombineWordCharCNNEmbeddingConfig):
@@ -110,17 +125,25 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         self.char_embedding = embedding_register[self.config.char_module_name](self.config.char_config)
 
     def init_weight(self, method: Callable):
-        """TODO: Docstring for init_weight.
-        :arg1: TODO
-        :returns: TODO
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
+
         """
         self.word_embedding.init_weight(method)
         self.char_embedding.init_weight(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """forward
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """get the combine char and word embedding
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
         """
         inputs = self.word_embedding(inputs)
         inputs = self.char_embedding(inputs)

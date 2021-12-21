@@ -1,9 +1,17 @@
-"""
-This part could merged to fast_tokenizer(it will save some time), but not all process need this part(except some special dataset like conll2003), and will make the fast_tokenizer be heavy.
-Token norm:
-    Love -> love
-    3281 -> 0000
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from logging import PercentStyle
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
@@ -20,28 +28,30 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token_norm')
 class TokenNormConfig(BaseConfig):
-    """docstring for TokenNormConfig
-        {
-            "_name": "token_norm",
-            "config": {
-                "train":{
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test', 'predict'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "zero_digits_replaced": true,
-                    "lowercase": true,
-                    "extend_vocab": "", //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
-                    "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
-                    "data_pair": {
-                        "sentence": "norm_sentence"
-                    },
+    """Config for TokenNorm 
+
+    Paras:
+    {
+        "_name": "token_norm",
+        "config": {
+            "train":{
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
                 },
-                "predict": "train",
-                "online": "train",
-            }
+                "zero_digits_replaced": true,
+                "lowercase": true,
+                "extend_vocab": "", //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
+                "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
+                "data_pair": {
+                    "sentence": "norm_sentence"
+                },
+            },
+            "predict": "train",
+            "online": "train",
         }
+    }
     """
     def __init__(self, stage, config: Dict):
 
@@ -77,7 +87,12 @@ class TokenNormConfig(BaseConfig):
 
 @subprocessor_register('token_norm')
 class TokenNorm(ISubProcessor):
-    """docstring for TokenNorm
+    """
+    This part could merged to fast_tokenizer(it will save some time), but not all process need this part(except some special dataset like conll2003), and will make the fast_tokenizer be heavy.
+
+    Token norm:
+        Love -> love
+        3281 -> 0000
     """
 
     def __init__(self, stage: str, config: TokenNormConfig):
@@ -94,10 +109,14 @@ class TokenNorm(ISubProcessor):
         self._lower_case_num = 0
         self._lower_case_zero_digits_replaced_num = 0
 
-    def token_norm(self, token: str):
+    def token_norm(self, token: str)->str:
         """norm token, the result len(result) == len(token), exp.  12348->00000
-        :token: TODO
-        :returns: norm token,
+
+        Args:
+            token: origin token
+
+        Returns: normed_token
+
         """
         if self.config.zero_digits_replaced:
             norm = ''
@@ -134,12 +153,17 @@ class TokenNorm(ISubProcessor):
             if norm in self.config.vocab or self.config.prefix+norm in self.config.vocab:
                 self._lower_case_zero_digits_replaced_num += 1
                 return norm
-        return None
+        return ''
 
-    def seq_norm(self, key:str, one_item: pd.Series):
-        """TODO: Docstring for token_norm.
-        :seq: TODO
-        :returns: TODO
+    def seq_norm(self, key:str, one_item: pd.Series)->str:
+        """norm a sentence, the sentence is from one_item[key]
+
+        Args:
+            key: the name in one_item
+            one_item: a pd.Series which include the key
+
+        Returns: norm_sentence
+
         """
         seq = one_item[key]
         norm_seq = [c for c in seq]
@@ -156,8 +180,17 @@ class TokenNorm(ISubProcessor):
         return ''.join(norm_seq)
 
     def process(self, data: Dict)->Dict:
-        '''
-        '''
+        """TokenNorm entry
+
+        Args:
+            data: 
+            {
+                "data": {"train": ...},
+                "tokenizer": ..
+            }
+
+        Returns: norm data
+        """
 
         if not self.data_set:
             return data

@@ -1,7 +1,17 @@
-"""
-Gather tokens embedding from pretrained 'embedding_file' or init embedding(xavier_uniform init, and the range clip in 'bias_clip_range')
-The tokens are from 'Tokenizer'(get_vocab) or 'Vocabulary'(word2idx) object(the two must provide only one)
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -14,20 +24,22 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token_embedding')
 class TokenEmbeddingConfig(BaseConfig):
-    """Config eg.
-        {
-            "_name": "token_embedding",
-            "config": {
-                "train": { // only train stage using
-                    "embedding_file": "*@*",
-                    "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "vocab": null,
-                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
-                    "embedding_size": 200,
-                    "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
-                }
+    """Config for TokenEmbedding
+
+    Paras:
+    {
+        "_name": "token_embedding",
+        "config": {
+            "train": { // only train stage using
+                "embedding_file": "*@*",
+                "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "vocab": null,
+                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
+                "embedding_size": 200,
+                "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
             }
         }
+    }
     """
 
     def __init__(self, stage, config):
@@ -53,6 +65,9 @@ class TokenEmbeddingConfig(BaseConfig):
 @subprocessor_register('token_embedding')
 class TokenEmbedding(ISubProcessor):
     """
+    Gather tokens embedding from pretrained 'embedding_file' or init embedding(xavier_uniform init, and the range clip in 'bias_clip_range')
+
+    The tokens are from 'Tokenizer'(get_vocab) or 'Vocabulary'(word2idx) object(the two must provide only one)
     """
     def __init__(self, stage: str, config: TokenEmbeddingConfig):
         super().__init__()
@@ -71,7 +86,17 @@ class TokenEmbedding(ISubProcessor):
             self.origin_embedding = {}
 
     def get_embedding(self, file_path, embedding_size)->Dict[str, List[float]]:
-        """TODO: Docstring for get_embedding.
+        """load the embeddings from file_path, and only get the last embedding_size dimentions embedding
+
+        Args:
+            file_path: embedding file path
+            embedding_size: the embedding dim
+
+        Returns: embedding_dict
+
+            {
+                "word": [embedding, ...]
+            }
         """
         embedding_dict = {}
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -89,12 +114,15 @@ class TokenEmbedding(ISubProcessor):
                 embedding_dict[word] = vector
         return embedding_dict
 
-    def update_embedding(self, embedding_dict, vocab):
-        """init a embedding to the embedding_dict when some token in vocab but not in embedding_dict
+    def update_embedding(self, embedding_dict: Dict[str, List[float]], vocab: List[str]):
+        """update the embedding_dict which token in vocab but not in embedding_dict
 
-        :embedding_dict: Dict
-        :vocab: List[str]
-        :returns: updated embedding_dict
+        Args:
+            embedding_dict: word->embedding dict
+            vocab: token vocab
+
+        Returns: updated embedding_dict
+
         """
         without_embedding_tokens = 0
         fuzzy_match_tokens = 0
@@ -127,6 +155,14 @@ class TokenEmbedding(ISubProcessor):
         return embedding_dict
 
     def process(self, data: Dict)->Dict:
+        """TokenEmbedding Entry
+
+        Args:
+            data: will process data
+
+        Returns: update embedding_dict to data data[self.config.deliver] = np.array(embedding_mat)
+
+        """
         if not self.config.config:
             return data
         if self.tokenizer is not None and self.config.vocab:

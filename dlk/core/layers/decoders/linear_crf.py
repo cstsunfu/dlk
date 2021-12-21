@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch
 from typing import Dict, List, Set, Callable
 from dlk.core.base_module import BaseModule, BaseModuleConfig
@@ -7,18 +21,20 @@ import copy
 
 @decoder_config_register("linear_crf")
 class LinearCRFConfig(BaseModuleConfig):
-    """docstring for LinearCRFConfig
+    """Config for LinearCRF 
+
+    Paras:
     {
         "module@linear": {
-            _base: linear,
+            "_base": "linear",
         },
         "module@crf": {
-            _base: crf,
+            "_base": "crf",
         },
         "config": {
-            "input_size": "*@*",
-            "output_size": "*@*",
-            "reduction": "mean",
+            "input_size": "*@*",  // the linear input_size
+            "output_size": "*@*", // the linear output_size
+            "reduction": "mean", // crf reduction method
             "output_map": {}, //provide_key: output_key
             "input_map": {} // required_key: provide_key
         },
@@ -39,6 +55,7 @@ class LinearCRFConfig(BaseModuleConfig):
 
 @decoder_register("linear_crf")
 class LinearCRF(BaseModule):
+    """use torch.nn.Linear get the emission probability and fit to CRF"""
     def __init__(self, config: LinearCRFConfig):
         super(LinearCRF, self).__init__(config)
         self._provide_keys = {'logits', "predict_seq_label"}
@@ -49,24 +66,37 @@ class LinearCRF(BaseModule):
         self.crf = module_register.get('crf')(module_config_register.get('crf')(config.crf_config))
 
     def init_weight(self, method: Callable):
-        """init  Module weight by `method`
-        :method: init method
-        :returns: None
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
+
         """
         for module in self.linear.children():
             module.apply(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """
+        """do predict, only get the predict labels
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
         """
         return self.predict_step(inputs)
 
     def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """predict
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
-        """
+        """do predict, only get the predict labels
 
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
         logits = self.linear(inputs[self.get_input_name('embedding')])
         if self._logits_gather.layer_map:
             inputs.update(self._logits_gather([logits]))
@@ -74,9 +104,12 @@ class LinearCRF(BaseModule):
         return inputs
 
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """TODO: Docstring for training_step.
-        :arg1: TODO
-        :returns: TODO
+        """do training step, get the crf loss
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
@@ -87,10 +120,12 @@ class LinearCRF(BaseModule):
         return inputs
 
     def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """TODO: Docstring for training_step.
+        """do validation step, get the crf loss and the predict labels
 
-        :arg1: TODO
-        :returns: TODO
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])

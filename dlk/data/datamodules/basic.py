@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pandas as pd
 from torch.utils.data import DataLoader, random_split, Dataset
 from typing import Dict, List, Union, Any
@@ -12,35 +26,37 @@ logger = Logger.get_logger()
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(BaseConfig):
-    """docstring for BasicDatamoduleConfig
-       {
-           "_name": "basic",
-           "config": {
-               "pin_memory": None,
-               "collate_fn": "default",
-               "shuffle": {
-                   "train": true,
-                   "predict": false,
-                   "valid": false,
-                   "test": false,
-                   "online": false
-               },
-               "key_type_pairs": {
-                    'input_ids': 'int',
-                    'label_ids': 'long',
-                    'type_ids': 'long',
-                },
-               "gen_mask": {
-                    'input_ids': 'attention_mask',
-                },
-               "key_padding_pairs": { //default all 0
-                    'input_ids': 0,
-                },
-               "train_batch_size": 32,
-               "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
-               "online_batch_size": 1,
-           }
-       },
+    """Config for BasicDatamodule
+
+    Paras:
+    {
+        "_name": "basic",
+        "config": {
+            "pin_memory": None,
+            "collate_fn": "default",
+            "shuffle": {
+                "train": true,
+                "predict": false,
+                "valid": false,
+                "test": false,
+                "online": false
+            },
+            "key_type_pairs": {
+                 'input_ids': 'int',
+                 'label_ids': 'long',
+                 'type_ids': 'long',
+             },
+            "gen_mask": {
+                 'input_ids': 'attention_mask',
+             },
+            "key_padding_pairs": { //default all 0
+                 'input_ids': 0,
+             },
+            "train_batch_size": 32,
+            "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+            "online_batch_size": 1,
+        }
+    },
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__(config)
@@ -81,6 +97,7 @@ class BasicDatamoduleConfig(BaseConfig):
 
 
 class BasicDataset(Dataset):
+    """Basic and General Dataset"""
     def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
         self.data = data
         self.type_map = {"float": torch.float, "int": torch.int, 'bool': torch.bool, "long": torch.long}
@@ -88,9 +105,19 @@ class BasicDataset(Dataset):
         self.key_type_pairs = key_type_pairs
 
     def __len__(self):
+        """return teh dataset size
+        """
         return len(self.data)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
+        """return one instance by index
+
+        Args:
+            idx: the index of data
+
+        Returns: the data[idx] and convert to tensor the result will add 'idx' to '_index'
+
+        """
         one_ins = {}
         for key, key_type in self.key_type_pairs.items():
             one_ins[key] = torch.tensor(self.data.iloc[idx][key], dtype=self.type_map[key_type])
@@ -100,6 +127,8 @@ class BasicDataset(Dataset):
 
 @datamodule_register("basic")
 class BasicDatamodule(IBaseDataModule):
+    """Basic and General DataModule
+    """
     def __init__(self, config: BasicDatamoduleConfig, data: Dict[str, Any]):
         super().__init__()
 
@@ -119,6 +148,16 @@ class BasicDatamodule(IBaseDataModule):
         self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask)
 
     def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
+        """return the keys = key_type_pairs.keys() ∩ data.columns
+
+        Args:
+            key_type_pairs: data in columns should map to tensor type
+            data: the pd.DataFrame
+            field: traing/valid/test, etc.
+
+        Returns: real_key_type_pairs where keys = key_type_pairs.keys() ∩ data.columns
+
+        """
         copy_key_type_pairs = copy.deepcopy(key_type_pairs)
         has_key = set(data[field].columns)
         remove = set()
@@ -132,27 +171,30 @@ class BasicDatamodule(IBaseDataModule):
         return copy_key_type_pairs
 
     def train_dataloader(self):
+        """get the train set dataloader"""
         if not self.train_data:
             return None
         return DataLoader(self.train_data, batch_size=self.config.train_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('train', True))
 
     def predict_dataloader(self):
-        """
-        """
+        """get the predict set dataloader"""
         if not self.predict_data:
             return None
         return DataLoader(self.predict_data, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False))
 
     def val_dataloader(self):
+        """get the validation set dataloader"""
         if not self.valid_data:
             return None
         return DataLoader(self.valid_data, batch_size=self.config.valid_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('valid', False))
 
     def test_dataloader(self):
+        """get the test set dataloader"""
         if not self.test_data:
             return None
         return DataLoader(self.test_data, batch_size=self.config.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('test', False))
 
     def online_dataloader(self):
+        """get the data collate_fn"""
         # return DataLoader(self.mnist_test, batch_size=self.batch_size)
         return self.collate_fn

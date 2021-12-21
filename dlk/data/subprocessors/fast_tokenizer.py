@@ -1,11 +1,20 @@
-"""
-Tokenizer the single $sentence
-Or tokenizer the pair $sentence_a, $sentence_b
-Generator $tokens, $input_ids, $type_ids, $special_tokens_mask, $offsets, $word_ids, $overflowing, $sequence_ids
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.tokenizer_util import PreTokenizerFactory, TokenizerPostprocessorFactory, TokenizerNormalizerFactory
 from dlk.utils.config import ConfigTool, BaseConfig
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 import json
 from dlk.utils.logger import Logger
 
@@ -22,8 +31,9 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('fast_tokenizer')
 class FastTokenizerConfig(BaseConfig):
-    """
-    docstring for GeneralTokenizerConfig
+    """Config for FastTokenizer
+
+    Paras:
     {
         "_name": "fast_tokenizer",
         "config": {
@@ -111,7 +121,11 @@ class FastTokenizerConfig(BaseConfig):
 
 @subprocessor_register('fast_tokenizer')
 class FastTokenizer(ISubProcessor):
-    """
+    """ FastTokenizer use hugingface tokenizers
+
+    Tokenizer the single $sentence
+    Or tokenizer the pair $sentence_a, $sentence_b
+    Generator $tokens, $input_ids, $type_ids, $special_tokens_mask, $offsets, $word_ids, $overflowing, $sequence_ids
     """
 
     def __init__(self, stage: str, config: FastTokenizerConfig):
@@ -159,12 +173,14 @@ class FastTokenizer(ISubProcessor):
         if self.config.truncation:
             self.tokenizer.enable_truncation(max_length=self.config.truncation.get('max_length'), stride=0, strategy=self.config.truncation.get('strategy', 'longest_first'))
 
-    def _get_processor(self, factory, one_processor):
-        """TODO: Docstring for _get_processor.
+    def _get_processor(self, factory: Union[PreTokenizerFactory, TokenizerNormalizerFactory, TokenizerPostprocessorFactory], one_processor: Union[Dict, str]):
+        """return the processor in factory by the processor name and update the config of the processor if provide
 
-        :factory: TODO
-        :one_processor: TODO
-        :returns: TODO
+        Args:
+            factory: process factory
+            one_processor: the processor info, it's name (and config)
+
+        Returns: processor
 
         """
         if isinstance(one_processor, dict):
@@ -175,22 +191,27 @@ class FastTokenizer(ISubProcessor):
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
 
-    def _single_tokenize(self, one_line):
-        """TODO: Docstring for _single_tokenize.
+    def _single_tokenize(self, one_line: pd.Series):
+        """Tokenize the one sentence
 
-        :one_line: TODO
-        :returns: TODO
+        Args:
+            one_line: a Series which contains the config.input_map['sentence']
+
+        Returns: encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
 
         """
+        
         sentence = one_line[self.config.input_map['sentence']]
         encode = self.tokenizer.encode(sentence, **self.config.process_data)
         return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
 
-    def _pair_tokenize(self, one_line):
-        """TODO: Docstring for _single_tokenize.
+    def _pair_tokenize(self, one_line: pd.Series):
+        """Tokenize the two sentences
 
-        :one_line: TODO
-        :returns: TODO
+        Args:
+            one_line: a Series which contains the config.input_map['sentence_a'] and config.input_map['sentence_b']
+
+        Returns: encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
 
         """
         sentence_a = one_line[self.config.input_map['sentence_a']]
@@ -198,11 +219,13 @@ class FastTokenizer(ISubProcessor):
         encode = self.tokenizer.encode(sentence_a, sentence_b, **self.config.process_data)
         return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
 
-    def _process(self, data):
-        """TODO: Docstring for _single.
+    def _process(self, data: pd.DataFrame)->pd.DataFrame:
+        """use self._tokenize tokenize the data
 
-        :data: TODO
-        :returns: TODO
+        Args:
+            data: several data in dataframe
+
+        Returns: updated dataframe
 
         """
         output_map = self.config.output_map
@@ -219,6 +242,18 @@ class FastTokenizer(ISubProcessor):
         return data
 
     def process(self, data: Dict)->Dict:
+        """Tokenizer entry
+
+        Args:
+            data: 
+            {
+                "data": {"train": ...},
+                "tokenizer": ..
+            }
+
+        Returns: data and the tokenizer info is in the data['data'], if you set the self.config.deliver, the data[self.config.deliver] will set to self.tokenizer.to_str()
+
+        """
         if not self.config.data_set:
             return data
         for data_set_name in self.config.data_set:

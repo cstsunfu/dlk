@@ -1,12 +1,27 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hjson
 import pickle as pkl
 import os
 import json
-from typing import Union, Dict, Any
+import pandas as pd
+import torch
+from typing import Union, Dict, Any, List
 from dlk.utils.parser import BaseConfigParser, PostProcessorConfigParser
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.logger import Logger
-import torch
 from dlk.utils.vocab import Vocabulary
 import torchmetrics
 
@@ -15,8 +30,9 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('txt_reg')
 class TxtRegPostProcessorConfig(IPostProcessorConfig):
-    """docstring for TxtRegPostProcessorConfig
-    config e.g.
+    """Config for TxtRegPostProcessor
+
+    Paras:
     {
         "_name": "txt_reg",
         "config": {
@@ -78,18 +94,27 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
 
 @postprocessor_register('txt_reg')
 class TxtRegPostProcessor(IPostProcessor):
-    """docstring for TxtRegPostProcessor"""
+    """text regression postprocess"""
     def __init__(self, config: TxtRegPostProcessorConfig):
         super(TxtRegPostProcessor, self).__init__()
         self.config = config
 
-    def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for do_predict.
-        :stage: TODO
-        :list_batch_outputs: the batch_output means the input
-        :origin_data: the origin_data means the origin_input
-        :rt_config: TODO
-        :returns: TODO
+    def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
+        """Process the model predict to human readable format
+
+        Args:
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: all predicts
         """
         results = []
         for outputs in list_batch_outputs:
@@ -123,21 +148,47 @@ class TxtRegPostProcessor(IPostProcessor):
                 results.append(one_ins)
         return results
 
-    def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for do_calc_metrics.
-        :returns: TODO
+    def do_calc_metrics(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Dict:
+        """calc the scores use the predicts or list_batch_outputs
+
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: the named scores
 
         """
         return {}
 
-    def do_save(self, predicts, stage, list_batch_outputs, origin_data, rt_config={}, save_condition=False):
-        """TODO: Docstring for do_save.
+    def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
+        """save the predict when save_condition==True
 
-        :predicts: TODO
-        :rt_config: TODO
-        :condition: when the save condition is True, do save
-        :returns: TODO
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+            save_condition: True for save, False for depend on rt_config
+
+        Returns: None
         """
+
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
             self.config.start_save_step = rt_config.get('total_steps', 0) - 1
             self.config.start_save_epoch = rt_config.get('total_epochs', 0) - 1

@@ -1,11 +1,30 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import ahocorasick
 from typing import Iterable, List, Dict
 
 class QuickSearch(object):
-    """docstring for QuickSearch"""
+    """Ahocorasick enhanced Trie"""
     def __init__(self, words: Iterable=[]):
-        """
-            words: use words to init the QuickSearch
+        """init the QuickSearch
+
+        Args:
+            words: tokens in use words to update the trie
+
+        Returns: TODO
+
         """
         super(QuickSearch, self).__init__()
 
@@ -22,14 +41,19 @@ class QuickSearch(object):
         self.ac.make_automaton()
 
     def search(self, search_str:str)->List[Dict]:
-        """find whether some sub_str in QuickSearch
-        :search_str: TODO
-        :returns: List of result
+        """find whether some sub_str in trie
+
+        Args:
+            search_str: find the search_str
+
+        Returns: 
+            list of result:
             the result organized as {
                 "start": start_position,
                 "end": end_position,
                 "str": search_str[start_position: end_position]
             }
+
         """
         result = []
         for end_index, (_, original_value) in self.ac.iter(search_str):
@@ -39,9 +63,12 @@ class QuickSearch(object):
         return result
 
     def has(self, key: str)->bool:
-        """find key is in our data
-        :key: str
-        :returns: true|false
+        """check key is in trie
+
+        Args:
+            key: a token(str)
+
+        Returns: bool(has or not)
 
         """
         try:
@@ -51,18 +78,26 @@ class QuickSearch(object):
         return True
 
     def add_word(self, word: str):
-        """add a single word to QuickSearch
-        :word: str
-        :returns: None
+        """add a single word to trie
+
+        Args:
+            word: single token
+
+        Returns: None
+
         """
         self.ac.add_word(word, (self.next_index, word))
         self.next_index += 1
         self.ac.make_automaton()
 
     def add_words(self, words: Iterable=[]):
-        """add words from iterator to the ac
-        :words: Iterable
-        :returns: None
+        """add words from iterator to the trie
+
+        Args:
+            words: Iterable[tokens]
+
+        Returns: None
+
         """
         for sub_str in words:
             self.ac.add_word(sub_str, (self.next_index, sub_str))

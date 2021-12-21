@@ -1,4 +1,19 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections import Counter
+from typing import Dict, Iterable, List, Union
 import pandas as pd
 
 
@@ -32,28 +47,34 @@ class Vocabulary(object):
             self.idx2word[self.word_num] = unknown
             self.word_num += 1
 
-    def dumps(self):
-        """TODO: Docstring for dump_to_dict.
-        :returns: TODO
+    def dumps(self)->Dict:
+        """dumps the object to dict
+        Returns: self.__dict__
 
         """
         return self.__dict__
 
     @classmethod
-    def load(cls, attr):
-        """TODO: Docstring for dump_to_dict.
-        :returns: TODO
+    def load(cls, attr: Dict):
+        """load the object from dict
+
+        Args:
+            attr: self.__dict__
+
+        Returns: initialized Vocabulary
 
         """
         vocab = cls()
         vocab.__dict__ = attr
         return vocab
 
-    def __getitem__(self, index):
-        """TODO: Docstring for __getitem__.
+    def __getitem__(self, index: int):
+        """get the token by index
 
-        :index: TODO
-        :returns: TODO
+        Args:
+            index: token index
+
+        Returns: TODO
 
         """
         try:
@@ -61,8 +82,14 @@ class Vocabulary(object):
         except:
             raise KeyError('Undefined index: {}'.format(index))
 
-    def auto_get_index(self, data):
-        """get the index of word from this vocab
+    def auto_get_index(self, data: Union[str, List]):
+        """get the index of word ∈data from this vocab
+
+        Args:
+            data: auto detection
+
+        Returns: type the same as data
+
         """
         if isinstance(data, str):
             return self.get_index(data)
@@ -71,8 +98,14 @@ class Vocabulary(object):
         else:
             raise ValueError("Don't support the type of {}".format(data))
 
-    def get_index(self, word):
+    def get_index(self, word: str)->int:
         """get the index of word from this vocab
+
+        Args:
+            word: a single token
+
+        Returns: index
+
         """
         if self.do_strip:
             word = word.strip()
@@ -85,8 +118,15 @@ class Vocabulary(object):
                 raise KeyError('Unkown word: {}'.format(word))
 
     def filter_rare(self, min_freq=1, most_common=-1):
-        """TODO: Docstring for filter_rare.
-        :returns: TODO
+        """filter the words which count is to small.
+
+        min_freq and most_common can not set all
+
+        Args:
+            min_freq: minist frequency
+            most_common: most common number, -1 means all
+
+        Returns: None
 
         """
         self.word2idx = {}
@@ -104,9 +144,16 @@ class Vocabulary(object):
                     self.idx2word[index] = token
                     index += 1
 
-    def get_word(self, index):
-        """get the word of index from this vocab
+    def get_word(self, index: int)->str:
+        """get the word by index
+
+        Args:
+            index: word index
+
+        Returns: word
+
         """
+        
         try:
             return self.idx2word[int(index)]
         except:
@@ -115,8 +162,15 @@ class Vocabulary(object):
             raise KeyError('Undefined index: {}'.format(index))
 
     def add(self, word):
-        r"""
+        """add one word to vocab
+
+        Args:
+            word: single word
+
+        Returns: self
+
         """
+        
         if not self.word_count[word]:
             self.word2idx[word] = self.word_num
             self.idx2word[self.word_num] = word
@@ -124,11 +178,13 @@ class Vocabulary(object):
         self.word_count[word] += 1
         return self
 
-    def auto_update(self, data):
+    def auto_update(self, data: Union[str, Iterable]):
         """auto detect data type to update the vocab
 
-        :data: str| List[str] | Set[str] | List[List[str]]
-        :returns: TODO
+        Args:
+            data:  str| List[str] | Set[str] | List[List[str]]
+
+        Returns: self
 
         """
         if isinstance(data, str):
@@ -137,12 +193,23 @@ class Vocabulary(object):
             self.add_from_iter(data)
         else:
             raise ValueError("Don't support the type of {}".format(data))
+        return self
 
     def __len__(self):
+        """get the token num of vocab
+        Returns: len(self.word2idx)
+
+        """
         return len(self.word2idx)
 
     def add_from_iter(self, iterator):
-        r"""add a list or set of words
+        """add the tokens in iterator to vocab
+
+        Args:
+            iterator: List[str] | Set[str] | List[List[str]]
+
+        Returns: self
+
         """
         for word in iterator:
             if isinstance(word, list) or isinstance(word, set):

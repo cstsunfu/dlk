@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 from . import callback_register, callback_config_register
 from typing import Dict, List
@@ -7,7 +21,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 @callback_config_register('checkpoint')
 class CheckpointCallbackConfig(object):
-    """docstring for CheckpointCallbackConfig
+    """Config for CheckpointCallback
+
+    Paras:
     {
         // default checkpoint configure
         "_name": "checkpoint",
@@ -39,17 +55,21 @@ class CheckpointCallbackConfig(object):
 
 @callback_register('checkpoint')
 class CheckpointCallback(object):
-    """
+    """Save checkpoint decided by config
     """
 
     def __init__(self, config: CheckpointCallbackConfig):
         super().__init__()
         self.config = config
 
-    def __call__(self, rt_config: Dict):
-        """get the checkpoint object
-        :rt_config: Dict: runtime config, include save_dir, and the checkpoint path name
-        :returns: checkpoint_callback object
+    def __call__(self, rt_config: Dict)->ModelCheckpoint:
+        """get the ModelCheckpoint object
+
+        Args:
+            rt_config: runtime config, include save_dir, and the checkpoint path name
+
+        Returns: ModelCheckpoint object
+
         """
         dirpath = os.path.join(rt_config.get('save_dir', ''), rt_config.get("name", ''))
         return ModelCheckpoint(dirpath=dirpath, **self.config.__dict__)

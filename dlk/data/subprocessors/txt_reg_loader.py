@@ -1,6 +1,17 @@
-"""
-Loader the data from dict and generator DataFrame
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -13,42 +24,38 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('txt_reg_loader')
 class TxtRegLoaderConfig(BaseConfig):
-    """docstring for TxtRegLoaderConfig
-        {
-            "_name": "txt_reg_loader",
-            "config": {
-                "train":{ 
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test', 'predict'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "input_map": {   // without necessery don't change this
-                        "sentence": "sentence", //for single
-                        "sentence_a": "sentence_a",  // for pair
-                        "sentence_b": "sentence_b",
-                        "uuid": "uuid",
-                        "values": "values",
-                    },
-                    "output_map": {   // without necessery don't change this
-                        "sentence": "sentence", //for single
-                        "sentence_a": "sentence_a", //for pair
-                        "sentence_b": "sentence_b",
-                        "uuid": "uuid",
-                        "values": "values",
-                    },
-                    "data_type": "single", // single or pair
+    """Config for TxtRegLoader
+
+    Paras:
+    {
+        "_name": "txt_reg_loader",
+        "config": {
+            "train":{ 
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
                 },
-                "predict": "train",
-                "online": "train",
-            }
+                "input_map": {   // without necessery don't change this
+                    "sentence": "sentence", //for single
+                    "sentence_a": "sentence_a",  // for pair
+                    "sentence_b": "sentence_b",
+                    "uuid": "uuid",
+                    "values": "values",
+                },
+                "output_map": {   // without necessery don't change this
+                    "sentence": "sentence", //for single
+                    "sentence_a": "sentence_a", //for pair
+                    "sentence_b": "sentence_b",
+                    "uuid": "uuid",
+                    "values": "values",
+                },
+                "data_type": "single", // single or pair
+            },
+            "predict": "train",
+            "online": "train",
         }
-        NOTE: the txt_regformat input is
-        {
-            "uuid": '**-**-**-**'
-            "sentence": "I have an apple",
-            "values":  [0.0]
-        }
+    }
     """
     def __init__(self, stage, config: Dict):
 
@@ -70,7 +77,7 @@ class TxtRegLoaderConfig(BaseConfig):
 
 @subprocessor_register('txt_reg_loader')
 class TxtRegLoader(ISubProcessor):
-    """docstring for TxtRegLoader
+    """Loader the data from dict and generator DataFrame
     """
 
     def __init__(self, stage: str, config: TxtRegLoaderConfig):
@@ -85,11 +92,21 @@ class TxtRegLoader(ISubProcessor):
             return
 
     def process(self, data: Dict)->Dict:
-        '''
-            data: {
-                "train": list of json format train data
-            }
-        '''
+        """Entry for TxtClsLoader
+
+        Args:
+            data: input data
+                {
+                    "train": list of json format train data
+                }
+                one_ins example:
+                {
+                    "uuid": '**-**-**-**'
+                    "sentence": "I have an apple",
+                    "values":  [0.0]
+                }
+        Returns: data + loaded_data
+        """
 
         if not self.data_set:
             return data

@@ -1,42 +1,56 @@
-"""
-Relabel the json data to bio
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 from dlk.utils.logger import Logger
+import pandas as pd
 
 logger = Logger.get_logger()
 
 @subprocessor_config_register('seq_lab_relabel')
 class SeqLabRelabelConfig(BaseConfig):
-    """docstring for SeqLabRelabelConfig
-        {
-            "_name": "seq_lab_relabel",
-            "config": {
-                "train":{ //train、predict、online stage config,  using '&' split all stages
-                    "input_map": {  // without necessery, don't change this
-                        "word_ids": "word_ids",
-                        "offsets": "offsets",
-                        "entities_info": "entities_info",
-                    },
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "output_map": {
-                        "labels": "labels",
-                    },
-                    "start_label": "S",
-                    "end_label": "E",
-                }, //3
-                "predict": "train",
-                "online": "train",
-            }
+    """Config for SeqLabRelabel
+
+    Paras:
+    {
+        "_name": "seq_lab_relabel",
+        "config": {
+            "train":{ //train、predict、online stage config,  using '&' split all stages
+                "input_map": {  // without necessery, don't change this
+                    "word_ids": "word_ids",
+                    "offsets": "offsets",
+                    "entities_info": "entities_info",
+                },
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "output_map": {
+                    "labels": "labels",
+                },
+                "start_label": "S",
+                "end_label": "E",
+            }, //3
+            "predict": "train",
+            "online": "train",
         }
+    }
     """
     def __init__(self, stage, config: Dict):
 
@@ -62,7 +76,8 @@ class SeqLabRelabelConfig(BaseConfig):
 
 @subprocessor_register('seq_lab_relabel')
 class SeqLabRelabel(ISubProcessor):
-    """docstring for SeqLabRelabel
+    """
+    Relabel the json data to bio
     """
 
     def __init__(self, stage: str, config: SeqLabRelabelConfig):
@@ -75,6 +90,14 @@ class SeqLabRelabel(ISubProcessor):
             return
 
     def process(self, data: Dict)->Dict:
+        """SeqLabRelabel Entry
+
+        Args:
+            data: Dict
+
+        Returns: relabeled data
+
+        """
 
         if not self.data_set:
             return data
@@ -88,20 +111,26 @@ class SeqLabRelabel(ISubProcessor):
 
         return data
 
-    def find_in_tuple(self, key, tuple_list, sub_word_ids, start, length, is_start=False):
-        """TODO: Docstring for find.
+    def find_position_in_offsets(self, position: int, offset_list: List, sub_word_ids: List, start: int, end: int, is_start: bool=False):
+        """find the sub_word index which the offset_list[index][0]<=position<offset_list[index][1]
 
-        :key: TODO
-        :tuple_list: TODO
-        :start: TODO
-        :returns: TODO
+        Args:
+            position: position
+            offset_list: list of all tokens offsets
+            sub_word_ids: word_ids from tokenizer
+            start: start search index
+            end: end search index
+            is_start: is the position is the start of target token, if the is_start==True and cannot find return -1
+
+        Returns: the index of the offset which include position
+
         """
-        while start<length:
+        while start<end:
             if sub_word_ids[start] is None:
                 start += 1
-            elif key>=tuple_list[start][0] and key<tuple_list[start][1]:
+            elif position>=offset_list[start][0] and position<offset_list[start][1]:
                 return start
-            elif key<tuple_list[start][0]:
+            elif position<offset_list[start][0]:
                 if is_start:
                     return -1
                 else:
@@ -110,9 +139,14 @@ class SeqLabRelabel(ISubProcessor):
                 start += 1
         return -1
 
-    def relabel(self, one_ins):
-        """TODO: Docstring for relabel.
-        :returns: TODO
+    def relabel(self, one_ins: pd.Series):
+        """make token label, if use the first piece label please use the 'seq_lab_firstpiece_relabel'
+
+        Args:
+            one_ins: include sentence, entity_info, offsets
+
+        Returns: labels(labels for each subtoken)
+
         """
         pre_clean_entities_info = one_ins[self.config.entities_info]
         pre_clean_entities_info.sort(key=lambda x: x['start'])
@@ -139,13 +173,13 @@ class SeqLabRelabel(ISubProcessor):
         offset_length = len(offsets)
         sub_labels = []
         for entity_info in entities_info:
-            start_token_index = self.find_in_tuple(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
+            start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
             if start_token_index == -1:
                 logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
                 continue
             for _ in range(start_token_index-cur_token_index):
                 sub_labels.append('O')
-            end_token_index = self.find_in_tuple(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
+            end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
             assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
             sub_labels.append("B-"+entity_info['labels'][0])
             for _ in range(end_token_index-start_token_index):

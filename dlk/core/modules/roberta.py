@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from transformers.models.roberta.modeling_roberta import RobertaModel
 from transformers.models.roberta.configuration_roberta import RobertaConfig
 import json
@@ -11,7 +25,9 @@ from . import module_register, module_config_register
 
 @module_config_register("roberta")
 class RobertaWrapConfig(BaseConfig):
-    """docstring for RobertaWrapConfig
+    """Config for RobertaWrap
+
+    Paras:
     {
         "config": {
             "pretrained_model_path": "*@*",
@@ -45,6 +61,7 @@ class RobertaWrapConfig(BaseConfig):
 
 @module_register("roberta")
 class RobertaWrap(nn.Module):
+    """Roberta Wrap"""
     def __init__(self, config: RobertaWrapConfig):
         super(RobertaWrap, self).__init__()
         self.config = config
@@ -53,8 +70,12 @@ class RobertaWrap(nn.Module):
         self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):
-        """TODO: Docstring for init_weight.
-        :returns: TODO
+        """init the weight of model by 'bert.init_weight()' or from_pretrain
+
+        Args:
+            method: init method, no use for pretrained_transformers
+
+        Returns: None
 
         """
         if self.config.from_pretrain:
@@ -63,14 +84,18 @@ class RobertaWrap(nn.Module):
             self.roberta.init_weights()
 
     def from_pretrained(self):
-        """TODO: Docstring for init.
-        :pretrained_model_path: TODO
-        :returns: TODO
+        """init the model from pretrained_model_path
         """
         self.roberta = RobertaModel.from_pretrained(self.config.pretrained_model_path)
 
     def forward(self, inputs):
-        """
+        """do forward on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: sequence_output, all_hidden_states, all_self_attentions
+
         """
         if self.config.freeze:
             self.roberta.eval()

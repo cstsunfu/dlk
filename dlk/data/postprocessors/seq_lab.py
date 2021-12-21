@@ -1,8 +1,24 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pickle as pkl
 import json
 from typing import Dict, List, Optional, Tuple, Union
 import os
 import numpy as np
+import pandas as pd
+import torch
 from typing import Dict
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.logger import Logger
@@ -14,8 +30,9 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('seq_lab')
 class SeqLabPostProcessorConfig(IPostProcessorConfig):
-    """docstring for SeqLabPostProcessorConfig
-    config e.g.
+    """Config for SeqLabPostProcessor
+
+    Paras:
     {
         "_name": "seq_lab",
         "config": {
@@ -133,7 +150,7 @@ class AggregationStrategy(object):
 
 @postprocessor_register('seq_lab')
 class SeqLabPostProcessor(IPostProcessor):
-    """docstring for DataSet"""
+    """PostProcess for sequence labeling task"""
     def __init__(self, config:    SeqLabPostProcessorConfig):
         super(   SeqLabPostProcessor, self).__init__()
         self.config = config
@@ -141,13 +158,25 @@ class SeqLabPostProcessor(IPostProcessor):
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
 
-    def do_predict(self, stage, list_batch_outputs, origin_data, rt_config)->List:
-        """TODO: Docstring for do_predict.
-        :stage: TODO
-        :list_batch_outputs: the batch_output means the input
-        :origin_data: the origin_data means the origin_input
-        :rt_config: TODO
-        :returns: TODO
+    def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
+        """Process the model predict to human readable format
+
+        There are three predictor for diffrent seq_lab task dependent on the config.use_crf(the predict is already decoded to ids), and config.word_ready(subword has gathered to firstpiece)
+
+        Args:
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: all predicts
+
         """
         predicts = []
         if self.config.use_crf:
@@ -158,16 +187,46 @@ class SeqLabPostProcessor(IPostProcessor):
             predicts = self.predict(list_batch_outputs=list_batch_outputs, origin_data=origin_data)
         return predicts
 
-    def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for do_calc_metrics.
-        :returns: TODO
+    def do_calc_metrics(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Dict:
+        """calc the scores use the predicts or list_batch_outputs
+
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: the named scores, recall, precision, f1
 
         """
-        def _flat_entities_info(entities_info, text):
-            """TODO: Docstring for _flat_entity_info.
 
-            :entities_info: TODO
-            :returns: TODO
+        def _flat_entities_info(entities_info: List[Dict], text: str)->Dict:
+            """gather the same labeled entity to the same list
+
+            Args:
+                entities_info: 
+                [
+                    {
+                        "start": start1,
+                        "end": end1,
+                        "labels": ["label_1"]
+                    },
+                    {
+                        "start": start2,
+                        "end": end2,
+                        "labels": ["label_2"]
+                    },....
+                ]
+                text: be labeled text
+
+            Returns: { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
 
             """
             info = {}
@@ -192,13 +251,25 @@ class SeqLabPostProcessor(IPostProcessor):
         logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
         return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
-    def do_save(self, predicts, stage, rt_config={}, save_condition=False):
-        """TODO: Docstring for do_save.
+    def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
+        """save the predict when save_condition==True
 
-        :predicts: TODO
-        :rt_config: TODO
-        :condition: when the save condition is True, do save
-        :returns: TODO
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+            save_condition: True for save, False for depend on rt_config
+
+        Returns: None
+
         """
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
             self.config.start_save_step = rt_config.get('total_steps', 0) - 1
@@ -216,37 +287,49 @@ class SeqLabPostProcessor(IPostProcessor):
             logger.info(f"Save the {stage} predict data at {save_file}")
             json.dump(predicts, open(save_file, 'w'), indent=4)
 
-    def calc_score(self, predict_list, ground_truth_list):
-        """TODO: Docstring for calc_score.
+    def calc_score(self, predict_list: List, ground_truth_list: List):
+        """use predict_list and ground_truth_list to calc scores
+
+        Args:
+            predict_list: list of predict
+            ground_truth_list: list of ground_truth
+
+        Returns: precision, recall, f1
+
         """
         category_tp = {}
         category_fp = {}
         category_fn = {}
         def _care_div(a, b):
-            """TODO: Docstring for _care_div.
+            """return a/b or 0.0 if b == 0
             """
             if b==0:
                 return 0.0
             return a/b
 
 
-        def calc_num(pred, ground_truth):
-            """TODO: Docstring for calc_num.
-            :returns: tp, fn, fp
+        def _calc_num(_pred: List, _ground_truth: List):
+            """calc tp, fn, fp
+
+            Args:
+                pred: pred list
+                ground_truth: groud truth list
+
+            Returns: tp, fn, fp
 
             """
-            num_p = len(pred)
-            num_t = len(ground_truth)
+            num_p = len(_pred)
+            num_t = len(_ground_truth)
             truth = 0
-            for p in pred:
-                if p in ground_truth:
+            for p in _pred:
+                if p in _ground_truth:
                     truth += 1
             return truth, num_t-truth, num_p-truth
 
         for predict, ground_truth in zip(predict_list, ground_truth_list):
             keys = set(list(predict.keys())+list(ground_truth.keys()))
             for key in keys:
-                tp, fn, fp = calc_num(predict.get(key, []), ground_truth.get(key, []))
+                tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
                 # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
                 category_tp[key] = category_tp.get(key, 0) + tp
                 category_fn[key] = category_fn.get(key, 0) + fn
@@ -267,27 +350,44 @@ class SeqLabPostProcessor(IPostProcessor):
         f1 = _care_div(2*precision*recall, precision+recall)
         return precision, recall, f1
 
-    def get_entity_info(self, sub_tokens_index, offset_mapping, word_ids, pre_label):
+    def get_entity_info(self, sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
         """gather sub_tokens to get the start and end
-        :returns: start, end info
+
+        Args:
+            sub_tokens_index: the entity tokens index list
+            offset_mapping: every token offset in text
+            word_ids: every token in the index of words
+            label: predict label
+
+        Returns: entity_info
+
         """
-        if not sub_tokens_index or not pre_label:
-            return None
-        # TODO: use word_ids to combine the incomplete word
+        if not sub_tokens_index or not label:
+            return {}
         start = offset_mapping[sub_tokens_index[0]][0]
         end = offset_mapping[sub_tokens_index[-1]][1]
         return {
             "start": start,
             "end": end,
-            "labels": [pre_label]
+            "labels": [label]
         }
 
-    def _process4predict(self, predict, index, origin_data):
-        """TODO: Docstring for _process4predict.
+    def _process4predict(self, predict: torch.LongTensor, index: int, origin_data: pd.DataFrame)->Dict:
+        """gather the predict and origin text and ground_truth_entities_info for predict
 
-        :predict: TODO
-        :index: TODO
-        :returns: TODO
+        Args:
+            predict: the predict label_ids
+            index: the data index in origin_data
+            origin_data: the origin pd.DataFrame
+
+        Returns: one_ins info 
+        {
+            "sentence": "...",
+            "uuid": "..",
+            "entities_info": [".."],
+            "predict_entities_info": [".."],
+        }
+
         """
         one_ins = {}
         origin_ins = origin_data.iloc[int(index)]
@@ -325,12 +425,14 @@ class SeqLabPostProcessor(IPostProcessor):
         one_ins['predict_entities_info'] = predict_entities_info
         return one_ins
 
-    def crf_predict(self, list_batch_outputs, origin_data):
-        """TODO: Docstring for predict.
+    def crf_predict(self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame)->List:
+        """use the crf predict label_ids get predict info
 
-        :list_batch_outputs: TODO
-        :origin_data: TODO
-        :returns: TODO
+        Args:
+            list_batch_outputs: the crf predict info
+            origin_data: the origin data
+
+        Returns: all predict instances info
 
         """
         if self.config.sentence not in origin_data:
@@ -356,12 +458,14 @@ class SeqLabPostProcessor(IPostProcessor):
                 predicts.append(one_ins)
         return predicts
 
-    def word_predict(self, list_batch_outputs, origin_data):
-        """TODO: Docstring for word_predict.
+    def word_predict(self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame)->List:
+        """use the firstpiece or whole word predict label_logits get predict info
 
-        :list_batch_outputs: TODO
-        :origin_data: TODO
-        :returns: TODO
+        Args:
+            list_batch_outputs: the predict labels logits info
+            origin_data: the origin data
+
+        Returns: all predict instances info
 
         """
         if self.config.sentence not in origin_data:
@@ -395,12 +499,14 @@ class SeqLabPostProcessor(IPostProcessor):
                 predicts.append(one_ins)
         return predicts
 
-    def predict(self, list_batch_outputs, origin_data):
-        """TODO: Docstring for predict.
+    def predict(self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame)->List:
+        """general predict process (especially for subword)
 
-        :list_batch_outputs: TODO
-        :origin_data: TODO
-        :returns: TODO
+        Args:
+            list_batch_outputs: the predict (sub-)labels logits info
+            origin_data: the origin data
+
+        Returns: all predict instances info
 
         """
         if self.config.sentence not in origin_data:
@@ -522,8 +628,7 @@ class SeqLabPostProcessor(IPostProcessor):
 
 
     def group_sub_entities(self, entities: List[dict]) -> dict:
-        """
-        Group together the adjacent tokens with the same entity predicted.
+        """Group together the adjacent tokens with the same entity predicted.
 
         Args:
             entities (:obj:`dict`): The entities predicted by the pipeline.
@@ -556,8 +661,7 @@ class SeqLabPostProcessor(IPostProcessor):
         return bi, tag
 
     def group_entities(self, entities: List[dict]) -> List[dict]:
-        """
-        Find and group together the adjacent tokens with the same entity predicted.
+        """Find and group together the adjacent tokens with the same entity predicted.
 
         Args:
             entities (:obj:`dict`): The entities predicted by the pipeline.
@@ -593,8 +697,7 @@ class SeqLabPostProcessor(IPostProcessor):
         return entity_groups
 
     def aggregate_words(self, entities: List[dict], aggregation_strategy: AggregationStrategy) -> List[dict]:
-        """
-        Override tokens from a given word that disagree to force agreement on word boundaries.
+        """Override tokens from a given word that disagree to force agreement on word boundaries.
 
         Example: micro|soft| com|pany| B-ENT I-NAME I-ENT I-ENT will be rewritten with first strategy as microsoft|
         company| B-ENT I-ENT

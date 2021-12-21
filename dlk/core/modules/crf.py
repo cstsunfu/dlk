@@ -1,12 +1,28 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch
 import torch.nn as nn
-from typing import Dict
+from typing import Callable, Dict
 from . import module_register, module_config_register
 from dlk.utils.config import BaseConfig
 
 @module_config_register("crf")
 class CRFConfig(BaseConfig):
-    """docstring for LinearConfig
+    """Config for ConditionalRandomField
+
+    Paras:
     {
         "config": {
             "output_size": 2,
@@ -31,12 +47,10 @@ class CRFConfig(BaseConfig):
 
 @module_register("crf")
 class ConditionalRandomField(nn.Module):
-    r"""
-    CRF, training_step for training, forward for decode。
+    """ CRF, training_step for training, forward for decode。
     """
 
-    def __init__(self, config: CRFConfig
-                 ):
+    def __init__(self, config: CRFConfig):
         super(ConditionalRandomField, self).__init__()
 
         self.num_tags = config.output_size
@@ -44,23 +58,36 @@ class ConditionalRandomField(nn.Module):
         self.transitions = nn.parameter.Parameter(torch.randn(self.num_tags, self.num_tags))
         self.start_transitions = nn.parameter.Parameter(torch.randn(self.num_tags))
         self.end_transitions = nn.parameter.Parameter(torch.randn(self.num_tags))
-        self.reset_parameters()
 
-    def reset_parameters(self) -> None:
-        """Initialize the transition parameters.
+    def init_weight(self, method: Callable):
+        """init the weight of transitions, start_transitions and end_transitions
+
+        Initialize the transition parameters.
         The parameters will be initialized randomly from a uniform distribution
         between -0.1 and 0.1.
+
+        Args:
+            method: init method, no use
+
+        Returns: None
+
         """
+
         nn.init.normal_(self.transitions, -1, 0.1)
         nn.init.uniform_(self.start_transitions, -0.1, 0.1)
         nn.init.uniform_(self.end_transitions, -0.1, 0.1)
 
-    def _normalizer_likelihood(self, logits, mask):
-        r"""Computes the (batch_size,) denominator term for the log-likelihood, which is the
-        sum of the likelihoods across all possible state sequences.
-        :param logits:FloatTensor, max_len x batch_size x num_tags
-        :param mask:ByteTensor, max_len x batch_size
-        :return:FloatTensor, batch_size
+    def _normalizer_likelihood(self, logits: torch.FloatTensor, mask: torch.ByteTensor):
+        """Computes the (batch_size,) denominator term for the log-likelihood.
+
+        The sum of the likelihoods across all possible state sequences.
+
+        Args:
+            logits: max_len*batch_size*num_tags
+            mask: max_len*batch_size
+
+        Returns: batch_size*every sum
+
         """
         seq_len, batch_size, n_tags = logits.size()
         alpha = logits[0]
@@ -79,12 +106,16 @@ class ConditionalRandomField(nn.Module):
 
         return torch.logsumexp(alpha, 1)
 
-    def _gold_score(self, logits, tags, mask):
-        r""" Compute the score for the gold path.
-        :param logits: FloatTensor, max_len x batch_size x num_tags
-        :param tags: LongTensor, max_len x batch_size
-        :param mask: ByteTensor, max_len x batch_size
-        :return:FloatTensor, batch_size
+    def _gold_score(self, logits: torch.FloatTensor, tags: torch.LongTensor, mask: torch.ByteTensor):
+        """ Compute the score for the gold path.
+
+        Args:
+            logits: max_len*batch_size*num_tags
+            tags: max_len*batch_size
+            mask: max_len*batch_size
+
+        Returns: batch_size*every_gold_score
+
         """
         seq_len, batch_size, _ = logits.size()
         batch_idx = torch.arange(batch_size, dtype=torch.long, device=logits.device)
@@ -106,26 +137,34 @@ class ConditionalRandomField(nn.Module):
         # return [B,]
         return score
 
-    def training_step(self, logits, tags, mask):
-        r"""
-        :param torch.FloatTensor logits->emissions: batch_size x max_len x num_tags
-        :param torch.LongTensor tags: batch_size x max_len
-        :param torch.ByteTensor mask: batch_size x max_len, mask==0 means padding
-        :return: torch.FloatTensor, (batch_size,)
+    def training_step(self, logits: torch.FloatTensor, tags: torch.LongTensor, mask: torch.LongTensor):
+        """training step, calc the loss
+
+        Args:
+            logits: emissions, batch_size*max_len*num_tags
+            tags: batch_size*max_len
+            mask: batch_size*max_len, mask==0 means padding
+
+        Returns: loss
+
         """
         logits = logits.transpose(0, 1)
         tags = tags.transpose(0, 1).long()
-        mask = mask.transpose(0, 1).float()
+        mask = mask.transpose(0, 1).byte()
         all_path_score = self._normalizer_likelihood(logits, mask)
         gold_path_score = self._gold_score(logits, tags, mask)
         loss = all_path_score - gold_path_score
         return loss.mean()
 
-    def forward(self, logits, mask):
-        r"""predict
-        :param torch.FloatTensor logits->emissions: batch_size x max_len x num_tags
-        :param torch.LongTensor mask: batch_size x max_len, mask set to 0 means padding
-        :return: torch.LongTensor batch_size x max_len
+    def forward(self, logits: torch.FloatTensor, mask: torch.LongTensor):
+        """predict step, get the best path
+
+        Args:
+            logits: emissions, batch_size*max_len*num_tags
+            mask: batch_size*max_len, mask==0 means padding
+
+        Returns: batch*max_len
+
         """
         logits = logits.transpose(0, 1)  # L, B, H
         mask = mask.transpose(0, 1)
@@ -133,6 +172,15 @@ class ConditionalRandomField(nn.Module):
 
     def _viterbi_decode(self, emissions: torch.FloatTensor,
                         mask: torch.LongTensor) -> torch.Tensor:
+        """predict step, get the best path
+
+        Args:
+            logits: emissions, max_len*batch_size*num_tags
+            mask: max_len*batch_size, mask==0 means padding
+
+        Returns: batch*max_len
+
+        """
         # emissions: (seq_length, batch_size, num_tags)
         # mask: (seq_length, batch_size)
         assert emissions.dim() == 3 and mask.dim() == 2

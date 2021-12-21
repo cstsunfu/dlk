@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """optimizers"""
 import importlib
 import os
@@ -5,6 +19,7 @@ from typing import Callable, Dict, Tuple, Any
 from dlk.utils.register import Register
 import torch.optim as optim
 from dlk.utils.logger import Logger
+import torch
 import re
 
 
@@ -15,16 +30,24 @@ optimizer_register = Register("Optimizer register.")
 
 class BaseOptimizer(object):
 
-    def get_optimizer(self):
-        """TODO: Docstring for get_optimizer.
-        :returns: TODO
+    def get_optimizer(self)->optim.Optimizer:
+        """return the initialized optimizer
+
+        Returns: Optimizer
 
         """
         raise NotADirectoryError
 
-    def init_optimizer(self, optimizer, model, config):
-        """TODO: Docstring for get_optimizer.
-        :returns: TODO
+    def init_optimizer(self, optimizer: optim.Optimizer, model: torch.Module, config: Dict):
+        """init the optimizer for paras in model, and the group is decided by config
+
+        Args:
+            optimizer: adamw, sgd, etc.
+            model: pytorch model
+            config: which decided the para group, lr, etc.
+
+        Returns: the initialized optimizer
+
         """
         optimizer_special_groups = config.pop('optimizer_special_groups', {})
         params = []
@@ -64,9 +87,7 @@ class BaseOptimizer(object):
         return optimizer(params=params, **config)
 
     def __call__(self):
-        """TODO: Docstring for __call__.
-        :returns: TODO
-
+        """the same as self.get_optimizer()
         """
         return self.get_optimizer()
 

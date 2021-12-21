@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 from dlk.utils.config import BaseConfig
 import torch
@@ -6,7 +20,9 @@ from . import module_register, module_config_register
 
 @module_config_register("conv1d")
 class Conv1dConfig(BaseConfig):
-    """docstring for Conv1dConfig
+    """Config for Conv1d
+
+    Paras:
     {
         "config": {
             "in_channels": "*@*",
@@ -36,6 +52,8 @@ class Conv1dConfig(BaseConfig):
 
 @module_register("conv1d")
 class Conv1d(nn.Module):
+    """Conv for 1d input
+    """
     def __init__(self, config: Conv1dConfig):
         super().__init__()
         convs = []
@@ -46,5 +64,25 @@ class Conv1d(nn.Module):
         self.convs = nn.ModuleList(convs)
         self.dropout = nn.Dropout(p=float(config.dropout))
 
-    def forward(self, x):
+    def init_weight(self, method):
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
+
+        """
+        for module in self.children():
+            module.apply(method)
+
+    def forward(self, x: torch.Tensor):
+        """do forward on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: conv result the shape is the same as input
+
+        """
         return self.dropout(torch.cat([conv(x) for conv in self.convs], dim=-1))
