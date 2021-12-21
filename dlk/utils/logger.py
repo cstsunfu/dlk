@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
 import os
 import colorlog
@@ -36,8 +50,9 @@ class Logger(object):
 
     @staticmethod
     def get_logger()->logging.Logger:
-        """TODO: Docstring for get_logger.
-        :returns: TODO
+        """return the 'dlk' logger if initialized otherwise init and return it
+
+        Returns: Logger.global_logger
 
         """
         if Logger.global_logger is None:
@@ -47,11 +62,15 @@ class Logger(object):
 
     @staticmethod
     def init_file_logger(log_file, base_dir='logs', log_level: str='debug'):
-        """TODO: Docstring for init_file_logger.
-        :log_file: TODO
-        :base_dir: TODO
-        :log_level: TODO
-        :returns: TODO
+        """init(if there is not one) or change(if there already is one) the log file
+
+        Args:
+            log_file: log file path
+            base_dir: real log path is '$base_dir/$log_file'
+            log_level: 'debug', 'info', etc.
+
+        Returns: None
+
         """
         if log_file:
             log_file = os.path.join(base_dir, log_file)
@@ -69,8 +88,14 @@ class Logger(object):
 
     @staticmethod
     def init_global_logger(log_level: str='debug', log_name: str='dlk'):
-        """TODO: Docstring for init_global_logger.
-        :returns: TODO
+        """init the global_logger
+
+        Args:
+            log_level: you can change this to logger to different level
+            log_name: change this is not suggested 
+
+        Returns: None
+
         """
         if Logger.global_logger is None:
             Logger.global_logger = logging.getLogger(log_name)

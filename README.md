@@ -16,12 +16,15 @@ This project is WIP, only provide some basic method, and is not been tested.
 
 - [ ] Add more documents
 - [ ] distill struct
+- [ ] adv training
 - [ ] Add disable tokenizer post process
 
-- [X] Predict
+- [ ] Predict
 
-    - [X] make the main code.
-    - [X] test
+    - [X] complete the main code.
+    - [ ] test
+    - [ ] torchscript
+    - [ ] onnxrt
 
 * [X] when the high config change the _name of the basic config, the base config should be coverd
 
@@ -32,4 +35,7 @@ This project is WIP, only provide some basic method, and is not been tested.
 
 - [ ] main entry? 
 
-- [ ] LightGBM, it's necessary？
+- [ ] LightGBM, it's necessary? this may will split to another package
+* [ ] make CRF and more modules which uses the op like 'for' and 'if' to be Scriptable（for，if）
+* [ ] Validation LSTM module is scriptable or not?
+* [ ] unittest

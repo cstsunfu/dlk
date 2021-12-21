@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from tokenizers.processors import TemplateProcessing
 from tokenizers.normalizers import Lowercase, NFD, NFC, StripAccents, Strip
 from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel
@@ -8,17 +22,12 @@ class TokenizerPostprocessorFactory(object):
 
     @property
     def bert(self):
-        """TODO: Docstring for bert.
-
-        :arg1: TODO
-        :returns: TODO
+        """bert postprocess
+        Returns: bert postprocess
 
         """
+        pass
         def _wrap():
-            """TODO: Docstring for _wrap.
-            :returns: TODO
-
-            """
             return TemplateProcessing(
                 single="[CLS] $A [SEP]",
                 pair="[CLS] $A [SEP] $B:1 [SEP]:1",
@@ -31,87 +40,87 @@ class TokenizerPostprocessorFactory(object):
 
 
     def get(self, name):
-        """TODO: Docstring for get.
+        """get postprocess by name 
+        Returns: postprocess
+
         """
         return self.__getattribute__(name)
 
 
 
 class PreTokenizerFactory(object):
-    """docstring for PreTokenizerFactory"""
+    """PreTokenizerFactory"""
 
     @property
     def bytelevel(self):
-        """TODO: Docstring for bytelevel.
-
-        :arg1: TODO
-        :returns: TODO
+        """byte level pre_tokenizer
+        Returns: ByteLevel
 
         """
         return ByteLevel
 
     @property
     def whitespace(self):
-        """TODO: Docstring for bytelevel.
-
-        :arg1: TODO
-        :returns: TODO
+        """whitespace pre_tokenizer
+        Returns: WhitespaceSplit
 
         """
         return WhitespaceSplit
 
     def get(self, name):
-        """TODO: Docstring for get.
-
-        :name: TODO
-        :returns: TODO
+        """get pretokenizer by name 
+        Returns: postprocess
 
         """
         return self.__getattribute__(name)
 
 
 class TokenizerNormalizerFactory(object):
-    """docstring for TokenizerNormalizerFactory"""
+    """TokenizerNormalizerFactory"""
 
     @property
     def lowercase(self):
-        """TODO: Docstring for lowercase.
-
-        :arg1: TODO
-        :returns: TODO
+        """do lowercase normalizers
+        Returns: Lowercase
 
         """
         return Lowercase
 
     @property
     def nfd(self):
-        """TODO: Docstring for nfd.
-
-        :arg1: TODO
-        :returns: TODO
+        """do nfd normalizers
+        Returns: NFD
 
         """
         return NFD
 
     @property
     def nfc(self):
-        """TODO: Docstring for nfc.
+        """do nfc normalizers
+        Returns: NFC
+
         """
         return NFC
 
     @property
     def strip_accents(self):
-        """
+        """do strip normalizers
+        Returns: StripAccents
+
         """
         return StripAccents
 
     @property
     def strip(self):
-        """
+        """do strip normalizers
+        Returns: StripAccents
+
         """
         return Strip
 
     def get(self, name):
-        """TODO: Docstring for get.
+        """get normalizers by name 
+        Returns: Normalizer
+
         """
         return self.__getattribute__(name)

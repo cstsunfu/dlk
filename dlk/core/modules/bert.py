@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from transformers.models.bert.modeling_bert import BertModel
 from transformers.models.bert.configuration_bert import BertConfig
 import json
@@ -10,7 +24,9 @@ from . import module_register, module_config_register
 from dlk.utils.config import BaseConfig
 @module_config_register("bert")
 class BertWrapConfig(BaseConfig):
-    """docstring for BertWrapConfig
+    """Config for BertWrap
+
+    Paras:
     {
         "config": {
             "pretrained_model_path": "*@*",
@@ -44,6 +60,7 @@ class BertWrapConfig(BaseConfig):
 
 @module_register("bert")
 class BertWrap(nn.Module):
+    """Bert wrap"""
     def __init__(self, config: BertWrapConfig):
         super(BertWrap, self).__init__()
         self.config = config
@@ -52,8 +69,12 @@ class BertWrap(nn.Module):
         self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):
-        """TODO: Docstring for init_weight.
-        :returns: TODO
+        """init the weight of model by 'bert.init_weight()' or from_pretrain
+
+        Args:
+            method: init method, no use for pretrained_transformers
+
+        Returns: None
 
         """
         if self.config.from_pretrain:
@@ -62,14 +83,18 @@ class BertWrap(nn.Module):
             self.bert.init_weights()
 
     def from_pretrained(self):
-        """TODO: Docstring for init.
-        :pretrained_model_path: TODO
-        :returns: TODO
+        """init the model from pretrained_model_path
         """
         self.bert = BertModel.from_pretrained(self.config.pretrained_model_path)
 
-    def forward(self, inputs):
-        """
+    def forward(self, inputs: Dict):
+        """do forward on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: sequence_output, all_hidden_states, all_self_attentions
+
         """
         if self.config.freeze:
             with torch.no_grad():

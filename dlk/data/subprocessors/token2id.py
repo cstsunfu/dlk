@@ -1,6 +1,17 @@
-"""
-Use 'Vocabulary' map the tokens to id
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -12,25 +23,27 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(BaseConfig):
-    """docstring for Token2IDConfig
-        {
-            "_name": "token2id",
-            "config": {
-                "train":{ //train、predict、online stage config,  using '&' split all stages
-                    "data_pair": {
-                        "labels": "label_ids"
-                    },
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test', 'predict'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "vocab": "label_vocab", // usually provided by the "token_gather" module
-                }, //3
-                "predict": "train",
-                "online": "train",
-            }
+    """Config for Token2ID
+
+    Paras:
+    {
+        "_name": "token2id",
+        "config": {
+            "train":{ //train、predict、online stage config,  using '&' split all stages
+                "data_pair": {
+                    "labels": "label_ids"
+                },
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "vocab": "label_vocab", // usually provided by the "token_gather" module
+            }, //3
+            "predict": "train",
+            "online": "train",
         }
+    }
     """
 
     def __init__(self, stage, config: Dict):
@@ -56,7 +69,7 @@ class Token2IDConfig(BaseConfig):
 
 @subprocessor_register('token2id')
 class Token2ID(ISubProcessor):
-    """docstring for Token2ID
+    """Use 'Vocabulary' map the tokens to id
     """
 
     def __init__(self, stage: str, config: Token2IDConfig):
@@ -69,8 +82,17 @@ class Token2ID(ISubProcessor):
             return
         self.data_pair = config.data_pair
 
-
     def process(self, data: Dict)->Dict:
+        """Token2ID Entry
+
+        one_token like ['apple'] will generate [1] if the vocab.word2idx = {'apple': 1}
+
+        Args:
+            data: will process data
+
+        Returns: updated data(tokens -> token_ids)
+
+        """
 
         if not self.data_set:
             return data

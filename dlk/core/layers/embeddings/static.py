@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 from . import embedding_register, embedding_config_register
 from typing import Dict, List, Set
@@ -10,11 +24,12 @@ logger = Logger.get_logger()
 
 @embedding_config_register('static')
 class StaticEmbeddingConfig(BaseModuleConfig):
-    """docstring for BasicModelConfig
+    """Config for StaticEmbedding
+
+    Paras:
     {
         "config": {
             "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-
             "embedding_dim": "*@*",
             //if the embedding_file is a dict, you should provide the dict trace to embedding
             "embedding_trace": ".", //default the file itself is the embedding
@@ -57,8 +72,7 @@ class StaticEmbeddingConfig(BaseModuleConfig):
 
 @embedding_register('static')
 class StaticEmbedding(SimpleModule):
-    """
-    from 'input_ids' generate 'embedding'
+    """ from 'input_ids' generate static 'embedding' like glove, word2vec
     """
 
     def __init__(self, config: StaticEmbeddingConfig):
@@ -72,16 +86,24 @@ class StaticEmbedding(SimpleModule):
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
 
     def init_weight(self, method):
-        """init  Module weight by `method`
-        :method: init method
-        :returns: None
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
+
         """
         logger.info(f'The static embedding is loaded the pretrained.')
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """forward
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """get the pretrained static embedding like glove word2vec
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))
         if self._logits_gather.layer_map:

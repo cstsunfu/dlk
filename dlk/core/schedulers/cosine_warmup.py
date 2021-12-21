@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Dict
 import math
 from dlk.utils.config import BaseConfig
@@ -8,7 +22,9 @@ import torch.optim as optim
 
 @scheduler_config_register("cosine_warmup")
 class CosineWarmupScheduleConfig(BaseConfig):
-    """
+    """Config for CosineWarmupSchedule
+
+    Paras:
     {
         "config": {
             "last_epoch": -1,
@@ -36,14 +52,17 @@ class CosineWarmupScheduleConfig(BaseConfig):
 
 @scheduler_register("cosine_warmup")
 class CosineWarmupSchedule(BaseScheduler):
+    """CosineWarmupSchedule"""
     def __init__(self, optimizer: optim.Optimizer, config: CosineWarmupScheduleConfig):
         super(CosineWarmupSchedule, self).__init__()
         self.config = config
         self.optimizer = optimizer
 
-    def get_scheduler(self):
-        """TODO: Docstring for get_scheduler.
-        :returns: TODO
+    def get_scheduler(self)->LambdaLR:
+        """return the initialized linear wramup then cos decay scheduler
+
+        Returns: Schedule
+
         """
         num_training_steps = self.config.num_training_steps
         num_warmup_steps = self.config.num_warmup_steps

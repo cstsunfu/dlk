@@ -1,10 +1,25 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """postprocessors"""
 
 import importlib
 import os
-from typing import Callable, Dict, Type
+from typing import Callable, Dict, Type, List, Union
 from dlk.utils.register import Register
 from dlk.utils.config import BaseConfig
+import pandas as pd
 import abc
 
 class IPostProcessorConfig(BaseConfig):
@@ -16,16 +31,16 @@ class IPostProcessorConfig(BaseConfig):
     @property
     def input_map(self):
         """required the output of model process content name map
-        :returns: TODO
 
+        Returns: input_map
         """
         return self.config.get("input_map", {})
 
     @property
     def origin_input_map(self):
         """required the origin data(before pass to datamodule) column name map
-        :returns: TODO
 
+        Returns: origin_input_map
         """
         return self.config.get("origin_input_map", {})
 
@@ -33,9 +48,13 @@ class IPostProcessorConfig(BaseConfig):
 class IPostProcessor(metaclass=abc.ABCMeta):
     """docstring for IPostProcessor"""
 
-    def loss_name_map(self, stage):
-        """TODO: Docstring for loss_name_map.
-        :returns: TODO
+    def loss_name_map(self, stage)->str:
+        """get the stage loss name
+
+        Args:
+            stage: valid, train or test
+
+        Returns: loss_name
 
         """
         map = {
@@ -45,11 +64,13 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         }
         return map.get(stage, stage)
 
-    def average_loss(self, list_batch_outputs):
-        """TODO: Docstring for average_loss.
+    def average_loss(self, list_batch_outputs: List[Dict])->float:
+        """average all the loss of the list_batches
 
-        :list_batch_outputs: TODO
-        :returns: TODO
+        Args:
+            list_batch_outputs: a list of outputs
+
+        Returns: average_loss
 
         """
         sum_loss = 0
@@ -58,49 +79,96 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         return sum_loss / len(list_batch_outputs)
 
     @abc.abstractmethod
-    def do_predict(self, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for do_predict.
-        :stage: TODO
-        :list_batch_outputs: TODO
-        :origin_data: TODO
-        :rt_config: TODO
-        :returns: TODO
+    def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
+        """Process the model predict to human readable format
+
+        Args:
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: all predicts
 
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def do_calc_metrics(self, predicts, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for do_calc_metrics.
-        :returns: TODO
+    def do_calc_metrics(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Dict:
+        """calc the scores use the predicts or list_batch_outputs
+
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: the named scores
 
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def do_save(self, predicts, stage, list_batch_outputs, origin_data, rt_config={}, save_condition=False):
-        """TODO: Docstring for do_save.
+    def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
+        """save the predict when save_condition==True
 
-        :predicts: TODO
-        :rt_config: TODO
-        :condition: when the save condition is True, do save
-        :returns: TODO
+        Args:
+            predicts: list of predicts
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+            save_condition: True for save, False for depend on rt_config
+
+        Returns: None
+
         """
         raise NotImplementedError
 
     @property
-    def without_ground_truth_stage(self):
-        """TODO: Docstring for no_ground_truth_stage.
-        :returns: TODO
+    def without_ground_truth_stage(self)->set:
+        """there is not groud truth in the returned stage
+
+        Returns: without_ground_truth_stage
 
         """
         return {'predict', 'online'}
 
-    def process(self, stage, list_batch_outputs, origin_data, rt_config)->Dict:
-        """TODO: Docstring for process.
+    def process(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Union[Dict, List]:
+        """PostProcess entry
 
-        :arg1: TODO
-        :returns: TODO
+        Args:
+            stage: train/test/etc.
+            list_batch_outputs: a list of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            rt_config: current status
+                {
+                    "current_step": self.global_step,
+                    "current_epoch": self.current_epoch,
+                    "total_steps": self.num_training_steps,
+                    "total_epochs": self.num_training_epochs
+                }
+
+        Returns: the log_info(metrics) or the stage is "online" return the predicts
 
         """
         log_info = {}
@@ -119,9 +187,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         return log_info
 
     def __call__(self, stage, list_batch_outputs, origin_data, rt_config):
-        """TODO: Docstring for __call.
-        :returns: TODO
-
+        """the same as self.process
         """
         return self.process(stage, list_batch_outputs, origin_data, rt_config)
 

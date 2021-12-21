@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hjson
 import pandas as pd
 from typing import Union, Dict
@@ -11,8 +25,9 @@ logger = Logger.get_logger()
 
 @processor_config_register('basic')
 class BasicProcessorConfig(BaseConfig):
-    """docstring for BasicProcessorConfig
-    config e.g.
+    """Config for BasicProcessor
+
+    Paras:
     {
         // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
         "_name": "basic@test_text_cls",
@@ -123,10 +138,10 @@ class BasicProcessorConfig(BaseConfig):
 
 @processor_register('basic')
 class BasicProcessor(IProcessor):
-    """docstring for DataSet"""
+    """Basic and General Processor"""
     def __init__(self, stage: str, config: BasicProcessorConfig):
         super(BasicProcessor, self).__init__()
-        self._name = "basic"
+        self._name = config._name
         self.stage = stage
         self.feed_order = config.feed_order
         assert len(self.feed_order) > 0
@@ -141,10 +156,17 @@ class BasicProcessor(IProcessor):
             self.subprocessors[name] = subprocessor
 
     def process(self, data: Dict)->Dict:
-        """TODO: Docstring for process.
+        """Process entry
 
-        :data: TODO
-        :returns: TODO
+        Args:
+            data: 
+            {
+                "data": {"train": ...},
+                "tokenizer": ..
+            }
+
+        Returns: processed data
+
         """
         logger.info(f"Start Data Processing....")
         for name in self.feed_order:

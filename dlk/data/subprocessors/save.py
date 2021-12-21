@@ -1,7 +1,17 @@
-"""
-Save the processed data to $base_dir/$processed
-Save the meta data(like vocab, embedding, etc.) to $base_dir/$meta
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.config import ConfigTool, BaseConfig
 from dlk.utils.logger import Logger
 from typing import Dict, Callable, Set, List
@@ -14,8 +24,9 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('save')
 class SaveConfig(BaseConfig):
-    """
-    Config eg.
+    """Config for Save
+
+    Paras:
     {
         "_name": "save",
         "config":{
@@ -45,8 +56,9 @@ class SaveConfig(BaseConfig):
 @subprocessor_register('save')
 class Save(ISubProcessor):
     """
+    Save the processed data to $base_dir/$processed
+    Save the meta data(like vocab, embedding, etc.) to $base_dir/$meta
     """
-
     def __init__(self, stage: str, config: SaveConfig):
         super().__init__()
         self.stage = stage
@@ -56,8 +68,15 @@ class Save(ISubProcessor):
             return
         self.base_dir = config.base_dir
 
-    def save(self, data, path):
-        """TODO: Docstring for load.
+    def save(self, data, path: str):
+        """save data to path
+
+        Args:
+            data: pickleable data
+            path: the path to data
+
+        Returns: loaded data
+
         """
         if not os.path.exists(self.base_dir):
             os.mkdir(self.base_dir)
@@ -65,8 +84,21 @@ class Save(ISubProcessor):
         return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
 
     def process(self, data: Dict)->Dict:
+        """Save entry
+
+        Args:
+            data: 
+            {
+                "data": {"train": ...},
+                "tokenizer": ..
+            }
+
+        Returns: data
+
+        """
         if not self.config:
             return data
+        # record for save only in meta, not in processed_data but returned all
         meta_fileds = set()
         if "meta" in self.config:
             for save_path, save_fileds in self.config['meta'].items():

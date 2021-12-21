@@ -1,6 +1,17 @@
-"""
-Use 'Vocabulary' map the character from tokens to id
-"""
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -12,26 +23,28 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token2charid')
 class Token2CharIDConfig(BaseConfig):
-    """docstring for Token2CharIDConfig
-        {
-            "_name": "token2charid",
-            "config": {
-                "train":{
-                    "data_pair": {
-                        "sentence & offsets": "char_ids"
-                    },
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test', 'predict'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "vocab": "char_vocab", // usually provided by the "token_gather" module
-                    "max_token_len": 20, // the max length of token, then the output will be max_token_len x token_num (put max_token_len in previor is for padding on token_num)
+    """Config for Token2CharID
+
+    Paras:
+    {
+        "_name": "token2charid",
+        "config": {
+            "train":{
+                "data_pair": {
+                    "sentence & offsets": "char_ids"
                 },
-                "predict": "train",
-                "online": "train",
-            }
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "vocab": "char_vocab", // usually provided by the "token_gather" module
+                "max_token_len": 20, // the max length of token, then the output will be max_token_len x token_num (put max_token_len in previor is for padding on token_num)
+            },
+            "predict": "train",
+            "online": "train",
         }
+    }
     """
 
     def __init__(self, stage, config: Dict):
@@ -59,7 +72,7 @@ class Token2CharIDConfig(BaseConfig):
 
 @subprocessor_register('token2charid')
 class Token2CharID(ISubProcessor):
-    """docstring for Token2CharID
+    """Use 'Vocabulary' map the character from tokens to id
     """
 
     def __init__(self, stage: str, config: Token2CharIDConfig):
@@ -74,13 +87,23 @@ class Token2CharID(ISubProcessor):
 
 
     def process(self, data: Dict)->Dict:
+        """Token2CharID Entry
+
+        one_token like 'apple' will generate [1, 2, 2, 3] if max_token_len==4 and the vocab.word2idx = {'a': 1, "p": 2, "l": 3}
+
+        Args:
+            data: will process data
+
+        Returns: updated data(token -> char_ids)
+
+        """
+
 
         if not self.data_set:
             return data
 
         def get_index_wrap(sentence_name, offset_name, x):
-            """TODO: Docstring for get_index_wrap.
-            """
+            """wrap the vocab.get_index"""
             sentence = list(x[sentence_name])
             offsets = x[offset_name]
             char_ids = []

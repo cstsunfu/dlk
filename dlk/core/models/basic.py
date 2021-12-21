@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from . import model_register, model_config_register
 from typing import Dict, List
 from dlk.utils.config import BaseConfig, ConfigTool
@@ -11,7 +25,9 @@ from dlk.core.layers.decoders import decoder_config_register, decoder_register
 
 @model_config_register('basic')
 class BasicModelConfig(BaseConfig):
-    """docstring for BasicIModelConfig
+    """Config for BasicModel
+
+    Paras:
     {
         embedding: {
             _base: "static"
@@ -81,46 +97,54 @@ class BasicModelConfig(BaseConfig):
         self.init_method, self.init_method_config = self.get_init_method(config["initmethod"])
         self.config = config['config']
 
-    def get_embedding(self, config):
-        """get embedding config and embedding module
+    def get_embedding(self, config: Dict):
+        """return the Embedding and EmbeddingConfig
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: the embedding config
+
+        Returns: Embedding, EmbeddingConfig
 
         """
         return ConfigTool.get_leaf_module(embedding_register, embedding_config_register, "embedding", config)
 
-    def get_init_method(self, config):
-        """get embedding config and embedding module
+    def get_init_method(self, config: Dict):
+        """return the InitMethod and InitMethodConfig
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: the init method config
+
+        Returns: InitMethod, InitMethodConfig
 
         """
         return ConfigTool.get_leaf_module(initmethod_register, initmethod_config_register, "init method", config)
 
-    def get_encoder(self, config):
-        """get encoder config and encoder module
+    def get_encoder(self, config: Dict):
+        """return the Encoder and EncoderConfig
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: the encoder config
+
+        Returns: Encoder, EncoderConfig
 
         """
         return ConfigTool.get_leaf_module(encoder_register, encoder_config_register, "encoder", config)
 
     def get_decoder(self, config):
-        """get decoder config and decoder module
+        """return the Decoder and DecoderConfig
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: the decoder config
+
+        Returns: Decoder, DecoderConfig
+
         """
         return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config)
 
 
 @model_register('basic')
 class BasicModel(BaseModel):
-    """
-    Sequence labeling model
+    """Basic & General Model
     """
 
     def __init__(self, config: BasicModelConfig, checkpoint):
@@ -140,12 +164,21 @@ class BasicModel(BaseModel):
         self._provided_keys = self.config.get("provided_keys", [])
 
     def provide_keys(self)->List[str]:
-        """TODO: should provide_keys in model?
+        """return all keys of the dict of the model returned
+
+        This method may no use, so we will remove this.
+
+        Returns: all keys
         """
         return self.decoder.provided_keys()
 
     def check_keys_are_provided(self, provide: List[str]=[])->None:
-        """TODO: should check keys in model?
+        """check this all the submodules required key are provided
+
+        Returns: None
+
+        Raises: PermissionError
+
         """
         self._provided_keys = self._provided_keys + provide
         self.embedding.check_keys_are_provided(self._provided_keys)
@@ -153,9 +186,13 @@ class BasicModel(BaseModel):
         self.decoder.check_keys_are_provided(self.encoder.provide_keys())
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """forward
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """do forward on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: the outputs
+
         """
         embedding_outputs = self.embedding(inputs)
         encode_outputs = self.encoder(embedding_outputs)
@@ -163,9 +200,13 @@ class BasicModel(BaseModel):
         return decode_outputs
 
     def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """predict
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """do predict for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: the predicts outputs
+
         """
         embedding_outputs = self.embedding.predict_step(inputs)
         encode_outputs = self.encoder.predict_step(embedding_outputs)
@@ -173,9 +214,13 @@ class BasicModel(BaseModel):
         return decode_outputs
 
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """training
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """do training for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: the training outputs
+
         """
         embedding_outputs = self.embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
@@ -183,9 +228,13 @@ class BasicModel(BaseModel):
         return decode_outputs
 
     def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """valid
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """do validation for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: the validation outputs
+
         """
         embedding_outputs = self.embedding.validation_step(inputs)
         encode_outputs = self.encoder.validation_step(embedding_outputs)
@@ -193,9 +242,13 @@ class BasicModel(BaseModel):
         return decode_outputs
 
     def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """valid
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """do test for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: the test outputs
+
         """
         embedding_outputs = self.embedding.test_step(inputs)
         encode_outputs = self.encoder.test_step(embedding_outputs)

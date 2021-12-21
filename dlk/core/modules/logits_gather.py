@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 import torch
 from typing import Dict, List
@@ -7,7 +21,9 @@ from . import module_register, module_config_register
 
 @module_config_register("logits_gather")
 class LogitsGatherConfig(BaseConfig):
-    """docstring for LogitsGatherConfig
+    """Config for LogitsGather
+
+    Paras:
     {
         "config": {
             "gather_layer": {
@@ -40,6 +56,8 @@ class LogitsGatherConfig(BaseConfig):
 
 @module_register("logits_gather")
 class LogitsGather(nn.Module):
+    """Gather the output logits decided by config
+    """
     def __init__(self, config: LogitsGatherConfig):
         super(LogitsGather, self).__init__()
         gather_layer_num = len(config.gather_layer)
@@ -55,9 +73,15 @@ class LogitsGather(nn.Module):
                     self.layers_scale[str(layer)] = nn.Linear(int(from_dim), int(to_dim))
 
     def forward(self, input: List[torch.Tensor])->Dict[str, torch.Tensor]:
+        """gather the needed input to dict
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: some elements to dict
+
         """
-        """
-        result: Dict[str, torch.Tensor] = {"a": torch.tensor([0])}
+        result: Dict[str, torch.Tensor] = {}
         if not self.layer_map:
             return result
         for layer, layer_suffix in self.layer_map.items():

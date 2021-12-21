@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Provide BaseConfig which provide the basic method for configs, and ConfigTool a general config(dict) process tool
 """
@@ -11,18 +25,25 @@ from dlk.utils.register import Register
 logger = Logger.get_logger()
 
 class BaseConfig(object):
-    """docstring for BaseLayerConfig"""
+    """BaseConfig provide the basic function for all config"""
     def __init__(self, config: Dict):
         super(BaseConfig, self).__init__()
         self._name = config.pop('_name')
 
     def post_check(self, config, used=[]):
-        """check all the params are useful
-        :config: TODO
-        :returns: TODO
+        """check all the paras in config is used
+
+        Args:
+            config: paras
+            used: used paras
+
+        Returns: None
+
+        Raises: logger.warning("Unused")
+
         """
         def rec_pop(cur_node, trace):
-            """TODO: Docstring for rec_pop.
+            """recursive pop the node if the node == {} and the node path is in trace
             """
             if len(trace) > 1:
                 rec_pop(cur_node[trace[0]], trace[1:])
@@ -52,9 +73,17 @@ class ConfigTool(object):
     """
 
     @staticmethod
-    def _inplace_update_dict(_base, _new):
-        """TODO: Docstring for _inplace_update_dict.
-        :returns: TODO
+    def _inplace_update_dict(_base: Dict, _new: Dict):
+        """use the _new dict inplace update the _base dict, recursively
+
+        if the _base['_name'] != _new["_name"], we will use _new cover the _base and logger a warning
+        otherwise, use _new update the _base recursively
+
+        Args:
+            _base: will be updated dict
+            _new: use _new update _base
+
+        Returns: None
 
         """
         for item in _new:
@@ -74,10 +103,15 @@ class ConfigTool(object):
 
     @staticmethod
     def do_update_config(config: dict, update_config: dict={}) ->Dict:
-        """use update_config update the config
+        """use the update_config dict update the config dict, recursively
 
-        :config: will updated config
-        :returns: updated config
+        see ConfigTool._inplace_update_dict
+
+        Args:
+            config: will be updated dict
+            update_confg: config: use _new update _base
+
+        Returns: updated_config
 
         """
         # BUG ?: if the config._name != update_config._name, should use the update_config conver the config wholely
@@ -87,13 +121,14 @@ class ConfigTool(object):
 
     @staticmethod
     def get_leaf_module(module_register: Register, module_config_register: Register, module_name: str, config: Dict) -> Tuple[Any, object]:
-        """get sub module and config from register.
-          for model, the leaf like encoder decoder and embedding class and the config of class could get by this mixin
-        :module_register: Dict[model_name, Model]
-        :module_config_register: Dict[model_config_name, ModelConfig]
-        :module_name: for echo the log
-        :config: Dict[key, value]
-        :returns: tuple(Model, ModelConfig)
+        """get the module from module_register and module_config from module_config_register which name=module_name
+
+        Args:
+            module_register: register for module which has 'module_name'
+            module_config_register: config register for config which has 'module_name'
+            module_name: the module name which we want to get from register
+
+        Returns: module(which name is module_name), module_config(which name is module_name)
 
         """
         if isinstance(config, str):
@@ -114,28 +149,35 @@ class ConfigTool(object):
 
     @staticmethod
     def get_config_by_stage(stage:str, config:Dict)->Dict:
-        """TODO: if config[stage] is a string, like 'train', 'predict' etc.,
-            it means the config of this stage equals to config[stage]
-            return config[config[stage]]
-            e.g.
-            config = {
-                "train":{ //train、predict、online stage config,  using '&' split all stages
-                    "data_pair": {
-                        "label": "label_id"
-                    },
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'dev'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "vocab": "label_vocab", // usually provided by the "token_gather" module
+        """get the stage_config for special stage in provide config
+
+        it means the config of this stage equals to config[stage]
+        return config[config[stage]]
+        e.g.
+        config = {
+            "train":{ //train、predict、online stage config,  using '&' split all stages
+                "data_pair": {
+                    "label": "label_id"
                 },
-                "predict": "train",
-                "online": ["train",
-                {"vocab": "new_label_vocab"}
-                ]
-            }
-            config.get_config['predict'] == config['predict'] == config['train']
+                "data_set": {                   // for different stage, this processor will process different part of data
+                    "train": ['train', 'dev'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "vocab": "label_vocab", // usually provided by the "token_gather" module
+            },
+            "predict": "train",
+            "online": ["train",
+            {"vocab": "new_label_vocab"}
+            ]
+        }
+        config.get_config['predict'] == config['predict'] == config['train']
+
+        Args:
+            stage: the stage, like 'train', 'predict', etc.
+            config: the base config which has different stage config
+
+        Returns: stage_config
         """
         config = config['config']
         stage_config = config.get(stage, {})

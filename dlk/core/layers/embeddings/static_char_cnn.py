@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch.nn as nn
 from . import embedding_register, embedding_config_register
 from dlk.core.modules import module_register, module_config_register
@@ -11,7 +25,9 @@ logger = Logger.get_logger()
 
 @embedding_config_register('static_char_cnn')
 class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
-    """docstring for BasicModelConfig
+    """Config for StaticCharCNNEmbedding
+
+    Paras:
     {
         "module@cnn": {
             "_base": "conv1d",
@@ -23,7 +39,6 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
         },
         "config": {
             "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-
             //if the embedding_file is a dict, you should provide the dict trace to embedding
             "embedding_trace": ".", //default the file itself is the embedding
             /*embedding_trace: "char_embedding", //this means the <embedding = pickle.load(embedding_file)["char_embedding"]>*/
@@ -73,8 +88,7 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
 
 @embedding_register('static_char_cnn')
 class StaticCharCNNEmbedding(SimpleModule):
-    """
-    from 'input_ids' generate 'embedding'
+    """ from 'char_ids' generate 'embedding'
     """
 
     def __init__(self, config: StaticCharCNNEmbeddingConfig):
@@ -89,18 +103,25 @@ class StaticCharCNNEmbedding(SimpleModule):
         self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
 
     def init_weight(self, method):
-        """TODO: Docstring for init_weight.
-        :returns: TODO
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
 
         """
-        for module in self.cnn.children():
-            module.apply(method)
+        self.cnn.init_weight(method)
         logger.info(f'The static embedding is loaded the pretrained.')
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """forward
-        :inputs: Dict[str: torch.Tensor], one mini-batch inputs
-        :returns: Dict[str: torch.Tensor], one mini-batch outputs
+        """ fit the char embedding to cnn and pool to word_embedding
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
         """
         char_ids = inputs[self.get_input_name('char_ids')]
         char_mask = (char_ids == 0).bool()

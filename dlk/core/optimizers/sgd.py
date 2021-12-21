@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
@@ -7,7 +21,9 @@ from . import optimizer_register, optimizer_config_register, BaseOptimizer
 
 @optimizer_config_register("sgd")
 class SGDOptimizerConfig(BaseConfig):
-    """
+    """Config for SGDOptimizer
+
+    Paras:
     {
         "config": {
             "lr": 1e-3,
@@ -40,16 +56,17 @@ class SGDOptimizerConfig(BaseConfig):
 
 @optimizer_register("sgd")
 class SGDOptimizer(BaseOptimizer):
+    """wrap for optim.SGD"""
     def __init__(self, model: nn.Module, config: SGDOptimizerConfig):
         super(SGDOptimizer, self).__init__()
         self.config = config.config
         self.model = model
         self.optimizer = optim.SGD
 
-    def get_optimizer(self):
-        """TODO: Docstring for get_optimizer.
+    def get_optimizer(self)->optim.SGD:
+        """return the initialized SGD optimizer
 
-        :arg1: TODO
-        :returns: TODO
+        Returns: SGD Optimizer
+
         """
         return self.init_optimizer(optim.SGD, self.model, self.config)

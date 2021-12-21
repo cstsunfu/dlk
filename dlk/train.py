@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
@@ -16,23 +30,26 @@ logger = Logger.get_logger()
 
 
 class Train(object):
-    """docstring for Trainer
-        {
-            "_focus": {
+    """Trainer
 
-            },
-            "_link": {},
-            "_search": {},
-            "config": {
-                "save_dir": "*@*",  # must be provided
-                "data_path": "*@*",  # must be provided
-            },
-            "task": {
-                "_name": task_name
-                ...
-            }
+    Paras:
+    {
+        "_focus": {
+
+        },
+        "_link": {},
+        "_search": {},
+        "config": {
+            "save_dir": "*@*",  # must be provided
+            "data_path": "*@*",  # must be provided
+        },
+        "task": {
+            "_name": task_name
+            ...
         }
+    }
     """
+
     def __init__(self, config: Union[str, Dict], ckpt: str=""):
         super(Train, self).__init__()
         if not isinstance(config, dict):
@@ -64,19 +81,25 @@ class Train(object):
             raise NameError('The config_names is not unique.')
 
     def run(self):
-        """TODO: Docstring for run.
-        :returns: TODO
+        """run for all configs
+
+        Returns: None
+
         """
         logger.info(f"You have {len(self.config_names)} training config(s), they all will be run.")
         for i, (config, name) in enumerate(zip(self.configs, self.config_names)):
             logger.info(f"Runing the {i}th {name}...")
             self.run_oneturn(config, name)
 
-    def dump_config(self, config, name):
-        """TODO: Docstring for dump_config.
+    def dump_config(self, config: Dict, name: str):
+        """dump the config and change the log file path to config['config']['save_dir']+name
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"config": {"save_dir": '..'}}
+            name: config name
+
+        Returns: None
+
         """
         log_path = os.path.join(config.get('config').get('save_dir'), name)
         os.makedirs(log_path, exist_ok=True)
@@ -84,7 +107,14 @@ class Train(object):
         Logger.init_file_logger("log.txt", log_path)
 
     def run_oneturn(self, config, name):
-        """TODO: Docstring for run_oneturn.
+        """run this config
+
+        Args:
+            config: {"root": '...'}
+            name: config name
+
+        Returns: TODO
+
         """
 
         config = config['root']
@@ -108,18 +138,25 @@ class Train(object):
         manager.test(model=imodel, datamodule=datamodule)
 
     def get_data(self, config):
-        """TODO: Docstring for get_data.
-        :returns: TODO
+        """get the data decided by config
+
+        Args:
+            config: {"config": {"data_path": '..'}}
+
+        Returns: loaded data
 
         """
         self.data = pkl.load(open(config['config']['data_path'], 'rb')).get('data', {})
         return self.data
 
     def get_datamodule(self, config, data):
-        """TODO: Docstring for get_datamodule.
+        """get the datamodule decided by config, and fit the data to datamodule
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"datamodule": '..'}}
+            data: {"train": '..', 'valid': '..', ..}
+
+        Returns: datamodule
 
         """
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
@@ -127,10 +164,13 @@ class Train(object):
         return datamodule
 
     def get_manager(self, config, name):
-        """TODO: Docstring for get_manager.
+        """get the tranin/predict manager decided by config
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"manager": '..'}, "config": {"save_dir"}}
+            name: the predict progress name
+
+        Returns: manager
 
         """
         Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
@@ -138,10 +178,13 @@ class Train(object):
         return manager
 
     def get_imodel(self, config, data):
-        """TODO: Docstring for get_imodel.
+        """get the imodel decided by config, and inject the origin test and valid data
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"imodel": '..'}}
+            data: {"train": '..', 'valid': '..', ..}
+
+        Returns: imodel
 
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))

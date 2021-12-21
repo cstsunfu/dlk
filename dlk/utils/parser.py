@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hjson
 import os
 import copy
@@ -14,13 +28,23 @@ config_parser_register = Register("Config parser register")
 
 
 class LinkUnionTool(object):
-    """
-       Assisting tool for parsering the "_link" of config
+    """Assisting tool for parsering the "_link" of config. All the function named the top level has high priority than low level
+
+    This class is mostly for resolve the confilicts of the low and high level register links.
     """
     def __init__(self):
         self.link_union = {}
 
-    def find(self, key):
+    def find(self, key: str):
+        """find the root of the key
+
+        Args:
+            key: a token
+
+        Returns: the root of the key
+
+        """
+
         if key not in self.link_union:
             return None
 
@@ -28,12 +52,20 @@ class LinkUnionTool(object):
             return self.find(self.link_union[key])
         return self.link_union[key]
 
-    def low_level_union(self, parant, child):
-        """
-            On the basis of the high-level links, `low_level_union` should be used when regist low-level link
-            If parent and child wer all not appeared at before, we will directly regist them.
-            If only one of the parent and child appeared, the value of the parent and child will be overwritten by the corresponding value of the upper level,
-            If they both appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
+    def low_level_union(self, parant: str, child: str):
+        """union the low level parant->child pair
+
+        On the basis of the high-level links, `low_level_union` should be used when regist low-level link
+        If parent and child wer all not appeared at before, we will directly regist them.
+        If only one of the parent and child appeared, the value of the parent and child will be overwritten by the corresponding value of the upper level,
+        If they both appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
+
+        Args:
+            parant: the from key
+            child: the target key
+
+        Returns: None
+
         """
         if self.find(parant) and self.find(child):  # all has been linked
             if self.find(parant)!= self.find(child):
@@ -51,11 +83,18 @@ class LinkUnionTool(object):
             self.link_union[parant] = parant
             self.link_union[child] = parant
 
-    def top_level_union(self, parant, child):
-        """
-            Register the 'link'(parant -> child) in the same(top) level config should be merged using `same_level_union`
+    def top_level_union(self, parant: str, child: str):
+        """union the top level parant->child pair
 
-            Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the target position, otherwise it will cause ambiguity.)
+        Register the 'link'(parant -> child) in the same(top) level config should be merged using `top_level_union`
+        Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the target position, otherwise it will cause ambiguity.)
+
+        Args:
+            parant: the from key
+            child: the target key
+
+        Returns: None
+
         """
         if parant not in self.link_union:
             self.link_union[parant] = parant
@@ -64,9 +103,13 @@ class LinkUnionTool(object):
         self.link_union[child] = self.find(parant)
 
     def register_top_links(self, links: Dict):
-        """regist the top level links
-        :links: dict: {"from": ["tolist"], "from2": "to2"}
-        :returns: self
+        """register the top level links
+
+        Args:
+            links: {"from": ["tolist"], "from2": "to2"}
+
+        Returns: self
+
         """
         for source, target in links.items():
             if isinstance(target, list):
@@ -76,9 +119,13 @@ class LinkUnionTool(object):
         return self
 
     def register_low_links(self, links: Dict):
-        """regist the low level links
-        :links: dict: {"from": ["tolist"], "from2": "to2"}
-        :returns: self
+        """register the low level links
+
+        Args:
+            links: {"from": ["tolist"], "from2": "to2"}
+
+        Returns: self
+
         """
         for source, target in links.items():
             if isinstance(target, list):
@@ -88,8 +135,10 @@ class LinkUnionTool(object):
         return self
 
     def get_links(self):
-        """
-            return the registed links as a dict
+        """get the registed links
+
+        Returns: all registed and validation links
+
         """
         links = {}
         for key in self.link_union:
@@ -103,15 +152,11 @@ class LinkUnionTool(object):
 
 
 class BaseConfigParser(object):
-    """docstring for BaseConfigParser
+    """BaseConfigParser
+    The config parser order is: inherit -> search -> link
 
-        input: config_file, config_base_dir
-        config_name = config_file._name
-        search = config_file._search
-        link = config_file._link
-        base = self.config_file._base
-        if base:
-            base_config = parser(base)
+    If some config is marked to "*@*", this means the para has not default value, you must coverd it(like 'label_nums', etc.).
+
     """
     def __init__(self, config_file: Union[str, Dict, List], config_base_dir: str=""):
         super(BaseConfigParser, self).__init__()
@@ -150,14 +195,15 @@ class BaseConfigParser(object):
 
 
     @classmethod
-    def get_base_config(cls, config_file)->Dict:
-        """TODO: Docstring for get_base_config.
+    def get_base_config(cls, config_name: str)->Dict:
+        """get the base config use the config_name
 
-        :arg1: TODO
-        :returns: TODO
+        Args:
+            config_name: the config name
 
+        Returns: config of the config_name
         """
-        base_config = cls(config_file).parser(parser_link=False)
+        base_config = cls(config_name).parser(parser_link=False)
         if len(base_config)>1:
             raise PermissionError("The base config don't support _search now.")
         if base_config:
@@ -167,8 +213,13 @@ class BaseConfigParser(object):
     @staticmethod
     def config_link_para(link: Dict[str, Union[str, List[str]]]={}, config: Dict={}):
         """inplace link the config[to] = config[source]
-        :link: {source1:to1, source2:[to2, to3]}
-        :returns:
+
+        Args:
+            link: {source1:to1, source2:[to2, to3]}
+            config: will linked base config
+
+        Returns: None
+
         """
         def make_link(source: str, to: str):
             """copy the 'source' config to 'to'
@@ -201,7 +252,6 @@ class BaseConfigParser(object):
                 logger.error(f"Can not link from '{source}' to '{to}'")
                 raise e
 
-
         if not link:
             return
         for (source, to) in link.items():
@@ -213,8 +263,31 @@ class BaseConfigParser(object):
 
     @classmethod
     def collect_link(cls, config, trace=[], all_level_links={}, level=0):
-        """
-            only do in the top level of config, collect all level links and return the links with level
+        """collect move all links in config to top
+
+        only do in the top level of config, collect all level links and return the links with level
+
+        Args:
+            config: 
+            {
+                "arg1": {
+                    "arg11": 2
+                    "arg12": 3
+                    "_link": {"arg11": "arg12"}
+                }
+            }
+            all_level_links: TODO
+            level: TODO
+
+        Returns: 
+            {
+                "arg1": {
+                    "arg11": 2
+                    "arg12": 3
+                }
+                "_link": {"arg1.arg11": "arg1.arg12"}
+            }
+
         """
         if level not in all_level_links:
             all_level_links[level] = {}
@@ -224,7 +297,11 @@ class BaseConfigParser(object):
             trace_str = trace_str + '.'
         def add_trace(origin_link: Dict)->Dict:
             """add the root of the config to current config trace to current level para of links
-            :returns: the origin_link added trace
+
+            Args:
+                origin_link: which is not added the trace(root to cur node)
+
+            Returns: added trace link
 
             """
             added_trace_link = {}
@@ -247,18 +324,26 @@ class BaseConfigParser(object):
         return all_level_links
 
     def parser_with_check(self, parser_link=True)->List[Dict]:
-        """parser config and check the result, only used for __main__ processor
-        :returns: parserd all possible configs
+        """parser the config and check the config is valid
+
+        Args:
+            parser_link: whether parser the links
+
+        Returns: all valided configs
+
         """
         configs = self.parser(parser_link)
         self.check_config(configs)
         return configs
 
     def parser(self, parser_link=True) -> List:
-        """ root parser
-        return a list of para dicts for all possible combinations
-        :parser_link: whether parser the link of config
-        :returns: list[possible config dict]
+        """parser the config
+
+        Args:
+            parser_link: whether parser the links
+
+        Returns: all valided configs
+
         """
         if self.config_file == '*@*':
             return ['*@*']
@@ -311,15 +396,25 @@ class BaseConfigParser(object):
     def get_kind_module_base_config(self, abstract_config: Union[dict, str], kind_module: str="") -> List[dict]:
         """get the whole config of 'kind_module' by given abstract_config
 
-        :abstract_config: dict: will expanded config
-        :returns: parserd config (whole config) of abstract_config
+        Args:
+            abstract_config: will expanded config
+            kind_module: the module kind, like 'embedding', 'subprocessor', which registed in config_parser_register
+
+        Returns: parserd config (whole config) of abstract_config
 
         """
         return config_parser_register.get(kind_module)(abstract_config).parser(parser_link=False)
 
     def map_to_submodule(self, config: dict, map_fun: Callable) -> Dict:
-        """use the map_fun to process all the modules
-        :returns: depend on
+        """map the map_fun to all submodules in config
+
+        use the map_fun to process all the modules
+
+        Args:
+            config: a dict of submodules, the key is the module kind wich registed in config_parser_register
+            map_fun: use the map_fun process the submodule
+
+        Returns: TODO
 
         """
         modules_config = {}
@@ -327,24 +422,29 @@ class BaseConfigParser(object):
             modules_config[kind_module] = map_fun(config[kind_module], kind_module)
         return modules_config
 
-    def load_hjson_file(self, file_name: str) -> Dict:
-        """load hjson file by file_name
+    def load_hjson_file(self, file_path: str) -> Dict:
+        """load hjson file from file_path and return a Dict
 
-        :file_name: TODO
-        :returns: TODO
+        Args:
+            file_path: the file path
+
+        Returns: loaded dict
 
         """
-        json_file = hjson.load(open(file_name), object_pairs_hook=dict)
+        json_file = hjson.load(open(file_path), object_pairs_hook=dict)
         return json_file
 
-    # def flat_search(self, config: dict) -> List[dict]:
     @classmethod
     def flat_search(cls, search, config: dict) -> List[dict]:
         """flat all the _search paras to list
+
         support recursive parser _search now, this means you can add _search/_link/_base paras in _search paras
 
-        :config: dict: base config
-        :returns: list of possible config
+        Args:
+            search: search paras, {"para1": [1,2,3], 'para2': 'list(range(10))'}
+            config: base config
+
+        Returns: list of possible config
 
         """
         result = []
@@ -364,12 +464,12 @@ class BaseConfigParser(object):
 
     def get_cartesian_prod(self, list_of_list_of_dict: List[List[Dict]]) -> List[List[Dict]]:
         """get catesian prod from two lists
-        :list_of_list_of_dict: [[config_a1, config_a2], [config_b1, config_b2]]
-        :returns: [[config_a1, config_b1],
-                   [config_a1, config_b2],
-                   [config_a2, config_b1],
-                   [config_a2, config_b2]
-                  ]
+
+        Args:
+            list_of_list_of_dict: [[config_a1, config_a2], [config_b1, config_b2]]
+
+        Returns: [[config_a1, config_b1], [config_a1, config_b2], [config_a2, config_b1], [config_a2, config_b2]]
+
         """
         if len(list_of_list_of_dict) <= 1:
             return [copy.deepcopy(dic) for dic in list_of_list_of_dict]
@@ -383,16 +483,19 @@ class BaseConfigParser(object):
 
     @staticmethod
     def check_config(configs: Union[Dict, List[Dict]]) -> None:
-        """check all config is right.
-        1. check all "*@*" is replaced to correct value.
-        :configs: one config or a list of configs
+        """check all config is valid.
+
+        check all "*@*" is replaced to correct value.
+        Args:
+            configs: TODO
+
+        Returns: None
+
+        Raises:  ValueError
+
         """
         def _check(config):
-            """TODO: Docstring for _check.
-
-            :config: TODO
-            :returns: TODO
-
+            """check the "*@*" is in config or not
             """
             for key in config:
                 if isinstance(config[key], dict):
@@ -409,8 +512,11 @@ class BaseConfigParser(object):
     @staticmethod
     def get_named_list_cartesian_prod(dict_of_list: Dict[str, List]={}) -> List[Dict]:
         """get catesian prod from named lists
-        :dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
-        :returns: [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
+
+        Args:
+            dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
+
+        Returns: [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
 
         """
         if len(dict_of_list) == 0:
@@ -437,8 +543,10 @@ class BaseConfigParser(object):
     def is_rep_config(self, list_of_dict: List[dict]) -> bool:
         """check is there a repeat config in list
 
-        :list_of_dict: List[dict]: TODO
-        :returns: is there the list of dict repeat
+        Args:
+            list_of_dict: a list of dict
+
+        Returns: has repeat or not
 
         """
         # using json.dumps + sort_keys to guarantee the same dict to the same string represatation
@@ -451,21 +559,25 @@ class BaseConfigParser(object):
 
 @config_parser_register('config')
 class ConfigConfigParser(BaseConfigParser):
-    """docstring for ConfigConfigParser"""
+    """ConfigConfigParser"""
     def __init__(self, config_file):
         super(ConfigConfigParser, self).__init__(config_file, config_base_dir='NONEPATH')
         if self.base_config:
             raise AttributeError('The paras config do not support _base.')
-        # if self.link:
-            # raise AttributeError('The paras config do not support _link.')
+
         if self.config_name:
             raise AttributeError('The paras config do not support _name.')
 
     def parser(self, parser_link=True):
-        """config support _search and _link
+        """parser the config
 
-        :update_config: Dict: TODO
-        :returns: TODO
+        config support _search and _link
+
+        Args:
+            parser_link: whether parser the links
+
+        Returns: all valided configs
+
         """
         config_list = self.flat_search(self.search, self.modules)
         # link paras
@@ -483,14 +595,20 @@ class ConfigConfigParser(BaseConfigParser):
 
 @config_parser_register('_link')
 class LinkConfigParser(object):
-    """docstring for LinkConfigParser"""
+    """LinkConfigParser"""
     def __init__(self, config_file):
         self.config = config_file
         assert isinstance(self.config, dict), f"The '_link' must be a dict, but you provide '{self.config}'"
     def parser(self, parser_link=False):
-        """TODO: Docstring for parser.
-        :parser_link: TODO
-        :returns: TODO
+        """parser the config
+
+        config support _search and _link
+
+        Args:
+            parser_link: must be false
+
+        Returns: all valided configs
+
         """
         assert parser_link is False, f"The parser_link para must be False when parser the _link"
         return [self.config]

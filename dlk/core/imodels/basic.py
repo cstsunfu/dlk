@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from logging import PercentStyle
 import hjson
 from typing import Dict, Union, Callable, List
@@ -31,44 +45,58 @@ class BasicIModelConfig(BaseConfig):
 
         self.config = config.pop('config', {})
 
-    def get_postprocessor(self, config):
-        """TODO: Docstring for get_postprocessor.
-        :config: TODO
-        :returns: TODO
+    def get_postprocessor(self, config: Dict):
+        """Use config to init the postprocessor
+
+        Args:
+            config: postprocess config
+
+        Returns: PostProcess, PostProcessConfig
+
         """
         return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config)
 
     def get_model(self, config: Dict):
-        """get embedding config and embedding module
+        """Use config to init the model
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: model config
+
+        Returns: Model, ModelConfig
 
         """
         return ConfigTool.get_leaf_module(model_register, model_config_register, "model", config)
 
     def get_loss(self, config: Dict):
-        """get encoder config and encoder module
+        """Use config to init the loss
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: loss config
+
+        Returns: Loss, LossConfig
 
         """
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
 
     def get_optimizer(self, config: Dict):
-        """get optimizer
+        """Use config to init the optimizer
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: optimizer config
+
+        Returns: Optimizer, OptimizerConfig
+
         """
         return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
 
     def get_scheduler(self, config: Dict):
-        """get decoder config and decoder module
+        """Use config to init the scheduler
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: scheduler config
+
+        Returns: Scheduler, SchedulerConfig
+
         """
         return ConfigTool.get_leaf_module(scheduler_register, scheduler_config_register, "scheduler", config)
 
@@ -95,14 +123,37 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self.gather_data = config.postprocess_config.input_map
 
     def get_progress_bar_dict(self):
+        """rewrite the prograss_bar_dict, remove the 'v_num' which we don't need
+
+        Returns: progress_bar dict
+
+        """
+        pass
         tqdm_dict = super().get_progress_bar_dict()
         tqdm_dict.pop("v_num", None)
         return tqdm_dict
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do forward on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+
+        Returns: the outputs
+
+        """
         return self.model(inputs)
 
     def training_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
+        """do training_step on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+            batch_idx: the index(dataloader) of the mini batch
+
+        Returns: the outputs
+
+        """
         result = self.model.training_step(batch)
         loss = self.calc_loss(result, batch, rt_config={
             "current_step": self.global_step,
@@ -113,7 +164,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self.log_dict({"train_loss": loss.unsqueeze(0)}, prog_bar=True)
         return loss
 
-    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
+    def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int)->Dict[str, torch.Tensor]:
+        """do validation on a mini batch
+
+        The outputs only gather the keys in self.gather_data.keys for postprocess
+        Args:
+            batch: a mini batch inputs
+            batch_idx: the index(dataloader) of the mini batch
+
+        Returns: the outputs
+
+        """
         result = self.model.validation_step(batch)
         loss = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,
@@ -122,16 +183,22 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             "total_epochs": self.num_training_epochs
         })
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
+        return_result = {"loss": loss.unsqueeze(0)} # this loss will be used in postprocess
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]
         return_result['_index'] = batch['_index']
         return return_result
 
-    def validation_epoch_end(self, outputs):
-        """TODO: Docstring for test_epoch_end.
-        :returns: TODO
+    def validation_epoch_end(self, outputs: List[Dict])->List[Dict]:
+        """Gather the outputs of all node and do postprocess on it.
+
+        The outputs only gather the keys in self.gather_data.keys for postprocess
+        Args:
+            outputs: current node returnd output list
+
+        Returns: all node outputs
+
         """
         outputs = self.gather_outputs(outputs)
 
@@ -146,7 +213,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             prog_bar=True, rank_zero_only=True)
         return outputs
 
-    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int):
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int)->:
+        """do test on a mini batch
+
+        The outputs only gather the keys in self.gather_data.keys for postprocess
+        Args:
+            batch: a mini batch inputs
+            batch_idx: the index(dataloader) of the mini batch
+
+        Returns: the outputs
+
+        """
         result = self.model.test_step(batch)
         loss = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,
@@ -162,14 +239,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return_result['_index'] = batch['_index']
         return return_result
 
-    def test_epoch_end(self, outputs):
-        """TODO: Docstring for test_epoch_end.
-        :returns: TODO
+    def test_epoch_end(self, outputs: List[Dict])->List[Dict]:
+        """Gather the outputs of all node and do postprocess on it.
+
+        Args:
+            outputs: current node returnd output list
+
+        Returns: all node outputs
 
         """
         outputs = self.gather_outputs(outputs)
 
-        # if self.local_rank in [0, -1]:
         self.log_dict(
             self.postprocessor(stage='test', list_batch_outputs=outputs, origin_data=self._origin_test_data,
                 rt_config={
@@ -182,6 +262,15 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return outputs
 
     def predict_step(self, batch, batch_idx):
+        """do predict on a mini batch
+
+        Args:
+            batch: a mini batch inputs
+            batch_idx: the index(dataloader) of the mini batch
+
+        Returns: the outputs
+
+        """
         return self.model.predict_step(batch)
 
     @property
@@ -226,6 +315,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs
 
     def configure_optimizers(self):
+        """Configure the optimizer and scheduler
+        """
 
         self.calc_loss.update_config(rt_config={
             "total_steps": self.num_training_steps,

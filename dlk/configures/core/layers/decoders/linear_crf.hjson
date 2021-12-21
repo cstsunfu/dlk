@@ -6,12 +6,11 @@
         "_base": "crf",
     },
     "config": {
-        "input_size": "*@*",
-        "output_size": "*@*",
-        "reduction": "mean",
-        "dropout": 0.0,
+        "input_size": "*@*",  // the linear input_size
+        "output_size": "*@*", // the linear output_size
+        "reduction": "mean", // crf reduction method
         "output_map": {}, //provide_key: output_key
-        "input_map": {}, // required_key: provide_key
+        "input_map": {} // required_key: provide_key
     },
     "_link":{
         "config.input_size": ["module@linear.config.input_size"],

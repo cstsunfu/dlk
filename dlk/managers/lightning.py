@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from torch.functional import Tensor
 import torch.nn as nn
 from . import manager_register, manager_config_register
@@ -20,7 +34,6 @@ class LightningManagerConfig(BaseConfig):
     https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.trainer.html?highlight=trainer#trainer
     for para details
     """
-
 
     def __init__(self, config):
         super(LightningManagerConfig, self).__init__(config)
@@ -142,9 +155,13 @@ class LightningManagerConfig(BaseConfig):
             "terminate_on_nan",
         ])
 
-    def get_callbacks_config(self, config):
-        """parser callback and init the callbacks
-        :returns: list of callbacks
+    def get_callbacks_config(self, config: Dict)->List[Dict]:
+        """get the configs for callbacks
+
+        Args:
+            config: {"config": {"callbacks": ["callback_names"..]}, "callback@callback_names": {config}}
+
+        Returns: configs which name in config['config']['callbacks']
 
         """
         callback_names = config.get("config", {}).get("callbacks", [])
@@ -167,9 +184,6 @@ class LightningManager(object):
     """
 
     def __init__(self, config: LightningManagerConfig, rt_config: Dict):
-        """
-            rt_config: {"save_dir": 'different process save to diff dir', "name": 'this config name(generally generate from _focus)'}
-        """
         super().__init__()
 
         if config.logger:
@@ -179,9 +193,14 @@ class LightningManager(object):
         config.__dict__.pop('_name')
         self.manager = pl.Trainer(**config.__dict__)
 
-    def get_callbacks(self, callback_configs, rt_config):
-        """parser callback and init the callbacks
-        :returns: list of callbacks
+    def get_callbacks(self, callback_configs: List[Dict], rt_config: Dict):
+        """init the callbacks and return the callbacks list
+
+        Args:
+            callback_configs: the config of every callback
+            rt_config: {"save_dir": '..', "name": '..'}
+
+        Returns: all callbacks
 
         """
         callbacks_list = []
@@ -192,13 +211,46 @@ class LightningManager(object):
         return callbacks_list
 
     def fit(self, **inputs):
+        """fit the model and datamodule to trainer
+
+        Args:
+            **inputs: dict of input, include "model", 'datamodule'
+
+        Returns: Undefine
+
+        """
+        
         return self.manager.fit(**inputs)
 
     def predict(self, **inputs):
+        """fit the model and datamodule.predict_dataloader to predict
+
+        Args:
+            **inputs: dict of input, include "model", 'datamodule'
+
+        Returns: predict list
+
+        """
         return self.manager.predict(**inputs)
 
     def test(self, **inputs):
+        """fit the model and datamodule.test_dataloader to test
+
+        Args:
+            **inputs: dict of input, include "model", 'datamodule'
+
+        Returns: Undefine
+
+        """
         return self.manager.test(**inputs)
 
     def validate(self, **inputs):
+        """fit the model and datamodule.validation to validate
+
+        Args:
+            **inputs: dict of input, include "model", 'datamodule'
+
+        Returns: Undefine
+
+        """
         return self.manager.validate(**inputs)

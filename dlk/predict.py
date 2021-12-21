@@ -1,3 +1,17 @@
+# Copyright 2021 cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import hjson
 import os
 from typing import Dict, Union, Callable, List, Any
@@ -16,22 +30,24 @@ logger = Logger.get_logger()
 
 
 class Predict(object):
-    """docstring for Trainer
-        {
-            "_focus": {
+    """Predict
 
-            },
-            "_link": {},
-            "_search": {},
-            "config": {
-                "save_dir": "*@*",  # must be provided
-                "data_path": "*@*",  # must be provided
-            },
-            "task": {
-                "_name": task_name
-                ...
-            }
+    Paras:
+    {
+        "_focus": {
+
+        },
+        "_link": {},
+        "_search": {},
+        "config": {
+            "save_dir": "*@*",  # must be provided
+            "data_path": "*@*",  # must be provided
+        },
+        "task": {
+            "_name": task_name
+            ...
         }
+    }
     """
     def __init__(self, config, checkpoint):
         super(Predict, self).__init__()
@@ -55,11 +71,8 @@ class Predict(object):
         self.name_str = name_str
 
     def trace(self):
-        """TODO: Docstring for trace.
-
-        :imodel: TODO
-        :jj: TODO
-        :returns: TODO
+        """trace the model to torchscript
+        Returns: TODO
 
         """
         config = self.config['root']
@@ -86,7 +99,9 @@ class Predict(object):
         raise NotImplementedError
 
     def predict(self):
-        """TODO: Docstring for run_oneturn.
+        """init the model, datamodule, manager then predict the predict_dataloader
+        Returns: None
+
         """
         config = self.config['root']
         name = self.name_str
@@ -107,18 +122,26 @@ class Predict(object):
         imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={})
 
     def get_data(self, config):
-        """TODO: Docstring for get_data.
-        :returns: TODO
+        """get the data decided by config
+
+        Args:
+            config: {"config": {"data_path": '..'}}
+
+        Returns: loaded data
 
         """
+        
         self.data = pkl.load(open(config['config']['data_path'], 'rb')).get('data', {})
         return self.data
 
     def get_datamodule(self, config, data):
-        """TODO: Docstring for get_datamodule.
+        """get the datamodule decided by config, and fit the data to datamodule
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"datamodule": '..'}}
+            data: {"train": '..', 'valid': '..', ..}
+
+        Returns: datamodule
 
         """
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
@@ -126,10 +149,13 @@ class Predict(object):
         return datamodule
 
     def get_manager(self, config, name):
-        """TODO: Docstring for get_manager.
+        """get the tranin/predict manager decided by config
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"manager": '..'}, "config": {"save_dir"}}
+            name: the predict progress name
+
+        Returns: manager
 
         """
         Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
@@ -137,10 +163,13 @@ class Predict(object):
         return manager
 
     def get_imodel(self, config, data):
-        """TODO: Docstring for get_imodel.
+        """get the imodel decided by config
 
-        :config: TODO
-        :returns: TODO
+        Args:
+            config: {"task": {"imodel": '..'}}
+            data: {"train": '..', 'valid': '..', ..}
+
+        Returns: imodel
 
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
