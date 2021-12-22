@@ -49,7 +49,7 @@
                     "_base": "sgd",
                     "config": {
                         "lr": 2e-2,
-                        "_search": {"lr": [1e-2, 1.5e-2]},
+                        "_search": {"lr": [1e-2]},
                         "weight_decay": 0,
                         "momentum": 0.9,
                     },

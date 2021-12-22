@@ -4,9 +4,9 @@
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
-            "save_dir": "output/benchmark/pretrained",  # must provide
-            "data_path": "output/benchmark/pretrained/processed_data.pkl",  # must provide
-            "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
+            "save_dir": "./bert_firstpiece/output",  # must provide
+            "data_path": "./bert_firstpiece/output/processed_data.pkl",  # must provide
+            "meta_data": "./bert_firstpiece/output/meta.pkl",  # must provide
         },
         "task": {
             "manager": {
@@ -43,7 +43,7 @@
                         "embedding_dim": 768,
                         "label_num": 11,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
-                        "pretrained_model_path": "./local_data/pretrained_model/bert_case",
+                        "pretrained_model_path": "*@*",
                         "dropout": 0.3,
                     },
                 },
@@ -55,8 +55,10 @@
                 "postprocessor": {
                     "config": {
                         "meta": '*@*'
+                        "start_save_epoch": 1,
                         "use_crf": false, //use or not use crf
                         "word_ready": true, //already gather the subword first token as the word rep or not
+                        "save_root_path": "./bert_firstpiece/"
                     }
                 },
             },

@@ -7,19 +7,13 @@
 *.log
 *.raw
 *.txt
-**/jobs/**
-local_data/**
 *.zip
-**/wikitext*/**
 *.model
 *.pt
 *.sc
 *.bin
 **/logs/**
-**/data/model/**
 *tokenizer.json
-token.json
-**/test_cls/**
 valid/**
 data/**
 build/**
@@ -32,6 +26,4 @@ examples/**/output/**
 examples/**/test/**
 examples/**/log.txt
 examples/**/valid/**
-**/output/**
-**/conll2003/data/*.txt
 *.DS_Store

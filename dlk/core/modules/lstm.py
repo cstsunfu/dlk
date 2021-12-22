@@ -17,7 +17,7 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from dlk.utils.config import BaseConfig
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 from dlk.utils.logger import Logger
 
 logger = Logger.get_logger()
@@ -64,7 +64,7 @@ class LSTMConfig(BaseConfig):
 
 
 @module_register("lstm")
-class LSTM(nn.Module):
+class LSTM(Module):
     "A wrap for nn.LSTM"
     def __init__(self, config: LSTMConfig):
         super(LSTM, self).__init__()

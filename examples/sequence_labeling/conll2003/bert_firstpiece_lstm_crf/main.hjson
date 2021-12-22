@@ -4,9 +4,9 @@
         "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
-            "save_dir": "output/benchmark/pretrained",  # must provide
-            "data_path": "output/benchmark/pretrained/processed_data.pkl",  # must provide
-            "meta_data": "output/benchmark/pretrained/meta.pkl",  # must provide
+            "save_dir": "./bert_firstpiece_lstm_crf/output",  # must provide
+            "data_path": "./bert_firstpiece_lstm_crf/output/processed_data.pkl",  # must provide
+            "meta_data": "./bert_firstpiece_lstm_crf/output/meta.pkl",  # must provide
         },
         "task": {
             "manager": {
@@ -54,18 +54,12 @@
                         "embedding_dim": 768,
                         "label_num": 11,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
-                        "pretrained_model_path": "./local_data/pretrained_model/bert_case",
+                        "pretrained_model_path": "*@*",
                         "dropout": 0.3,
                     },
                     "_link": {
                         "config.pretrained_model_path": "embedding.config.pretrained_model_path"
                     },
-                },
-                "postprocessor": {
-                    "config": {
-                        "meta": '*@*',
-                        "start_save_epoch": 20,
-                    }
                 },
                 "scheduler": {
                     "_base": "linear_warmup"
@@ -74,20 +68,30 @@
                     "_base": "adamw@bias_nodecay",
                     "config": {
                         "lr": 3e-5,
-                        "optimizer_special_groups":[
-                        // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config.
-                        // You should sort the config by priority(
-                        //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
-                            ["bias & LayerNorm.bias & LayerNorm.weight", {weight_decay: 0}],
-                            ['crf & lstm', {"lr": 1e-3}],
-                        ]
+                        "optimizer_special_groups": {
+                            "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder
+                            "bias": {
+                                "config": {
+                                    "weight_decay": 0
+                                },
+                                "pattern": ["bias",  "LayerNorm\\.bias", "LayerNorm\\.weight"]
+                            },
+                            "decoder": {
+                                "config": {
+                                    "lr": 1e-3
+                                },
+                                "pattern": ["crf", 'lstm']
+                            },
+                        }
                     },
                 },
                 "postprocessor": {
                     "config": {
                         "meta": '*@*'
+                        "start_save_epoch": 1,
                         "use_crf": true, //use or not use crf
                         "word_ready": false, //already gather the subword first token as the word rep or not
+                        "save_root_path": "./bert_firstpiece_lstm_crf/"
                     }
                 },
             },

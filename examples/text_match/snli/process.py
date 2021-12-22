@@ -23,11 +23,6 @@ import uuid
 logger = Logger('log.txt')
 
 def flat(data):
-    """TODO: Docstring for flat.
-
-    :data: TODO
-    :returns: TODO
-    """
     sentence_as = data['sentence_a']
     sentence_bs = data['sentence_b']
     uuids = data['uuid']

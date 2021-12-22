@@ -213,7 +213,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             prog_bar=True, rank_zero_only=True)
         return outputs
 
-    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int)->:
+    def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int)->Dict:
         """do test on a mini batch
 
         The outputs only gather the keys in self.gather_data.keys for postprocess
@@ -261,7 +261,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             prog_bar=True, rank_zero_only=True)
         return outputs
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch: Dict, batch_idx: int)->Dict:
         """do predict on a mini batch
 
         Args:

@@ -31,12 +31,22 @@ class SGDOptimizerConfig(BaseConfig):
             "dampening": 0,
             "weight_decay": 0,
             "nesterov":false,
-            "optimizer_special_groups":[
-            // special paramater groups set to special value, if some config key-value is not set, will use the default config in  optimizer_config.
-            // You should sort the config by priority(
-            //     e.g. the first group is ['linear.bias', {weight_decay: 0.1}], the second is [bias, [{weight_decay: 0.2}]], then the weight_decay of "*linea.bias*" will be 0.1, and the weight_decay of others *.bias.* will be 0.2
-            // ["bias & LayerNorm.bias & LayerNorm.weight", {weight_decay: 0}]
-            ]
+            "optimizer_special_groups": {
+                // "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
+                // "bias": {
+                //     "config": {
+                //         "weight_decay": 0
+                //     },
+                //     "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
+                // },
+                // "decoder": {
+                //     "config": {
+                //         "lr": 1e-3
+                //     },
+                //     "pattern": ["decoder"]
+                // },
+            }
+            "name": "default" // default group name
         },
         "_name": "sgd",
     }

@@ -16,7 +16,7 @@ import torch.nn as nn
 import torch
 from typing import Dict, List
 from dlk.utils.config import BaseConfig
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 
 
 @module_config_register("logits_gather")
@@ -55,7 +55,7 @@ class LogitsGatherConfig(BaseConfig):
 
 
 @module_register("logits_gather")
-class LogitsGather(nn.Module):
+class LogitsGather(Module):
     """Gather the output logits decided by config
     """
     def __init__(self, config: LogitsGatherConfig):

@@ -74,8 +74,8 @@ class LinearCRF(BaseModule):
         Returns: None
 
         """
-        for module in self.linear.children():
-            module.apply(method)
+        self.linear.init_weight(method)
+        self.crf.init_weight(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do predict, only get the predict labels

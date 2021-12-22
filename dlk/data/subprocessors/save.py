@@ -79,7 +79,7 @@ class Save(ISubProcessor):
 
         """
         if not os.path.exists(self.base_dir):
-            os.mkdir(self.base_dir)
+            os.makedirs(self.base_dir)
         logger.info(f"Saving file to {os.path.join(self.base_dir, path)}")
         return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
 

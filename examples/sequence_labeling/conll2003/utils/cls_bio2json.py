@@ -61,6 +61,7 @@
     ]
 """
 from tqdm import tqdm
+from . import convert
 import uuid
 import json
 import os
@@ -77,67 +78,9 @@ class Conll03Reader:
 
         format_dataset = {}
         for key, data in dataset.items():
-            format_dataset[key] = self.convert(data)
+            format_dataset[key] = convert(data)
         return format_dataset
 
-    def convert(self, data):
-        """TODO: Docstring for convert.
-        :data: TODO
-        :returns: TODO
-        """
-        format_data = []
-        for line in data:
-            tokens, labels = line[0], line[1]
-            text = ""
-            cur_label = ''
-            start = -1
-            entities_info = []
-            entity_info = {}
-            for token, label in zip(tokens, labels):
-                assert label[0] in ['B', 'I', "O"]
-                if label[0] == 'B':
-                    if text:
-                        cur_start = len(text) + 1 # will add space begin current token
-                        text = " ".join([text, token])
-                    else:
-                        cur_start = 0
-                        text = token
-                    if cur_label:
-                        entity_info['start'] = start
-                        entity_info['end'] = len(text)
-                        entity_info["labels"] = [cur_label]
-                        entities_info.append(entity_info)
-                    start = cur_start
-                    cur_label = label.split('-')[-1]
-                    entity_info = {}
-                elif label[0] == 'O':
-                    if cur_label:
-                        entity_info['start'] = start
-                        entity_info['end'] = len(text)
-                        entity_info["labels"] = [cur_label]
-                        entities_info.append(entity_info)
-                    entity_info = {}
-                    cur_label = ''
-                    start = -1
-                    if text:
-                        text = " ".join([text, token])
-                    else:
-                        text = token
-                else:
-                    if text:
-                        text = " ".join([text, token])
-                    else:
-                        text = token
-            if cur_label:
-                entity_info['start'] = start
-                entity_info['end'] = len(text)
-                entity_info['labels'] = [cur_label]
-                entities_info.append(entity_info)
-            for entity in entities_info:
-                assert len(text[entity['start']: entity['end']].strip()) == entity['end'] - entity['start'], f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
-
-            format_data.append({'uuid': str(uuid.uuid1()),  "sentence": text, "entities_info": entities_info})
-        return format_data
 
     def read_file(self, file_path):
         samples = []

@@ -5,7 +5,7 @@
         "eps": 1e-6,
         "weight_decay": 1e-2,
         "optimizer_special_groups":{
-            "order": ['bias'],
+            "order": ['bias'], // The order name is set to the group name
             "bias": {
                 "config": {
                     "weight_decay": 0

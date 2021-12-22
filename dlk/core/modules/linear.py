@@ -15,7 +15,7 @@
 import torch.nn as nn
 import torch
 from typing import Dict, List
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
 
 
@@ -53,7 +53,7 @@ class LinearConfig(BaseConfig):
 
 
 @module_register("linear")
-class Linear(nn.Module):
+class Linear(Module):
     """wrap for nn.Linear"""
     def __init__(self, config: LinearConfig):
         super(Linear, self).__init__()
