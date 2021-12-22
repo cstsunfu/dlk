@@ -16,7 +16,7 @@ import torch.nn as nn
 from dlk.utils.config import BaseConfig
 import torch
 from typing import Dict, List, Collection
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 
 @module_config_register("conv1d")
 class Conv1dConfig(BaseConfig):
@@ -51,7 +51,7 @@ class Conv1dConfig(BaseConfig):
         ])
 
 @module_register("conv1d")
-class Conv1d(nn.Module):
+class Conv1d(Module):
     """Conv for 1d input
     """
     def __init__(self, config: Conv1dConfig):
@@ -63,18 +63,6 @@ class Conv1d(nn.Module):
             convs.append(nn.Sequential(conv, nn.GELU()))
         self.convs = nn.ModuleList(convs)
         self.dropout = nn.Dropout(p=float(config.dropout))
-
-    def init_weight(self, method):
-        """init the weight of submodules by 'method'
-
-        Args:
-            method: init method
-
-        Returns: None
-
-        """
-        for module in self.children():
-            module.apply(method)
 
     def forward(self, x: torch.Tensor):
         """do forward on a mini batch

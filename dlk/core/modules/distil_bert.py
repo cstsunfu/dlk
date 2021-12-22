@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
 
 @module_config_register("distil_bert")
@@ -61,7 +61,7 @@ class DistilBertWrapConfig(BaseConfig):
 
 
 @module_register("distil_bert")
-class DistilBertWrap(nn.Module):
+class DistilBertWrap(Module):
     """DistillBertWrap"""
     def __init__(self, config: DistilBertWrapConfig):
         super(DistilBertWrap, self).__init__()

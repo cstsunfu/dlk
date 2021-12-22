@@ -31,7 +31,7 @@ class AdamWOptimizerConfig(BaseConfig):
             "eps": 1e-6,
             "weight_decay": 1e-2,
             "optimizer_special_groups": {
-                "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder
+                "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
                 "bias": {
                     "config": {
                         "weight_decay": 0

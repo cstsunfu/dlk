@@ -77,8 +77,7 @@ class Linear(SimpleModule):
         Returns: None
 
         """
-        for module in self.linear.children():
-            module.apply(method)
+        self.linear.init_weight(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """All step do this

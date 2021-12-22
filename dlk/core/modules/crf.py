@@ -15,7 +15,7 @@
 import torch
 import torch.nn as nn
 from typing import Callable, Dict
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
 
 @module_config_register("crf")
@@ -46,7 +46,7 @@ class CRFConfig(BaseConfig):
 
 
 @module_register("crf")
-class ConditionalRandomField(nn.Module):
+class ConditionalRandomField(Module):
     """ CRF, training_step for training, forward for decode。
     """
 

@@ -16,9 +16,85 @@
 import importlib
 import os
 from dlk.utils.register import Register
+import torch.nn as nn
+from typing import Dict
+import torch
 
 module_config_register = Register("Module config register.")
 module_register = Register("Module register.")
+
+
+class Module(nn.Module):
+    """This class is means DLK Module for replace the torch.nn.Module in this project
+    """
+
+    def init_weight(self, method):
+        """init the weight of submodules by 'method'
+
+        Args:
+            method: init method
+
+        Returns: None
+
+        """
+        for module in self.children():
+            module.apply(method)
+
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """in simple module, all step fit to this method
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
+        raise NotImplementedError
+
+    def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do predict for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
+        return self(inputs)
+
+    def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do train for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
+        return self(inputs)
+
+    def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do validation for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
+        return self(inputs)
+
+    def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do test for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: one mini-batch outputs
+
+        """
+        return self(inputs)
+
 
 
 def import_modules(modules_dir, namespace):

@@ -19,7 +19,7 @@
             "valid": "valid",  // relative dir for valid stage
             "test": "test",    // relative dir for test stage
         },
-        "start_save_step": 0,  // -1 means the last
+        "start_save_step": -1,  // -1 means the last
         "start_save_epoch": -1,
     }
 }

@@ -20,7 +20,7 @@ import os
 import torch.nn as nn
 from typing import Dict
 from dlk.utils.config import BaseConfig
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 
 
 @module_config_register("roberta")
@@ -60,7 +60,7 @@ class RobertaWrapConfig(BaseConfig):
 
 
 @module_register("roberta")
-class RobertaWrap(nn.Module):
+class RobertaWrap(Module):
     """Roberta Wrap"""
     def __init__(self, config: RobertaWrapConfig):
         super(RobertaWrap, self).__init__()

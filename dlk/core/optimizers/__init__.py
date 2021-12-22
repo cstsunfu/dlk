@@ -38,7 +38,7 @@ class BaseOptimizer(object):
         """
         raise NotADirectoryError
 
-    def init_optimizer(self, optimizer: optim.Optimizer, model: torch.Module, config: Dict):
+    def init_optimizer(self, optimizer: optim.Optimizer, model: torch.nn.Module, config: Dict):
         """init the optimizer for paras in model, and the group is decided by config
 
         Args:

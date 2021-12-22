@@ -20,8 +20,10 @@ import torch.nn as nn
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
-from . import module_register, module_config_register
+from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
+
+
 @module_config_register("bert")
 class BertWrapConfig(BaseConfig):
     """Config for BertWrap
@@ -59,7 +61,7 @@ class BertWrapConfig(BaseConfig):
 
 
 @module_register("bert")
-class BertWrap(nn.Module):
+class BertWrap(Module):
     """Bert wrap"""
     def __init__(self, config: BertWrapConfig):
         super(BertWrap, self).__init__()

@@ -17,14 +17,15 @@ from tokenizers import Tokenizer
 from typing import Dict
 import argparse
 import json
-from transformers import RobertaTokenizerFast, BertTokenizerFast
+from transformers import RobertaTokenizerFast, BertTokenizerFast, DistilBertTokenizerFast
 # import os
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 TOKENIZER_MAP = {
     "bert": BertTokenizerFast,
-    "roberta": RobertaTokenizerFast
+    "roberta": RobertaTokenizerFast,
+    "distil_bert": DistilBertTokenizerFast
 }
 
 

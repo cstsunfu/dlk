@@ -7,9 +7,9 @@
             /*"save_dir": "output/benchmark",  # must provide*/
             /*"data_path": "output/benchmark/processed_data.pkl",  # must provide*/
             /*"meta_data": "output/benchmark/meta.pkl",  # must provide*/
-            "save_dir": "./examples/sequence_labeling/conll2003/norm_lstm_crf/output",  # must provide
-            "data_path": "./examples/sequence_labeling/conll2003/norm_lstm_crf/output/processed_data.pkl",  # must provide
-            "meta_data": "./examples/sequence_labeling/conll2003/norm_lstm_crf/output/meta.pkl",  # must provide
+            "save_dir": "./norm_lstm_crf/output",  # must provide
+            "data_path": "./norm_lstm_crf/output/processed_data.pkl",  # must provide
+            "meta_data": "./norm_lstm_crf/output/meta.pkl",  # must provide
         },
         "task": {
             "manager": {
@@ -17,7 +17,7 @@
                 "config":{
                     "max_epochs": 50,
                     "_search": {"max_epochs": [60]},
-                    "gpus": 1
+                    "gpus": 0
                 }
             },
             "imodel": {
@@ -44,7 +44,7 @@
                     "config": {
                         "lr": 2e-2,
                         "weight_decay": 0,
-                        "_search": {"lr": [1e-2, 1.5e-2]},
+                        "_search": {"lr": [1e-2]},
                         "momentum": 0.9,
                     },
                 },
@@ -52,7 +52,7 @@
                     "config": {
                         "meta": '*@*',
                         "start_save_epoch": 50,
-                        "save_root_path": "./examples/sequence_labeling/conll2003/norm_lstm_crf/"
+                        "save_root_path": "./norm_lstm_crf/"
                     }
                 },
             },
