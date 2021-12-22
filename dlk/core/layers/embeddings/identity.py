@@ -23,12 +23,12 @@ import torch
 class IdentityEmbeddingConfig(BaseModuleConfig):
     """Config for IdentityEmbedding
 
-    Paras:
-    {
-        "config": {
-        },
-        "_name": "identity",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>     },
+        >>>     "_name": "identity",
+        >>> }
     """
     def __init__(self, config):
         super(IdentityEmbeddingConfig, self).__init__(config)
@@ -50,7 +50,8 @@ class IdentityEmbedding(SimpleModule):
         Args:
             inputs: anything
 
-        Returns: inputs 
+        Returns: 
+            inputs 
 
         """
         

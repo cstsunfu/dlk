@@ -24,25 +24,25 @@ logger = Logger.get_logger()
 class TokenGatherConfig(BaseConfig):
     """Config for TokenGather
 
-    Paras:
-    {
-        "_name": "token_gather",
-        "config": {
-            "train": { // only train stage using
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ["train", "valid", 'test']
-                },
-                "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name.
-                "ignore": "", // ignore the token, the id of this token will be -1
-                "update": null, // null or another Vocabulary object to update
-                "unk": "[UNK]",
-                "pad": "[PAD]",
-                "min_freq": 1,
-                "most_common": -1, //-1 for all
-            }
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "token_gather",
+        >>>     "config": {
+        >>>         "train": { // only train stage using
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ["train", "valid", 'test']
+        >>>             },
+        >>>             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+        >>>             "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name.
+        >>>             "ignore": "", // ignore the token, the id of this token will be -1
+        >>>             "update": null, // null or another Vocabulary object to update
+        >>>             "unk": "[UNK]",
+        >>>             "pad": "[PAD]",
+        >>>             "min_freq": 1,
+        >>>             "most_common": -1, //-1 for all
+        >>>         }
+        >>>     }
+        >>> }
     """
 
     def __init__(self, stage: str, config: Dict):
@@ -92,12 +92,13 @@ class TokenGather(ISubProcessor):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: data[self.config.deliver] = Vocabulary()(which gathered_token)
+        Returns: 
+            data[self.config.deliver] = Vocabulary()(which gathered_token)
 
         """
         if not self.data_set:

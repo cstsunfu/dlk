@@ -161,7 +161,8 @@ class LightningManagerConfig(BaseConfig):
         Args:
             config: {"config": {"callbacks": ["callback_names"..]}, "callback@callback_names": {config}}
 
-        Returns: configs which name in config['config']['callbacks']
+        Returns: 
+            configs which name in config['config']['callbacks']
 
         """
         callback_names = config.get("config", {}).get("callbacks", [])
@@ -200,7 +201,8 @@ class LightningManager(object):
             callback_configs: the config of every callback
             rt_config: {"save_dir": '..', "name": '..'}
 
-        Returns: all callbacks
+        Returns: 
+            all callbacks
 
         """
         callbacks_list = []
@@ -216,7 +218,8 @@ class LightningManager(object):
         Args:
             **inputs: dict of input, include "model", 'datamodule'
 
-        Returns: Undefine
+        Returns: 
+            Undefine
 
         """
         
@@ -228,7 +231,8 @@ class LightningManager(object):
         Args:
             **inputs: dict of input, include "model", 'datamodule'
 
-        Returns: predict list
+        Returns: 
+            predict list
 
         """
         return self.manager.predict(**inputs)
@@ -239,7 +243,8 @@ class LightningManager(object):
         Args:
             **inputs: dict of input, include "model", 'datamodule'
 
-        Returns: Undefine
+        Returns: 
+            Undefine
 
         """
         return self.manager.test(**inputs)
@@ -250,7 +255,8 @@ class LightningManager(object):
         Args:
             **inputs: dict of input, include "model", 'datamodule'
 
-        Returns: Undefine
+        Returns: 
+            Undefine
 
         """
         return self.manager.validate(**inputs)

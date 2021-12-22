@@ -72,19 +72,49 @@ class IBaseDataModule(LightningDataModule):
         super(IBaseDataModule, self).__init__()
 
     def train_dataloader(self):
+        """
+
+        Raises:
+            NotImplementedError
+
+        """
         raise NotImplementedError(f"You must implementation the train_dataloader for your own datamodule.")
 
     def predict_dataloader(self):
+        """
+
+        Raises:
+            NotImplementedError
+
+        """
         raise NotImplementedError(f"You must implementation the predict_dataloader for your own datamodule.")
 
     def val_dataloader(self):
+        """
+
+        Raises:
+            NotImplementedError
+
+        """
         raise NotImplementedError(f"You must implementation the val_dataloader for your own datamodule.")
 
     def test_dataloader(self):
+        """
+
+        Raises:
+            NotImplementedError
+
+        """
         raise NotImplementedError(f"You must implementation the test_dataloader for your own datamodule.")
 
     @abc.abstractmethod
     def online_dataloader(self):
+        """
+
+        Raises:
+            NotImplementedError
+
+        """
         raise NotImplementedError(f"You must implementation the online_dataloader for your own datamodule.")
 
 

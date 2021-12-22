@@ -27,16 +27,16 @@ from . import module_register, module_config_register, Module
 class RobertaWrapConfig(BaseConfig):
     """Config for RobertaWrap
 
-    Paras:
-    {
-        "config": {
-            "pretrained_model_path": "*@*",
-            "from_pretrain": true
-            "freeze": false,
-            "dropout": 0.0,
-        },
-        "_name": "roberta",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "pretrained_model_path": "*@*",
+        >>>         "from_pretrain": true
+        >>>         "freeze": false,
+        >>>         "dropout": 0.0,
+        >>>     },
+        >>>     "_name": "roberta",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -75,7 +75,8 @@ class RobertaWrap(Module):
         Args:
             method: init method, no use for pretrained_transformers
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.config.from_pretrain:
@@ -94,7 +95,8 @@ class RobertaWrap(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: sequence_output, all_hidden_states, all_self_attentions
+        Returns: 
+            sequence_output, all_hidden_states, all_self_attentions
 
         """
         if self.config.freeze:

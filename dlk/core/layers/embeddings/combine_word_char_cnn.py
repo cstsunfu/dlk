@@ -24,58 +24,58 @@ import torch
 class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
     """Config for CombineWordCharCNNEmbedding
 
-    Paras:
-    {
-        "_name": "combine_word_char_cnn",
-        "embedding@char": {
-            "_base": "static_char_cnn",
-        },
-        "embedding@word": {
-            "_base": "static",
-        },
-        "config": {
-            "word": {
-                "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-                "embedding_dim": "*@*",
-                "embedding_trace": ".", //default the file itself is the embedding
-                "freeze": false, // is freeze
-                "padding_idx": 0, //dropout rate
-                "output_map": {"embedding": "word_embedding"},
-                "input_map": {}, // required_key: provide_key
-            },
-            "char": {
-                "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-                "embedding_dim": 35, //dropout rate
-                "embedding_trace": ".", //default the file itself is the embedding
-                "freeze": false, // is freeze
-                "kernel_sizes": [3], //dropout rate
-                "padding_idx": 0,
-                "output_map": {"char_embedding": "char_embedding"},
-                "input_map": {"char_ids": "char_ids"},
-            },
-            "dropout": 0, //dropout rate
-            "embedding_dim": "*@*", // this must equal to char.embedding_dim + word.embedding_dim
-            "output_map": {"embedding": "embedding"}, // this config do nothing, you can change this
-            "input_map": {"char_embedding": "char_embedding", 'word_embedding': "word_embedding"}, // if the output of char and word embedding changed, you also should change this
-        },
-        "_link":{
-            "config.word.embedding_file": ["embedding@word.config.embedding_file"],
-            "config.word.embedding_dim": ["embedding@word.config.embedding_dim"],
-            "config.word.embedding_trace": ["embedding@word.config.embedding_trace"],
-            "config.word.freeze": ["embedding@word.config.freeze"],
-            "config.word.padding_idx": ["embedding@word.config.padding_idx"],
-            "config.word.output_map": ["embedding@word.config.output_map"],
-            "config.word.input_map": ["embedding@word.config.input_map"],
-            "config.char.embedding_file": ["embedding@char.config.embedding_file"],
-            "config.char.embedding_dim": ["embedding@char.config.embedding_dim"],
-            "config.char.embedding_trace": ["embedding@char.config.embedding_trace"],
-            "config.char.freeze": ["embedding@char.config.freeze"],
-            "config.char.kernel_sizes": ["embedding@char.config.kernel_sizes"],
-            "config.char.padding_idx": ["embedding@char.config.padding_idx"],
-            "config.char.output_map": ["embedding@char.config.output_map"],
-            "config.char.input_map": ["embedding@char.config.input_map"],
-        },
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "combine_word_char_cnn",
+        >>>     "embedding@char": {
+        >>>         "_base": "static_char_cnn",
+        >>>     },
+        >>>     "embedding@word": {
+        >>>         "_base": "static",
+        >>>     },
+        >>>     "config": {
+        >>>         "word": {
+        >>>             "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+        >>>             "embedding_dim": "*@*",
+        >>>             "embedding_trace": ".", //default the file itself is the embedding
+        >>>             "freeze": false, // is freeze
+        >>>             "padding_idx": 0, //dropout rate
+        >>>             "output_map": {"embedding": "word_embedding"},
+        >>>             "input_map": {}, // required_key: provide_key
+        >>>         },
+        >>>         "char": {
+        >>>             "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+        >>>             "embedding_dim": 35, //dropout rate
+        >>>             "embedding_trace": ".", //default the file itself is the embedding
+        >>>             "freeze": false, // is freeze
+        >>>             "kernel_sizes": [3], //dropout rate
+        >>>             "padding_idx": 0,
+        >>>             "output_map": {"char_embedding": "char_embedding"},
+        >>>             "input_map": {"char_ids": "char_ids"},
+        >>>         },
+        >>>         "dropout": 0, //dropout rate
+        >>>         "embedding_dim": "*@*", // this must equal to char.embedding_dim + word.embedding_dim
+        >>>         "output_map": {"embedding": "embedding"}, // this config do nothing, you can change this
+        >>>         "input_map": {"char_embedding": "char_embedding", 'word_embedding': "word_embedding"}, // if the output of char and word embedding changed, you also should change this
+        >>>     },
+        >>>     "_link":{
+        >>>         "config.word.embedding_file": ["embedding@word.config.embedding_file"],
+        >>>         "config.word.embedding_dim": ["embedding@word.config.embedding_dim"],
+        >>>         "config.word.embedding_trace": ["embedding@word.config.embedding_trace"],
+        >>>         "config.word.freeze": ["embedding@word.config.freeze"],
+        >>>         "config.word.padding_idx": ["embedding@word.config.padding_idx"],
+        >>>         "config.word.output_map": ["embedding@word.config.output_map"],
+        >>>         "config.word.input_map": ["embedding@word.config.input_map"],
+        >>>         "config.char.embedding_file": ["embedding@char.config.embedding_file"],
+        >>>         "config.char.embedding_dim": ["embedding@char.config.embedding_dim"],
+        >>>         "config.char.embedding_trace": ["embedding@char.config.embedding_trace"],
+        >>>         "config.char.freeze": ["embedding@char.config.freeze"],
+        >>>         "config.char.kernel_sizes": ["embedding@char.config.kernel_sizes"],
+        >>>         "config.char.padding_idx": ["embedding@char.config.padding_idx"],
+        >>>         "config.char.output_map": ["embedding@char.config.output_map"],
+        >>>         "config.char.input_map": ["embedding@char.config.input_map"],
+        >>>     },
+        >>> }
     """
     def __init__(self, config: Dict):
         super(CombineWordCharCNNEmbeddingConfig, self).__init__(config)
@@ -130,7 +130,8 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.word_embedding.init_weight(method)
@@ -142,7 +143,8 @@ class CombineWordCharCNNEmbedding(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         inputs = self.word_embedding(inputs)

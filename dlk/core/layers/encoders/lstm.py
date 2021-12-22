@@ -25,26 +25,26 @@ logger = Logger.get_logger()
 class LSTMConfig(BaseModuleConfig):
     """Config for LSTM
 
-    Paras:
-    {
-        module: {
-            _base: "lstm",
-        },
-        config: {
-            input_map: {},
-            output_map: {},
-            input_size: *@*,
-            output_size: "*@*",
-            num_layers: 1,
-            dropout: "*@*", // dropout between layers
-        },
-        _link: {
-            config.input_size: [module.config.input_size],
-            config.output_size: [module.config.output_size],
-            config.dropout: [module.config.dropout],
-        },
-        _name: "lstm",
-    }
+    Config Example:
+        >>> {
+        >>>     module: {
+        >>>         _base: "lstm",
+        >>>     },
+        >>>     config: {
+        >>>         input_map: {},
+        >>>         output_map: {},
+        >>>         input_size: *@*,
+        >>>         output_size: "*@*",
+        >>>         num_layers: 1,
+        >>>         dropout: "*@*", // dropout between layers
+        >>>     },
+        >>>     _link: {
+        >>>         config.input_size: [module.config.input_size],
+        >>>         config.output_size: [module.config.output_size],
+        >>>         config.dropout: [module.config.dropout],
+        >>>     },
+        >>>     _name: "lstm",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -77,7 +77,8 @@ class LSTM(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.lstm.init_weight(method)
@@ -88,7 +89,8 @@ class LSTM(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])

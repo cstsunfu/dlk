@@ -22,27 +22,27 @@ from dlk.core.modules import module_config_register, module_register
 class LinearConfig(BaseModuleConfig):
     """Config for Linear 
 
-    Paras:
-    {
-        "module": {
-            "_base": "linear",
-        },
-        "config": {
-            "input_size": "*@*",
-            "output_size": "*@*",
-            "pool": null,
-            "dropout": 0.0,
-            "output_map": {},
-            "input_map": {}, // required_key: provide_key
-        },
-        "_link":{
-            "config.input_size": ["module.config.input_size"],
-            "config.output_size": ["module.config.output_size"],
-            "config.pool": ["module.config.pool"],
-            "config.dropout": ["module.config.dropout"],
-        },
-        "_name": "linear",
-    }
+    Config Example:
+        >>> {
+        >>>     "module": {
+        >>>         "_base": "linear",
+        >>>     },
+        >>>     "config": {
+        >>>         "input_size": "*@*",
+        >>>         "output_size": "*@*",
+        >>>         "pool": null,
+        >>>         "dropout": 0.0,
+        >>>         "output_map": {},
+        >>>         "input_map": {}, // required_key: provide_key
+        >>>     },
+        >>>     "_link":{
+        >>>         "config.input_size": ["module.config.input_size"],
+        >>>         "config.output_size": ["module.config.output_size"],
+        >>>         "config.pool": ["module.config.pool"],
+        >>>         "config.dropout": ["module.config.dropout"],
+        >>>     },
+        >>>     "_name": "linear",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(LinearConfig, self).__init__(config)
@@ -75,7 +75,8 @@ class Linear(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.linear.init_weight(method)
@@ -86,7 +87,8 @@ class Linear(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         inputs[self.get_output_name("logits")] = self.linear(inputs[self.get_input_name('embedding')])

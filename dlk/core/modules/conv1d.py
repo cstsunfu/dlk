@@ -22,16 +22,16 @@ from . import module_register, module_config_register, Module
 class Conv1dConfig(BaseConfig):
     """Config for Conv1d
 
-    Paras:
-    {
-        "config": {
-            "in_channels": "*@*",
-            "out_channels": "*@*",
-            "dropout": 0.0,
-            "kernel_sizes": [3],
-        },
-        "_name": "conv1d",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "in_channels": "*@*",
+        >>>         "out_channels": "*@*",
+        >>>         "dropout": 0.0,
+        >>>         "kernel_sizes": [3],
+        >>>     },
+        >>>     "_name": "conv1d",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(Conv1dConfig, self).__init__(config)
@@ -70,7 +70,8 @@ class Conv1d(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: conv result the shape is the same as input
+        Returns: 
+            conv result the shape is the same as input
 
         """
         return self.dropout(torch.cat([conv(x) for conv in self.convs], dim=-1))

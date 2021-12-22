@@ -23,17 +23,17 @@ import torch.nn as nn
 class IdentityLossConfig(BaseModuleConfig):
     """Config for IdentityLoss
 
-    Paras:
-    {
-        config: {
-            "schedule": [1],
-            "scale": [1], # scale the loss for every schedule
-            // "schedule": [0.3, 1.0], # can be a list or str
-            // "scale": "[0.5, 1]",
-            "loss": "loss", // the real loss from result['loss']
-        },
-        _name: "identity",
-    }
+    Config Example:
+        >>> {
+        >>>     config: {
+        >>>         "schedule": [1],
+        >>>         "scale": [1], # scale the loss for every schedule
+        >>>         // "schedule": [0.3, 1.0], # can be a list or str
+        >>>         // "scale": "[0.5, 1]",
+        >>>         "loss": "loss", // the real loss from result['loss']
+        >>>     },
+        >>>     _name: "identity",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(IdentityLossConfig, self).__init__(config)
@@ -78,7 +78,8 @@ class IdentityLoss(object):
         Args:
             rt_config: { "total_steps": self.num_training_steps, "total_epochs": self.num_training_epochs}
 
-        Returns: None
+        Returns: 
+            None
 
         """
 
@@ -92,14 +93,15 @@ class IdentityLoss(object):
             result: the model predict dict
             inputs: the all inputs for model
             rt_config: provide the current training status 
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: loss
+        Returns: 
+            loss
 
         """
         if rt_config['current_step']>self.config.schedule[self.current_stage]:

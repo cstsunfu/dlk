@@ -26,36 +26,36 @@ logger = Logger.get_logger()
 class TxtClsLoaderConfig(BaseConfig):
     """Config for TxtClsLoader
 
-    Paras:
-    {
-        "_name": "txt_cls_loader",
-        "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "input_map": {   // without necessery don't change this
-                    "sentence": "sentence", //for single
-                    "sentence_a": "sentence_a",  // for pair
-                    "sentence_b": "sentence_b",
-                    "uuid": "uuid",
-                    "labels": "labels",
-                },
-                "output_map": {   // without necessery don't change this
-                    "sentence": "sentence", //for single
-                    "sentence_a": "sentence_a", //for pair
-                    "sentence_b": "sentence_b",
-                    "uuid": "uuid",
-                    "labels": "labels",
-                },
-                "data_type": "single", // single or pair
-            }, //3
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "txt_cls_loader",
+        >>>     "config": {
+        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "input_map": {   // without necessery don't change this
+        >>>                 "sentence": "sentence", //for single
+        >>>                 "sentence_a": "sentence_a",  // for pair
+        >>>                 "sentence_b": "sentence_b",
+        >>>                 "uuid": "uuid",
+        >>>                 "labels": "labels",
+        >>>             },
+        >>>             "output_map": {   // without necessery don't change this
+        >>>                 "sentence": "sentence", //for single
+        >>>                 "sentence_a": "sentence_a", //for pair
+        >>>                 "sentence_b": "sentence_b",
+        >>>                 "uuid": "uuid",
+        >>>                 "labels": "labels",
+        >>>             },
+        >>>             "data_type": "single", // single or pair
+        >>>         }, //3
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
     def __init__(self, stage, config: Dict):
 
@@ -95,17 +95,19 @@ class TxtClsLoader(ISubProcessor):
         """Entry for TxtClsLoader
 
         Args:
-            data: input data
-                {
-                    "train": list of json format train data
-                }
-                one_ins example:
-                {
-                    "uuid": '**-**-**-**'
-                    "sentence": "I have an apple",
-                    "labels":  ["label_name"]
-                }
-        Returns: data + loaded_data
+            data: 
+                >>> input data
+                >>> {
+                >>>     "train": list of json format train data
+                >>> }
+                >>> one_ins example:
+                >>> {
+                >>>     "uuid": '**-**-**-**'
+                >>>     "sentence": "I have an apple",
+                >>>     "labels":  ["label_name"]
+                >>> }
+        Returns: 
+            data + loaded_data
         """
 
         if not self.data_set:

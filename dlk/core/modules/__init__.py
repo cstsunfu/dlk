@@ -34,7 +34,8 @@ class Module(nn.Module):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         for module in self.children():
@@ -46,7 +47,8 @@ class Module(nn.Module):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -57,7 +59,8 @@ class Module(nn.Module):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -68,7 +71,8 @@ class Module(nn.Module):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -79,7 +83,8 @@ class Module(nn.Module):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -90,7 +95,8 @@ class Module(nn.Module):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)

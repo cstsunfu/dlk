@@ -26,20 +26,20 @@ logger = Logger.get_logger()
 class TokenEmbeddingConfig(BaseConfig):
     """Config for TokenEmbedding
 
-    Paras:
-    {
-        "_name": "token_embedding",
-        "config": {
-            "train": { // only train stage using
-                "embedding_file": "*@*",
-                "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "vocab": null,
-                "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
-                "embedding_size": 200,
-                "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
-            }
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "token_embedding",
+        >>>     "config": {
+        >>>         "train": { // only train stage using
+        >>>             "embedding_file": "*@*",
+        >>>             "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+        >>>             "vocab": null,
+        >>>             "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
+        >>>             "embedding_size": 200,
+        >>>             "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
+        >>>         }
+        >>>     }
+        >>> }
     """
 
     def __init__(self, stage, config):
@@ -92,11 +92,11 @@ class TokenEmbedding(ISubProcessor):
             file_path: embedding file path
             embedding_size: the embedding dim
 
-        Returns: embedding_dict
-
-            {
-                "word": [embedding, ...]
-            }
+        Returns: 
+            >>> embedding_dict
+            >>> {
+            >>>     "word": [embedding, ...]
+            >>> }
         """
         embedding_dict = {}
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -121,7 +121,8 @@ class TokenEmbedding(ISubProcessor):
             embedding_dict: word->embedding dict
             vocab: token vocab
 
-        Returns: updated embedding_dict
+        Returns: 
+            updated embedding_dict
 
         """
         without_embedding_tokens = 0
@@ -160,7 +161,8 @@ class TokenEmbedding(ISubProcessor):
         Args:
             data: will process data
 
-        Returns: update embedding_dict to data data[self.config.deliver] = np.array(embedding_mat)
+        Returns: 
+            update embedding_dict to data data[self.config.deliver] = np.array(embedding_mat)
 
         """
         if not self.config.config:

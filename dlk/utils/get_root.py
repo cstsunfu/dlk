@@ -22,7 +22,8 @@ ROOT = os.path.join('/')
 def get_root():
     """get the dlk root
 
-    Returns: abspath of this package
+    Returns: 
+        abspath of this package
 
     """
     cur_dir = os.path.dirname(os.path.abspath(__file__))

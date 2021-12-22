@@ -23,12 +23,12 @@ import torch
 class IdentityDecoderConfig(BaseModuleConfig):
     """Config for IdentityDecoder
 
-    Paras:
-    {
-        "config": {
-        },
-        "_name": "identity",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>     },
+        >>>     "_name": "identity",
+        >>> }
     """
     def __init__(self, config):
         super(IdentityDecoderConfig, self).__init__(config)
@@ -50,7 +50,8 @@ class IdentityDecoder(SimpleModule):
         Args:
             inputs: anything
 
-        Returns: inputs 
+        Returns: 
+            inputs 
 
         """
         

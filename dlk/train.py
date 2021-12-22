@@ -32,22 +32,22 @@ logger = Logger.get_logger()
 class Train(object):
     """Trainer
 
-    Paras:
-    {
-        "_focus": {
+    Config Example:
+        >>> {
+        >>>     "_focus": {
 
-        },
-        "_link": {},
-        "_search": {},
-        "config": {
-            "save_dir": "*@*",  # must be provided
-            "data_path": "*@*",  # must be provided
-        },
-        "task": {
-            "_name": task_name
-            ...
-        }
-    }
+        >>>     },
+        >>>     "_link": {},
+        >>>     "_search": {},
+        >>>     "config": {
+        >>>         "save_dir": "*@*",  # must be provided
+        >>>         "data_path": "*@*",  # must be provided
+        >>>     },
+        >>>     "task": {
+        >>>         "_name": task_name
+        >>>         ...
+        >>>     }
+        >>> }
     """
 
     def __init__(self, config: Union[str, Dict], ckpt: str=""):
@@ -83,7 +83,8 @@ class Train(object):
     def run(self):
         """run for all configs
 
-        Returns: None
+        Returns: 
+            None
 
         """
         logger.info(f"You have {len(self.config_names)} training config(s), they all will be run.")
@@ -98,7 +99,8 @@ class Train(object):
             config: {"config": {"save_dir": '..'}}
             name: config name
 
-        Returns: None
+        Returns: 
+            None
 
         """
         log_path = os.path.join(config.get('config').get('save_dir'), name)
@@ -113,7 +115,8 @@ class Train(object):
             config: {"root": '...'}
             name: config name
 
-        Returns: TODO
+        Returns: 
+            TODO
 
         """
 
@@ -143,7 +146,8 @@ class Train(object):
         Args:
             config: {"config": {"data_path": '..'}}
 
-        Returns: loaded data
+        Returns: 
+            loaded data
 
         """
         self.data = pkl.load(open(config['config']['data_path'], 'rb')).get('data', {})
@@ -156,7 +160,8 @@ class Train(object):
             config: {"task": {"datamodule": '..'}}
             data: {"train": '..', 'valid': '..', ..}
 
-        Returns: datamodule
+        Returns: 
+            datamodule
 
         """
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
@@ -170,7 +175,8 @@ class Train(object):
             config: {"task": {"manager": '..'}, "config": {"save_dir"}}
             name: the predict progress name
 
-        Returns: manager
+        Returns: 
+            manager
 
         """
         Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
@@ -184,7 +190,8 @@ class Train(object):
             config: {"task": {"imodel": '..'}}
             data: {"train": '..', 'valid': '..', ..}
 
-        Returns: imodel
+        Returns: 
+            imodel
 
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))

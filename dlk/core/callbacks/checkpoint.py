@@ -23,22 +23,22 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 class CheckpointCallbackConfig(object):
     """Config for CheckpointCallback
 
-    Paras:
-    {
-        // default checkpoint configure
-        "_name": "checkpoint",
-        "config": {
-            "monitor": "*@*",    // monitor which metrics or log value
-            "save_top_k": 3,   //save top k
-            "mode": "*@*", //"max" or "min" select topk min or max checkpoint, min for loss, max for acc
-            "save_last": true,  //  always save last checkpoint
-            "auto_insert_metric_name": true, //the save file name with or not metric name
-            "every_n_train_steps": null, // Number of training steps between checkpoints.
-            "every_n_epochs": 1, //Number of epochs between checkpoints.
-            "save_on_train_epoch_end": false,// Whether to run checkpointing at the end of the training epoch. If this is False, then the check runs at the end of the validation.
-            "save_weights_only": false, //whether save other status like optimizer, etc.
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     // default checkpoint configure
+        >>>     "_name": "checkpoint",
+        >>>     "config": {
+        >>>         "monitor": "*@*",    // monitor which metrics or log value
+        >>>         "save_top_k": 3,   //save top k
+        >>>         "mode": "*@*", //"max" or "min" select topk min or max checkpoint, min for loss, max for acc
+        >>>         "save_last": true,  //  always save last checkpoint
+        >>>         "auto_insert_metric_name": true, //the save file name with or not metric name
+        >>>         "every_n_train_steps": null, // Number of training steps between checkpoints.
+        >>>         "every_n_epochs": 1, //Number of epochs between checkpoints.
+        >>>         "save_on_train_epoch_end": false,// Whether to run checkpointing at the end of the training epoch. If this is False, then the check runs at the end of the validation.
+        >>>         "save_weights_only": false, //whether save other status like optimizer, etc.
+        >>>     }
+        >>> }
     """
     def __init__(self, config: Dict):
         super(CheckpointCallbackConfig, self).__init__()
@@ -68,7 +68,8 @@ class CheckpointCallback(object):
         Args:
             rt_config: runtime config, include save_dir, and the checkpoint path name
 
-        Returns: ModelCheckpoint object
+        Returns: 
+            ModelCheckpoint object
 
         """
         dirpath = os.path.join(rt_config.get('save_dir', ''), rt_config.get("name", ''))

@@ -25,26 +25,26 @@ logger = Logger.get_logger()
 class Token2CharIDConfig(BaseConfig):
     """Config for Token2CharID
 
-    Paras:
-    {
-        "_name": "token2charid",
-        "config": {
-            "train":{
-                "data_pair": {
-                    "sentence & offsets": "char_ids"
-                },
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "vocab": "char_vocab", // usually provided by the "token_gather" module
-                "max_token_len": 20, // the max length of token, then the output will be max_token_len x token_num (put max_token_len in previor is for padding on token_num)
-            },
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "token2charid",
+        >>>     "config": {
+        >>>         "train":{
+        >>>             "data_pair": {
+        >>>                 "sentence & offsets": "char_ids"
+        >>>             },
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "vocab": "char_vocab", // usually provided by the "token_gather" module
+        >>>             "max_token_len": 20, // the max length of token, then the output will be max_token_len x token_num (put max_token_len in previor is for padding on token_num)
+        >>>         },
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
 
     def __init__(self, stage, config: Dict):
@@ -94,7 +94,8 @@ class Token2CharID(ISubProcessor):
         Args:
             data: will process data
 
-        Returns: updated data(token -> char_ids)
+        Returns: 
+            updated data(token -> char_ids)
 
         """
 

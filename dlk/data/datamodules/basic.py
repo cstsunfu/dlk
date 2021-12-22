@@ -28,35 +28,35 @@ logger = Logger.get_logger()
 class BasicDatamoduleConfig(BaseConfig):
     """Config for BasicDatamodule
 
-    Paras:
-    {
-        "_name": "basic",
-        "config": {
-            "pin_memory": None,
-            "collate_fn": "default",
-            "shuffle": {
-                "train": true,
-                "predict": false,
-                "valid": false,
-                "test": false,
-                "online": false
-            },
-            "key_type_pairs": {
-                 'input_ids': 'int',
-                 'label_ids': 'long',
-                 'type_ids': 'long',
-             },
-            "gen_mask": {
-                 'input_ids': 'attention_mask',
-             },
-            "key_padding_pairs": { //default all 0
-                 'input_ids': 0,
-             },
-            "train_batch_size": 32,
-            "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
-            "online_batch_size": 1,
-        }
-    },
+    Config Example:
+        >>> {
+        >>>     "_name": "basic",
+        >>>     "config": {
+        >>>         "pin_memory": None,
+        >>>         "collate_fn": "default",
+        >>>         "shuffle": {
+        >>>             "train": true,
+        >>>             "predict": false,
+        >>>             "valid": false,
+        >>>             "test": false,
+        >>>             "online": false
+        >>>         },
+        >>>         "key_type_pairs": {
+        >>>              'input_ids': 'int',
+        >>>              'label_ids': 'long',
+        >>>              'type_ids': 'long',
+        >>>          },
+        >>>         "gen_mask": {
+        >>>              'input_ids': 'attention_mask',
+        >>>          },
+        >>>         "key_padding_pairs": { //default all 0
+        >>>              'input_ids': 0,
+        >>>          },
+        >>>         "train_batch_size": 32,
+        >>>         "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+        >>>         "online_batch_size": 1,
+        >>>     }
+        >>> },
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__(config)
@@ -115,7 +115,8 @@ class BasicDataset(Dataset):
         Args:
             idx: the index of data
 
-        Returns: the data[idx] and convert to tensor the result will add 'idx' to '_index'
+        Returns: 
+            the data[idx] and convert to tensor the result will add 'idx' to '_index'
 
         """
         one_ins = {}
@@ -155,7 +156,8 @@ class BasicDatamodule(IBaseDataModule):
             data: the pd.DataFrame
             field: traing/valid/test, etc.
 
-        Returns: real_key_type_pairs where keys = key_type_pairs.keys() ∩ data.columns
+        Returns: 
+            real_key_type_pairs where keys = key_type_pairs.keys() ∩ data.columns
 
         """
         copy_key_type_pairs = copy.deepcopy(key_type_pairs)

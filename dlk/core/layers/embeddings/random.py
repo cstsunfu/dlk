@@ -25,18 +25,18 @@ import numpy as np
 class RandomEmbeddingConfig(BaseModuleConfig):
     """Config for RandomEmbedding
 
-    Paras:
-    {
-        "config": {
-            "vocab_size": "*@*",
-            "embedding_dim": "*@*",
-            "dropout": 0, //dropout rate
-            "padding_idx": 0, //dropout rate
-            "output_map": {},
-            "input_map": {},
-        },
-        "_name": "random",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "vocab_size": "*@*",
+        >>>         "embedding_dim": "*@*",
+        >>>         "dropout": 0, //dropout rate
+        >>>         "padding_idx": 0, //dropout rate
+        >>>         "output_map": {},
+        >>>         "input_map": {},
+        >>>     },
+        >>>     "_name": "random",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(RandomEmbeddingConfig, self).__init__(config)
@@ -74,7 +74,8 @@ class RandomEmbedding(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.embedding.apply(method)
@@ -85,7 +86,8 @@ class RandomEmbedding(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))

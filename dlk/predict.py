@@ -32,22 +32,22 @@ logger = Logger.get_logger()
 class Predict(object):
     """Predict
 
-    Paras:
-    {
-        "_focus": {
+    Config Example:
+        >>> {
+        >>>     "_focus": {
 
-        },
-        "_link": {},
-        "_search": {},
-        "config": {
-            "save_dir": "*@*",  # must be provided
-            "data_path": "*@*",  # must be provided
-        },
-        "task": {
-            "_name": task_name
-            ...
-        }
-    }
+        >>>     },
+        >>>     "_link": {},
+        >>>     "_search": {},
+        >>>     "config": {
+        >>>         "save_dir": "*@*",  # must be provided
+        >>>         "data_path": "*@*",  # must be provided
+        >>>     },
+        >>>     "task": {
+        >>>         "_name": task_name
+        >>>         ...
+        >>>     }
+        >>> }
     """
     def __init__(self, config, checkpoint):
         super(Predict, self).__init__()
@@ -72,7 +72,8 @@ class Predict(object):
 
     def trace(self):
         """trace the model to torchscript
-        Returns: TODO
+        Returns: 
+            TODO
 
         """
         config = self.config['root']
@@ -100,7 +101,8 @@ class Predict(object):
 
     def predict(self):
         """init the model, datamodule, manager then predict the predict_dataloader
-        Returns: None
+        Returns: 
+            None
 
         """
         config = self.config['root']
@@ -127,7 +129,8 @@ class Predict(object):
         Args:
             config: {"config": {"data_path": '..'}}
 
-        Returns: loaded data
+        Returns: 
+            loaded data
 
         """
         
@@ -141,7 +144,8 @@ class Predict(object):
             config: {"task": {"datamodule": '..'}}
             data: {"train": '..', 'valid': '..', ..}
 
-        Returns: datamodule
+        Returns: 
+            datamodule
 
         """
         DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
@@ -155,7 +159,8 @@ class Predict(object):
             config: {"task": {"manager": '..'}, "config": {"save_dir"}}
             name: the predict progress name
 
-        Returns: manager
+        Returns: 
+            manager
 
         """
         Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
@@ -169,7 +174,8 @@ class Predict(object):
             config: {"task": {"imodel": '..'}}
             data: {"train": '..', 'valid': '..', ..}
 
-        Returns: imodel
+        Returns: 
+            imodel
 
         """
         IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))

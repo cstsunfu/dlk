@@ -23,20 +23,20 @@ from pytorch_lightning.callbacks import StochasticWeightAveraging
 class StochasticWeightAveragingCallbackConfig(object):
     """Config for StochasticWeightAveragingCallback
 
-    Paras:
-    {   //weight_average default
-        "_name": "weight_average",
-        "config": {
-            "swa_epoch_start": 0.8, // swa start epoch
-            "swa_lrs": null,
-                //None. Use the current learning rate of the optimizer at the time the SWA procedure starts.
-                //float. Use this value for all parameter groups of the optimizer.
-                //List[float]. A list values for each parameter group of the optimizer.
-            "annealing_epochs": 10,
-            "annealing_strategy": 'cos',
-            "device": null, // save device, null for auto detach, if the gpu is oom, you should change this to 'cpu'
-        }
-    }
+    Config Example:
+        >>> {   //weight_average default
+        >>>     "_name": "weight_average",
+        >>>     "config": {
+        >>>         "swa_epoch_start": 0.8, // swa start epoch
+        >>>         "swa_lrs": null,
+        >>>             //None. Use the current learning rate of the optimizer at the time the SWA procedure starts.
+        >>>             //float. Use this value for all parameter groups of the optimizer.
+        >>>             //List[float]. A list values for each parameter group of the optimizer.
+        >>>         "annealing_epochs": 10,
+        >>>         "annealing_strategy": 'cos',
+        >>>         "device": null, // save device, null for auto detach, if the gpu is oom, you should change this to 'cpu'
+        >>>     }
+        >>> }
     """
     def __init__(self, config):
         super(StochasticWeightAveragingCallbackConfig, self).__init__()
@@ -62,7 +62,8 @@ class StochasticWeightAveragingCallback(object):
         Args:
             rt_config: runtime config, include save_dir, and the checkpoint path name
 
-        Returns: StochasticWeightAveraging object
+        Returns: 
+            StochasticWeightAveraging object
 
         """
         return StochasticWeightAveraging(**self.config.__dict__)

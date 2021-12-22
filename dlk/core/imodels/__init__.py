@@ -15,7 +15,7 @@
 """imodels"""
 import importlib
 import os
-from typing import Callable, Dict, Tuple, Any
+from typing import Callable, Dict, List, Tuple, Any
 from dlk.utils.register import Register
 import torch
 
@@ -27,11 +27,15 @@ class GatherOutputMixin(object):
 
 
     @staticmethod
-    def proc_dist_outputs(dist_outputs):
+    def proc_dist_outputs(dist_outputs: List[Dict])->List[Dict]:
         """gather all distributed outputs to outputs which is like in a single worker.
 
-        :dist_outputs: the inputs of pytorch_lightning *_epoch_end when using ddp
-        :returns: the inputs of pytorch_lightning *_epoch_end when only run on one worker.
+        Args:
+            dist_outputs: the inputs of pytorch_lightning train/test/.._epoch_end when using ddp
+
+        Returns:
+            the inputs of pytorch_lightning train/test/.._epoch_end when only run on one worker.
+
         """
         outputs = []
         for dist_output in dist_outputs:
@@ -44,11 +48,13 @@ class GatherOutputMixin(object):
             outputs.append(one_output)
         return outputs
 
-    def gather_outputs(self, outputs):
-        """TODO: Docstring for gather_outputs.
+    def gather_outputs(self, outputs: List[Dict]):
+        """gather the dist outputs
 
-        :outputs: TODO
-        :returns: TODO
+        Args:
+            outputs: one node outputs
+
+        Returns: all outputs
 
         """
         if self.trainer.world_size>1:
@@ -57,9 +63,15 @@ class GatherOutputMixin(object):
                 outputs = self.proc_dist_outputs(dist_outputs)
         return outputs
 
-    def concat_list_of_dict_outputs(self, outputs):
-        """only support all the outputs has the same dim
-        :returns: TODO
+    def concat_list_of_dict_outputs(self, outputs: List[Dict])->Dict:
+        """only support all the outputs has the same dim, now is deprecated.
+
+        Args:
+            outputs: multi node returned output (list of dict)
+
+        Returns: 
+            Concat all list by name
+
         """
         key_all_batch_map = {}
         for batch in outputs:

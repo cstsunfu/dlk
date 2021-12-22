@@ -24,13 +24,13 @@ import torch.optim as optim
 class ConstantScheduleConfig(BaseConfig):
     """Config for ConstantSchedule
 
-    Paras:
-    {
-        "config": {
-            "last_epoch": -1
-        },
-        "_name": "constant",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "last_epoch": -1
+        >>>     },
+        >>>     "_name": "constant",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(ConstantScheduleConfig, self).__init__(config)
@@ -53,7 +53,8 @@ class ConstantSchedule(BaseScheduler):
     def get_scheduler(self):
         """return the initialized constant scheduler
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         return LambdaLR(self.optimizer, lambda _: 1, last_epoch=self.config.last_epoch)

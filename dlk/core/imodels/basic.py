@@ -51,7 +51,8 @@ class BasicIModelConfig(BaseConfig):
         Args:
             config: postprocess config
 
-        Returns: PostProcess, PostProcessConfig
+        Returns: 
+            PostProcess, PostProcessConfig
 
         """
         return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config)
@@ -62,7 +63,8 @@ class BasicIModelConfig(BaseConfig):
         Args:
             config: model config
 
-        Returns: Model, ModelConfig
+        Returns: 
+            Model, ModelConfig
 
         """
         return ConfigTool.get_leaf_module(model_register, model_config_register, "model", config)
@@ -73,7 +75,8 @@ class BasicIModelConfig(BaseConfig):
         Args:
             config: loss config
 
-        Returns: Loss, LossConfig
+        Returns: 
+            Loss, LossConfig
 
         """
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
@@ -84,7 +87,8 @@ class BasicIModelConfig(BaseConfig):
         Args:
             config: optimizer config
 
-        Returns: Optimizer, OptimizerConfig
+        Returns: 
+            Optimizer, OptimizerConfig
 
         """
         return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
@@ -95,7 +99,8 @@ class BasicIModelConfig(BaseConfig):
         Args:
             config: scheduler config
 
-        Returns: Scheduler, SchedulerConfig
+        Returns: 
+            Scheduler, SchedulerConfig
 
         """
         return ConfigTool.get_leaf_module(scheduler_register, scheduler_config_register, "scheduler", config)
@@ -125,7 +130,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     def get_progress_bar_dict(self):
         """rewrite the prograss_bar_dict, remove the 'v_num' which we don't need
 
-        Returns: progress_bar dict
+        Returns: 
+            progress_bar dict
 
         """
         pass
@@ -139,7 +145,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         Args:
             batch: a mini batch inputs
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         return self.model(inputs)
@@ -151,7 +158,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batch: a mini batch inputs
             batch_idx: the index(dataloader) of the mini batch
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         result = self.model.training_step(batch)
@@ -172,7 +180,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batch: a mini batch inputs
             batch_idx: the index(dataloader) of the mini batch
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         result = self.model.validation_step(batch)
@@ -197,7 +206,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         Args:
             outputs: current node returnd output list
 
-        Returns: all node outputs
+        Returns: 
+            all node outputs
 
         """
         outputs = self.gather_outputs(outputs)
@@ -221,7 +231,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batch: a mini batch inputs
             batch_idx: the index(dataloader) of the mini batch
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         result = self.model.test_step(batch)
@@ -245,7 +256,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         Args:
             outputs: current node returnd output list
 
-        Returns: all node outputs
+        Returns: 
+            all node outputs
 
         """
         outputs = self.gather_outputs(outputs)
@@ -268,7 +280,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batch: a mini batch inputs
             batch_idx: the index(dataloader) of the mini batch
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         return self.model.predict_step(batch)

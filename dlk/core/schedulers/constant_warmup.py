@@ -23,14 +23,14 @@ import torch.optim as optim
 class ConstantWarmupScheduleConfig(BaseConfig):
     """Config for ConstantWarmupSchedule
 
-    Paras:
-    {
-        "config": {
-            "last_epoch": -1,
-            "num_warmup_steps": 0,
-        },
-        "_name": "constant_warmup",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "last_epoch": -1,
+        >>>         "num_warmup_steps": 0,
+        >>>     },
+        >>>     "_name": "constant_warmup",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(ConstantWarmupScheduleConfig, self).__init__(config)
@@ -54,7 +54,8 @@ class ConstantWarmupSchedule(BaseScheduler):
     def get_scheduler(self)->LambdaLR:
         """return the initialized linear wramup then constant scheduler
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         num_warmup_steps = self.config.num_warmup_steps

@@ -23,7 +23,9 @@ class TokenizerPostprocessorFactory(object):
     @property
     def bert(self):
         """bert postprocess
-        Returns: bert postprocess
+
+        Returns: 
+            bert postprocess
 
         """
         pass
@@ -41,7 +43,9 @@ class TokenizerPostprocessorFactory(object):
 
     def get(self, name):
         """get postprocess by name 
-        Returns: postprocess
+
+        Returns: 
+            postprocess
 
         """
         return self.__getattribute__(name)
@@ -54,7 +58,9 @@ class PreTokenizerFactory(object):
     @property
     def bytelevel(self):
         """byte level pre_tokenizer
-        Returns: ByteLevel
+
+        Returns: 
+            ByteLevel
 
         """
         return ByteLevel
@@ -62,14 +68,18 @@ class PreTokenizerFactory(object):
     @property
     def whitespace(self):
         """whitespace pre_tokenizer
-        Returns: WhitespaceSplit
+
+        Returns: 
+            WhitespaceSplit
 
         """
         return WhitespaceSplit
 
     def get(self, name):
         """get pretokenizer by name 
-        Returns: postprocess
+
+        Returns: 
+            postprocess
 
         """
         return self.__getattribute__(name)
@@ -81,7 +91,9 @@ class TokenizerNormalizerFactory(object):
     @property
     def lowercase(self):
         """do lowercase normalizers
-        Returns: Lowercase
+
+        Returns: 
+            Lowercase
 
         """
         return Lowercase
@@ -89,7 +101,9 @@ class TokenizerNormalizerFactory(object):
     @property
     def nfd(self):
         """do nfd normalizers
-        Returns: NFD
+
+        Returns: 
+            NFD
 
         """
         return NFD
@@ -97,7 +111,9 @@ class TokenizerNormalizerFactory(object):
     @property
     def nfc(self):
         """do nfc normalizers
-        Returns: NFC
+
+        Returns: 
+            NFC
 
         """
         return NFC
@@ -105,7 +121,9 @@ class TokenizerNormalizerFactory(object):
     @property
     def strip_accents(self):
         """do strip normalizers
-        Returns: StripAccents
+
+        Returns: 
+            StripAccents
 
         """
         return StripAccents
@@ -113,14 +131,18 @@ class TokenizerNormalizerFactory(object):
     @property
     def strip(self):
         """do strip normalizers
-        Returns: StripAccents
+
+        Returns: 
+            StripAccents
 
         """
         return Strip
 
     def get(self, name):
         """get normalizers by name 
-        Returns: Normalizer
+
+        Returns: 
+            Normalizer
 
         """
         return self.__getattribute__(name)

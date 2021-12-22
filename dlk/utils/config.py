@@ -37,9 +37,11 @@ class BaseConfig(object):
             config: paras
             used: used paras
 
-        Returns: None
+        Returns: 
+            None
 
-        Raises: logger.warning("Unused")
+        Raises: 
+            logger.warning("Unused")
 
         """
         def rec_pop(cur_node, trace):
@@ -83,7 +85,8 @@ class ConfigTool(object):
             _base: will be updated dict
             _new: use _new update _base
 
-        Returns: None
+        Returns: 
+            None
 
         """
         for item in _new:
@@ -111,7 +114,8 @@ class ConfigTool(object):
             config: will be updated dict
             update_confg: config: use _new update _base
 
-        Returns: updated_config
+        Returns: 
+            updated_config
 
         """
         # BUG ?: if the config._name != update_config._name, should use the update_config conver the config wholely
@@ -128,7 +132,8 @@ class ConfigTool(object):
             module_config_register: config register for config which has 'module_name'
             module_name: the module name which we want to get from register
 
-        Returns: module(which name is module_name), module_config(which name is module_name)
+        Returns: 
+            module(which name is module_name), module_config(which name is module_name)
 
         """
         if isinstance(config, str):
@@ -153,31 +158,32 @@ class ConfigTool(object):
 
         it means the config of this stage equals to config[stage]
         return config[config[stage]]
-        e.g.
-        config = {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "data_pair": {
-                    "label": "label_id"
-                },
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'dev'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "vocab": "label_vocab", // usually provided by the "token_gather" module
-            },
-            "predict": "train",
-            "online": ["train",
-            {"vocab": "new_label_vocab"}
-            ]
-        }
-        config.get_config['predict'] == config['predict'] == config['train']
+        >>> e.g.
+        >>> config = {
+        >>>     "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "data_pair": {
+        >>>             "label": "label_id"
+        >>>         },
+        >>>         "data_set": {                   // for different stage, this processor will process different part of data
+        >>>             "train": ['train', 'dev'],
+        >>>             "predict": ['predict'],
+        >>>             "online": ['online']
+        >>>         },
+        >>>         "vocab": "label_vocab", // usually provided by the "token_gather" module
+        >>>     },
+        >>>     "predict": "train",
+        >>>     "online": ["train",
+        >>>     {"vocab": "new_label_vocab"}
+        >>>     ]
+        >>> }
+        >>> config.get_config['predict'] == config['predict'] == config['train']
 
         Args:
             stage: the stage, like 'train', 'predict', etc.
             config: the base config which has different stage config
 
-        Returns: stage_config
+        Returns: 
+            stage_config
         """
         config = config['config']
         stage_config = config.get(stage, {})

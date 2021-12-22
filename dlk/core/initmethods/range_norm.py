@@ -23,13 +23,13 @@ import torch
 class RangeNormInitConfig(BaseConfig):
     """Config for RangeNormInit
 
-    Paras:
-    {
-        "_name": "range_norm",
-        "config": {
-            "range": 0.1,
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "range_norm",
+        >>>     "config": {
+        >>>         "range": 0.1,
+        >>>     }
+        >>> }
     """
     def __init__(self, config):
         super(RangeNormInitConfig, self).__init__(config)

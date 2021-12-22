@@ -25,16 +25,16 @@ logger = Logger.get_logger()
 class RecDecayScheduleConfig(BaseConfig):
     """Config for RecDecaySchedule
 
-    Paras:
-    {
-        "config": {
-            "last_epoch": -1,
-            "num_training_steps": -1,
-            "decay": 0.05,
-            "epoch_training_steps": -1,
-        },
-        "_name": "rec_decay",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "last_epoch": -1,
+        >>>         "num_training_steps": -1,
+        >>>         "decay": 0.05,
+        >>>         "epoch_training_steps": -1,
+        >>>     },
+        >>>     "_name": "rec_decay",
+        >>> }
 
     the lr=lr*1/(1+decay)
     """
@@ -67,7 +67,8 @@ class RecDecaySchedule(BaseScheduler):
 
         lr=lr*1/(1+decay)
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         num_training_steps = self.config.num_training_steps

@@ -22,15 +22,15 @@ from dlk.utils.config import BaseConfig
 class CRFConfig(BaseConfig):
     """Config for ConditionalRandomField
 
-    Paras:
-    {
-        "config": {
-            "output_size": 2,
-            "batch_first": true,
-            "reduction": "mean", //none|sum|mean|token_mean
-        },
-        "_name": "crf",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "output_size": 2,
+        >>>         "batch_first": true,
+        >>>         "reduction": "mean", //none|sum|mean|token_mean
+        >>>     },
+        >>>     "_name": "crf",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(CRFConfig, self).__init__(config)
@@ -69,7 +69,8 @@ class ConditionalRandomField(Module):
         Args:
             method: init method, no use
 
-        Returns: None
+        Returns: 
+            None
 
         """
 
@@ -86,7 +87,8 @@ class ConditionalRandomField(Module):
             logits: max_len*batch_size*num_tags
             mask: max_len*batch_size
 
-        Returns: batch_size*every sum
+        Returns: 
+            batch_size*every sum
 
         """
         seq_len, batch_size, n_tags = logits.size()
@@ -114,7 +116,8 @@ class ConditionalRandomField(Module):
             tags: max_len*batch_size
             mask: max_len*batch_size
 
-        Returns: batch_size*every_gold_score
+        Returns: 
+            batch_size*every_gold_score
 
         """
         seq_len, batch_size, _ = logits.size()
@@ -145,7 +148,8 @@ class ConditionalRandomField(Module):
             tags: batch_size*max_len
             mask: batch_size*max_len, mask==0 means padding
 
-        Returns: loss
+        Returns: 
+            loss
 
         """
         logits = logits.transpose(0, 1)
@@ -163,7 +167,8 @@ class ConditionalRandomField(Module):
             logits: emissions, batch_size*max_len*num_tags
             mask: batch_size*max_len, mask==0 means padding
 
-        Returns: batch*max_len
+        Returns: 
+            batch*max_len
 
         """
         logits = logits.transpose(0, 1)  # L, B, H
@@ -178,7 +183,8 @@ class ConditionalRandomField(Module):
             logits: emissions, max_len*batch_size*num_tags
             mask: max_len*batch_size, mask==0 means padding
 
-        Returns: batch*max_len
+        Returns: 
+            batch*max_len
 
         """
         # emissions: (seq_length, batch_size, num_tags)

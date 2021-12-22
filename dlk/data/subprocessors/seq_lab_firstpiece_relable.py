@@ -27,34 +27,34 @@ logger = Logger.get_logger()
 class SeqLabFirstPieceRelabelConfig(BaseConfig):
     """Config for SeqLabFirstPieceRelabel
 
-    Paras:
-    {
-        "_name": "seq_lab_firstpiece_relabel",
-        "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "input_map": {  // without necessery, don't change this
-                    "word_ids": "word_ids",
-                    "offsets": "offsets",
-                    "entities_info": "entities_info",
-                },
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "output_map": {
-                    "labels": "labels",
-                    "gather_index": "gather_index",
-                    "word_word_ids": "word_ids",
-                    "word_offsets": "offsets",
-                },
-                "start_label": "S",
-                "end_label": "E",
-            }, //3
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "seq_lab_firstpiece_relabel",
+        >>>     "config": {
+        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>             "input_map": {  // without necessery, don't change this
+        >>>                 "word_ids": "word_ids",
+        >>>                 "offsets": "offsets",
+        >>>                 "entities_info": "entities_info",
+        >>>             },
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "output_map": {
+        >>>                 "labels": "labels",
+        >>>                 "gather_index": "gather_index",
+        >>>                 "word_word_ids": "word_ids",
+        >>>                 "word_offsets": "offsets",
+        >>>             },
+        >>>             "start_label": "S",
+        >>>             "end_label": "E",
+        >>>         }, //3
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
     def __init__(self, stage, config: Dict):
 
@@ -103,7 +103,8 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
         Args:
             data: Dict
 
-        Returns: relabeled data
+        Returns: 
+            relabeled data
 
         """
 
@@ -132,7 +133,8 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
             end: end search index
             is_start: is the position is the start of target token, if the is_start==True and cannot find return -1
 
-        Returns: the index of the offset which include position
+        Returns: 
+            the index of the offset which include position
 
         """
         while start<end:
@@ -155,7 +157,8 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
         Args:
             one_ins: include sentence, entity_info, offsets
 
-        Returns: labels(labels for each word not subtoken), gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word)
+        Returns: 
+            labels(labels for each word not subtoken), gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word)
 
         """
         pre_clean_entities_info = one_ins[self.config.entities_info]

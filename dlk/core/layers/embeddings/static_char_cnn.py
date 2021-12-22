@@ -27,36 +27,36 @@ logger = Logger.get_logger()
 class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
     """Config for StaticCharCNNEmbedding
 
-    Paras:
-    {
-        "module@cnn": {
-            "_base": "conv1d",
-            config: {
-                in_channels: -1,
-                out_channels: -1,  //will update while load embedding
-                kernel_sizes: [3],
-            },
-        },
-        "config": {
-            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-            //if the embedding_file is a dict, you should provide the dict trace to embedding
-            "embedding_trace": ".", //default the file itself is the embedding
-            /*embedding_trace: "char_embedding", //this means the <embedding = pickle.load(embedding_file)["char_embedding"]>*/
-            /*embedding_trace: "meta.char_embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["char_embedding"]>*/
-            "freeze": false, // is freeze
-            "dropout": 0, //dropout rate
-            "embedding_dim": 35, //dropout rate
-            "kernel_sizes": [3], //dropout rate
-            "padding_idx": 0,
-            "output_map": {"char_embedding": "char_embedding"},
-            "input_map": {"char_ids": "char_ids"},
-        },
-        "_link":{
-            "config.embedding_dim": ["module@cnn.config.in_channels", "module@cnn.config.out_channels"],
-            "config.kernel_sizes": ["module@cnn.config.kernel_sizes"],
-        },
-        "_name": "static_char_cnn",
-    }
+    Config Example:
+        >>> {
+        >>>     "module@cnn": {
+        >>>         "_base": "conv1d",
+        >>>         config: {
+        >>>             in_channels: -1,
+        >>>             out_channels: -1,  //will update while load embedding
+        >>>             kernel_sizes: [3],
+        >>>         },
+        >>>     },
+        >>>     "config": {
+        >>>         "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+        >>>         //if the embedding_file is a dict, you should provide the dict trace to embedding
+        >>>         "embedding_trace": ".", //default the file itself is the embedding
+        >>>         /*embedding_trace: "char_embedding", //this means the <embedding = pickle.load(embedding_file)["char_embedding"]>*/
+        >>>         /*embedding_trace: "meta.char_embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["char_embedding"]>*/
+        >>>         "freeze": false, // is freeze
+        >>>         "dropout": 0, //dropout rate
+        >>>         "embedding_dim": 35, //dropout rate
+        >>>         "kernel_sizes": [3], //dropout rate
+        >>>         "padding_idx": 0,
+        >>>         "output_map": {"char_embedding": "char_embedding"},
+        >>>         "input_map": {"char_ids": "char_ids"},
+        >>>     },
+        >>>     "_link":{
+        >>>         "config.embedding_dim": ["module@cnn.config.in_channels", "module@cnn.config.out_channels"],
+        >>>         "config.kernel_sizes": ["module@cnn.config.kernel_sizes"],
+        >>>     },
+        >>>     "_name": "static_char_cnn",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(StaticCharCNNEmbeddingConfig, self).__init__(config)
@@ -108,7 +108,8 @@ class StaticCharCNNEmbedding(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.cnn.init_weight(method)
@@ -120,7 +121,8 @@ class StaticCharCNNEmbedding(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         char_ids = inputs[self.get_input_name('char_ids')]
