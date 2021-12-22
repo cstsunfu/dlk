@@ -27,103 +27,103 @@ logger = Logger.get_logger()
 class BasicProcessorConfig(BaseConfig):
     """Config for BasicProcessor
 
-    Paras:
-    {
-        // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
-        "_name": "basic@test_text_cls",
-        "config": {
-            "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "token_embedding", "save"]
-        },
-        "subprocessor@load": {
-            "_base": "load",
-            "config":{
-                "base_dir": "."
-                "predict":{
-                    "meta": "./meta.pkl",
-                },
-                "online": [
-                    "predict", //base predict
-                    {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
-                    }
-                ]
-            }
-        },
-        "subprocessor@save": {
-            "_base": "save",
-            "config":{
-                "base_dir": "."
-                "train":{
-                    "processed": "processed_data.pkl", // all data
-                    "meta": {
-                        "meta.pkl": ['label_vocab'] //only for next time use
-                    }
-                },
-                "predict": {
-                    "processed": "processed_data.pkl",
-                }
-            }
-        },
-        "subprocessor@tokenizer":{
-            "_base": "fast_tokenizer",
-            "config": {
-                "train": {
-                    "config_path": "*@*",
-                    "prefix": ""
-                    "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                    "process_data": [
-                        ["sentence", { "is_pretokenized": false}],
-                    ],
-                    "post_processor": "default"
-                    "filed_map": { // this is the default value, you can provide other name
-                        "ids": "input_ids",
-                    }, // the tokenizer output(the key) map to the value
-                },
-                "predict": "train",
-                "online": "train"
-            }
-        },
-        "subprocessor@token_gather":{
-            "_base": "token_gather",
-            "config": {
-                "train": { // only train stage using
-                    "data_set": {      // for different stage, this processor will process different part of data
-                        "train": ["train", "valid"]
-                    },
-                    "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
-                }
-            }
-        },
-        "subprocessor@label_to_id":{
-            "_base": "token2id",
-            "config": {
-                "train":{ //train、predict、online stage config,  using '&' split all stages
-                    "data_pair": {
-                        "label": "label_id"
-                    },
-                    "data_set": {                   // for different stage, this processor will process different part of data
-                        "train": ['train', 'valid', 'test'],
-                        "predict": ['predict'],
-                        "online": ['online']
-                    },
-                    "vocab": "label_vocab", // usually provided by the "token_gather" module
-                }, //3
-                "predict": "train",
-                "online": "train",
-            }
-        },
-        "subprocessor@token_embedding": {
-            "_base": "token_embedding",
-            "config":{
-                "train": { // only train stage using
-                    "embedding_file": "*@*",
-                    "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                    "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
-                    "embedding_size": 200,
-                }
-            }
-        },
-    }
+    Config Example:
+        >>> {
+        >>>     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
+        >>>     "_name": "basic@test_text_cls",
+        >>>     "config": {
+        >>>         "feed_order": ["load", "tokenizer", "token_gather", "label_to_id", "token_embedding", "save"]
+        >>>     },
+        >>>     "subprocessor@load": {
+        >>>         "_base": "load",
+        >>>         "config":{
+        >>>             "base_dir": "."
+        >>>             "predict":{
+        >>>                 "meta": "./meta.pkl",
+        >>>             },
+        >>>             "online": [
+        >>>                 "predict", //base predict
+        >>>                 {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
+        >>>                 }
+        >>>             ]
+        >>>         }
+        >>>     },
+        >>>     "subprocessor@save": {
+        >>>         "_base": "save",
+        >>>         "config":{
+        >>>             "base_dir": "."
+        >>>             "train":{
+        >>>                 "processed": "processed_data.pkl", // all data
+        >>>                 "meta": {
+        >>>                     "meta.pkl": ['label_vocab'] //only for next time use
+        >>>                 }
+        >>>             },
+        >>>             "predict": {
+        >>>                 "processed": "processed_data.pkl",
+        >>>             }
+        >>>         }
+        >>>     },
+        >>>     "subprocessor@tokenizer":{
+        >>>         "_base": "fast_tokenizer",
+        >>>         "config": {
+        >>>             "train": {
+        >>>                 "config_path": "*@*",
+        >>>                 "prefix": ""
+        >>>                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+        >>>                 "process_data": [
+        >>>                     ["sentence", { "is_pretokenized": false}],
+        >>>                 ],
+        >>>                 "post_processor": "default"
+        >>>                 "filed_map": { // this is the default value, you can provide other name
+        >>>                     "ids": "input_ids",
+        >>>                 }, // the tokenizer output(the key) map to the value
+        >>>             },
+        >>>             "predict": "train",
+        >>>             "online": "train"
+        >>>         }
+        >>>     },
+        >>>     "subprocessor@token_gather":{
+        >>>         "_base": "token_gather",
+        >>>         "config": {
+        >>>             "train": { // only train stage using
+        >>>                 "data_set": {      // for different stage, this processor will process different part of data
+        >>>                     "train": ["train", "valid"]
+        >>>                 },
+        >>>                 "gather_columns": ["label"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+        >>>                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+        >>>             }
+        >>>         }
+        >>>     },
+        >>>     "subprocessor@label_to_id":{
+        >>>         "_base": "token2id",
+        >>>         "config": {
+        >>>             "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>                 "data_pair": {
+        >>>                     "label": "label_id"
+        >>>                 },
+        >>>                 "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                     "train": ['train', 'valid', 'test'],
+        >>>                     "predict": ['predict'],
+        >>>                     "online": ['online']
+        >>>                 },
+        >>>                 "vocab": "label_vocab", // usually provided by the "token_gather" module
+        >>>             }, //3
+        >>>             "predict": "train",
+        >>>             "online": "train",
+        >>>         }
+        >>>     },
+        >>>     "subprocessor@token_embedding": {
+        >>>         "_base": "token_embedding",
+        >>>         "config":{
+        >>>             "train": { // only train stage using
+        >>>                 "embedding_file": "*@*",
+        >>>                 "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+        >>>                 "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
+        >>>                 "embedding_size": 200,
+        >>>             }
+        >>>         }
+        >>>     },
+        >>> }
     """
 
     def __init__(self, stage, config: Dict):
@@ -160,12 +160,13 @@ class BasicProcessor(IProcessor):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: processed data
+        Returns: 
+            processed data
 
         """
         logger.info(f"Start Data Processing....")

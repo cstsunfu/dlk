@@ -49,7 +49,9 @@ class Vocabulary(object):
 
     def dumps(self)->Dict:
         """dumps the object to dict
-        Returns: self.__dict__
+
+        Returns: 
+            self.__dict__
 
         """
         return self.__dict__
@@ -61,7 +63,8 @@ class Vocabulary(object):
         Args:
             attr: self.__dict__
 
-        Returns: initialized Vocabulary
+        Returns: 
+            initialized Vocabulary
 
         """
         vocab = cls()
@@ -74,7 +77,11 @@ class Vocabulary(object):
         Args:
             index: token index
 
-        Returns: TODO
+        Returns: 
+            `word` which index is geven, if index is not out of range
+
+        Raises:
+            KeyError
 
         """
         try:
@@ -88,7 +95,8 @@ class Vocabulary(object):
         Args:
             data: auto detection
 
-        Returns: type the same as data
+        Returns: 
+            type the same as data
 
         """
         if isinstance(data, str):
@@ -104,7 +112,8 @@ class Vocabulary(object):
         Args:
             word: a single token
 
-        Returns: index
+        Returns: 
+            index
 
         """
         if self.do_strip:
@@ -126,7 +135,8 @@ class Vocabulary(object):
             min_freq: minist frequency
             most_common: most common number, -1 means all
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.word2idx = {}
@@ -150,7 +160,8 @@ class Vocabulary(object):
         Args:
             index: word index
 
-        Returns: word
+        Returns: 
+            word
 
         """
         
@@ -167,7 +178,8 @@ class Vocabulary(object):
         Args:
             word: single word
 
-        Returns: self
+        Returns: 
+            self
 
         """
         
@@ -184,7 +196,8 @@ class Vocabulary(object):
         Args:
             data:  str| List[str] | Set[str] | List[List[str]]
 
-        Returns: self
+        Returns: 
+            self
 
         """
         if isinstance(data, str):
@@ -197,7 +210,8 @@ class Vocabulary(object):
 
     def __len__(self):
         """get the token num of vocab
-        Returns: len(self.word2idx)
+        Returns: 
+            len(self.word2idx)
 
         """
         return len(self.word2idx)
@@ -208,7 +222,8 @@ class Vocabulary(object):
         Args:
             iterator: List[str] | Set[str] | List[List[str]]
 
-        Returns: self
+        Returns: 
+            self
 
         """
         for word in iterator:

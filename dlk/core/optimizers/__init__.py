@@ -33,7 +33,8 @@ class BaseOptimizer(object):
     def get_optimizer(self)->optim.Optimizer:
         """return the initialized optimizer
 
-        Returns: Optimizer
+        Returns: 
+            Optimizer
 
         """
         raise NotADirectoryError
@@ -46,7 +47,8 @@ class BaseOptimizer(object):
             model: pytorch model
             config: which decided the para group, lr, etc.
 
-        Returns: the initialized optimizer
+        Returns: 
+            the initialized optimizer
 
         """
         optimizer_special_groups = config.pop('optimizer_special_groups', {})

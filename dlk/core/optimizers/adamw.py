@@ -23,32 +23,32 @@ from . import optimizer_register, optimizer_config_register, BaseOptimizer
 class AdamWOptimizerConfig(BaseConfig):
     """Config for AdamWOptimizer
 
-    Paras:
-    {
-        "config": {
-            "lr": 5e-5,
-            "betas": [0.9, 0.999],
-            "eps": 1e-6,
-            "weight_decay": 1e-2,
-            "optimizer_special_groups": {
-                "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
-                "bias": {
-                    "config": {
-                        "weight_decay": 0
-                    },
-                    "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
-                },
-                "decoder": {
-                    "config": {
-                        "lr": 1e-3
-                    },
-                    "pattern": ["decoder"]
-                },
-            }
-            "name": "default" // default group name
-        },
-        "_name": "adamw",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "lr": 5e-5,
+        >>>         "betas": [0.9, 0.999],
+        >>>         "eps": 1e-6,
+        >>>         "weight_decay": 1e-2,
+        >>>         "optimizer_special_groups": {
+        >>>             "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
+        >>>             "bias": {
+        >>>                 "config": {
+        >>>                     "weight_decay": 0
+        >>>                 },
+        >>>                 "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
+        >>>             },
+        >>>             "decoder": {
+        >>>                 "config": {
+        >>>                     "lr": 1e-3
+        >>>                 },
+        >>>                 "pattern": ["decoder"]
+        >>>             },
+        >>>         }
+        >>>         "name": "default" // default group name
+        >>>     },
+        >>>     "_name": "adamw",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(AdamWOptimizerConfig, self).__init__(config)
@@ -76,7 +76,8 @@ class AdamWOptimizer(BaseOptimizer):
     def get_optimizer(self)->optim.AdamW:
         """return the initialized AdamW optimizer
 
-        Returns: AdamW Optimizer
+        Returns: 
+            AdamW Optimizer
 
         """
         return self.init_optimizer(optim.AdamW, self.model, self.config)

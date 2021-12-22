@@ -23,21 +23,21 @@ from pytorch_lightning.callbacks import EarlyStopping
 class EarlyStoppingCallbackConfig(object):
     """Config for EarlyStoppingCallback
 
-    Paras:
-    {
-        "_name": "early_stop",
-        "config":{
-            "monitor": "val_loss",
-            "mode": "*@*", // min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
-            "patience": 3,
-            "min_delta": 0.0,
-            "check_on_train_epoch_end": null,
-            "strict": true, // if the monitor is not right, raise error
-            "stopping_threshold": null, // float, if the value is good enough, stop
-            "divergence_threshold": null, // float,  if the value is so bad, stop
-            "verbose": true, //verbose mode print more info
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "early_stop",
+        >>>     "config":{
+        >>>         "monitor": "val_loss",
+        >>>         "mode": "*@*", // min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
+        >>>         "patience": 3,
+        >>>         "min_delta": 0.0,
+        >>>         "check_on_train_epoch_end": null,
+        >>>         "strict": true, // if the monitor is not right, raise error
+        >>>         "stopping_threshold": null, // float, if the value is good enough, stop
+        >>>         "divergence_threshold": null, // float,  if the value is so bad, stop
+        >>>         "verbose": true, //verbose mode print more info
+        >>>     }
+        >>> }
     """
     def __init__(self, config: Dict):
         super(EarlyStoppingCallbackConfig, self).__init__()
@@ -67,7 +67,8 @@ class EarlyStoppingCallback(object):
         Args:
             rt_config: runtime config, include save_dir, and the checkpoint path name
 
-        Returns: EarlyStopping object
+        Returns: 
+            EarlyStopping object
 
         """
         return EarlyStopping(**self.config.__dict__)

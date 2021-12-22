@@ -33,48 +33,48 @@ logger = Logger.get_logger()
 class FastTokenizerConfig(BaseConfig):
     """Config for FastTokenizer
 
-    Paras:
-    {
-        "_name": "fast_tokenizer",
-        "config": {
-            "train": { // you can add some whitespace surround the '&'
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ["train", "valid", 'test'],
-                    "predict": ["predict"],
-                    "online": ["online"]
-                },
-                "config_path": "*@*",
-                "truncation": {     // if this is set to None or empty, will not do trunc
-                    "max_length": 512,
-                    "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
-                },
-                "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
-                "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
-                "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
-                "output_map": { // this is the default value, you can provide other name
-                    "tokens": "tokens",
-                    "ids": "input_ids",
-                    "attention_mask": "attention_mask",
-                    "type_ids": "type_ids",
-                    "special_tokens_mask": "special_tokens_mask",
-                    "offsets": "offsets",
-                    "word_ids": "word_ids",
-                    "overflowing": "overflowing",
-                    "sequence_ids": "sequence_ids",
-                }, // the tokenizer output(the key) map to the value
-                "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
-                },
-                "deliver": "tokenizer",
-                "process_data": { "is_pretokenized": false},
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-            },
-            "predict": ["train", {"deliver": null}],
-            "online": ["train", {"deliver": null}],
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "fast_tokenizer",
+        >>>     "config": {
+        >>>         "train": { // you can add some whitespace surround the '&'
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ["train", "valid", 'test'],
+        >>>                 "predict": ["predict"],
+        >>>                 "online": ["online"]
+        >>>             },
+        >>>             "config_path": "*@*",
+        >>>             "truncation": {     // if this is set to None or empty, will not do trunc
+        >>>                 "max_length": 512,
+        >>>                 "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
+        >>>             },
+        >>>             "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
+        >>>             "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
+        >>>             "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+        >>>             "output_map": { // this is the default value, you can provide other name
+        >>>                 "tokens": "tokens",
+        >>>                 "ids": "input_ids",
+        >>>                 "attention_mask": "attention_mask",
+        >>>                 "type_ids": "type_ids",
+        >>>                 "special_tokens_mask": "special_tokens_mask",
+        >>>                 "offsets": "offsets",
+        >>>                 "word_ids": "word_ids",
+        >>>                 "overflowing": "overflowing",
+        >>>                 "sequence_ids": "sequence_ids",
+        >>>             }, // the tokenizer output(the key) map to the value
+        >>>             "input_map": {
+        >>>                 "sentence": "sentence", //for sigle input, tokenizer the "sentence"
+        >>>                 "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
+        >>>                 "sentence_b": "sentence_b", //for pair inputs
+        >>>             },
+        >>>             "deliver": "tokenizer",
+        >>>             "process_data": { "is_pretokenized": false},
+        >>>             "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+        >>>         },
+        >>>         "predict": ["train", {"deliver": null}],
+        >>>         "online": ["train", {"deliver": null}],
+        >>>     }
+        >>> }
     """
     def __init__(self, stage, config):
         super(FastTokenizerConfig, self).__init__(config)
@@ -180,7 +180,8 @@ class FastTokenizer(ISubProcessor):
             factory: process factory
             one_processor: the processor info, it's name (and config)
 
-        Returns: processor
+        Returns: 
+            processor
 
         """
         if isinstance(one_processor, dict):
@@ -197,7 +198,8 @@ class FastTokenizer(ISubProcessor):
         Args:
             one_line: a Series which contains the config.input_map['sentence']
 
-        Returns: encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
+        Returns: 
+            encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
 
         """
         
@@ -211,7 +213,8 @@ class FastTokenizer(ISubProcessor):
         Args:
             one_line: a Series which contains the config.input_map['sentence_a'] and config.input_map['sentence_b']
 
-        Returns: encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
+        Returns: 
+            encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
 
         """
         sentence_a = one_line[self.config.input_map['sentence_a']]
@@ -225,7 +228,8 @@ class FastTokenizer(ISubProcessor):
         Args:
             data: several data in dataframe
 
-        Returns: updated dataframe
+        Returns: 
+            updated dataframe
 
         """
         output_map = self.config.output_map
@@ -246,12 +250,13 @@ class FastTokenizer(ISubProcessor):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: data and the tokenizer info is in the data['data'], if you set the self.config.deliver, the data[self.config.deliver] will set to self.tokenizer.to_str()
+        Returns: 
+            data and the tokenizer info is in the data['data'], if you set the self.config.deliver, the data[self.config.deliver] will set to self.tokenizer.to_str()
 
         """
         if not self.config.data_set:

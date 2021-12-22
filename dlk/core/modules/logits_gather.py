@@ -23,23 +23,23 @@ from . import module_register, module_config_register, Module
 class LogitsGatherConfig(BaseConfig):
     """Config for LogitsGather
 
-    Paras:
-    {
-        "config": {
-            "gather_layer": {
-                "0": {
-                    "map": "3", // the 0th layer not do scale output to "gather_logits_3", "gather_logits_" is the output name prefix, the "3" is map name
-                    "scale": {} //don't scale
-                },
-                "1": {
-                    "map": "4",  // the 1th layer scale output dim from 1024 to 200 and the output named "gather_logits_3"
-                    "scale": {"1024":"200"},
-                }
-            },
-            "prefix": "gather_logits_",
-        },
-        _name: "logits_gather",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "gather_layer": {
+        >>>             "0": {
+        >>>                 "map": "3", // the 0th layer not do scale output to "gather_logits_3", "gather_logits_" is the output name prefix, the "3" is map name
+        >>>                 "scale": {} //don't scale
+        >>>             },
+        >>>             "1": {
+        >>>                 "map": "4",  // the 1th layer scale output dim from 1024 to 200 and the output named "gather_logits_3"
+        >>>                 "scale": {"1024":"200"},
+        >>>             }
+        >>>         },
+        >>>         "prefix": "gather_logits_",
+        >>>     },
+        >>>     _name: "logits_gather",
+        >>> }
     """
     def __init__(self, config: Dict):
         if '_name' not in config:
@@ -78,7 +78,8 @@ class LogitsGather(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: some elements to dict
+        Returns: 
+            some elements to dict
 
         """
         result: Dict[str, torch.Tensor] = {}

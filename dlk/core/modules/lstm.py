@@ -26,18 +26,18 @@ logger = Logger.get_logger()
 class LSTMConfig(BaseConfig):
     """Config for def 
 
-    Paras:
-    {
-        "config": {
-            "bidirectional": true,
-            "output_size": 200, //the output is 2*hidden_size if use
-            "input_size": 200,
-            "num_layers": 1,
-            "dropout": 0.1, // dropout between layers
-            "dropout_last": true, //dropout the last layer output or not
-        },
-        "_name": "lstm",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "bidirectional": true,
+        >>>         "output_size": 200, //the output is 2*hidden_size if use
+        >>>         "input_size": 200,
+        >>>         "num_layers": 1,
+        >>>         "dropout": 0.1, // dropout between layers
+        >>>         "dropout_last": true, //dropout the last layer output or not
+        >>>     },
+        >>>     "_name": "lstm",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -82,7 +82,8 @@ class LSTM(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: lstm output the shape is the same as input
+        Returns: 
+            lstm output the shape is the same as input
 
         """
         max_seq_len = input.size(1)

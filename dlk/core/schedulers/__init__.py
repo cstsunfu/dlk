@@ -31,7 +31,8 @@ class BaseScheduler(object):
     def get_scheduler(self)->LambdaLR:
         """return the initialized scheduler
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         raise NotImplementedError

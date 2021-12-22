@@ -26,23 +26,23 @@ logger = Logger.get_logger()
 class StaticEmbeddingConfig(BaseModuleConfig):
     """Config for StaticEmbedding
 
-    Paras:
-    {
-        "config": {
-            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-            "embedding_dim": "*@*",
-            //if the embedding_file is a dict, you should provide the dict trace to embedding
-            "embedding_trace": ".", //default the file itself is the embedding
-            /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
-            /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
-            "freeze": false, // is freeze
-            "padding_idx": 0, //dropout rate
-            "dropout": 0, //dropout rate
-            "output_map": {},
-            "input_map": {}, // required_key: provide_key
-        },
-        "_name": "static",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+        >>>         "embedding_dim": "*@*",
+        >>>         //if the embedding_file is a dict, you should provide the dict trace to embedding
+        >>>         "embedding_trace": ".", //default the file itself is the embedding
+        >>>         /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
+        >>>         /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
+        >>>         "freeze": false, // is freeze
+        >>>         "padding_idx": 0, //dropout rate
+        >>>         "dropout": 0, //dropout rate
+        >>>         "output_map": {},
+        >>>         "input_map": {}, // required_key: provide_key
+        >>>     },
+        >>>     "_name": "static",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(StaticEmbeddingConfig, self).__init__(config)
@@ -91,7 +91,8 @@ class StaticEmbedding(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         logger.info(f'The static embedding is loaded the pretrained.')
@@ -102,7 +103,8 @@ class StaticEmbedding(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))

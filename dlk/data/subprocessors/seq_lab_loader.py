@@ -26,31 +26,31 @@ logger = Logger.get_logger()
 class SeqLabLoaderConfig(BaseConfig):
     """Config for SeqLabLoader
 
-    Paras:
-    {
-        "_name": "seq_lab_loader",
-        "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "input_map": {   // without necessery don't change this
-                    "sentence": "sentence",
-                    "uuid": "uuid",
-                    "entities_info": "entities_info",
-                },
-                "output_map": {   // without necessery don't change this
-                    "sentence": "sentence",
-                    "uuid": "uuid",
-                    "entities_info": "entities_info",
-                },
-            }, //3
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "seq_lab_loader",
+        >>>     "config": {
+        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "input_map": {   // without necessery don't change this
+        >>>                 "sentence": "sentence",
+        >>>                 "uuid": "uuid",
+        >>>                 "entities_info": "entities_info",
+        >>>             },
+        >>>             "output_map": {   // without necessery don't change this
+        >>>                 "sentence": "sentence",
+        >>>                 "uuid": "uuid",
+        >>>                 "entities_info": "entities_info",
+        >>>             },
+        >>>         }, //3
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
     def __init__(self, stage, config: Dict):
 
@@ -87,28 +87,30 @@ class SeqLabLoader(ISubProcessor):
         """Entry for sequence labeling loader
 
         Args:
-            data: input data
-                {
-                    "train": list of json format train data
-                }
-                one_ins example:
-                {
-                    "uuid": '**-**-**-**'
-                    "sentence": "I have an apple",
-                    "labels": [
-                                {
-                                    "end": 15,
-                                    "start": 10,
-                                    "labels": [
-                                        "Fruit"
-                                    ]
-                                },
-                                ...,
-                            ]
-                        },
-                    ],
-                }
-        Returns: data + loaded_data
+            data: 
+                >>> input data
+                >>> {
+                >>>     "train": list of json format train data
+                >>> }
+                >>> one_ins example:
+                >>> {
+                >>>     "uuid": '**-**-**-**'
+                >>>     "sentence": "I have an apple",
+                >>>     "labels": [
+                >>>                 {
+                >>>                     "end": 15,
+                >>>                     "start": 10,
+                >>>                     "labels": [
+                >>>                         "Fruit"
+                >>>                     ]
+                >>>                 },
+                >>>                 ...,
+                >>>             ]
+                >>>         },
+                >>>     ],
+                >>> }
+        Returns: 
+            data + loaded_data
         """
 
         if not self.data_set:

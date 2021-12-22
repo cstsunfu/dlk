@@ -27,17 +27,17 @@ from dlk.utils.config import BaseConfig
 class DistilBertWrapConfig(BaseConfig):
     """Config for DistilBertWrap
 
-    Paras:
-    {
-        "config": {
-            "pretrained_model_path": "*@*",
-            "from_pretrain": true,
-            "freeze": false,
-            "dropout": 0.0,
-        },
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "pretrained_model_path": "*@*",
+        >>>         "from_pretrain": true,
+        >>>         "freeze": false,
+        >>>         "dropout": 0.0,
+        >>>     },
 
-        "_name": "distil_bert",
-    }
+        >>>     "_name": "distil_bert",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -76,7 +76,8 @@ class DistilBertWrap(Module):
         Args:
             method: init method, no use for pretrained_transformers
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.config.from_pretrain:
@@ -95,7 +96,8 @@ class DistilBertWrap(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: sequence_output, all_hidden_states, all_self_attentions
+        Returns: 
+            sequence_output, all_hidden_states, all_self_attentions
 
         """
         if self.config.freeze:

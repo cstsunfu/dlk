@@ -28,16 +28,16 @@ from dlk.utils.config import BaseConfig
 class BertWrapConfig(BaseConfig):
     """Config for BertWrap
 
-    Paras:
-    {
-        "config": {
-            "pretrained_model_path": "*@*",
-            "from_pretrain": true,
-            "freeze": false,
-            "dropout": 0.0,
-        },
-        "_name": "bert",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "pretrained_model_path": "*@*",
+        >>>         "from_pretrain": true,
+        >>>         "freeze": false,
+        >>>         "dropout": 0.0,
+        >>>     },
+        >>>     "_name": "bert",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -76,7 +76,8 @@ class BertWrap(Module):
         Args:
             method: init method, no use for pretrained_transformers
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.config.from_pretrain:
@@ -95,7 +96,8 @@ class BertWrap(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: sequence_output, all_hidden_states, all_self_attentions
+        Returns: 
+            sequence_output, all_hidden_states, all_self_attentions
 
         """
         if self.config.freeze:

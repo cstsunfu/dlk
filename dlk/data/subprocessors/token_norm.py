@@ -30,28 +30,28 @@ logger = Logger.get_logger()
 class TokenNormConfig(BaseConfig):
     """Config for TokenNorm 
 
-    Paras:
-    {
-        "_name": "token_norm",
-        "config": {
-            "train":{
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "zero_digits_replaced": true,
-                "lowercase": true,
-                "extend_vocab": "", //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
-                "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
-                "data_pair": {
-                    "sentence": "norm_sentence"
-                },
-            },
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "token_norm",
+        >>>     "config": {
+        >>>         "train":{
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "zero_digits_replaced": true,
+        >>>             "lowercase": true,
+        >>>             "extend_vocab": "", //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
+        >>>             "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
+        >>>             "data_pair": {
+        >>>                 "sentence": "norm_sentence"
+        >>>             },
+        >>>         },
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
     def __init__(self, stage, config: Dict):
 
@@ -115,7 +115,8 @@ class TokenNorm(ISubProcessor):
         Args:
             token: origin token
 
-        Returns: normed_token
+        Returns: 
+            normed_token
 
         """
         if self.config.zero_digits_replaced:
@@ -162,7 +163,8 @@ class TokenNorm(ISubProcessor):
             key: the name in one_item
             one_item: a pd.Series which include the key
 
-        Returns: norm_sentence
+        Returns: 
+            norm_sentence
 
         """
         seq = one_item[key]
@@ -189,7 +191,8 @@ class TokenNorm(ISubProcessor):
                 "tokenizer": ..
             }
 
-        Returns: norm data
+        Returns: 
+            norm data
         """
 
         if not self.data_set:

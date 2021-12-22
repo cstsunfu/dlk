@@ -27,18 +27,18 @@ logger = Logger.get_logger()
 class BCEWithLogitsLossConfig(BaseModuleConfig):
     """Config for BCEWithLogitsLoss
 
-    Paras:
-    {
-        "config": {
-            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-            "schedule": [1],
-            "masked_select": null, // if provide, only select the masked(=1) data
-            "scale": [1], # scale the loss for every schedule stage
-            // "schdeule": [0.3, 1.0], # can be a list or str
-            // "scale": "[0.5, 1]",
-        },
-        "_name": "bce",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        >>>         "schedule": [1],
+        >>>         "masked_select": null, // if provide, only select the masked(=1) data
+        >>>         "scale": [1], # scale the loss for every schedule stage
+        >>>         // "schdeule": [0.3, 1.0], # can be a list or str
+        >>>         // "scale": "[0.5, 1]",
+        >>>     },
+        >>>     "_name": "bce",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(BCEWithLogitsLossConfig, self).__init__(config)
@@ -90,7 +90,8 @@ class BCEWithLogitsLoss(object):
         Args:
             rt_config: { "total_steps": self.num_training_steps, "total_epochs": self.num_training_epochs}
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.current_stage = 0
@@ -103,14 +104,15 @@ class BCEWithLogitsLoss(object):
             result: the model predict dict
             inputs: the all inputs for model
             rt_config: provide the current training status 
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: loss
+        Returns: 
+            loss
 
         """
         if rt_config['current_step']>self.config.schedule[self.current_stage]:

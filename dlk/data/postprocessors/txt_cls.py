@@ -32,37 +32,37 @@ logger = Logger.get_logger()
 class TxtClsPostProcessorConfig(IPostProcessorConfig):
     """Config for TxtClsPostProcessor
 
-    Paras:
-    {
-        "_name": "txt_cls",
-        "config": {
-            "meta": "*@*",
-            "meta_data": {
-                "label_vocab": 'label_vocab',
-            },
-            "input_map": {
-                "logits": "logits",
-                "label_ids": "label_ids"
-                "_index": "_index",
-            },
-            "origin_input_map": {
-                "sentence": "sentence",
-                "sentence_a": "sentence_a", // for pair
-                "sentence_b": "sentence_b",
-                "uuid": "uuid"
-            },
-            "save_root_path": ".",  //save data root dir
-            "top_k": 1, //the result return top k result
-            "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == 'pos', then the predict value always return the logits[vocab.get_index('pos')], and the label always be 'pos'
-            "data_type": "single", //single or pair
-            "save_path": {
-                "valid": "valid",  // relative dir for valid stage
-                "test": "test",    // relative dir for test stage
-            },
-            "start_save_step": 0,  // -1 means the last
-            "start_save_epoch": -1,
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "txt_cls",
+        >>>     "config": {
+        >>>         "meta": "*@*",
+        >>>         "meta_data": {
+        >>>             "label_vocab": 'label_vocab',
+        >>>         },
+        >>>         "input_map": {
+        >>>             "logits": "logits",
+        >>>             "label_ids": "label_ids"
+        >>>             "_index": "_index",
+        >>>         },
+        >>>         "origin_input_map": {
+        >>>             "sentence": "sentence",
+        >>>             "sentence_a": "sentence_a", // for pair
+        >>>             "sentence_b": "sentence_b",
+        >>>             "uuid": "uuid"
+        >>>         },
+        >>>         "save_root_path": ".",  //save data root dir
+        >>>         "top_k": 1, //the result return top k result
+        >>>         "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == 'pos', then the predict value always return the logits[vocab.get_index('pos')], and the label always be 'pos'
+        >>>         "data_type": "single", //single or pair
+        >>>         "save_path": {
+        >>>             "valid": "valid",  // relative dir for valid stage
+        >>>             "test": "test",    // relative dir for test stage
+        >>>         },
+        >>>         "start_save_step": 0,  // -1 means the last
+        >>>         "start_save_epoch": -1,
+        >>>     }
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -130,14 +130,15 @@ class TxtClsPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: all predicts
+        Returns: 
+            all predicts
 
         """
         results = []
@@ -195,14 +196,15 @@ class TxtClsPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: the named scores, acc
+        Returns: 
+            the named scores, acc
 
         """
         for outputs in list_batch_outputs:
@@ -221,15 +223,16 @@ class TxtClsPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
             save_condition: True for save, False for depend on rt_config
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:

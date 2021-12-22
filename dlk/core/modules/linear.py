@@ -23,17 +23,17 @@ from dlk.utils.config import BaseConfig
 class LinearConfig(BaseConfig):
     """Config for Linear
 
-    Paras:
-    {
-        "config": {
-            "input_size": 256,
-            "output_size": 2,
-            "dropout": 0.0, //the module output no need dropout
-            "bias": true, // use bias or not in linear , if set to false, all the bias will be set to 0
-            "pool": null, // pooling output or not
-        },
-        "_name": "linear",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "input_size": 256,
+        >>>         "output_size": 2,
+        >>>         "dropout": 0.0, //the module output no need dropout
+        >>>         "bias": true, // use bias or not in linear , if set to false, all the bias will be set to 0
+        >>>         "pool": null, // pooling output or not
+        >>>     },
+        >>>     "_name": "linear",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(LinearConfig, self).__init__(config)
@@ -67,7 +67,8 @@ class Linear(Module):
         Args:
             batch: a mini batch inputs
 
-        Returns: project result the shape is the same as input(no poll), otherwise depend on poll method
+        Returns: 
+            project result the shape is the same as input(no poll), otherwise depend on poll method
 
         """
         output = self.dropout(self.linear(input))

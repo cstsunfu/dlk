@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+#Paras Copyright 2021 cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,12 +38,13 @@ class ISubProcessor(metaclass=abc.ABCMeta):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: processed data
+        Returns: 
+            processed data
 
         """
         raise NotImplementedError

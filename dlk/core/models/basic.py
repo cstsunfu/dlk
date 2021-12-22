@@ -27,66 +27,66 @@ from dlk.core.layers.decoders import decoder_config_register, decoder_register
 class BasicModelConfig(BaseConfig):
     """Config for BasicModel
 
-    Paras:
-    {
-        embedding: {
-            _base: "static"
-            config: {
-                embedding_file: "*@*", //the embedding file, must be saved as numpy array by pickle
-                embedding_dim: "*@*",
-                //if the embedding_file is a dict, you should provide the dict trace to embedding
-                embedding_trace: ".", //default the file itself is the embedding
-                /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
-                /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
-                freeze: false, // is freeze
-                dropout: 0, //dropout rate
-                output_map: {},
-            },
-        },
-        decoder: {
-            _base: "linear",
-            config: {
-                input_size: "*@*",
-                output_size: "*@*",
-                pool: null,
-                dropout: "*@*", //the decoder output no need dropout
-                output_map: {}
-            },
-        },
-        encoder: {
-            _base: "lstm",
-            config: {
-                output_map: {},
-                hidden_size: "*@*",
-                input_size: *@*,
-                output_size: "*@*",
-                num_layers: 1,
-                dropout: "*@*", // dropout between layers
-            },
-        },
-        "initmethod": {
-            "_base": "range_norm"
-        },
-        "config": {
-            "embedding_dim": "*@*",
-            "dropout": "*@*",
-            "embedding_file": "*@*",
-            "embedding_trace": "token_embedding",
-        },
-        _link: {
-            "config.embedding_dim": ["embedding.config.embedding_dim",
-                                     "encoder.config.input_size",
-                                     "encoder.config.output_size",
-                                     "encoder.config.hidden_size",
-                                     "decoder.config.output_size",
-                                     "decoder.config.input_size"
-                                    ],
-            "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
-            "config.embedding_file": ['embedding.config.embedding_file'],
-            "config.embedding_trace": ['embedding.config.embedding_trace']
-        }
-        _name: "basic"
-    }
+    Config Example:
+        >>> {
+        >>>     embedding: {
+        >>>         _base: "static"
+        >>>         config: {
+        >>>             embedding_file: "*@*", //the embedding file, must be saved as numpy array by pickle
+        >>>             embedding_dim: "*@*",
+        >>>             //if the embedding_file is a dict, you should provide the dict trace to embedding
+        >>>             embedding_trace: ".", //default the file itself is the embedding
+        >>>             /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
+        >>>             /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
+        >>>             freeze: false, // is freeze
+        >>>             dropout: 0, //dropout rate
+        >>>             output_map: {},
+        >>>         },
+        >>>     },
+        >>>     decoder: {
+        >>>         _base: "linear",
+        >>>         config: {
+        >>>             input_size: "*@*",
+        >>>             output_size: "*@*",
+        >>>             pool: null,
+        >>>             dropout: "*@*", //the decoder output no need dropout
+        >>>             output_map: {}
+        >>>         },
+        >>>     },
+        >>>     encoder: {
+        >>>         _base: "lstm",
+        >>>         config: {
+        >>>             output_map: {},
+        >>>             hidden_size: "*@*",
+        >>>             input_size: *@*,
+        >>>             output_size: "*@*",
+        >>>             num_layers: 1,
+        >>>             dropout: "*@*", // dropout between layers
+        >>>         },
+        >>>     },
+        >>>     "initmethod": {
+        >>>         "_base": "range_norm"
+        >>>     },
+        >>>     "config": {
+        >>>         "embedding_dim": "*@*",
+        >>>         "dropout": "*@*",
+        >>>         "embedding_file": "*@*",
+        >>>         "embedding_trace": "token_embedding",
+        >>>     },
+        >>>     _link: {
+        >>>         "config.embedding_dim": ["embedding.config.embedding_dim",
+        >>>                                  "encoder.config.input_size",
+        >>>                                  "encoder.config.output_size",
+        >>>                                  "encoder.config.hidden_size",
+        >>>                                  "decoder.config.output_size",
+        >>>                                  "decoder.config.input_size"
+        >>>                                 ],
+        >>>         "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
+        >>>         "config.embedding_file": ['embedding.config.embedding_file'],
+        >>>         "config.embedding_trace": ['embedding.config.embedding_trace']
+        >>>     }
+        >>>     _name: "basic"
+        >>> }
     """
     def __init__(self, config):
         super(BasicModelConfig, self).__init__(config)
@@ -103,7 +103,8 @@ class BasicModelConfig(BaseConfig):
         Args:
             config: the embedding config
 
-        Returns: Embedding, EmbeddingConfig
+        Returns: 
+            Embedding, EmbeddingConfig
 
         """
         return ConfigTool.get_leaf_module(embedding_register, embedding_config_register, "embedding", config)
@@ -114,7 +115,8 @@ class BasicModelConfig(BaseConfig):
         Args:
             config: the init method config
 
-        Returns: InitMethod, InitMethodConfig
+        Returns: 
+            InitMethod, InitMethodConfig
 
         """
         return ConfigTool.get_leaf_module(initmethod_register, initmethod_config_register, "init method", config)
@@ -125,7 +127,8 @@ class BasicModelConfig(BaseConfig):
         Args:
             config: the encoder config
 
-        Returns: Encoder, EncoderConfig
+        Returns: 
+            Encoder, EncoderConfig
 
         """
         return ConfigTool.get_leaf_module(encoder_register, encoder_config_register, "encoder", config)
@@ -136,7 +139,8 @@ class BasicModelConfig(BaseConfig):
         Args:
             config: the decoder config
 
-        Returns: Decoder, DecoderConfig
+        Returns: 
+            Decoder, DecoderConfig
 
         """
         return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config)

@@ -26,22 +26,22 @@ logger = Logger.get_logger()
 class SaveConfig(BaseConfig):
     """Config for Save
 
-    Paras:
-    {
-        "_name": "save",
-        "config":{
-            "base_dir": "."
-            "train":{
-                "processed": "processed_data.pkl", // all data without meta
-                "meta": {
-                    "meta.pkl": ['label_ids', 'embedding'] //only for next time use
-                }
-            },
-            "predict": {
-                "processed": "processed_data.pkl",
-            }
-        }
-    },
+    Config Example:
+        >>> {
+        >>>     "_name": "save",
+        >>>     "config":{
+        >>>         "base_dir": "."
+        >>>         "train":{
+        >>>             "processed": "processed_data.pkl", // all data without meta
+        >>>             "meta": {
+        >>>                 "meta.pkl": ['label_ids', 'embedding'] //only for next time use
+        >>>             }
+        >>>         },
+        >>>         "predict": {
+        >>>             "processed": "processed_data.pkl",
+        >>>         }
+        >>>     }
+        >>> },
     """
 
     def __init__(self, stage, config):
@@ -75,7 +75,8 @@ class Save(ISubProcessor):
             data: pickleable data
             path: the path to data
 
-        Returns: loaded data
+        Returns: 
+            loaded data
 
         """
         if not os.path.exists(self.base_dir):
@@ -88,12 +89,13 @@ class Save(ISubProcessor):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: data
+        Returns: 
+            data
 
         """
         if not self.config:

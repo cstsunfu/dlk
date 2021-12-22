@@ -27,12 +27,12 @@ logger = Logger.get_logger()
 class DefaultInitConfig(BaseConfig):
     """Config for RangeNormInit
 
-    Paras:
-    {
-        "_name": "default",
-        "config": {
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "default",
+        >>>     "config": {
+        >>>     }
+        >>> }
     """
     def __init__(self, config):
         super(DefaultInitConfig, self).__init__(config)

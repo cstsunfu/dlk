@@ -24,36 +24,36 @@ from dlk.utils.config import ConfigTool
 class MultiLossConfig(object):
     """Config for MultiLoss
 
-    Paras:
-    {
-        "loss@the_first": {
-            config: {
-                "ignore_index": -1,
-                "weight": null, # or a list of value for every class
-                "label_smoothing": 0.0, # torch>=1.10
-                "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-                "schedule": [0.3, 0.6, 1],
-                "scale": [1, 0, 0.5], # scale the loss for every schedule
-                // "schdeule": [0.3, 1.0],
-                // "scale": [0, 1, 0.5], # scale the loss
-            },
-            _name: "cross_entropy",
-        },
-        "loss@the_second": {
-            config: {
-                "pred_truth_pair": ["logits2", "label2"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-                "schdeule": [0.3, 0.6, 1],
-                "scale": [0, 1, 0.5], # scale the loss for every schedule
-                // "schdeule": [0.3, 1.0],
-                // "scale": [0, 1, 0.5], # scale the loss
-            },
-            _base: "cross_entropy",  // _name or _base is all ok
-        },
-        config: {
-            "loss_list": ['the_first', 'the_second'],
-        },
-        _name: "cross_entropy",
-    }
+    Config Example:
+        >>> {
+        >>>     "loss@the_first": {
+        >>>         config: {
+        >>>             "ignore_index": -1,
+        >>>             "weight": null, # or a list of value for every class
+        >>>             "label_smoothing": 0.0, # torch>=1.10
+        >>>             "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        >>>             "schedule": [0.3, 0.6, 1],
+        >>>             "scale": [1, 0, 0.5], # scale the loss for every schedule
+        >>>             // "schdeule": [0.3, 1.0],
+        >>>             // "scale": [0, 1, 0.5], # scale the loss
+        >>>         },
+        >>>         _name: "cross_entropy",
+        >>>     },
+        >>>     "loss@the_second": {
+        >>>         config: {
+        >>>             "pred_truth_pair": ["logits2", "label2"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        >>>             "schdeule": [0.3, 0.6, 1],
+        >>>             "scale": [0, 1, 0.5], # scale the loss for every schedule
+        >>>             // "schdeule": [0.3, 1.0],
+        >>>             // "scale": [0, 1, 0.5], # scale the loss
+        >>>         },
+        >>>         _base: "cross_entropy",  // _name or _base is all ok
+        >>>     },
+        >>>     config: {
+        >>>         "loss_list": ['the_first', 'the_second'],
+        >>>     },
+        >>>     _name: "cross_entropy",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(MultiLossConfig, self).__init__()
@@ -76,7 +76,8 @@ class MultiLoss(object):
         Args:
             config: loss config
 
-        Returns: the Loss and the LossConfig
+        Returns: 
+            the Loss and the LossConfig
 
         """
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
@@ -88,14 +89,15 @@ class MultiLoss(object):
             result: the model predict dict
             inputs: the all inputs for model
             rt_config: provide the current training status 
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: loss
+        Returns: 
+            loss
 
         """
         loss = 0

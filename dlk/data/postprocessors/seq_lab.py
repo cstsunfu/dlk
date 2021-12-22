@@ -32,43 +32,43 @@ logger = Logger.get_logger()
 class SeqLabPostProcessorConfig(IPostProcessorConfig):
     """Config for SeqLabPostProcessor
 
-    Paras:
-    {
-        "_name": "seq_lab",
-        "config": {
-            "meta": "*@*",
-            "use_crf": false, //use or not use crf
-            "word_ready": false, //already gather the subword first token as the word rep or not
-            "meta_data": {
-                "label_vocab": 'label_vocab',
-                "tokenizer": "tokenizer",
-            },
-            "input_map": {
-                "logits": "logits",
-                "predict_seq_label": "predict_seq_label",
-                "_index": "_index",
-            },
-            "origin_input_map": {
-                "uuid": "uuid",
-                "sentence": "sentence",
-                "input_ids": "input_ids",
-                "entities_info": "entities_info",
-                "offsets": "offsets",
-                "special_tokens_mask": "special_tokens_mask",
-                "word_ids": "word_ids",
-                "label_ids": "label_ids",
-            },
-            "save_root_path": ".",  //save data root dir
-            "save_path": {
-                "valid": "valid",  // relative dir for valid stage
-                "test": "test",    // relative dir for test stage
-            },
-            "start_save_step": 0,  // -1 means the last
-            "start_save_epoch": -1,
-            "aggregation_strategy": "max", // AggregationStrategy item
-            "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "seq_lab",
+        >>>     "config": {
+        >>>         "meta": "*@*",
+        >>>         "use_crf": false, //use or not use crf
+        >>>         "word_ready": false, //already gather the subword first token as the word rep or not
+        >>>         "meta_data": {
+        >>>             "label_vocab": 'label_vocab',
+        >>>             "tokenizer": "tokenizer",
+        >>>         },
+        >>>         "input_map": {
+        >>>             "logits": "logits",
+        >>>             "predict_seq_label": "predict_seq_label",
+        >>>             "_index": "_index",
+        >>>         },
+        >>>         "origin_input_map": {
+        >>>             "uuid": "uuid",
+        >>>             "sentence": "sentence",
+        >>>             "input_ids": "input_ids",
+        >>>             "entities_info": "entities_info",
+        >>>             "offsets": "offsets",
+        >>>             "special_tokens_mask": "special_tokens_mask",
+        >>>             "word_ids": "word_ids",
+        >>>             "label_ids": "label_ids",
+        >>>         },
+        >>>         "save_root_path": ".",  //save data root dir
+        >>>         "save_path": {
+        >>>             "valid": "valid",  // relative dir for valid stage
+        >>>             "test": "test",    // relative dir for test stage
+        >>>         },
+        >>>         "start_save_step": 0,  // -1 means the last
+        >>>         "start_save_epoch": -1,
+        >>>         "aggregation_strategy": "max", // AggregationStrategy item
+        >>>         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+        >>>     }
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -168,14 +168,15 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: all predicts
+        Returns: 
+            all predicts
 
         """
         predicts = []
@@ -196,14 +197,15 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: the named scores, recall, precision, f1
+        Returns: 
+            the named scores, recall, precision, f1
 
         """
 
@@ -212,21 +214,22 @@ class SeqLabPostProcessor(IPostProcessor):
 
             Args:
                 entities_info: 
-                [
-                    {
-                        "start": start1,
-                        "end": end1,
-                        "labels": ["label_1"]
-                    },
-                    {
-                        "start": start2,
-                        "end": end2,
-                        "labels": ["label_2"]
-                    },....
-                ]
+                    >>> [
+                    >>>     {
+                    >>>         "start": start1,
+                    >>>         "end": end1,
+                    >>>         "labels": ["label_1"]
+                    >>>     },
+                    >>>     {
+                    >>>         "start": start2,
+                    >>>         "end": end2,
+                    >>>         "labels": ["label_2"]
+                    >>>     },....
+                    >>> ]
                 text: be labeled text
 
-            Returns: { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
+            Returns: 
+                >>> { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
 
             """
             info = {}
@@ -260,15 +263,16 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
             save_condition: True for save, False for depend on rt_config
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
@@ -294,7 +298,8 @@ class SeqLabPostProcessor(IPostProcessor):
             predict_list: list of predict
             ground_truth_list: list of ground_truth
 
-        Returns: precision, recall, f1
+        Returns: 
+            precision, recall, f1
 
         """
         category_tp = {}
@@ -315,7 +320,8 @@ class SeqLabPostProcessor(IPostProcessor):
                 pred: pred list
                 ground_truth: groud truth list
 
-            Returns: tp, fn, fp
+            Returns: 
+                tp, fn, fp
 
             """
             num_p = len(_pred)
@@ -359,7 +365,8 @@ class SeqLabPostProcessor(IPostProcessor):
             word_ids: every token in the index of words
             label: predict label
 
-        Returns: entity_info
+        Returns: 
+            entity_info
 
         """
         if not sub_tokens_index or not label:
@@ -380,13 +387,14 @@ class SeqLabPostProcessor(IPostProcessor):
             index: the data index in origin_data
             origin_data: the origin pd.DataFrame
 
-        Returns: one_ins info 
-        {
-            "sentence": "...",
-            "uuid": "..",
-            "entities_info": [".."],
-            "predict_entities_info": [".."],
-        }
+        Returns: 
+            >>> one_ins info 
+            >>> {
+            >>>     "sentence": "...",
+            >>>     "uuid": "..",
+            >>>     "entities_info": [".."],
+            >>>     "predict_entities_info": [".."],
+            >>> }
 
         """
         one_ins = {}
@@ -432,7 +440,8 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: the crf predict info
             origin_data: the origin data
 
-        Returns: all predict instances info
+        Returns: 
+            all predict instances info
 
         """
         if self.config.sentence not in origin_data:
@@ -465,7 +474,8 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: the predict labels logits info
             origin_data: the origin data
 
-        Returns: all predict instances info
+        Returns: 
+            all predict instances info
 
         """
         if self.config.sentence not in origin_data:
@@ -506,7 +516,8 @@ class SeqLabPostProcessor(IPostProcessor):
             list_batch_outputs: the predict (sub-)labels logits info
             origin_data: the origin data
 
-        Returns: all predict instances info
+        Returns: 
+            all predict instances info
 
         """
         if self.config.sentence not in origin_data:

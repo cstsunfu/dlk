@@ -25,25 +25,25 @@ logger = Logger.get_logger()
 class Token2IDConfig(BaseConfig):
     """Config for Token2ID
 
-    Paras:
-    {
-        "_name": "token2id",
-        "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
-                "data_pair": {
-                    "labels": "label_ids"
-                },
-                "data_set": {                   // for different stage, this processor will process different part of data
-                    "train": ['train', 'valid', 'test', 'predict'],
-                    "predict": ['predict'],
-                    "online": ['online']
-                },
-                "vocab": "label_vocab", // usually provided by the "token_gather" module
-            }, //3
-            "predict": "train",
-            "online": "train",
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "token2id",
+        >>>     "config": {
+        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>             "data_pair": {
+        >>>                 "labels": "label_ids"
+        >>>             },
+        >>>             "data_set": {                   // for different stage, this processor will process different part of data
+        >>>                 "train": ['train', 'valid', 'test', 'predict'],
+        >>>                 "predict": ['predict'],
+        >>>                 "online": ['online']
+        >>>             },
+        >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
+        >>>         }, //3
+        >>>         "predict": "train",
+        >>>         "online": "train",
+        >>>     }
+        >>> }
     """
 
     def __init__(self, stage, config: Dict):
@@ -90,7 +90,8 @@ class Token2ID(ISubProcessor):
         Args:
             data: will process data
 
-        Returns: updated data(tokens -> token_ids)
+        Returns: 
+            updated data(tokens -> token_ids)
 
         """
 

@@ -24,16 +24,16 @@ import torch.optim as optim
 class CosineWarmupScheduleConfig(BaseConfig):
     """Config for CosineWarmupSchedule
 
-    Paras:
-    {
-        "config": {
-            "last_epoch": -1,
-            "num_warmup_steps": 0,
-            "num_training_steps": -1,
-            "num_cycles": 0.5,
-        },
-        "_name": "cosine_warmup",
-    }
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "last_epoch": -1,
+        >>>         "num_warmup_steps": 0,
+        >>>         "num_training_steps": -1,
+        >>>         "num_cycles": 0.5,
+        >>>     },
+        >>>     "_name": "cosine_warmup",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(CosineWarmupScheduleConfig, self).__init__(config)
@@ -61,7 +61,8 @@ class CosineWarmupSchedule(BaseScheduler):
     def get_scheduler(self)->LambdaLR:
         """return the initialized linear wramup then cos decay scheduler
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         num_training_steps = self.config.num_training_steps

@@ -21,14 +21,14 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 class LearningRateMonitorCallbackConfig(object):
     """Config for LearningRateMonitorCallback
 
-    Paras:
-    {
-        "_name": "lr_monitor",
-        "config": {
-            "logging_interval": null, // set to None to log at individual interval according to the interval key of each scheduler. other value : step, epoch
-            "log_momentum": true, // log momentum or not
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "lr_monitor",
+        >>>     "config": {
+        >>>         "logging_interval": null, // set to None to log at individual interval according to the interval key of each scheduler. other value : step, epoch
+        >>>         "log_momentum": true, // log momentum or not
+        >>>     }
+        >>> }
     """
     def __init__(self, config: Dict):
         config = config['config']
@@ -51,7 +51,8 @@ class LearningRateMonitorCallback(object):
         Args:
             rt_config: runtime config, include save_dir, and the checkpoint path name
 
-        Returns: LearningRateMonitor object
+        Returns: 
+            LearningRateMonitor object
 
         """
         return LearningRateMonitor(**self.config.__dict__)

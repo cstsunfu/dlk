@@ -52,7 +52,8 @@ class Logger(object):
     def get_logger()->logging.Logger:
         """return the 'dlk' logger if initialized otherwise init and return it
 
-        Returns: Logger.global_logger
+        Returns: 
+            Logger.global_logger
 
         """
         if Logger.global_logger is None:
@@ -69,7 +70,8 @@ class Logger(object):
             base_dir: real log path is '$base_dir/$log_file'
             log_level: 'debug', 'info', etc.
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if log_file:
@@ -94,7 +96,8 @@ class Logger(object):
             log_level: you can change this to logger to different level
             log_name: change this is not suggested 
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if Logger.global_logger is None:

@@ -41,7 +41,8 @@ class LinkUnionTool(object):
         Args:
             key: a token
 
-        Returns: the root of the key
+        Returns: 
+            the root of the key
 
         """
 
@@ -64,7 +65,8 @@ class LinkUnionTool(object):
             parant: the from key
             child: the target key
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if self.find(parant) and self.find(child):  # all has been linked
@@ -93,7 +95,8 @@ class LinkUnionTool(object):
             parant: the from key
             child: the target key
 
-        Returns: None
+        Returns: 
+            None
 
         """
         if parant not in self.link_union:
@@ -108,7 +111,8 @@ class LinkUnionTool(object):
         Args:
             links: {"from": ["tolist"], "from2": "to2"}
 
-        Returns: self
+        Returns: 
+            self
 
         """
         for source, target in links.items():
@@ -124,7 +128,8 @@ class LinkUnionTool(object):
         Args:
             links: {"from": ["tolist"], "from2": "to2"}
 
-        Returns: self
+        Returns: 
+            self
 
         """
         for source, target in links.items():
@@ -137,7 +142,8 @@ class LinkUnionTool(object):
     def get_links(self):
         """get the registed links
 
-        Returns: all registed and validation links
+        Returns: 
+            all registed and validation links
 
         """
         links = {}
@@ -201,7 +207,8 @@ class BaseConfigParser(object):
         Args:
             config_name: the config name
 
-        Returns: config of the config_name
+        Returns: 
+            config of the config_name
         """
         base_config = cls(config_name).parser(parser_link=False)
         if len(base_config)>1:
@@ -218,7 +225,8 @@ class BaseConfigParser(object):
             link: {source1:to1, source2:[to2, to3]}
             config: will linked base config
 
-        Returns: None
+        Returns: 
+            None
 
         """
         def make_link(source: str, to: str):
@@ -269,24 +277,24 @@ class BaseConfigParser(object):
 
         Args:
             config: 
-            {
-                "arg1": {
-                    "arg11": 2
-                    "arg12": 3
-                    "_link": {"arg11": "arg12"}
-                }
-            }
+                >>> {
+                >>>     "arg1": {
+                >>>         "arg11": 2
+                >>>         "arg12": 3
+                >>>         "_link": {"arg11": "arg12"}
+                >>>     }
+                >>> }
             all_level_links: TODO
             level: TODO
 
         Returns: 
-            {
-                "arg1": {
-                    "arg11": 2
-                    "arg12": 3
-                }
-                "_link": {"arg1.arg11": "arg1.arg12"}
-            }
+            >>> {
+            >>>     "arg1": {
+            >>>         "arg11": 2
+            >>>         "arg12": 3
+            >>>     }
+            >>>     "_link": {"arg1.arg11": "arg1.arg12"}
+            >>> }
 
         """
         if level not in all_level_links:

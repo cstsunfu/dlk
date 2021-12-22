@@ -32,32 +32,32 @@ logger = Logger.get_logger()
 class TxtRegPostProcessorConfig(IPostProcessorConfig):
     """Config for TxtRegPostProcessor
 
-    Paras:
-    {
-        "_name": "txt_reg",
-        "config": {
-            "input_map": {
-                "logits": "logits",
-                "values": "values",
-                "_index": "_index",
-            },
-            "origin_input_map": {
-                "sentence": "sentence",
-                "sentence_a": "sentence_a", // for pair
-                "sentence_b": "sentence_b",
-                "uuid": "uuid"
-            },
-            "data_type": "single", //single or pair
-            "save_root_path": ".",  //save data root dir
-            "save_path": {
-                "valid": "valid",  // relative dir for valid stage
-                "test": "test",    // relative dir for test stage
-            },
-            "log_reg": false, // whether logistic regression
-            "start_save_step": 0,  // -1 means the last
-            "start_save_epoch": -1,
-        }
-    }
+    Config Example:
+        >>> {
+        >>>     "_name": "txt_reg",
+        >>>     "config": {
+        >>>         "input_map": {
+        >>>             "logits": "logits",
+        >>>             "values": "values",
+        >>>             "_index": "_index",
+        >>>         },
+        >>>         "origin_input_map": {
+        >>>             "sentence": "sentence",
+        >>>             "sentence_a": "sentence_a", // for pair
+        >>>             "sentence_b": "sentence_b",
+        >>>             "uuid": "uuid"
+        >>>         },
+        >>>         "data_type": "single", //single or pair
+        >>>         "save_root_path": ".",  //save data root dir
+        >>>         "save_path": {
+        >>>             "valid": "valid",  // relative dir for valid stage
+        >>>             "test": "test",    // relative dir for test stage
+        >>>         },
+        >>>         "log_reg": false, // whether logistic regression
+        >>>         "start_save_step": 0,  // -1 means the last
+        >>>         "start_save_epoch": -1,
+        >>>     }
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -107,14 +107,15 @@ class TxtRegPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: all predicts
+        Returns: 
+            all predicts
         """
         results = []
         for outputs in list_batch_outputs:
@@ -157,14 +158,15 @@ class TxtRegPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: the named scores
+        Returns: 
+            the named scores
 
         """
         return {}
@@ -178,15 +180,16 @@ class TxtRegPostProcessor(IPostProcessor):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
             save_condition: True for save, False for depend on rt_config
 
-        Returns: None
+        Returns: 
+            None
         """
 
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:

@@ -24,53 +24,55 @@ from dlk.core.modules import module_config_register, module_register
 class PretrainedTransformersConfig(BaseModuleConfig):
     """Config for PretrainedTransformers
 
-    Paras:
-    {
-        "module": {
-            "_base": "roberta",
-        },
-        "config": {
-            "pretrained_model_path": "*@*",
-            "input_map": {
-                "input_ids": "input_ids",
-                "attention_mask": "attention_mask",
-                "type_ids": "type_ids",
-            },
-            "output_map": {
-                "embedding": "embedding",
-            },
-            "dropout": 0, //dropout rate
-            "embedding_dim": "*@*",
-        },
-        "_link": {
-            "config.pretrained_model_path": ["module.config.pretrained_model_path"],
-        },
-        "_name": "pretrained_transformers",
-    }
-    for gather embedding
-    {
-        "module": {
-            "_base": "roberta",
-        },
-        "config": {
-            "pretrained_model_path": "*@*",
-            "input_map": {
-                "input_ids": "input_ids",
-                "attention_mask": "subword_mask",
-                "type_ids": "type_ids",
-                "gather_index": "gather_index",
-            },
-            "output_map": {
-                "embedding": "embedding",
-            },
-            "embedding_dim": "*@*",
-            "dropout": 0, //dropout rate
-        },
-        "_link": {
-            "config.pretrained_model_path": ["module.config.pretrained_model_path"],
-        },
-        "_name": "pretrained_transformers",
-    }
+    Config Example1:
+        >>> {
+        >>>     "module": {
+        >>>         "_base": "roberta",
+        >>>     },
+        >>>     "config": {
+        >>>         "pretrained_model_path": "*@*",
+        >>>         "input_map": {
+        >>>             "input_ids": "input_ids",
+        >>>             "attention_mask": "attention_mask",
+        >>>             "type_ids": "type_ids",
+        >>>         },
+        >>>         "output_map": {
+        >>>             "embedding": "embedding",
+        >>>         },
+        >>>         "dropout": 0, //dropout rate
+        >>>         "embedding_dim": "*@*",
+        >>>     },
+        >>>     "_link": {
+        >>>         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+        >>>     },
+        >>>     "_name": "pretrained_transformers",
+        >>> }
+
+    Config Example2:
+        >>> for gather embedding
+        >>> {
+        >>>     "module": {
+        >>>         "_base": "roberta",
+        >>>     },
+        >>>     "config": {
+        >>>         "pretrained_model_path": "*@*",
+        >>>         "input_map": {
+        >>>             "input_ids": "input_ids",
+        >>>             "attention_mask": "subword_mask",
+        >>>             "type_ids": "type_ids",
+        >>>             "gather_index": "gather_index",
+        >>>         },
+        >>>         "output_map": {
+        >>>             "embedding": "embedding",
+        >>>         },
+        >>>         "embedding_dim": "*@*",
+        >>>         "dropout": 0, //dropout rate
+        >>>     },
+        >>>     "_link": {
+        >>>         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+        >>>     },
+        >>>     "_name": "pretrained_transformers",
+        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -102,7 +104,8 @@ class PretrainedTransformers(SimpleModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.pretrained_transformers.init_weight(method)
@@ -113,7 +116,8 @@ class PretrainedTransformers(SimpleModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         input_ids = inputs[self.get_input_name('input_ids')] if "input_ids" in self.config._input_map else None

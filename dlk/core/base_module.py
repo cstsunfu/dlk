@@ -41,7 +41,8 @@ class ModuleOutputRenameMixin:
             input: will rename input
             output_map:  name map
 
-        Returns: renamed input
+        Returns: 
+            renamed input
         """
         if isinstance(input, dict):
             output = {}
@@ -60,8 +61,8 @@ class ModuleOutputRenameMixin:
         Args:
             name: input_name
             name_map: name map
-
-        Returns: real_name
+        Returns: 
+            real_name
 
         """
         if name in name_map:
@@ -75,7 +76,8 @@ class ModuleOutputRenameMixin:
         Args:
             name: input_name
 
-        Returns: real_name
+        Returns: 
+            real_name
 
         """
         return self.get_real_name(name, self.config._input_map)
@@ -86,7 +88,8 @@ class ModuleOutputRenameMixin:
         Args:
             name: output_name
 
-        Returns: real_name
+        Returns: 
+            real_name
 
         """
         return self.get_real_name(name, self.config._output_map)
@@ -98,7 +101,8 @@ class ModuleOutputRenameMixin:
             input: a set of names
             output_map: name map
 
-        Returns: renamed input
+        Returns: 
+            renamed input
 
         """
         if isinstance(input, set):
@@ -120,7 +124,8 @@ class IModuleIO(metaclass=abc.ABCMeta):
     def provide_keys(self)->List[str]:
         """return all keys of the dict of the module returned
 
-        Returns: all keys
+        Returns: 
+            all keys
         """
         pass
 
@@ -128,7 +133,8 @@ class IModuleIO(metaclass=abc.ABCMeta):
     def check_keys_are_provided(self, provide: List[str])->bool:
         """check this module required key are provided
 
-        Returns: pass or not
+        Returns: 
+            pass or not
 
         """
         pass
@@ -139,7 +145,8 @@ class IModuleIO(metaclass=abc.ABCMeta):
         Args:
             module_list: a series modules
 
-        Returns: pass or not
+        Returns: 
+            pass or not
 
         Raises:
             ValueError: the check is not passed
@@ -165,7 +172,8 @@ class IModuleStep(metaclass=abc.ABCMeta):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the predicts outputs
+        Returns: 
+            the predicts outputs
 
         """
         raise NotImplementedError
@@ -177,7 +185,8 @@ class IModuleStep(metaclass=abc.ABCMeta):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -189,7 +198,8 @@ class IModuleStep(metaclass=abc.ABCMeta):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -200,7 +210,8 @@ class IModuleStep(metaclass=abc.ABCMeta):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self.validation_step(inputs)
@@ -215,7 +226,8 @@ class BaseModel(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -235,14 +247,16 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
     def provide_keys(self)->Set:
         """return all keys of the dict of the module returned
 
-        Returns: all keys
+        Returns: 
+            all keys
         """
         return self.set_rename(self._provide_keys, self.config._output_map).union(self._provided_keys)
 
     def check_keys_are_provided(self, provide: Set[str])->None:
         """check this module required key are provided
 
-        Returns: pass or not
+        Returns: 
+            pass or not
         """
         self._provided_keys = provide
         provide = self.set_rename(provide, self.config._input_map)
@@ -256,7 +270,8 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         for module in self.children():
@@ -268,7 +283,8 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -283,7 +299,8 @@ class SimpleModule(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         raise NotImplementedError
@@ -294,7 +311,8 @@ class SimpleModule(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -305,7 +323,8 @@ class SimpleModule(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -316,7 +335,8 @@ class SimpleModule(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)
@@ -327,7 +347,8 @@ class SimpleModule(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self(inputs)

@@ -23,7 +23,8 @@ class QuickSearch(object):
         Args:
             words: tokens in use words to update the trie
 
-        Returns: TODO
+        Returns: 
+            None
 
         """
         super(QuickSearch, self).__init__()
@@ -47,12 +48,12 @@ class QuickSearch(object):
             search_str: find the search_str
 
         Returns: 
-            list of result:
-            the result organized as {
-                "start": start_position,
-                "end": end_position,
-                "str": search_str[start_position: end_position]
-            }
+            >>> list of result:
+            >>> the result organized as {
+            >>>     "start": start_position,
+            >>>     "end": end_position,
+            >>>     "str": search_str[start_position: end_position]
+            >>> }
 
         """
         result = []
@@ -68,7 +69,8 @@ class QuickSearch(object):
         Args:
             key: a token(str)
 
-        Returns: bool(has or not)
+        Returns: 
+            bool(has or not)
 
         """
         try:
@@ -83,7 +85,8 @@ class QuickSearch(object):
         Args:
             word: single token
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.ac.add_word(word, (self.next_index, word))
@@ -96,7 +99,8 @@ class QuickSearch(object):
         Args:
             words: Iterable[tokens]
 
-        Returns: None
+        Returns: 
+            None
 
         """
         for sub_str in words:

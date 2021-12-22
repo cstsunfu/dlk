@@ -25,22 +25,21 @@ logger = Logger.get_logger()
 class LoadConfig(BaseConfig):
     """Config for Load
 
-    Paras:
-    Config eg.
-    {
-        "_name": "load",
-        "config":{
-            "base_dir": "."
-            "predict":{
-                "meta": "./meta.pkl",
-            },
-            "online": [
-                "predict", //base predict
-                {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
-                }
-            ]
-        }
-    },
+    Config Example:
+        >>> {
+        >>>     "_name": "load",
+        >>>     "config":{
+        >>>         "base_dir": "."
+        >>>         "predict":{
+        >>>             "meta": "./meta.pkl",
+        >>>         },
+        >>>         "online": [
+        >>>             "predict", //base predict
+        >>>             {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
+        >>>             }
+        >>>         ]
+        >>>     }
+        >>> },
     """
 
     def __init__(self, stage, config):
@@ -69,7 +68,8 @@ class Load(ISubProcessor):
         Args:
             path: the path to data
 
-        Returns: loaded data
+        Returns: 
+            loaded data
 
         """
 
@@ -81,12 +81,13 @@ class Load(ISubProcessor):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: data + loaded_data
+        Returns: 
+            data + loaded_data
 
         """
         for _, path in self.config.items():

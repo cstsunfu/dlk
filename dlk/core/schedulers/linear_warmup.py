@@ -23,15 +23,16 @@ logger = Logger.get_logger()
 
 @scheduler_config_register("linear_warmup")
 class LinearWarmupScheduleConfig(BaseConfig):
-    """a
-    {
-        "config": {
-            "last_epoch": -1,
-            "num_warmup_steps": 0,
-            "num_training_steps": -1,
-        },
-        "_name": "linear_warmup",
-    }
+    """
+    Config Example:
+        >>> {
+        >>>     "config": {
+        >>>         "last_epoch": -1,
+        >>>         "num_warmup_steps": 0,
+        >>>         "num_training_steps": -1,
+        >>>     },
+        >>>     "_name": "linear_warmup",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(LinearWarmupScheduleConfig, self).__init__(config)
@@ -57,7 +58,8 @@ class LinearWarmupSchedule(BaseScheduler):
     def get_scheduler(self)->LambdaLR:
         """return the initialized linear wramup then linear decay scheduler
 
-        Returns: Schedule
+        Returns: 
+            Schedule
 
         """
         num_training_steps = self.config.num_training_steps

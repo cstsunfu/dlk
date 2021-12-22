@@ -27,7 +27,8 @@ class Register(object):
         Args:
             name: the registed module name
 
-        Returns: the module
+        Returns: 
+            the module
 
         """
         def decorator(module):
@@ -51,7 +52,8 @@ class Register(object):
         Args:
             name: the name should be the real name or name+@+sub_name, and the
 
-        Returns: registed module
+        Returns: 
+            registed module
 
         """
         sp_name = name.split('@')[0]

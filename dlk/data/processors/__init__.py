@@ -30,12 +30,13 @@ class IProcessor(metaclass=abc.ABCMeta):
 
         Args:
             data: 
-            {
-                "data": {"train": ...},
-                "tokenizer": ..
-            }
+            >>> {
+            >>>     "data": {"train": ...},
+            >>>     "tokenizer": ..
+            >>> }
 
-        Returns: processed data
+        Returns: 
+            processed data
 
         """
         raise NotImplementedError

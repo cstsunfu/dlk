@@ -32,7 +32,8 @@ class IPostProcessorConfig(BaseConfig):
     def input_map(self):
         """required the output of model process content name map
 
-        Returns: input_map
+        Returns: 
+            input_map
         """
         return self.config.get("input_map", {})
 
@@ -40,7 +41,8 @@ class IPostProcessorConfig(BaseConfig):
     def origin_input_map(self):
         """required the origin data(before pass to datamodule) column name map
 
-        Returns: origin_input_map
+        Returns: 
+            origin_input_map
         """
         return self.config.get("origin_input_map", {})
 
@@ -54,7 +56,8 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         Args:
             stage: valid, train or test
 
-        Returns: loss_name
+        Returns: 
+            loss_name
 
         """
         map = {
@@ -70,7 +73,8 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         Args:
             list_batch_outputs: a list of outputs
 
-        Returns: average_loss
+        Returns: 
+            average_loss
 
         """
         sum_loss = 0
@@ -87,14 +91,15 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: all predicts
+        Returns: 
+            all predicts
 
         """
         raise NotImplementedError
@@ -109,14 +114,15 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: the named scores
+        Returns: 
+            the named scores
 
         """
         raise NotImplementedError
@@ -131,15 +137,16 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
             save_condition: True for save, False for depend on rt_config
 
-        Returns: None
+        Returns: 
+            None
 
         """
         raise NotImplementedError
@@ -148,7 +155,8 @@ class IPostProcessor(metaclass=abc.ABCMeta):
     def without_ground_truth_stage(self)->set:
         """there is not groud truth in the returned stage
 
-        Returns: without_ground_truth_stage
+        Returns: 
+            without_ground_truth_stage
 
         """
         return {'predict', 'online'}
@@ -161,14 +169,15 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config: current status
-                {
-                    "current_step": self.global_step,
-                    "current_epoch": self.current_epoch,
-                    "total_steps": self.num_training_steps,
-                    "total_epochs": self.num_training_epochs
-                }
+                >>> {
+                >>>     "current_step": self.global_step,
+                >>>     "current_epoch": self.current_epoch,
+                >>>     "total_steps": self.num_training_steps,
+                >>>     "total_epochs": self.num_training_epochs
+                >>> }
 
-        Returns: the log_info(metrics) or the stage is "online" return the predicts
+        Returns: 
+            the log_info(metrics) or the stage is "online" return the predicts
 
         """
         log_info = {}

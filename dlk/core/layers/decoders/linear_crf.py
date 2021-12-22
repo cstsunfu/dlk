@@ -23,28 +23,28 @@ import copy
 class LinearCRFConfig(BaseModuleConfig):
     """Config for LinearCRF 
 
-    Paras:
-    {
-        "module@linear": {
-            "_base": "linear",
-        },
-        "module@crf": {
-            "_base": "crf",
-        },
-        "config": {
-            "input_size": "*@*",  // the linear input_size
-            "output_size": "*@*", // the linear output_size
-            "reduction": "mean", // crf reduction method
-            "output_map": {}, //provide_key: output_key
-            "input_map": {} // required_key: provide_key
-        },
-        "_link":{
-            "config.input_size": ["module@linear.config.input_size"],
-            "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
-            "config.reduction": ["module@crf.config.reduction"],
-        }
-        "_name": "linear_crf",
-    }
+    Config Example:
+        >>> {
+        >>>     "module@linear": {
+        >>>         "_base": "linear",
+        >>>     },
+        >>>     "module@crf": {
+        >>>         "_base": "crf",
+        >>>     },
+        >>>     "config": {
+        >>>         "input_size": "*@*",  // the linear input_size
+        >>>         "output_size": "*@*", // the linear output_size
+        >>>         "reduction": "mean", // crf reduction method
+        >>>         "output_map": {}, //provide_key: output_key
+        >>>         "input_map": {} // required_key: provide_key
+        >>>     },
+        >>>     "_link":{
+        >>>         "config.input_size": ["module@linear.config.input_size"],
+        >>>         "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
+        >>>         "config.reduction": ["module@crf.config.reduction"],
+        >>>     }
+        >>>     "_name": "linear_crf",
+        >>> }
     """
     def __init__(self, config: Dict):
         super(LinearCRFConfig, self).__init__(config)
@@ -71,7 +71,8 @@ class LinearCRF(BaseModule):
         Args:
             method: init method
 
-        Returns: None
+        Returns: 
+            None
 
         """
         self.linear.init_weight(method)
@@ -83,7 +84,8 @@ class LinearCRF(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         return self.predict_step(inputs)
@@ -94,7 +96,8 @@ class LinearCRF(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
@@ -109,7 +112,8 @@ class LinearCRF(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
@@ -125,7 +129,8 @@ class LinearCRF(BaseModule):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: one mini-batch outputs
+        Returns: 
+            one mini-batch outputs
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
