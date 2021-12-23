@@ -10,32 +10,28 @@ This project is WIP, only provide some basic method, and is not been tested.
 * Provide some basic modules and models.
 * Provide basic deploy method.
 
-## Config example
+## More Feature is Comming
 
-## Will Complete
-
-- [ ] Add more documents
-- [ ] distill struct
-- [ ] adv training
-- [ ] Add disable tokenizer post process
+- [ ] Add more documents.
+- [ ] Distill structure.
+- [ ] Adv training.
+- [ ] Add disable tokenizer post process.
 
 - [ ] Predict
 
-    - [X] complete the main code.
-    - [ ] test
-    - [ ] torchscript
-    - [ ] onnxrt
+    - [X] Complete the main predict code.
+    - [ ] Test.
+    - [ ] Convert to TorchScript.
+    - [ ] Convert to ONNXRT
 
-* [X] when the high config change the _name of the basic config, the base config should be coverd
+* [X] When the high config change the _name of the basic config, the base config should be coverd.
 
-- [ ] one Optimizer different Para Group use different Schedulers.
+- [ ] One `optimizer` different para groups use different `scheduler`s.
   
     - [ ] Ref [diff_schedule](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
-    - [ ] add loss schedule, get best checkpoint by loss
+    - [ ] Add loss schedule, get best checkpoint by loss.
 
-- [ ] main entry? 
-
-- [ ] LightGBM, it's necessary? this may will split to another package
-* [ ] make CRF and more modules which uses the op like 'for' and 'if' to be Scriptable（for，if）
-* [ ] Validation LSTM module is scriptable or not?
-* [ ] unittest
+- [ ] Support LightGBM, it's maybe not necessary? Will split to another package.
+* [ ] Make CRF and more modules which uses the op like `for` and `if` to be scriptable（`for`，`if`）
+* [ ] Validating LSTM module is scriptable or not?
+* [ ] Add UnitTest

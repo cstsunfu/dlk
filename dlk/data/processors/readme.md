@@ -1,4 +1,4 @@
-## The subprocessor config format
+# The subprocessor config format
 In subprocessors, the config is based on the progress stage(train, predict, online, etc.). 
 
 The stage config could be a dict, a str, or a tuple, for different type of config, we will parser the configure the different way. 
@@ -8,8 +8,9 @@ The stage config could be a dict, a str, or a tuple, for different type of confi
 
 Some config value set to "*@*", this means you must provided this key-value pair in your own config
 
-## Processor Config Example
-```hjson
+# Processor Config Example
+
+```json
 {
     "processor": {
         "_name": "test_text_classification",
@@ -121,11 +122,11 @@ Some config value set to "*@*", this means you must provided this key-value pair
 
 
 
-## To Process Data Format Example
+# To Process Data Format Example
 
 You can provide dataframe format by yourself, or use the task_name_loader(if provided or you can write one) to load your dict format data to dataframe
 
-```hjson
+```json
 {
     "data": {
         "train": pd.DataFrame, // may include these columns "uuid"、"origin"、"label"
@@ -135,9 +136,9 @@ You can provide dataframe format by yourself, or use the task_name_loader(if pro
 
 ```
 
-## Processed Data Format Example
+# Processed Data Format Example
 
-```hjson
+```json
 {
     "data": {
         "train": pd.DataFrame, // may include these columns "uuid"、"origin"、"labels"、"origin_tokens"、"label_ids"、"origin_token_ids"

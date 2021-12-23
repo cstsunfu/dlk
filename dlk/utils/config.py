@@ -158,25 +158,26 @@ class ConfigTool(object):
 
         it means the config of this stage equals to config[stage]
         return config[config[stage]]
-        >>> e.g.
-        >>> config = {
-        >>>     "train":{ //train、predict、online stage config,  using '&' split all stages
-        >>>         "data_pair": {
-        >>>             "label": "label_id"
-        >>>         },
-        >>>         "data_set": {                   // for different stage, this processor will process different part of data
-        >>>             "train": ['train', 'dev'],
-        >>>             "predict": ['predict'],
-        >>>             "online": ['online']
-        >>>         },
-        >>>         "vocab": "label_vocab", // usually provided by the "token_gather" module
-        >>>     },
-        >>>     "predict": "train",
-        >>>     "online": ["train",
-        >>>     {"vocab": "new_label_vocab"}
-        >>>     ]
-        >>> }
-        >>> config.get_config['predict'] == config['predict'] == config['train']
+
+        Config Example:
+            >>> config = {
+            >>>     "train":{ //train、predict、online stage config,  using '&' split all stages
+            >>>         "data_pair": {
+            >>>             "label": "label_id"
+            >>>         },
+            >>>         "data_set": {                   // for different stage, this processor will process different part of data
+            >>>             "train": ['train', 'dev'],
+            >>>             "predict": ['predict'],
+            >>>             "online": ['online']
+            >>>         },
+            >>>         "vocab": "label_vocab", // usually provided by the "token_gather" module
+            >>>     },
+            >>>     "predict": "train",
+            >>>     "online": ["train",
+            >>>     {"vocab": "new_label_vocab"}
+            >>>     ]
+            >>> }
+            >>> config.get_config['predict'] == config['predict'] == config['train']
 
         Args:
             stage: the stage, like 'train', 'predict', etc.

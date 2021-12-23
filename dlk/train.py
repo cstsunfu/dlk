@@ -35,7 +35,6 @@ class Train(object):
     Config Example:
         >>> {
         >>>     "_focus": {
-
         >>>     },
         >>>     "_link": {},
         >>>     "_search": {},
@@ -116,7 +115,7 @@ class Train(object):
             name: config name
 
         Returns: 
-            TODO
+            None
 
         """
 
