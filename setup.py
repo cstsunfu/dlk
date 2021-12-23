@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from setuptools import setup, find_packages
+from dlk import __version__
 import os
 
 
@@ -37,7 +38,7 @@ pkgs = [p for p in find_packages() if p.startswith('dlk')]
 
 setup(
     name='dlk',
-    version='0.0.4',
+    version=__version__,
     url='https://github.com/cstsunfu/dlk',
     description='dlk: Deep Learning Kit',
     long_description=readme,
