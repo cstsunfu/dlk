@@ -476,7 +476,8 @@ class BaseConfigParser(object):
         Args:
             list_of_list_of_dict: [[config_a1, config_a2], [config_b1, config_b2]]
 
-        Returns: [[config_a1, config_b1], [config_a1, config_b2], [config_a2, config_b1], [config_a2, config_b2]]
+        Returns: 
+            [[config_a1, config_b1], [config_a1, config_b2], [config_a2, config_b1], [config_a2, config_b2]]
 
         """
         if len(list_of_list_of_dict) <= 1:
@@ -497,9 +498,11 @@ class BaseConfigParser(object):
         Args:
             configs: TODO
 
-        Returns: None
+        Returns: 
+            None
 
-        Raises:  ValueError
+        Raises:
+            ValueError
 
         """
         def _check(config):
@@ -524,7 +527,8 @@ class BaseConfigParser(object):
         Args:
             dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
 
-        Returns: [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
+        Returns: 
+            [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
 
         """
         if len(dict_of_list) == 0:
@@ -554,7 +558,8 @@ class BaseConfigParser(object):
         Args:
             list_of_dict: a list of dict
 
-        Returns: has repeat or not
+        Returns:
+            has repeat or not
 
         """
         # using json.dumps + sort_keys to guarantee the same dict to the same string represatation
@@ -584,7 +589,8 @@ class ConfigConfigParser(BaseConfigParser):
         Args:
             parser_link: whether parser the links
 
-        Returns: all valided configs
+        Returns:
+            all valided configs
 
         """
         config_list = self.flat_search(self.search, self.modules)
@@ -615,7 +621,8 @@ class LinkConfigParser(object):
         Args:
             parser_link: must be false
 
-        Returns: all valided configs
+        Returns:
+            all valided configs
 
         """
         assert parser_link is False, f"The parser_link para must be False when parser the _link"

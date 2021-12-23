@@ -54,7 +54,8 @@ class GatherOutputMixin(object):
         Args:
             outputs: one node outputs
 
-        Returns: all outputs
+        Returns:
+            all outputs
 
         """
         if self.trainer.world_size>1:

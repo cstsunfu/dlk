@@ -106,7 +106,8 @@ class TxtRegPostProcessor(IPostProcessor):
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config: current status
+            rt_config:
+                >>> current status
                 >>> {
                 >>>     "current_step": self.global_step,
                 >>>     "current_epoch": self.current_epoch,
@@ -157,7 +158,8 @@ class TxtRegPostProcessor(IPostProcessor):
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config: current status
+            rt_config:
+                >>> current status
                 >>> {
                 >>>     "current_step": self.global_step,
                 >>>     "current_epoch": self.current_epoch,
@@ -179,7 +181,8 @@ class TxtRegPostProcessor(IPostProcessor):
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config: current status
+            rt_config:
+                >>> current status
                 >>> {
                 >>>     "current_step": self.global_step,
                 >>>     "current_epoch": self.current_epoch,
