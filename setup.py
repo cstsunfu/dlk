@@ -37,7 +37,7 @@ pkgs = [p for p in find_packages() if p.startswith('dlk')]
 
 setup(
     name='dlk',
-    version='0.0.3',
+    version='0.0.4',
     url='https://github.com/cstsunfu/dlk',
     description='dlk: Deep Learning Kit',
     long_description=readme,

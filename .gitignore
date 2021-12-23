@@ -6,7 +6,7 @@
 *.ckpt
 *.log
 *.raw
-*.txt
+tools/**/*.txt
 *.zip
 *.model
 *.pt
