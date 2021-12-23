@@ -14,6 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../dlk'))
+from dlk import __version__
 
 github_doc_root = 'https://github.com/rtfd/recommonmark/tree/master/doc/'
 def setup(app):
@@ -31,7 +32,7 @@ copyright = '2021, cstsunfu'
 author = 'cstsunfu'
 
 # The full version, including alpha/beta/rc tags
-release = 'v0.0.4'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
