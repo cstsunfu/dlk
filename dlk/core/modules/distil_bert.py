@@ -20,8 +20,11 @@ import torch.nn as nn
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
+from dlk.utils.logger import Logger
 from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
+
+logger = Logger.get_logger()
 
 @module_config_register("distil_bert")
 class DistilBertWrapConfig(BaseConfig):
@@ -83,11 +86,13 @@ class DistilBertWrap(Module):
         if self.config.from_pretrain:
             self.from_pretrained()
         else:
+            logger.info(f'Training the distill bert from scratch')
             self.distil_bert.init_weights()
 
     def from_pretrained(self):
         """init the model from pretrained_model_path
         """
+        logger.info(f'Init the distill bert from {self.config.pretrained_model_path}')
         self.distil_bert = DistilBertModel.from_pretrained(self.config.pretrained_model_path)
 
     def forward(self, inputs):

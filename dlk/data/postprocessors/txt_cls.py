@@ -17,13 +17,13 @@ import pickle as pkl
 import os
 import json
 import pandas as pd
+import numpy as np
 from typing import Union, Dict, Any, List
 from dlk.utils.parser import BaseConfigParser, PostProcessorConfigParser
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.logger import Logger
 import torch
 from dlk.utils.vocab import Vocabulary
-import torchmetrics
 
 logger = Logger.get_logger()
 
@@ -120,7 +120,6 @@ class TxtClsPostProcessor(IPostProcessor):
         super(TxtClsPostProcessor, self).__init__()
         self.config = config
         self.label_vocab = self.config.label_vocab
-        self.acc_calc = torchmetrics.Accuracy()
 
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
         """Process the model predict to human readable format
@@ -209,12 +208,21 @@ class TxtClsPostProcessor(IPostProcessor):
             the named scores, acc
 
         """
+        all_logits = None
+        all_labels = None
         for outputs in list_batch_outputs:
-            logits = outputs[self.config.logits]
-            label_ids = outputs[self.config.label_ids].squeeze(-1)
-            self.acc_calc.update(logits, label_ids)
+            logits = outputs[self.config.logits].detach().cpu().numpy()
+            label_ids = outputs[self.config.label_ids].squeeze(-1).detach().cpu().numpy()
+            if all_logits is None:
+                all_logits = logits
+                all_labels = label_ids
+            else:
+                all_logits = np.concatenate([all_logits, logits], axis=0)
+                all_labels = np.concatenate([all_labels, label_ids], axis=0)
+
+        predict_labels = np.argmax(all_logits, axis=-1)
         real_name = self.loss_name_map(stage)
-        return {f'{real_name}_acc': self.acc_calc.compute()}
+        return {f'{real_name}_acc': np.sum(predict_labels==all_labels)/len(all_labels)}
 
     def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
         """save the predict when save_condition==True
