@@ -24,13 +24,11 @@ import uuid
 logger = Logger('log.txt')
 
 
-r_label_map = {'O': 0, 'B-PER': 1, 'I-PER': 2, 'B-ORG': 3, 'I-ORG': 4, 'B-LOC': 5, 'I-LOC': 6, 'B-MISC': 7, 'I-MISC': 8}
-label_map = {value: key for key, value in r_label_map.items()}
-
+# this is just for prepro the data, not the real label<->id pair in process.
+label_map = {0: 'O', 1: 'B-PER', 2: 'I-PER', 3: 'B-ORG', 4: 'I-ORG', 5: 'B-LOC', 6: 'I-LOC', 7: 'B-MISC', 8: 'I-MISC'}
 
 data = load_dataset(path="conll2003")
 
-# print(data['train'])
 data = data.map(lambda one: {"tokens": one["tokens"], 'ner_tags': [label_map[i] for i in one['ner_tags']]})
 
 
@@ -48,5 +46,5 @@ for filed in ['train', 'validation', 'test']:
 
 input = {"data": json_data_map}
 
-processor = Processor('./norm_lstm_crf/prepro.hjson')
+processor = Processor('./norm_char_lstm_crf/prepro.hjson')
 processor.fit(input)

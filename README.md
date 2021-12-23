@@ -1,7 +1,24 @@
+
 # A Deep Learning Kit
 
 This project is WIP, only provide some basic method, and is not been tested.
 
+```
+WARNING: The documents in `read the docs` is not complete( I do not know what I miss.). You can build the docs locally by read the docs/readme.md.
+```
+
+
+## Install
+
+```
+pip install dlk
+
+or 
+git clong this repo and do
+
+python setup.py install
+
+```
 ## What is this project do?
 
 * Provide a templete for deep learning (especially for nlp) training and deploy.
