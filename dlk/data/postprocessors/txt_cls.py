@@ -53,7 +53,6 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
         >>>         },
         >>>         "save_root_path": ".",  //save data root dir
         >>>         "top_k": 1, //the result return top k result
-        >>>         "focus": [], //always return the list label values which index in 'focus' list, if the focus[0] == 'pos', then the predict value always return the logits[vocab.get_index('pos')], and the label always be 'pos'
         >>>         "data_type": "single", //single or pair
         >>>         "save_path": {
         >>>             "valid": "valid",  // relative dir for valid stage
@@ -81,7 +80,6 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
         self.label_ids = self.input_map['label_ids']
         self._index = self.input_map['_index']
         self.top_k = self.config['top_k']
-        self.focus = self.config['focus']
         if isinstance(self.config['meta'], str):
             meta = pkl.load(open(self.config['meta'], 'rb'))
         else:
@@ -105,7 +103,6 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
             "origin_input_map",
             "save_root_path",
             "top_k",
-            "focus",
             "data_type",
             "save_path",
             "start_save_step",
@@ -165,25 +162,20 @@ class TxtClsPostProcessor(IPostProcessor):
                     sentence_b = one_origin[self.config.sentence_b]
                     one_ins['sentence_b'] = sentence_b
                 uuid = one_origin[self.config.uuid]
-                if self.config.focus:
-                    label_values, label_indeies = [], []
-                    for label_name in self.config.focus:
-                        label_index = self.label_vocab.get_index(label_name)
-                        label_values.append(one_logits[label_index])
-                        label_indeies.append(label_index)
-                else:
-                    label_values, label_indeies = torch.topk(one_logits, self.config.top_k, dim=-1)
-                predict = []
-                for label_value, label_index in zip(label_values, label_indeies):
+                label_values, label_indeies = torch.topk(one_logits, self.config.top_k, dim=-1)
+                predict = {}
+                for i, (label_value, label_index) in enumerate(zip(label_values, label_indeies)):
                     label_name = self.label_vocab.get_word(label_index)
-                    predict.append([label_name, float(label_value)])
-                if label_id is None:
-                    ground_truth = ""
-                else:
-                    ground_truth = self.label_vocab.get_word(label_id)
+                    predict[i] = [label_name, float(label_value)]
+                ground_truth = []
+                if label_id is not None and label_id.shape:
+                    for one_label_id in label_id:
+                        ground_truth.append(self.label_vocab.get_word(one_label_id))
+                elif label_id:
+                    ground_truth.append(self.label_vocab.get_word(label_id))
                 one_ins['uuid'] = uuid
                 one_ins['labels'] = ground_truth
-                one_ins['predict_labels'] = predict
+                one_ins['predicts'] = predict
                 results.append(one_ins)
         return results
 
@@ -208,21 +200,17 @@ class TxtClsPostProcessor(IPostProcessor):
             the named scores, acc
 
         """
-        all_logits = None
-        all_labels = None
-        for outputs in list_batch_outputs:
-            logits = outputs[self.config.logits].detach().cpu().numpy()
-            label_ids = outputs[self.config.label_ids].squeeze(-1).detach().cpu().numpy()
-            if all_logits is None:
-                all_logits = logits
-                all_labels = label_ids
-            else:
-                all_logits = np.concatenate([all_logits, logits], axis=0)
-                all_labels = np.concatenate([all_labels, label_ids], axis=0)
-
-        predict_labels = np.argmax(all_logits, axis=-1)
+        right_num = 0
+        for one_ins in predicts:
+            labels = one_ins['labels']
+            assert len(labels) == 1, "We currently is not support multi label in txt_cls postprocess"
+            label = labels[0]
+            predicts = one_ins['predicts']
+            predict_label = predicts[0] # the first predict
+            if label == predict_label:
+                right_num += 1
         real_name = self.loss_name_map(stage)
-        return {f'{real_name}_acc': np.sum(predict_labels==all_labels)/len(all_labels)}
+        return {f'{real_name}_acc': right_num/len(predicts)}
 
     def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
         """save the predict when save_condition==True
