@@ -209,4 +209,5 @@ class TxtRegPostProcessor(IPostProcessor):
             else:
                 save_file = os.path.join(save_path, 'predict.json')
             logger.info(f"Save the {stage} predict data at {save_file}")
-            json.dump(predicts, open(save_file, 'w'), indent=4)
+            json.dump(predicts, open(save_file, 'w'), indent=4, ensure_ascii=False)
+

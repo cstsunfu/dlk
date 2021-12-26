@@ -1,12 +1,18 @@
 {
     "root": {
         "_name": "pretrained_firstpiece_crf"
-        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
             "save_dir": "./bert_firstpiece_crf/output",  # must provide
             "data_path": "./bert_firstpiece_crf/output/processed_data.pkl",  # must provide
             "meta_data": "./bert_firstpiece_crf/output/meta.pkl",  # must provide
+            "pretrained_model_path": '...',  # must provide
+            "label_num": 11,  # must provide
+        },
+        "_link": {
+            "config.meta_data": ['task.imodel.postprocessor.config.meta'],
+            "config.label_num": ['task.imodel.model.config.label_num'],
+            "config.pretrained_model_path": ['task.imodel.model.config.pretrained_model_path'],
         },
         "task": {
             "manager": {
@@ -26,7 +32,7 @@
                             "config": {
                                 "pretrained_model_path": "*@*",
                             },
-                            "_name": "bert",
+                            "_base": "bert",
                         },
                         "config": {
                             "pretrained_model_path": "*@*",
@@ -43,7 +49,7 @@
                         "embedding_dim": 768,
                         "label_num": 11,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
-                        "pretrained_model_path": "./local_data/pretrained_model/bert_case",
+                        "pretrained_model_path": "./bert_case",
                         "dropout": 0.3,
                     },
                     "_link": {

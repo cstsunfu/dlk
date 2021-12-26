@@ -76,7 +76,7 @@ class Train(object):
 
         if len(self.config_names) != len(set(self.config_names)):
             for config, name in zip(self.configs, self.config_names):
-                logger.info(f"{name}:\n{json.dumps(config, indent=4)}")
+                logger.info(f"{name}:\n{json.dumps(config, indent=4, ensure_ascii=False)}")
             raise NameError('The config_names is not unique.')
 
     def run(self):

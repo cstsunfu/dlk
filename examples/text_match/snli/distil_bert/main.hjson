@@ -13,8 +13,7 @@
                 "_base": "lightning",
                 "config":{
                     "max_epochs": 4,
-                    "max_steps": 10,
-                    "gpus": 0,
+                    "gpus": 1,
                 }
             },
             "imodel": {
@@ -34,7 +33,8 @@
                         "embedding_dim": 768,
                         "label_num": 3,
                         /*"pretrained_model_path": "./local_data/pretrained_model/roberta_base",*/
-                        "pretrained_model_path": "/Users/fu.sun/workspace/local_data/pretrained_model/finetuned_distil_bert_id",
+                        /*"pretrained_model_path": "/Users/fu.sun/workspace/local_data/pretrained_model/finetuned_distil_bert_id",*/
+                        "pretrained_model_path": "model",
                         "dropout": 0.3,
                     },
                 },
