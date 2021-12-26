@@ -1,12 +1,18 @@
 {
     "root": {
         "_name": "pretrained",
-        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
         "_search": {},
         "config": {
             "save_dir": "./bert_subword/output",  # must provide
             "data_path": "./bert_subword/output/processed_data.pkl",  # must provide
             "meta_data": "./bert_subword/output/meta.pkl",  # must provide
+            "pretrained_model_path": '...',  # must provide
+            "label_num": 11,  # must provide
+        },
+        "_link": {
+            "config.meta_data": ['task.imodel.postprocessor.config.meta'],
+            "config.label_num": ['task.imodel.model.config.label_num'],
+            "config.pretrained_model_path": ['task.imodel.model.config.pretrained_model_path'],
         },
         "task": {
             "manager": {
@@ -26,7 +32,7 @@
                             "config": {
                                 "pretrained_model_path": "*@*",
                             },
-                            "_name": "bert",
+                            "_base": "bert",
                         },
                     },
                     "config": {
