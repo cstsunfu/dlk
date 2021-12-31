@@ -29,7 +29,7 @@
         }
     },
     "subprocessor@txt_reg_loader":{
-        "_base": "txt_reg_loader",
+        "_base": "basic_data_loader@txt_reg",
         "config":{
             "data_type": "single",
         }

@@ -34,7 +34,7 @@
         }
     },
     "subprocessor@txt_cls_loader":{
-        "_base": "txt_cls_loader",
+        "_base": "basic_data_loader@txt_cls",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",
