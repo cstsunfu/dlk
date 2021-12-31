@@ -27,7 +27,6 @@ def flat(data):
     sentence_bs = data['sentence_b']
     uuids = data['uuid']
     labelses = data['labels']
-    print(labelses)
     return [{'sentence_a': sentence_a, 'sentence_b': sentence_b, 'labels': [labels], "uuid": uuid} for sentence_a, sentence_b, labels, uuid in zip(sentence_as, sentence_bs, labelses, uuids)]
 
 label_map = {0: "entails", 1: 'nor', 2: 'contradicts', -1: "remove"}

@@ -184,6 +184,7 @@ class TxtClsPostProcessor(IPostProcessor):
 
         Args:
             predicts: list of predicts
+                
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
@@ -205,8 +206,8 @@ class TxtClsPostProcessor(IPostProcessor):
             labels = one_ins['labels']
             assert len(labels) == 1, "We currently is not support multi label in txt_cls postprocess"
             label = labels[0]
-            predicts = one_ins['predicts']
-            predict_label = predicts[0] # the first predict
+            one_predicts = one_ins['predicts']
+            predict_label, predict_value = one_predicts[0] # the first predict
             if label == predict_label:
                 right_num += 1
         real_name = self.loss_name_map(stage)
@@ -248,4 +249,5 @@ class TxtClsPostProcessor(IPostProcessor):
             else:
                 save_file = os.path.join(save_path, 'predict.json')
             logger.info(f"Save the {stage} predict data at {save_file}")
-            json.dump(predicts, open(save_file, 'w'), indent=4)
+            json.dump(predicts, open(save_file, 'w'), indent=4, ensure_ascii=False)
+
