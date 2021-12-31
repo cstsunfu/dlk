@@ -2,10 +2,10 @@
     "_base": "basic@seq_lab#pretrained",
     "config": {
         /*"tokenizer_config_path": "./local_data/embeddings/embedding_tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
-        "feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_firstpiece_relabel", "token_gather", "label_to_id", "save"]
+        "feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_firstpiece_relabel", "label_gather", "label_to_id", "save"]
         /*"tokenizer_config_path": "local_data/pretrained_model/roberta_base/tokenizer.json", // the tokenizer config path (the tokenizer.json path)*/
         "tokenizer_config_path": "local_data/pretrained_model/bert_case/indent_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "output/benchmark/pretrained/",  // save load data base dir
+        "data_dir": "./bert_firstpiece_lstm_crf/output/",  // save load data base dir
     },
     "subprocessor@seq_lab_firstpiece_relabel":{
         "_base": "seq_lab_firstpiece_relabel",

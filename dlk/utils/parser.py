@@ -397,7 +397,7 @@ class BaseConfigParser(object):
             logger.warning(f"The Configures is Repeated, Please Check The Configures Carefully.")
             for i, config in enumerate(return_list):
                 logger.info(f"The {i}th Configure is:")
-                logger.info(json.dumps(config, indent=2))
+                logger.info(json.dumps(config, indent=2, ensure_ascii=False))
             raise ValueError('REPEAT CONFIG')
         return return_list
 
@@ -512,7 +512,7 @@ class BaseConfigParser(object):
                 if isinstance(config[key], dict):
                     _check(config[key])
                 if config[key] == '*@*':
-                    raise ValueError(f'In Config: \n {json.dumps(config, indent=4)}\n The must be provided key "{key}" marked with "*@*" is not provided.')
+                    raise ValueError(f'In Config: \n {json.dumps(config, indent=4, ensure_ascii=False)}\n The must be provided key "{key}" marked with "*@*" is not provided.')
 
         if isinstance(configs, list):
             for config in configs:
@@ -563,7 +563,7 @@ class BaseConfigParser(object):
 
         """
         # using json.dumps + sort_keys to guarantee the same dict to the same string represatation
-        list_of_str = [json.dumps(dic, sort_keys=True) for dic in list_of_dict]
+        list_of_str = [json.dumps(dic, sort_keys=True, ensure_ascii=False) for dic in list_of_dict]
         if len(list_of_dict) == len(set(list_of_str)):
             return False
         else:
