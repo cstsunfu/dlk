@@ -134,6 +134,8 @@ class SeqLabRelabel(ISubProcessor):
             elif position>=offset_list[start][0] and position<offset_list[start][1]:
                 return start
             elif position<offset_list[start][0]:
+                if start == 1 and offset_list[0] == [0, 0]:
+                    return 1
                 if is_start:
                     return -1
                 else:

@@ -119,6 +119,9 @@ class TokenNorm(ISubProcessor):
             normed_token
 
         """
+        if token in self.config.vocab:
+            return token
+
         if self.config.zero_digits_replaced:
             norm = ''
             digit_num = 0
@@ -140,8 +143,6 @@ class TokenNorm(ISubProcessor):
                 self._lower_case_num += 1
                 if self.config.do_extend_vocab:
                     self.extend_vocab.add(token)
-                else:
-                    raise PermissionError
                 return norm
 
         if self.config.lowercase and self.config.zero_digits_replaced:
