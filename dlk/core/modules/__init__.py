@@ -17,12 +17,23 @@ import importlib
 import os
 from dlk.utils.register import Register
 import torch.nn as nn
+import torch.nn.functional as F
 from typing import Dict
 import torch
 
 module_config_register = Register("Module config register.")
 module_register = Register("Module register.")
 
+
+ACT2FN = {
+    "relu": F.relu,
+    "silu": F.silu,
+    "gelu": F.gelu,
+    "tanh": F.tanh,
+    "mish": F.mish,
+    "linear": lambda x: x,
+    "sigmoid": F.sigmoid,
+}
 
 class Module(nn.Module):
     """This class is means DLK Module for replace the torch.nn.Module in this project
