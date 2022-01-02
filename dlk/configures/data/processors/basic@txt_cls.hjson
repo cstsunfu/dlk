@@ -2,7 +2,7 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_cls",
     "config": {
-        "feed_order": ["load", "tokenizer", "label_gather", "label_to_id", "token_embedding", "save"]
+        "feed_order": ["load", "txt_cls_loader", "tokenizer", "label_gather", "label_to_id", "token_embedding", "save"]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*",  // save load data base dir
         "embedding_size": "*@*",  //the embedding size
@@ -42,6 +42,9 @@
                 "processed": "processed_data.pkl",
             }
         }
+    },
+    "subprocessor@txt_cls_loader":{
+        "_base": "basic_data_loader@txt_cls",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",

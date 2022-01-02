@@ -16,25 +16,27 @@ import multiprocessing
 from gensim.models import Word2Vec
 from gensim.models.callbacks import CallbackAny2Vec
 import hjson
+import time
 import argparse
+import numpy as np
 # Data from https://pytorch.org/text/_modules/torchtext/datasets/language_modeling.html
 from gensim.models.word2vec_inner import MAX_WORDS_IN_BATCH
+import logging
 
-def any2unicode(text, encoding='utf8', errors='strict'):
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.WARNING)
+
+
+def any2unicode(text, encoding: str='utf8', errors: str='strict'):
     """Convert `text` (bytestring in given encoding or unicode) to unicode.
 
-    Parameters
-    ----------
-    text : str
-        Input text.
-    errors : str, optional
-        Error handling behaviour if `text` is a bytestring.
-    encoding : str, optional
-        Encoding of `text` if it is a bytestring.
+    Args:
+        text : Input text.
+        errors : str, optional
+            Error handling behaviour if `text` is a bytestring.
+        encoding : str, optional
+            Encoding of `text` if it is a bytestring.
 
-    Returns
-    -------
-    str
+    Returns:
         Unicode version of `text`.
 
     """
@@ -42,34 +44,52 @@ def any2unicode(text, encoding='utf8', errors='strict'):
         return text
     return str(text, encoding, errors=errors)
 
+
 class Sentences(object):
     def __init__(self, file_names, max_sentence_length=MAX_WORDS_IN_BATCH):
         self.file_names = file_names
         self.max_sentence_length = max_sentence_length
 
     def __iter__(self):
+        """read all the lines in the list of self.file_names, and break the sentence by the self.max_sentence_length
+        Returns:
+            Iterable strs
+
+        """
+
         for fname in self.file_names:
-            print(f"Training on {fname}")
-            for line in open(fname, 'r'):
-                line = any2unicode(line).split()
-                i = 0
-                while i < len(line):
-                    yield line[i: i + self.max_sentence_length]
-                    i += self.max_sentence_length
+            print(f"On {fname}")
+            with open(fname, 'r') as fin:
+                for line in fin.readlines():
+                    line = any2unicode(line).split()
+                    i = 0
+                    while i < len(line):
+                        yield line[i: i + self.max_sentence_length]
+                        i += self.max_sentence_length
 
-class callback(CallbackAny2Vec):
-    '''Callback to print loss after each epoch.'''
 
+class LossCallback(CallbackAny2Vec):
     def __init__(self):
-        self.epoch = 0
-        self.loss_to_be_subed = 0
+        self.epoch = 1
+        self.losses = []
+        self.cumu_loss = 0.0
+        self.previous_epoch_time = time.time()
 
     def on_epoch_end(self, model):
         loss = model.get_latest_training_loss()
-        loss_now = loss - self.loss_to_be_subed
-        self.loss_to_be_subed = loss
-        print('Loss after epoch {}: {}'.format(self.epoch, loss_now))
+        norms = [np.linalg.norm(v) for v in model.wv.vectors]
+        now = time.time()
+        epoch_seconds = now - self.previous_epoch_time
+        self.previous_epoch_time = now
+        self.cumu_loss += float(loss)
+        print(f"Loss after epoch {self.epoch}: {loss} (cumulative loss so far: {self.cumu_loss}) "+\
+              f"-> epoch took {round(epoch_seconds, 2)} s - vector norms min/avg/max: "+\
+              f"{round(float(min(norms)), 2)}, {round(float(sum(norms)/len(norms)), 2)}, {round(float(max(norms)), 2)}")
+
         self.epoch += 1
+        self.losses.append(float(loss))
+        # loss will overflow when the loss very large. see https://github.com/RaRe-Technologies/gensim/issues/2735
+        model.running_training_loss = 0.0
 
 
 if __name__ == '__main__':
@@ -106,7 +126,7 @@ if __name__ == '__main__':
         "--workers",
         type=int,
         default=0,
-        help=( "0 means use all cpus")
+        help=( "0/none means use all cpus")
     )
     parser.add_argument(
         "--window",
@@ -123,13 +143,19 @@ if __name__ == '__main__':
     parser.add_argument(
         "--hs",
         type=bool,
-        default=1,
+        default=0,
         help=( "If 1, hierarchical softmax will be used for model training.  If 0, and `negative` is non-zero, negative sampling will be used.")
+    )
+    parser.add_argument(
+        "--negative",
+        type=int,
+        default=10,
+        help=( "Anti with hs==1, negative sampling num, num_ns (number of negative samples per positive context word) between [5, 20] is shown to work best for smaller datasets, while num_ns between [2,5] suffices for larger datasets.")
     )
     parser.add_argument(
         "--epochs",
         type=int,
-        default=15,
+        default=10,
         help=( "training epochs")
     )
     parser.add_argument(
@@ -150,7 +176,7 @@ if __name__ == '__main__':
     print("Start training...")
     lines = Sentences(args.train_files)
 
-    model = Word2Vec(lines, vector_size=args.embedding_size, hs=args.hs, window=args.window, min_count=args.min_count, workers=args.workers, epochs=args.epochs, sg=args.sg, compute_loss=True, max_vocab_size=args.max_vocab_size, callbacks=[callback()])
+    model = Word2Vec(lines, vector_size=args.embedding_size, hs=args.hs, negative=args.negative, window=args.window, min_count=args.min_count, workers=args.workers, epochs=args.epochs, sg=args.sg, compute_loss=True, max_vocab_size=args.max_vocab_size, callbacks=[LossCallback()])
     print("Saving embedding...")
     model.save(args.model_file)
     model.wv.save_word2vec_format(args.embedding_file, binary=False)

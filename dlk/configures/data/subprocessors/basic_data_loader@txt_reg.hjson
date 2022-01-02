@@ -1,5 +1,5 @@
 {
-    "_name": "txt_reg_loader",
+    "_name": "basic_data_loader@txt_reg",
     "config": {
         "train":{ 
             "data_set": {                   // for different stage, this processor will process different part of data

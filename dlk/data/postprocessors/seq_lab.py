@@ -645,7 +645,7 @@ class SeqLabPostProcessor(IPostProcessor):
         """Group together the adjacent tokens with the same entity predicted.
 
         Args:
-            entities (:obj:`dict`): The entities predicted by the pipeline.
+            entities: The entities predicted by the pipeline.
         """
         # Get the first entity in the entity group
         entity = entities[0]["entity"].split("-")[-1]
@@ -678,7 +678,7 @@ class SeqLabPostProcessor(IPostProcessor):
         """Find and group together the adjacent tokens with the same entity predicted.
 
         Args:
-            entities (:obj:`dict`): The entities predicted by the pipeline.
+            entities: The entities predicted by the pipeline.
         """
 
         entity_groups = []
@@ -713,8 +713,9 @@ class SeqLabPostProcessor(IPostProcessor):
     def aggregate_words(self, entities: List[dict], aggregation_strategy: AggregationStrategy) -> List[dict]:
         """Override tokens from a given word that disagree to force agreement on word boundaries.
 
-        Example: micro|soft| com|pany| B-ENT I-NAME I-ENT I-ENT will be rewritten with first strategy as microsoft|
-        company| B-ENT I-ENT
+        Example: 
+            micro|soft| com|pany| B-ENT I-NAME I-ENT I-ENT will be rewritten with first strategy as microsoft|
+            company| B-ENT I-ENT
         """
         if aggregation_strategy in {
             AggregationStrategy.NONE,
