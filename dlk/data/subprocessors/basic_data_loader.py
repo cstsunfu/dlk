@@ -22,13 +22,13 @@ from dlk.utils.logger import Logger
 
 logger = Logger.get_logger()
 
-@subprocessor_config_register('txt_cls_loader')
-class TxtClsLoaderConfig(BaseConfig):
-    """Config for TxtClsLoader
+@subprocessor_config_register('basic_data_loader')
+class BasicDataLoaderConfig(BaseConfig):
+    """Config for BasicDataLoader
 
     Config Example:
         >>> {
-        >>>     "_name": "txt_cls_loader",
+        >>>     "_name": "basic_data_loader@seq_lab",
         >>>     "config": {
         >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
         >>>             "data_set": {                   // for different stage, this processor will process different part of data
@@ -37,20 +37,15 @@ class TxtClsLoaderConfig(BaseConfig):
         >>>                 "online": ['online']
         >>>             },
         >>>             "input_map": {   // without necessery don't change this
-        >>>                 "sentence": "sentence", //for single
-        >>>                 "sentence_a": "sentence_a",  // for pair
-        >>>                 "sentence_b": "sentence_b",
+        >>>                 "sentence": "sentence",
         >>>                 "uuid": "uuid",
-        >>>                 "labels": "labels",
+        >>>                 "entities_info": "entities_info",
         >>>             },
         >>>             "output_map": {   // without necessery don't change this
-        >>>                 "sentence": "sentence", //for single
-        >>>                 "sentence_a": "sentence_a", //for pair
-        >>>                 "sentence_b": "sentence_b",
+        >>>                 "sentence": "sentence",
         >>>                 "uuid": "uuid",
-        >>>                 "labels": "labels",
+        >>>                 "entities_info": "entities_info",
         >>>             },
-        >>>             "data_type": "single", // single or pair
         >>>         }, //3
         >>>         "predict": "train",
         >>>         "online": "train",
@@ -59,40 +54,37 @@ class TxtClsLoaderConfig(BaseConfig):
     """
     def __init__(self, stage, config: Dict):
 
-        super(TxtClsLoaderConfig, self).__init__(config)
+        super(BasicDataLoaderConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
             return
-        self.output_map = self.config['output_map']
-        self.input_map = self.config['input_map']
-        self.data_type = self.config['data_type']
+        self.output_map = self.config.get('output_map', {})
+        self.input_map = self.config.get('input_map', {})
         self.post_check(self.config, used=[
             "data_set",
-            "output_map",
             "input_map",
-            "data_type",
+            "output_map",
         ])
 
 
-@subprocessor_register('txt_cls_loader')
-class TxtClsLoader(ISubProcessor):
-    """Loader the data from dict and generator DataFrame
+@subprocessor_register('basic_data_loader')
+class BasicDataLoader(ISubProcessor):
+    """
+    Loader the data from dict and generator DataFrame
     """
 
-    def __init__(self, stage: str, config: TxtClsLoaderConfig):
+    def __init__(self, stage: str, config: BasicDataLoaderConfig):
         super().__init__()
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
-        self.data_type = config.data_type
-        assert self.data_type in {'single', 'pair'}
         if not self.data_set:
-            logger.info(f"Skip 'txt_cls_loader' at stage {self.stage}")
+            logger.info(f"Skip 'basic_data_loader' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
-        """Entry for TxtClsLoader
+        """example for sequence labeling loader
 
         Args:
             data: 
@@ -104,7 +96,18 @@ class TxtClsLoader(ISubProcessor):
                 >>> {
                 >>>     "uuid": '**-**-**-**'
                 >>>     "sentence": "I have an apple",
-                >>>     "labels":  ["label_name"]
+                >>>     "labels": [
+                >>>                 {
+                >>>                     "end": 15,
+                >>>                     "start": 10,
+                >>>                     "labels": [
+                >>>                         "Fruit"
+                >>>                     ]
+                >>>                 },
+                >>>                 ...,
+                >>>             ]
+                >>>         },
+                >>>     ],
                 >>> }
         Returns: 
             data + loaded_data
@@ -115,42 +118,20 @@ class TxtClsLoader(ISubProcessor):
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do txt_cls_loader on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do basic_data_loader on it.')
                 continue
             data_set = data['data'][data_set_name]
 
-            uuids = []
-            labels = []
-            # for pair
-            sentences_a = []
-            sentences_b = []
-            # for single
-            sentences = []
+            input_data = {key: [] for key in self.config.input_map.keys()}
 
             for one_ins in data_set:
                 try:
-                    if self.data_type == 'pair':
-                        sentences_a.append(one_ins[self.config.input_map['sentence_a']])
-                        sentences_b.append(one_ins[self.config.input_map['sentence_b']])
-                    else:
-                        sentences.append(one_ins[self.config.input_map['sentence']])
-                    uuids.append(one_ins[self.config.input_map['uuid']])
-                    labels.append(one_ins[self.config.input_map['labels']])
+                    for key in self.config.input_map:
+                        input_data[key].append(one_ins[self.config.input_map[key]])
                 except:
-                    raise PermissionError(f"You must provide the data as requests, we need 'sentence', 'uuid' and 'labels', or you can provide the input_map to map the origin data to this format")
-            if self.data_type == 'pair':
-                data_df = pd.DataFrame(data= {
-                    self.config.output_map["sentence_a"]: sentences_a,
-                    self.config.output_map["sentence_b"]: sentences_b,
-                    self.config.output_map["uuid"]: uuids,
-                    self.config.output_map["labels"]: labels,
-                })
-            else:
-                data_df = pd.DataFrame(data= {
-                    self.config.output_map["sentence"]: sentences,
-                    self.config.output_map["uuid"]: uuids,
-                    self.config.output_map["labels"]: labels,
-                })
+                    raise PermissionError(f"You must provide the data as requests, we need {self.config.input_map.keys()}, or you can provide the input_map to map the origin data to this format")
+            output_data = {self.config.output_map[key]: input_data[key] for key in self.config.output_map.keys()}
+            data_df = pd.DataFrame(data= output_data)
             data['data'][data_set_name] = data_df
 
         return data

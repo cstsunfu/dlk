@@ -36,7 +36,7 @@
         }
     },
     "subprocessor@seq_lab_loader":{
-        "_base": "seq_lab_loader",
+        "_base": "basic_data_loader@seq_lab",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer",

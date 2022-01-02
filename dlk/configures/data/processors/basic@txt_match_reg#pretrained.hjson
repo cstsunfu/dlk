@@ -34,7 +34,7 @@
         }
     },
     "subprocessor@txt_reg_loader":{
-        "_base": "txt_reg_loader@pair",
+        "_base": "basic_data_loader@txt_reg_pair",
     },
     "subprocessor@tokenizer":{
         "_base": "fast_tokenizer@pair",
