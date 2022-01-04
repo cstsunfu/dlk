@@ -15,6 +15,7 @@
             "output_map": {
                 "labels": "labels",
             },
+            "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
             "start_label": "S",
             "end_label": "E",
         }, //3
