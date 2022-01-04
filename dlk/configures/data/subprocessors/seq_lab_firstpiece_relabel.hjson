@@ -18,6 +18,7 @@
                 "word_word_ids": "word_ids",
                 "word_offsets": "offsets",
             },
+            "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
             "start_label": "S",
             "end_label": "E",
         }, //3
