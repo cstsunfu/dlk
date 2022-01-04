@@ -44,6 +44,7 @@ class SeqLabRelabelConfig(BaseConfig):
         >>>             "output_map": {
         >>>                 "labels": "labels",
         >>>             },
+        >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
         >>>             "start_label": "S",
         >>>             "end_label": "E",
         >>>         }, //3
@@ -62,12 +63,14 @@ class SeqLabRelabelConfig(BaseConfig):
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
+        self.drop = self.config['drop']
         self.start_label = self.config['start_label']
         self.end_label = self.config['end_label']
         self.output_labels = self.config['output_map']['labels']
         self.post_check(self.config, used=[
             "input_map",
             "data_set",
+            "drop",
             "output_map",
             "start_label",
             "end_label"
@@ -166,11 +169,19 @@ class SeqLabRelabel(ISubProcessor):
         pre_length = 0
         for entity_info in pre_clean_entities_info:
             assert len(entity_info['labels']) == 1, f"currently we just support one label for one entity"
-            if entity_info['start']<pre_end:
-                if entity_info['end'] - entity_info['start'] > pre_length:
-                    entities_info.pop()
+            if entity_info['start']<pre_end: # if overlap will remove one
+                if self.config.drop == 'shorter':
+                    if entity_info['end'] - entity_info['start'] > pre_length:
+                        entities_info.pop()
+                    else:
+                        continue
+                elif self.config.drop =='longer':
+                    if entity_info['end'] - entity_info['start'] < pre_length:
+                        entities_info.pop()
+                    else:
+                        continue
                 else:
-                    continue
+                    assert self.config.drop == 'none'
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
