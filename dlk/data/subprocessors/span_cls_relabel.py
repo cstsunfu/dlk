@@ -18,6 +18,7 @@ from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 from dlk.utils.logger import Logger
+import numpy as np
 import pandas as pd
 
 logger = Logger.get_logger()
@@ -44,9 +45,10 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>             "output_map": {
         >>>                 "labels": "labels",
         >>>             },
-        >>>             "drop": "none", // 'longer', 'shorter' or 'none'
+        >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
         >>>             "start_label": "S",
         >>>             "end_label": "E",
+        >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
         >>>         }, //3
         >>>         "predict": "train",
         >>>         "online": "train",
@@ -63,10 +65,14 @@ class SpanClsRelabelConfig(BaseConfig):
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
+        self.drop = self.config['drop']
         self.start_label = self.config['start_label']
+        self.vocab = self.config['vocab']
         self.end_label = self.config['end_label']
         self.output_labels = self.config['output_map']['labels']
         self.post_check(self.config, used=[
+            "drop",
+            "vocab",
             "input_map",
             "data_set",
             "output_map",
@@ -104,6 +110,7 @@ class SpanClsRelabel(ISubProcessor):
 
         if not self.data_set:
             return data
+        self.vocab = Vocabulary.load(data[self.config.vocab])
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
@@ -167,45 +174,43 @@ class SpanClsRelabel(ISubProcessor):
         pre_length = 0
         for entity_info in pre_clean_entities_info:
             assert len(entity_info['labels']) == 1, f"currently we just support one label for one entity"
-            if entity_info['start']<pre_end:
-                if entity_info['end'] - entity_info['start'] > pre_length:
-                    entities_info.pop()
+            if entity_info['start']<pre_end: # if overlap will remove one
+                if self.config.drop == 'shorter':
+                    if entity_info['end'] - entity_info['start'] > pre_length:
+                        entities_info.pop()
+                    else:
+                        continue
+                elif self.config.drop =='longer':
+                    if entity_info['end'] - entity_info['start'] < pre_length:
+                        entities_info.pop()
+                    else:
+                        continue
                 else:
-                    continue
+                    assert self.config.drop == 'none'
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
 
         cur_token_index = 0
         offset_length = len(offsets)
-        sub_labels = []
+
+        unk_id = self.vocab.get_index(self.vocab.unknown)
+        mask_matrices = np.full((offset_length, offset_length), -1)
+        mask_matrices = np.tril(mask_matrices, k=-1)
+
+        unk_matrices = np.full((offset_length, offset_length), unk_id)
+        unk_matrices = np.triu(unk_matrices, k=0)
+
+        label_matrices = unk_matrices + mask_matrices
+
         for entity_info in entities_info:
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
             if start_token_index == -1:
                 logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
                 continue
-            for _ in range(start_token_index-cur_token_index):
-                sub_labels.append('O')
             end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
             assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
-            sub_labels.append("B-"+entity_info['labels'][0])
-            for _ in range(end_token_index-start_token_index):
-                sub_labels.append("I-"+entity_info['labels'][0])
-            cur_token_index = end_token_index + 1
-        assert cur_token_index<=offset_length
-        for _ in range(offset_length-cur_token_index):
-            sub_labels.append('O')
+            label_id = self.vocab.get_index(entity_info['labels'][0])
+            label_matrices[start_token_index, end_token_index] = label_id
 
-        if sub_word_ids[0] is None:
-            sub_labels[0] = self.config.start_label
-
-        if sub_word_ids[offset_length-1] is None:
-            sub_labels[offset_length-1] = self.config.end_label
-
-        if len(sub_labels)!= offset_length:
-            logger.error(f"{len(sub_labels)} vs {offset_length}")
-            for i in one_ins:
-                logger.error(f"{i}")
-            raise PermissionError
-
-        return sub_labels
+        return label_matrices
