@@ -14,9 +14,10 @@
 
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
-from typing import Dict, Callable, Set, List
+from typing import Dict, Callable, Iterable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from dlk.utils.logger import Logger
+import pandas as pd
 
 logger = Logger.get_logger()
 
@@ -32,7 +33,10 @@ class TokenGatherConfig(BaseConfig):
         >>>             "data_set": {                   // for different stage, this processor will process different part of data
         >>>                 "train": ["train", "valid", 'test']
         >>>             },
-        >>>             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+        >>>             "gather_columns": "*@*", //List of columns, if one element of the list is dict, you can set more. Every cell must be sigle token or list of tokens or set of tokens
+        >>>             //"gather_columns": ['tokens']
+        >>>             //"gather_columns": ['tokens', {"column": "entities_info", "trace": 'labels'}] 
+        >>>             // the trace only trace the dict, if list is in trace path, will add the trace to every elements in the list. for example: {"entities_info": [{'start': 1， 'end': 2, labels: ['Label1']}, ..]}, the trace to labels is 'entities_info.labels'
         >>>             "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name.
         >>>             "ignore": "", // ignore the token, the id of this token will be -1
         >>>             "update": null, // null or another Vocabulary object to update
@@ -87,6 +91,33 @@ class TokenGather(ISubProcessor):
             return
         self.update = config.update
 
+    def get_elements_from_series_by_trace(self, data: pd.Series, trace: str)->List:
+        """get the datas from data[trace_path]
+        >>> for example:
+        >>> data[0] = {'entities_info': [{'start': 0, 'end': 1, 'labels': ['Label1']}]} // data is a series, and every element is as data[0]
+        >>> trace = 'entities_info.labels'
+        >>> return_result = [['Label1']]
+
+        Args:
+            data: origin data series
+            trace: get data element trace
+
+        Returns: 
+            the data in the tail of traces
+
+        """
+
+        def get_elements_from_iter_by_trace(iter: Iterable, cur_trace_list: List):
+            if not cur_trace_list:
+                return iter
+            if isinstance(iter, dict):
+                return get_elements_from_iter_by_trace(iter[cur_trace_list[0]], cur_trace_list[1:])
+            if isinstance(iter, list) or  isinstance(iter, tuple):
+                return [get_elements_from_iter_by_trace(sub_iter, cur_trace_list) for sub_iter in iter]
+            raise PermissionError(f"The trace path is only support type list and dict, but you provide {type(iter)}")
+            
+        return [get_elements_from_iter_by_trace(one, trace.split('.')) for one in data]
+
     def process(self, data: Dict)->Dict:
         """TokenGather entry
 
@@ -113,7 +144,12 @@ class TokenGather(ISubProcessor):
                 continue
             data_set = data['data'][data_set_name]
             for column in self.config.gather_columns:
-                self.vocab.auto_update(data_set[column])
+                if isinstance(column, str):
+                    self.vocab.auto_update(data_set[column])
+                elif isinstance(column, dict):
+                    self.vocab.auto_update(self.get_elements_from_series_by_trace(data_set[column['column']], trace=column['trace']))
+                else:
+                    raise PermissionError(f'The gather column currently is only support str or dict.')
         self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
         logger.info(f"The Vocab Num is {self.vocab.word_num}")
         data[self.config.deliver] = self.vocab.__dict__
