@@ -1,10 +1,5 @@
 {
-    "module@linear": {
-        "_base": "linear",
-    },
-    "module@crf": {
-        "_base": "crf",
-    },
+    "_name": "linear_crf",
     "config": {
         "input_size": "*@*",  // the linear input_size
         "output_size": "*@*", // the linear output_size
@@ -16,6 +11,11 @@
         "config.input_size": ["module@linear.config.input_size"],
         "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
         "config.reduction": ["module@crf.config.reduction"],
-    }
-    "_name": "linear_crf",
+    },
+    "module@linear": {
+        "_base": "linear",
+    },
+    "module@crf": {
+        "_base": "crf",
+    },
 }

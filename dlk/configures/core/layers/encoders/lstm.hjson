@@ -1,7 +1,5 @@
 {
-    "module": {
-        "_base": "lstm",
-    },
+    "_name": "lstm",
     "config": {
         "output_map": {},
         "input_map": {},
@@ -15,5 +13,7 @@
         "config.output_size": ["module.config.output_size"],
         "config.dropout": ["module.config.dropout"],
     },
-    "_name": "lstm",
+    "module": {
+        "_base": "lstm",
+    },
 }

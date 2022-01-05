@@ -43,11 +43,9 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>                 "online": ['online']
         >>>             },
         >>>             "output_map": {
-        >>>                 "labels": "labels",
+        >>>                 "label_ids": "label_ids",
         >>>             },
         >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-        >>>             "start_label": "S",
-        >>>             "end_label": "E",
         >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
         >>>         }, //3
         >>>         "predict": "train",
@@ -66,18 +64,14 @@ class SpanClsRelabelConfig(BaseConfig):
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
         self.drop = self.config['drop']
-        self.start_label = self.config['start_label']
         self.vocab = self.config['vocab']
-        self.end_label = self.config['end_label']
-        self.output_labels = self.config['output_map']['labels']
+        self.output_labels = self.config['output_map']['label_ids']
         self.post_check(self.config, used=[
             "drop",
             "vocab",
             "input_map",
             "data_set",
             "output_map",
-            "start_label",
-            "end_label"
         ])
 
 
@@ -202,6 +196,10 @@ class SpanClsRelabel(ISubProcessor):
         unk_matrices = np.triu(unk_matrices, k=0)
 
         label_matrices = unk_matrices + mask_matrices
+        if sub_word_ids[0] is None:
+            label_matrices[0, 0] = -1
+        if sub_word_ids[-1] is None:
+            label_matrices[-1, -1] = -1
 
         for entity_info in entities_info:
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
