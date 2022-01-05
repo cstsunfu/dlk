@@ -37,15 +37,12 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         >>>     "_name": "span_cls",
         >>>     "config": {
         >>>         "meta": "*@*",
-        >>>         "use_crf": false, //use or not use crf
-        >>>         "word_ready": false, //already gather the subword first token as the word rep or not
         >>>         "meta_data": {
         >>>             "label_vocab": 'label_vocab',
         >>>             "tokenizer": "tokenizer",
         >>>         },
         >>>         "input_map": {
         >>>             "logits": "logits",
-        >>>             "predict_span_clsel": "predict_span_clsel",
         >>>             "_index": "_index",
         >>>         },
         >>>         "origin_input_map": {
@@ -74,8 +71,6 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
     def __init__(self, config: Dict):
         super(SpanClsPostProcessorConfig, self).__init__(config)
 
-        self.use_crf = self.config['use_crf']
-        self.word_ready = self.config['word_ready']
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
 
@@ -89,7 +84,6 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         self.label_ids = self.origin_input_map['label_ids']
 
         self.logits = self.input_map['logits']
-        self.predict_span_clsel = self.input_map['predict_span_clsel']
         self._index = self.input_map['_index']
 
         if isinstance(self.config['meta'], str):
@@ -125,8 +119,6 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
 
         self.post_check(self.config, used=[
             "meta",
-            "use_crf",
-            "word_ready",
             "meta_data",
             "input_map",
             "origin_input_map",
@@ -194,8 +186,6 @@ class SpanClsPostProcessor(IPostProcessor):
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
         """Process the model predict to human readable format
 
-        There are three predictor for diffrent span_cls task dependent on the config.use_crf(the predict is already decoded to ids), and config.word_ready(subword has gathered to firstpiece)
-
         Args:
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
@@ -223,13 +213,13 @@ class SpanClsPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_predict = outputs[self.config.predict_span_clsel]
+            batch_logits = outputs[self.config.logits]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
             outputs = []
 
-            for predict, index in zip(batch_predict, indexes):
+            for predict, index in zip(batch_logits, indexes):
                 one_ins = self._process4predict(predict, index, origin_data)
                 predicts.append(one_ins)
         return predicts

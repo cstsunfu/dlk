@@ -46,13 +46,14 @@ class BiAffineConfig(BaseModuleConfig):
     def __init__(self, config: Dict):
         super(BiAffineConfig, self).__init__(config)
         self.biaffine_config = config["module"]
+        config = config['config']
         self.input_size = config['input_size']
         self.hidden_size = config['hidden_size']
         if not self.hidden_size:
             self.hidden_size = self.input_size
             self.biaffine_config['input_size'] = self.hidden_size
         self.dropout = config['dropout']
-        self.post_check(config['config'], used=[
+        self.post_check(config, used=[
             "input_size",
             "output_size",
             "pool",
@@ -74,7 +75,7 @@ class BiAffine(SimpleModule):
         self.linear_a = nn.Linear(config.input_size, config.hidden_size)
         self.linear_b = nn.Linear(config.input_size, config.hidden_size)
         self.dropout = nn.Dropout(p=config.dropout)
-        self.active = nn.GELU()
+        self.active = nn.LeakyReLU() # TODO: why GELU get loss nan?
 
         self.biaffine = module_register.get('biaffine')(module_config_register.get('biaffine')(config.biaffine_config))
 

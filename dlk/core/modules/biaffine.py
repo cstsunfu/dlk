@@ -87,9 +87,9 @@ class BiAffine(Module):
         """
         if self.config.bias:
             output = self.dropout(torch.einsum('bmi,ioj,bnj->bmno', 
-                    torch.cat((input_a, torch.ones_like(input_a[..., :1]))), 
+                    torch.cat((input_a, torch.ones_like(input_a[..., :1])), dim=-1), 
                     self.biaffine, 
-                    torch.cat((input_b, torch.ones_like(input_b[..., :1])))
+                    torch.cat((input_b, torch.ones_like(input_b[..., :1])), dim=-1)
                     ))
         else:
             output = self.dropout(torch.einsum('bmi,ioj,bnj->bmno', 

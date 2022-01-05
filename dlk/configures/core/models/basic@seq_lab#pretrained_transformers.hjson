@@ -1,4 +1,21 @@
 {
+    "_name": "basic",
+    "config": {
+        "embedding_dim": "*@*",
+        "pretrained_model_path": "*@*",
+        "dropout": "*@*",
+        "label_num": "*@*",
+    },
+    "_link": {
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 /*"encoder.config.input_size", */
+                                 /*"encoder.config.output_size", */
+                                 "decoder.config.input_size",
+                                ],
+        "config.dropout": ["embedding.config.dropout"],
+        "config.label_num": "decoder.config.output_size",
+        "config.pretrained_model_path": "embedding.config.pretrained_model_path"
+    },
     "embedding": {
         "_base": "pretrained_transformers",
         "module": {
@@ -19,37 +36,10 @@
             "output_map": {}
         },
     },
-    /*"encoder": {*/
-        /*"_base": "lstm",*/
-        /*"config": {*/
-            /*"output_map": {},*/
-            /*"input_size": *@*,*/
-            /*"output_size": "*@*",*/
-            /*"num_layers": 1,*/
-            /*"dropout": "*@*", // dropout between layers*/
-        /*},*/
-    /*},*/
     "encoder": {
         "_base": "identity",
     },
     "initmethod": {
         "_base": "default",
     },
-    "config": {
-        "embedding_dim": "*@*",
-        "pretrained_model_path": "*@*",
-        "dropout": "*@*",
-        "label_num": "*@*",
-    },
-    "_link": {
-        "config.embedding_dim": ["embedding.config.embedding_dim",
-                                 /*"encoder.config.input_size", */
-                                 /*"encoder.config.output_size", */
-                                 "decoder.config.input_size",
-                                ],
-        "config.dropout": ["embedding.config.dropout"],
-        "config.label_num": "decoder.config.output_size",
-        "config.pretrained_model_path": "embedding.config.pretrained_model_path"
-    },
-    "_name": "basic"
 }

@@ -1,0 +1,9 @@
+{
+    "config": {
+        "input_size": "*@*",
+        "output_size": "*@*",
+        "dropout": 0.0, //generally no need dropout
+        "bias": true, // use bias or not in biaffine
+    },
+    "_name": "biaffine"
+}

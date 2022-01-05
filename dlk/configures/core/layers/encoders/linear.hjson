@@ -1,7 +1,5 @@
 {
-    "module": {
-        "_base": "linear",
-    },
+    "_name": "linear",
     "config": {
         "input_size": "*@*",
         "dropout": 0.0,
@@ -15,5 +13,7 @@
         "config.output_size": ["module.config.output_size"],
         "config.pool": ["module.config.pool"],
     },
-    "_name": "linear",
+    "module": {
+        "_base": "linear",
+    },
 }

@@ -1,4 +1,5 @@
 {
+    "_name": "static",
     "config": {
         "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
 
@@ -13,5 +14,4 @@
         "output_map": {},
         "input_map": {}, // required_key: provide_key
     },
-    "_name": "static",
 }
