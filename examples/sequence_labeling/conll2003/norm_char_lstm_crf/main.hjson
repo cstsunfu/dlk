@@ -65,6 +65,8 @@
                 "postprocessor": {
                     "config": {
                         "meta": '*@*',
+                        "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+                        "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
                         "start_save_epoch": 50,
                         "save_root_path": "./norm_char_lstm_crf/"
                     }
