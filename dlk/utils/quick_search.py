@@ -93,7 +93,7 @@ class QuickSearch(object):
         self.next_index += 1
         self.ac.make_automaton()
 
-    def add_words(self, words: Iterable=[]):
+    def add_words(self, words: Iterable):
         """add words from iterator to the trie
 
         Args:

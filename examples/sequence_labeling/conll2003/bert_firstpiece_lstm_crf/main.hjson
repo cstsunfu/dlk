@@ -13,6 +13,7 @@
             "config.meta_data": ['task.imodel.postprocessor.config.meta'],
             "config.label_num": ['task.imodel.model.config.label_num'],
             "config.pretrained_model_path": ['task.imodel.model.config.pretrained_model_path'],
+            "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
         },
         "task": {
             "manager": {

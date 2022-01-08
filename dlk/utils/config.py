@@ -30,7 +30,7 @@ class BaseConfig(object):
         super(BaseConfig, self).__init__()
         self._name = config.pop('_name')
 
-    def post_check(self, config, used=[]):
+    def post_check(self, config, used=None):
         """check all the paras in config is used
 
         Args:
@@ -44,6 +44,8 @@ class BaseConfig(object):
             logger.warning("Unused")
 
         """
+        if not used:
+            used = []
         def rec_pop(cur_node, trace):
             """recursive pop the node if the node == {} and the node path is in trace
             """
@@ -105,7 +107,7 @@ class ConfigTool(object):
                 raise AttributeError("The base config and update config is not match. base: {}, new: {}. ".format(_base, _new))
 
     @staticmethod
-    def do_update_config(config: dict, update_config: dict={}) ->Dict:
+    def do_update_config(config: dict, update_config: dict=None) ->Dict:
         """use the update_config dict update the config dict, recursively
 
         see ConfigTool._inplace_update_dict
@@ -118,6 +120,8 @@ class ConfigTool(object):
             updated_config
 
         """
+        if not update_config:
+            update_config = {}
         # BUG ?: if the config._name != update_config._name, should use the update_config conver the config wholely
         config = copy.deepcopy(config)
         ConfigTool._inplace_update_dict(config, update_config)

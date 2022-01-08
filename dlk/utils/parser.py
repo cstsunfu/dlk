@@ -218,7 +218,7 @@ class BaseConfigParser(object):
         return {}
 
     @staticmethod
-    def config_link_para(link: Dict[str, Union[str, List[str]]]={}, config: Dict={}):
+    def config_link_para(link: Dict[str, Union[str, List[str]]]=None, config: Dict=None):
         """inplace link the config[to] = config[source]
 
         Args:
@@ -229,6 +229,10 @@ class BaseConfigParser(object):
             None
 
         """
+        if not link:
+            link = {}
+        if not config:
+            config = {}
         def make_link(source: str, to: str):
             """copy the 'source' config to 'to'
             """
@@ -270,7 +274,7 @@ class BaseConfigParser(object):
                 make_link(source, to)
 
     @classmethod
-    def collect_link(cls, config, trace=[], all_level_links={}, level=0):
+    def collect_link(cls, config, trace: List=None, all_level_links: Dict=None, level=0):
         """collect move all links in config to top
 
         only do in the top level of config, collect all level links and return the links with level
@@ -297,6 +301,11 @@ class BaseConfigParser(object):
             >>> }
 
         """
+        if not trace:
+            trace = []
+        if not all_level_links:
+            all_level_links = {}
+            
         if level not in all_level_links:
             all_level_links[level] = {}
         trace_str = ".".join(trace)
@@ -521,7 +530,7 @@ class BaseConfigParser(object):
             _check(configs)
 
     @staticmethod
-    def get_named_list_cartesian_prod(dict_of_list: Dict[str, List]={}) -> List[Dict]:
+    def get_named_list_cartesian_prod(dict_of_list: Dict[str, List]=None) -> List[Dict]:
         """get catesian prod from named lists
 
         Args:
@@ -531,6 +540,8 @@ class BaseConfigParser(object):
             [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
 
         """
+        if not dict_of_list:
+            dict_of_list = {}
         if len(dict_of_list) == 0:
             return []
         dict_of_list = copy.deepcopy(dict_of_list)

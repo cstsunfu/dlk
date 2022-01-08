@@ -10,6 +10,7 @@
             "save_dir": "./norm_char_lstm_crf/output",  # must provide
             "data_path": "./norm_char_lstm_crf/output/processed_data.pkl",  # must provide
             "meta_data": "./norm_char_lstm_crf/output/meta.pkl",  # must provide
+            "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
         },
         "task": {
             "manager": {
