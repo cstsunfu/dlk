@@ -14,7 +14,7 @@
 
 from tokenizers.processors import TemplateProcessing
 from tokenizers.normalizers import Lowercase, NFD, NFC, StripAccents, Strip
-from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel
+from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel, Whitespace
 
 
 class TokenizerPostprocessorFactory(object):
@@ -68,6 +68,16 @@ class PreTokenizerFactory(object):
     @property
     def whitespace(self):
         """whitespace pre_tokenizer
+
+        Returns: 
+            Whitespace
+
+        """
+        return Whitespace
+
+    @property
+    def whitespacesplit(self):
+        """whitespacesplit pre_tokenizer
 
         Returns: 
             WhitespaceSplit
