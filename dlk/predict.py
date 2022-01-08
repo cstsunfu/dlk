@@ -55,6 +55,8 @@ class Predict(object):
             config = hjson.load(open(config), object_pairs_hook=dict)
 
         self.focus = config.pop('_focus', {})
+        configs = BaseConfigParser(config).parser_with_check()
+        assert len(configs) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
         self.config = config
         self.ckpt = torch.load(checkpoint)
         config_name = []

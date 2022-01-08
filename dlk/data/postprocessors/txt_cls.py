@@ -238,7 +238,7 @@ class TxtClsPostProcessor(IPostProcessor):
         if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
             self.config.start_save_step = rt_config.get('total_steps', 0) - 1
             self.config.start_save_epoch = rt_config.get('total_epochs', 0) - 1
-        if rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch:
+        if not save_condition and (rt_config['current_step']>=self.config.start_save_step or rt_config['current_epoch']>=self.config.start_save_epoch):
             save_condition = True
         if save_condition:
             save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
