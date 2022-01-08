@@ -7,6 +7,14 @@
         "tokenizer_config_path": "local_data/pretrained_model/bert_case/indent_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
         "data_dir": "./bert_firstpiece_lstm_crf/output/",  // save load data base dir
     },
+    "subprocessor@tokenizer":{
+        "_base": "fast_tokenizer",
+        "config": {
+            "train": {
+                "pre_tokenizer": [{"whitespacesplit": {}}], // if don't set this, will use the default normalizer from config
+            },
+        }
+    },
     "subprocessor@seq_lab_firstpiece_relabel":{
         "_base": "seq_lab_firstpiece_relabel",
         "config": {

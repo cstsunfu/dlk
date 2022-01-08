@@ -96,6 +96,9 @@
                     "config": {
                         "meta": '*@*'
                         "start_save_epoch": 1,
+                        "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+                        "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
+                        //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
                         "use_crf": true, //use or not use crf
                         "word_ready": false, //already gather the subword first token as the word rep or not
                         "save_root_path": "./bert_firstpiece_lstm_crf/"

@@ -39,6 +39,9 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         >>>         "meta": "*@*",
         >>>         "use_crf": false, //use or not use crf
         >>>         "word_ready": false, //already gather the subword first token as the word rep or not
+        >>>         "ignore_position": true, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
+        >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
         >>>         "meta_data": {
         >>>             "label_vocab": 'label_vocab',
         >>>             "tokenizer": "tokenizer",
@@ -78,6 +81,8 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         self.word_ready = self.config['word_ready']
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
+        self.ignore_char = set(self.config['ignore_char'])
+        self.ignore_position = set(self.config['ignore_position'])
 
         self.sentence = self.origin_input_map['sentence']
         self.offsets = self.origin_input_map['offsets']
@@ -239,7 +244,24 @@ class SeqLabPostProcessor(IPostProcessor):
                 label = item['labels'][0]
                 if label not in info:
                     info[label] = []
-                info[label].append(text[item['start']: item['end']].strip())
+                start_position, end_position = item['start'], item['end']
+                while start_position < end_position:
+                    if text[start_position] in self.config.ignore_char:
+                        start_position += 1
+                    else:
+                        break
+                while start_position < end_position:
+                    if text[end_position] in self.config.ignore_char:
+                        end_position -= 1
+                    else:
+                        break
+                if start_position == end_position: # if the entity after remove ignore char be null, we set it to origin
+                    start_position, end_position = item['start'], item['end']
+                    
+                if self.config.ignore_position:
+                    info[label].append(text[item['start']: item['end']].strip())
+                else:
+                    info[label].append((start_position, end_position))
             return info
 
         all_predicts = []
