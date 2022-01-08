@@ -1,7 +1,10 @@
 {
     "root": {
         "_name": "pretrained",
-        "_link": {"config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta']},
+        "_link": {
+            "config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta'],
+            "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
+        },
         "_search": {},
         "config": {
             "save_dir": "distil_bert/data/output",  # must provide
