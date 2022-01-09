@@ -82,7 +82,8 @@ class LogitsGather(Module):
             some elements to dict
 
         """
-        result: Dict[str, torch.Tensor] = {}
+        result = torch.jit.annotate(Dict[str, torch.Tensor], {})
+
         if not self.layer_map:
             return result
         for layer, layer_suffix in self.layer_map.items():

@@ -14,7 +14,7 @@
 
 import torch
 import torch.nn as nn
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
 
@@ -199,7 +199,7 @@ class ConditionalRandomField(Module):
         # Start transition and first emission
         # shape: (batch_size, num_tags)
         score = self.start_transitions + emissions[0]
-        history = []
+        history = torch.jit.annotate(List[int], [])
 
         # score is a tensor of size (batch_size, num_tags) where for every batch,
         # value at column j stores the score of the best tag sequence so far that ends
@@ -243,6 +243,7 @@ class ConditionalRandomField(Module):
         # shape: (batch_size,)
         seq_ends = mask.long().sum(dim=0) - 1
         best_tags_list = []
+        best_tags_list = torch.jit.annotate(List[List[int]], [])
 
         for idx in range(batch_size):
             # Find the tag which maximizes the score at the last timestep; this is our best tag
@@ -260,7 +261,7 @@ class ConditionalRandomField(Module):
             best_tags.reverse()
             best_tags_list.append(best_tags)
 
-        output = []
+        output = torch.jit.annotate(List[List[int]], [])
         for tag_list in best_tags_list:
             if len(tag_list)<seq_length:
                 tag_list = tag_list + [-1]*(seq_length-len(tag_list))

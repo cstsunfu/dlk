@@ -1,4 +1,35 @@
 {
+    "_name": "basic",
+    "config": {
+        "embedding_dim": "*@*",
+        "dropout": "*@*",
+        "label_num": "*@*",
+        "lstm_output_size": "*@*",
+        "word_embedding_file": "*@*",
+        "word_embedding_trace": "token_embedding",
+        "word_embedding_dim": "*@*",
+        "char_embedding_file": "*@*",
+        "char_embedding_trace": "char_embedding",
+        "char_embedding_dim": "*@*",
+        "word_embedding_dim": "*@*",
+    },
+    "_link": {
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 "encoder.config.input_size",
+                                ],
+        "config.lstm_output_size": [
+                                 "encoder.config.output_size",
+                                 "decoder.config.input_size",
+                                ],
+        "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
+        "config.word_embedding_file": ['embedding.config.word.embedding_file'],
+        "config.char_embedding_file": ['embedding.config.char.embedding_file'],
+        "config.word_embedding_dim": ['embedding.config.word.embedding_dim'],
+        "config.char_embedding_dim": ['embedding.config.char.embedding_dim'],
+        "config.word_embedding_trace": ['embedding.config.word.embedding_trace'],
+        "config.char_embedding_trace": ['embedding.config.char.embedding_trace'],
+        "config.label_num": "decoder.config.output_size",
+    },
     "embedding": {
         "_base": "combine_word_char_cnn",
         "config": {
@@ -47,35 +78,4 @@
     "initmethod": {
         "_base": "default",
     },
-    "config": {
-        "embedding_dim": "*@*",
-        "dropout": "*@*",
-        "label_num": "*@*",
-        "lstm_output_size": "*@*",
-        "word_embedding_file": "*@*",
-        "word_embedding_trace": "token_embedding",
-        "word_embedding_dim": "*@*",
-        "char_embedding_file": "*@*",
-        "char_embedding_trace": "char_embedding",
-        "char_embedding_dim": "*@*",
-        "word_embedding_dim": "*@*",
-    },
-    "_link": {
-        "config.embedding_dim": ["embedding.config.embedding_dim",
-                                 "encoder.config.input_size",
-                                ],
-        "config.lstm_output_size": [
-                                 "encoder.config.output_size",
-                                 "decoder.config.input_size",
-                                ],
-        "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
-        "config.word_embedding_file": ['embedding.config.word.embedding_file'],
-        "config.char_embedding_file": ['embedding.config.char.embedding_file'],
-        "config.word_embedding_dim": ['embedding.config.word.embedding_dim'],
-        "config.char_embedding_dim": ['embedding.config.char.embedding_dim'],
-        "config.word_embedding_trace": ['embedding.config.word.embedding_trace'],
-        "config.char_embedding_trace": ['embedding.config.char.embedding_trace'],
-        "config.label_num": "decoder.config.output_size",
-    },
-    "_name": "basic"
 }

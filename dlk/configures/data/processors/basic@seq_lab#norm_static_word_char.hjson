@@ -96,13 +96,13 @@
     "subprocessor@seq_lab_relabel":{
         "_base": "seq_lab_relabel",
         "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
+            "train":{
                 "start_label": "S",
                 "end_label": "E",
                 "output_map": {
                     "labels": "labels",
                 },
-            }, //3
+            },
         }
     },
     "subprocessor@token_gather":{
@@ -134,12 +134,12 @@
     "subprocessor@label_to_id":{
         "_base": "token2id",
         "config": {
-            "train":{ //train、predict、online stage config,  using '&' split all stages
+            "train":{
                 "data_pair": {
                     "labels": "label_ids"
                 },
                 "vocab": "label_vocab", // usually provided by the "token_gather" module
-            }, //3
+            },
             "predict": "train",
             "online": "train",
         }

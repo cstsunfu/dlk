@@ -1,7 +1,5 @@
 {
-    "module": {
-        "_base": "roberta",
-    },
+    "_name": "pretrained_transformers",
     "config": {
         "pretrained_model_path": "*@*",
         "input_map": {
@@ -20,5 +18,7 @@
         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
         "config.dropout": ["module.config.dropout"],
     },
-    "_name": "pretrained_transformers",
+    "module": {
+        "_base": "roberta",
+    },
 }

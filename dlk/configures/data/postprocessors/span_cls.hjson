@@ -1,0 +1,36 @@
+{
+    "_name": "span_cls",
+    "config": {
+        "meta": "*@*",
+        "ignore_position": true, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
+        //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
+        "meta_data": {
+            "label_vocab": 'label_vocab',
+            "tokenizer": "tokenizer",
+        },
+        "input_map": {
+            "logits": "logits",
+            "_index": "_index",
+        },
+        "origin_input_map": {
+            "uuid": "uuid",
+            "sentence": "sentence",
+            "input_ids": "input_ids",
+            "entities_info": "entities_info",
+            "offsets": "offsets",
+            "special_tokens_mask": "special_tokens_mask",
+            "word_ids": "word_ids",
+            "label_ids": "label_ids",
+        },
+        "save_root_path": ".",  //save data root dir
+        "save_path": {
+            "valid": "valid",  // relative dir for valid stage
+            "test": "test",    // relative dir for test stage
+        },
+        "start_save_step": 0,  // -1 means the last
+        "start_save_epoch": -1,
+        "aggregation_strategy": "max", // AggregationStrategy item
+        "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "model": "*@*",
+    "loss": {
+        "_base": "cross_entropy@cls",
+    },
+    "optimizer": {
+        "_base": "adamw@bias_nodecay",
+    },
+    "scheduler": {
+        "_base": "linear_warmup"
+    },
+    "postprocessor": {
+        "_base": "span_cls"
+    },
+    "config": {
+    },
+    "_name": "basic"
+}

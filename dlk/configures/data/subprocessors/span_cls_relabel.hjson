@@ -1,5 +1,5 @@
 {
-    "_name": "seq_lab_firstpiece_relabel",
+    "_name": "span_cls_relabel",
     "config": {
         "train":{
             "input_map": {  // without necessery, don't change this
@@ -8,19 +8,15 @@
                 "entities_info": "entities_info",
             },
             "data_set": {                   // for different stage, this processor will process different part of data
-                "train": ['train', 'valid', 'test', 'predict'],
+                "train": ['train', 'valid', 'test'],
                 "predict": ['predict'],
                 "online": ['online']
             },
             "output_map": {
-                "labels": "labels",
-                "gather_index": "gather_index",
-                "word_word_ids": "word_ids",
-                "word_offsets": "offsets",
+                "label_ids": "label_ids",
             },
             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-            "start_label": "S",
-            "end_label": "E",
+            "vocab": "label_vocab", // usually provided by the "token_gather" module
         },
         "predict": "train",
         "online": "train",

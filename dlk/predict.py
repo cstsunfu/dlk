@@ -35,7 +35,6 @@ class Predict(object):
     Config Example:
         >>> {
         >>>     "_focus": {
-
         >>>     },
         >>>     "_link": {},
         >>>     "_search": {},
