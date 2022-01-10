@@ -23,12 +23,12 @@ class Processor(object):
     """Processor"""
     def __init__(self, config: Union[str, Dict]):
         super(Processor, self).__init__()
-        self.config = config
         if not isinstance(config, dict):
             config = hjson.load(open(config), object_pairs_hook=dict)
             config = config_parser_register.get("processor")(config).parser_with_check()
             assert len(config) == 1, f"Currently we didn't support search for Processor, if you require this feature please create an issue to describe the reason details."
-            self.config = config[0]
+            config = config[0]
+        self.config = self.config['processor']
         
     def fit(self, data: Dict[str, Any], stage='train'):
         """Process the data and return the processed data

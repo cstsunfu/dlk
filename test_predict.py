@@ -13,13 +13,45 @@
 # limitations under the License.
 
 from dlk.utils.logger import Logger
-import pytorch_lightning as pl
 from dlk.predict import Predict
+from dlk.utils.parser import BaseConfigParser
+from dlk.data.processors import processor_register
+import pandas as pd
+import pytorch_lightning as pl
 import json
+import copy
+import hjson
 
-Logger("./conll_norm_char_lstm_crf.log")
-pl.seed_everything(88)
+Logger("./test_predict.log")
 
-predictor = Predict('./examples/sequence_labeling/conll2003/norm_char_lstm_crf/output/task=crf_lstm_lr=0.01_optimizer=sgd_dropout=0.5_batch_size=10_lstm_output_size=200/config.json', './examples/sequence_labeling/conll2003/norm_char_lstm_crf/output/task=crf_lstm_lr=0.01_optimizer=sgd_dropout=0.5_batch_size=10_lstm_output_size=200/default/checkpoints/epoch=0-step=1404.ckpt')
 
-predictor.predict()
+predict_data = {} # this should fill the predict_data
+data = {"predict": predict_data}
+
+inp = {"data": data}
+
+prepro_config = hjson.load(open("path/to/prepro.hjson"), object_pairs_hook=dict)
+
+prepro_config['config']['data_dir'] = 'path/to/meta.pkl'
+# ...
+# other will update
+# ...
+prepro_config['config']['feed_order'].remove('save')
+
+prepro_config = BaseConfigParser(prepro_config).parser_with_check()
+assert len(prepro_config) == 1
+prepro_config = prepro_config[0]['processor']
+
+# print(json.dumps(config, indent=4))
+
+processed_data = processor_register.get(prepro_config.get('_name'))(stage="predict", config=prepro_config).process(inp)
+
+main_config = hjson.load(open("path/to/main.hjson"), object_pairs_hook=dict)
+main_config['config']['meta_data'] = 'pata/to/meta.pkl'
+# ...
+# other will update
+# ...
+
+predictor = Predict(main_config, 'path/to/checkpoint_path.hjson')
+
+predict_data = predictor.predict(data=processed_data, save_condition=False)

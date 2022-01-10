@@ -100,8 +100,12 @@ class Predict(object):
         logger.error('The trace method is not implement yet.')
         raise NotImplementedError
 
-    def predict(self):
+    def predict(self, data=None, save_condition=False):
         """init the model, datamodule, manager then predict the predict_dataloader
+
+        Args:
+            data: if provide will not load from data_path
+
         Returns: 
             None
 
@@ -109,7 +113,8 @@ class Predict(object):
         config = self.config['root']
         name = self.name_str
         # get data
-        data = self.get_data(config)
+        if not data:
+            data = self.get_data(config)
 
         # set datamodule
         datamodule = self.get_datamodule(config, data)
@@ -122,7 +127,7 @@ class Predict(object):
 
         # start predict
         predict_result = manager.predict(model=imodel, datamodule=datamodule)
-        imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={})
+        return imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={}, save_condition=save_condition)
 
     def get_data(self, config):
         """get the data decided by config
