@@ -77,7 +77,7 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
         self.ignore_char = set(self.config['ignore_char'])
-        self.ignore_position = set(self.config['ignore_position'])
+        self.ignore_position = self.config['ignore_position']
 
         self.sentence = self.origin_input_map['sentence']
         self.offsets = self.origin_input_map['offsets']
@@ -286,7 +286,7 @@ class SpanClsPostProcessor(IPostProcessor):
                     else:
                         break
                 while start_position < end_position:
-                    if text[end_position] in self.config.ignore_char:
+                    if text[end_position-1] in self.config.ignore_char:
                         end_position -= 1
                     else:
                         break
