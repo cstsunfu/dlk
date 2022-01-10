@@ -165,7 +165,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         """
         return {'predict', 'online'}
 
-    def process(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Union[Dict, List]:
+    def process(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False)->Union[Dict, List]:
         """PostProcess entry
 
         Args:
@@ -180,6 +180,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
                 >>>     "total_steps": self.num_training_steps,
                 >>>     "total_epochs": self.num_training_epochs
                 >>> }
+            save_condition: if save_condition is True, will force save the predict on all stage except online
 
         Returns: 
             the log_info(metrics) or the stage is "online" return the predicts
@@ -195,15 +196,20 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         if stage == 'online':
             return predicts
         if stage == 'predict':
-            self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=True)
+            if save_condition:
+                self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=True)
+            return predicts
         else:
-            self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=False)
-        return log_info
+            if save_condition:
+                self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=True)
+            else:
+                self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=False)
+            return log_info
 
-    def __call__(self, stage, list_batch_outputs, origin_data, rt_config):
+    def __call__(self, stage, list_batch_outputs, origin_data, rt_config, save_condition):
         """the same as self.process
         """
-        return self.process(stage, list_batch_outputs, origin_data, rt_config)
+        return self.process(stage, list_batch_outputs, origin_data, rt_config, save_condition)
 
 
 postprocessor_config_register = Register('PostProcessor config register')
