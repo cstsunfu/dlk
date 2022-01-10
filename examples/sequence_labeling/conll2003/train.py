@@ -22,7 +22,7 @@ logger = Logger('log.txt')
 pl.seed_everything(88)
 
 # trainer = Train('./norm_lstm_crf/main.hjson')
-trainer = Train('./norm_char_lstm_crf/main.hjson')
+trainer = Train('./bert_firstpiece_lstm_crf/main.hjson')
 
 # print(json.dumps(trainer.configs, indent=3))
 trainer.run()
