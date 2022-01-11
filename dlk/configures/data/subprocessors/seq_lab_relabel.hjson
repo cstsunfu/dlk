@@ -18,6 +18,8 @@
             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
             "start_label": "S",
             "end_label": "E",
+            "entity_priority": [],
+            "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
         },
         "predict": "train",
         "online": "train",
