@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dlk.utils.parser import config_parser_register
+from dlk.utils.parser import BaseConfigParser
 import json
 import hjson
 from typing import Dict, Union, Any
@@ -25,9 +25,9 @@ class Processor(object):
         super(Processor, self).__init__()
         if not isinstance(config, dict):
             config = hjson.load(open(config), object_pairs_hook=dict)
-            config = config_parser_register.get("processor")(config).parser_with_check()
+            config = BaseConfigParser(config).parser_with_check()
             assert len(config) == 1, f"Currently we didn't support search for Processor, if you require this feature please create an issue to describe the reason details."
-            config = config[0]
+            self.config = config[0]
         self.config = self.config['processor']
         
     def fit(self, data: Dict[str, Any], stage='train'):
