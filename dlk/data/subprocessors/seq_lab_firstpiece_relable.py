@@ -51,6 +51,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
         >>>             "start_label": "S",
         >>>             "end_label": "E",
+        >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
         >>>             "entity_priority": [],
         >>>             //"entity_priority": ['Product'],
         >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
@@ -72,6 +73,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         self.word_offsets = self.config['output_map']['word_offsets']
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
+        self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
         self.start_label = self.config['start_label']
         self.end_label = self.config['end_label']
@@ -86,6 +88,9 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
             "output_map",
             "start_label",
             "end_label",
+            "clean_droped_entity",
+            "entity_priority",
+            "priority_trigger",
         ])
 
 
@@ -204,7 +209,9 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
         for entity_info in pre_clean_entities_info:
             assert len(entity_info['labels']) == 1, f"currently we just support one label for one entity"
             if entity_info['start']<pre_end: # if overlap will remove one
-                if abs(entity_info['end'] - entity_info['start'] - pre_length) <= self.config.priority_trigger:
+                if self.config.drop == 'none':
+                    pass
+                elif abs(entity_info['end'] - entity_info['start'] - pre_length) <= self.config.priority_trigger:
                     pre_label_order = self.config.entity_priority.get(pre_label, 1e9)
                     label_order = self.config.entity_priority.get(entity_info['labels'][0], 1e9)
                     if label_order<pre_label_order:
@@ -222,12 +229,14 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                     else:
                         continue
                 else:
-                    assert self.config.drop == 'none'
+                    raise PermissionError(f"The drop method must in 'none'/'shorter'/'longer'")
                 pre_label = entity_info['labels'][0]
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
 
+        if self.config.clean_droped_entity:
+            one_ins[self.config.entities_info] = entities_info
         cur_token_index = 0
         offset_length = len(word_offsets)
         sub_labels = []
