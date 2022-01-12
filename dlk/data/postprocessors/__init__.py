@@ -206,7 +206,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
                 self.do_save(predicts, stage, list_batch_outputs, origin_data, rt_config, save_condition=False)
             return log_info
 
-    def __call__(self, stage, list_batch_outputs, origin_data, rt_config, save_condition):
+    def __call__(self, stage, list_batch_outputs, origin_data, rt_config, save_condition=False):
         """the same as self.process
         """
         return self.process(stage, list_batch_outputs, origin_data, rt_config, save_condition)
