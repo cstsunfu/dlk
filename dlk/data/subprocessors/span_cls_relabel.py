@@ -45,7 +45,7 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>             "output_map": {
         >>>                 "label_ids": "label_ids",
         >>>             },
-        >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
+        >>>             "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
         >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
         >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
         >>>             "entity_priority": [],
