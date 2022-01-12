@@ -121,7 +121,9 @@ class SpanClsRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do span_cls_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[self.config.output_labels] = data_set.parallel_apply(self.relabel, axis=1)
+            data_set[[self.config.output_labels,
+                self.config.entities_info
+            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
 
         return data
 
@@ -205,9 +207,6 @@ class SpanClsRelabel(ISubProcessor):
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
-
-        if self.config.clean_droped_entity:
-            one_ins[self.config.entities_info] = entities_info
             
         cur_token_index = 0
         offset_length = len(offsets)
@@ -235,4 +234,6 @@ class SpanClsRelabel(ISubProcessor):
             label_id = self.vocab.get_index(entity_info['labels'][0])
             label_matrices[start_token_index, end_token_index] = label_id
 
-        return label_matrices
+        if not self.config.clean_droped_entity:
+            entities_info = one_ins[self.config.entities_info]
+        return label_matrices, entities_info

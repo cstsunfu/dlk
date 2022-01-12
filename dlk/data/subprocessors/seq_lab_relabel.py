@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from numpy import result_type
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
@@ -122,7 +123,9 @@ class SeqLabRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[self.config.output_labels] = data_set.parallel_apply(self.relabel, axis=1)
+            data_set[[self.config.output_labels,
+                self.config.entities_info
+            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
 
         return data
 
@@ -207,9 +210,6 @@ class SeqLabRelabel(ISubProcessor):
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
 
-        if self.config.clean_droped_entity:
-            one_ins[self.config.entities_info] = entities_info
-
         cur_token_index = 0
         offset_length = len(offsets)
         sub_labels = []
@@ -242,4 +242,6 @@ class SeqLabRelabel(ISubProcessor):
                 logger.error(f"{i}")
             raise PermissionError
 
-        return sub_labels
+        if not self.config.clean_droped_entity:
+            entities_info = one_ins[self.config.entities_info]
+        return sub_labels, entities_info
