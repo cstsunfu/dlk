@@ -45,8 +45,12 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>             "output_map": {
         >>>                 "label_ids": "label_ids",
         >>>             },
-        >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
+        >>>             "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
         >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
+        >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
+        >>>             "entity_priority": [],
+        >>>             //"entity_priority": ['Product'],
+        >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
         >>>         }, //3
         >>>         "predict": "train",
         >>>         "online": "train",
@@ -63,15 +67,21 @@ class SpanClsRelabelConfig(BaseConfig):
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
         self.entities_info = self.config['input_map']['entities_info']
+        self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
         self.vocab = self.config['vocab']
         self.output_labels = self.config['output_map']['label_ids']
+        self.entity_priority = {entity: priority for priority, entity in enumerate(self.config['entity_priority'])}
+        self.priority_trigger = self.config['priority_trigger']
         self.post_check(self.config, used=[
             "drop",
             "vocab",
             "input_map",
             "data_set",
             "output_map",
+            "clean_droped_entity",
+            "entity_priority",
+            "priority_trigger",
         ])
 
 
@@ -111,7 +121,9 @@ class SpanClsRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do span_cls_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[self.config.output_labels] = data_set.parallel_apply(self.relabel, axis=1)
+            data_set[[self.config.output_labels,
+                self.config.entities_info
+            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
 
         return data
 
@@ -166,10 +178,20 @@ class SpanClsRelabel(ISubProcessor):
         entities_info = []
         pre_end = -1
         pre_length = 0
+        pre_label = ''
         for entity_info in pre_clean_entities_info:
             assert len(entity_info['labels']) == 1, f"currently we just support one label for one entity"
             if entity_info['start']<pre_end: # if overlap will remove one
-                if self.config.drop == 'shorter':
+                if self.config.drop == 'none':
+                    pass
+                elif abs(entity_info['end'] - entity_info['start'] - pre_length) <= self.config.priority_trigger:
+                    pre_label_order = self.config.entity_priority.get(pre_label, 1e9)
+                    label_order = self.config.entity_priority.get(entity_info['labels'][0], 1e9)
+                    if label_order<pre_label_order:
+                        entities_info.pop()
+                    else:
+                        continue
+                elif self.config.drop == 'shorter':
                     if entity_info['end'] - entity_info['start'] > pre_length:
                         entities_info.pop()
                     else:
@@ -180,11 +202,12 @@ class SpanClsRelabel(ISubProcessor):
                     else:
                         continue
                 else:
-                    assert self.config.drop == 'none'
+                    raise PermissionError(f"The drop method must in 'none'/'shorter'/'longer'")
+                pre_label = entity_info['labels'][0]
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
-
+            
         cur_token_index = 0
         offset_length = len(offsets)
 
@@ -211,4 +234,6 @@ class SpanClsRelabel(ISubProcessor):
             label_id = self.vocab.get_index(entity_info['labels'][0])
             label_matrices[start_token_index, end_token_index] = label_id
 
-        return label_matrices
+        if not self.config.clean_droped_entity:
+            entities_info = one_ins[self.config.entities_info]
+        return label_matrices, entities_info

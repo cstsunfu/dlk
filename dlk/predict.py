@@ -56,11 +56,15 @@ class Predict(object):
         self.focus = config.pop('_focus', {})
         configs = BaseConfigParser(config).parser_with_check()
         assert len(configs) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
-        self.config = config
-        self.ckpt = torch.load(checkpoint)
+        self.config = configs[0]
+
+        if self.config['root']['task']['manager']['config']['gpus']>0:
+            self.ckpt = torch.load(checkpoint)
+        else:
+            self.ckpt = torch.load(checkpoint, map_location=torch.device('cpu'))
         config_name = []
         for source, to in self.focus.items():
-            config_point = config
+            config_point = self.config
             trace = source.split('.')
             for t in trace:
                 config_point = config_point[t]
@@ -68,7 +72,7 @@ class Predict(object):
         if config_name:
             name_str = '_'.join(config_name)
         else:
-            name_str = config['root']['_name']
+            name_str = self.config['root']['_name']
         self.name_str = name_str
 
     def trace(self):
