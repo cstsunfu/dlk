@@ -132,7 +132,9 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
             data_set[[self.config.output_labels,
                 self.config.gather_index,
                 self.config.word_word_ids,
-                self.config.word_offsets]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+                self.config.word_offsets,
+                self.config.entities_info
+            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
         return data
 
     def find_position_in_offsets(self, position: int, offset_list: List, sub_word_ids: List, start: int, end: int, is_start: bool=False):
@@ -235,8 +237,6 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
 
-        if self.config.clean_droped_entity:
-            one_ins[self.config.entities_info] = entities_info
         cur_token_index = 0
         offset_length = len(word_offsets)
         sub_labels = []
@@ -269,4 +269,6 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                 logger.error(f"{i}")
             raise PermissionError
 
-        return sub_labels, gather_index, word_ids, word_offsets
+        if not self.config.clean_droped_entity:
+            entities_info = one_ins[self.config.entities_info]
+        return sub_labels, gather_index, word_ids, word_offsets, entities_info
