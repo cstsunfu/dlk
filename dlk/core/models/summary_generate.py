@@ -172,16 +172,19 @@ class SummaryGenerateModel(BaseModel):
 
         This method may no use, so we will remove this.
 
-        Returns: all keys
+        Returns: 
+            all keys
         """
         return self.decoder.provided_keys()
 
     def check_keys_are_provided(self, provide: List[str]=[])->None:
         """check this all the submodules required key are provided
 
-        Returns: None
+        Returns: 
+            None
 
-        Raises: PermissionError
+        Raises: 
+            PermissionError
 
         """
         self._provided_keys = self._provided_keys + provide
@@ -189,32 +192,31 @@ class SummaryGenerateModel(BaseModel):
         self.encoder.check_keys_are_provided(self.embedding.provide_keys())
         self.decoder.check_keys_are_provided(self.encoder.provide_keys())
 
+    def decode_mask(self, length: int):
+        """return the decode attention mask
+
+        Args:
+            length: TODO
+
+        Returns: TODO
+
+        """
+        pass
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do forward on a mini batch
 
         Args:
             batch: a mini batch inputs
 
-        Returns: the outputs
+        Returns: 
+            the outputs
 
         """
         embedding_outputs = self.embedding(inputs)
         encode_outputs = self.encoder(embedding_outputs)
-        decode_outputs = self.decoder(encode_outputs)
-        return decode_outputs
-
-    def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """do predict for one batch
-
-        Args:
-            inputs: one mini-batch inputs
-
-        Returns: the predicts outputs
-
-        """
-        embedding_outputs = self.embedding.predict_step(inputs)
-        encode_outputs = self.encoder.predict_step(embedding_outputs)
-        decode_outputs = self.decoder.predict_step(encode_outputs)
+        decode_embedding_outputs = self.embedding(inputs, decode=True)
+        decode_outputs = self.decoder(decode_embedding_outputs)
         return decode_outputs
 
     def training_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
@@ -223,11 +225,13 @@ class SummaryGenerateModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the training outputs
+        Returns: 
+            the training outputs
 
         """
         embedding_outputs = self.embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
+        decode_embedding_outputs = self.embedding.training_step(inputs, decode=True)
         decode_outputs = self.decoder.training_step(encode_outputs)
         return decode_outputs
 
@@ -237,13 +241,11 @@ class SummaryGenerateModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the validation outputs
+        Returns: 
+            the validation outputs
 
         """
-        embedding_outputs = self.embedding.validation_step(inputs)
-        encode_outputs = self.encoder.validation_step(embedding_outputs)
-        decode_outputs = self.decoder.validation_step(encode_outputs)
-        return decode_outputs
+        return self(inputs)
 
     def test_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do test for one batch
@@ -254,7 +256,16 @@ class SummaryGenerateModel(BaseModel):
         Returns: the test outputs
 
         """
-        embedding_outputs = self.embedding.test_step(inputs)
-        encode_outputs = self.encoder.test_step(embedding_outputs)
-        decode_outputs = self.decoder.test_step(encode_outputs)
-        return decode_outputs
+        return self(inputs)
+
+    def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """do predict for one batch
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: 
+            the predicts outputs
+
+        """
+        return self(inputs)

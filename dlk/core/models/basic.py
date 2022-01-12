@@ -172,16 +172,19 @@ class BasicModel(BaseModel):
 
         This method may no use, so we will remove this.
 
-        Returns: all keys
+        Returns:
+            all keys
         """
         return self.decoder.provided_keys()
 
     def check_keys_are_provided(self, provide: List[str]=[])->None:
         """check this all the submodules required key are provided
 
-        Returns: None
+        Returns:
+            None
 
-        Raises: PermissionError
+        Raises:
+            PermissionError
 
         """
         self._provided_keys = self._provided_keys + provide
@@ -195,7 +198,8 @@ class BasicModel(BaseModel):
         Args:
             batch: a mini batch inputs
 
-        Returns: the outputs
+        Returns:
+            the outputs
 
         """
         embedding_outputs = self.embedding(inputs)
@@ -209,7 +213,8 @@ class BasicModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the predicts outputs
+        Returns:
+            the predicts outputs
 
         """
         embedding_outputs = self.embedding.predict_step(inputs)
@@ -223,7 +228,8 @@ class BasicModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the training outputs
+        Returns:
+            the training outputs
 
         """
         embedding_outputs = self.embedding.training_step(inputs)
@@ -237,7 +243,8 @@ class BasicModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the validation outputs
+        Returns:
+            the validation outputs
 
         """
         embedding_outputs = self.embedding.validation_step(inputs)
@@ -251,7 +258,8 @@ class BasicModel(BaseModel):
         Args:
             inputs: one mini-batch inputs
 
-        Returns: the test outputs
+        Returns:
+            the test outputs
 
         """
         embedding_outputs = self.embedding.test_step(inputs)
