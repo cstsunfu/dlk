@@ -19,6 +19,7 @@ from dlk.utils.config import BaseConfig, ConfigTool
 from dlk.data.datamodules import datamodule_config_register, datamodule_register, IBaseDataModule, collate_register
 from dlk.utils.logger import Logger
 # from pytorch_lightning import LightningDataModule
+import os
 from torch.nn.utils.rnn import pad_sequence
 import torch
 import copy
@@ -34,6 +35,7 @@ class BasicDatamoduleConfig(BaseConfig):
         >>>     "config": {
         >>>         "pin_memory": None,
         >>>         "collate_fn": "default",
+        >>>         "num_workers": null,
         >>>         "shuffle": {
         >>>             "train": true,
         >>>             "predict": false,
@@ -73,6 +75,7 @@ class BasicDatamoduleConfig(BaseConfig):
         self.gen_mask = config.get("gen_mask", {})
         self.collate_fn = config.get('collate_fn', 'default')
         self.pin_memory = config.get('pin_memory', False)
+        self.num_workers = config.get('num_workers', 0) if config.get('num_workers', 0) else os.cpu_count()
         if self.pin_memory is None:
             self.pin_memory = torch.cuda.is_available()
         self.shuffle = config.get('shuffle', {
@@ -181,25 +184,25 @@ class BasicDatamodule(IBaseDataModule):
         """get the train set dataloader"""
         if not self.train_data:
             return None
-        return DataLoader(self.train_data, batch_size=self.config.train_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('train', True))
+        return DataLoader(self.train_data, batch_size=self.config.train_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('train', True), num_workers=self.config.num_workers)
 
     def predict_dataloader(self):
         """get the predict set dataloader"""
         if not self.predict_data:
             return None
-        return DataLoader(self.predict_data, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False))
+        return DataLoader(self.predict_data, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False), num_workers=self.config.num_workers)
 
     def val_dataloader(self):
         """get the validation set dataloader"""
         if not self.valid_data:
             return None
-        return DataLoader(self.valid_data, batch_size=self.config.valid_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('valid', False))
+        return DataLoader(self.valid_data, batch_size=self.config.valid_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('valid', False), num_workers=self.config.num_workers)
 
     def test_dataloader(self):
         """get the test set dataloader"""
         if not self.test_data:
             return None
-        return DataLoader(self.test_data, batch_size=self.config.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('test', False))
+        return DataLoader(self.test_data, batch_size=self.config.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('test', False), num_workers=self.config.num_workers)
 
     def online_dataloader(self):
         """get the data collate_fn"""
