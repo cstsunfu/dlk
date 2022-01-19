@@ -37,7 +37,7 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         >>>     "_name": "span_cls",
         >>>     "config": {
         >>>         "meta": "*@*",
-        >>>         "ignore_position": true, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        >>>         "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
         >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
         >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
         >>>         "meta_data": {
