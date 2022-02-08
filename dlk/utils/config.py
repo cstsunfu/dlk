@@ -198,6 +198,6 @@ class ConfigTool(object):
             assert len(stage_config) == 2
             assert isinstance(stage_config[0], str)
             assert isinstance(stage_config[1], dict)
-            stage_config = config.get(stage_config[0], {})
-            ConfigTool.do_update_config(stage_config, stage_config[1])
+            base_config = config.get(stage_config[0], {})
+            stage_config = ConfigTool.do_update_config(base_config, stage_config[1])
         return stage_config

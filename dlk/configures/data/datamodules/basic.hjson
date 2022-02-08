@@ -3,6 +3,7 @@
     "config": {
         "pin_memory": null,
         "collate_fn": "default",
+        "num_workers": 0,
         "shuffle": {
             "train": true,
             "predict": false,
