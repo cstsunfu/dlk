@@ -394,7 +394,7 @@ class SeqLabPostProcessor(IPostProcessor):
             entity_info
 
         """
-        if not sub_tokens_index or not label:
+        if (not sub_tokens_index) or (not label) or (label in self.config.ignore_labels):
             return {}
         start = offset_mapping[sub_tokens_index[0]][0]
         end = offset_mapping[sub_tokens_index[-1]][1]
