@@ -1,7 +1,13 @@
 {
     "root": {
         "_name": "crf_lstm",
-        "_link": {"config.meta_data": ['task.imodel.model.config.char_embedding_file', 'task.imodel.model.config.word_embedding_file', 'task.imodel.postprocessor.config.meta']},
+        "_link": {
+            "config.meta_data": ['task.imodel.model.config.char_embedding_file', 'task.imodel.model.config.word_embedding_file', 'task.imodel.postprocessor.config.meta'],
+            "config.label_num": ['task.imodel.model.config.label_num'],
+            "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
+            "config.char_embedding_dim": ['task.imodel.model.config.char_embedding_dim'],
+            "config.word_embedding_dim": ['task.imodel.model.config.word_embedding_dim'],
+        },
         "_search": {},
         "config": {
             /*"save_dir": "output/benchmark",  # must provide*/
@@ -11,6 +17,9 @@
             "data_path": "./norm_char_lstm_crf/output/processed_data.pkl",  # must provide
             "meta_data": "./norm_char_lstm_crf/output/meta.pkl",  # must provide
             "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
+            "label_num": 9,  # must provide
+            "char_embedding_dim": 30,
+            "word_embedding_dim": 100,
         },
         "task": {
             "manager": {
