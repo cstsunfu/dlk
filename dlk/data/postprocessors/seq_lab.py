@@ -368,6 +368,8 @@ class SeqLabPostProcessor(IPostProcessor):
 
         all_tp, all_fn, all_fp = 0, 0, 0
         for key in category_tp:
+            if key in self.config.ignore_labels:
+                continue
             tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
             all_tp += tp
             all_fn += fn
