@@ -222,10 +222,10 @@ class SpanClsPostProcessor(IPostProcessor):
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
-            outputs = []
 
-            for predict, index in zip(batch_logits, indexes):
+            for i, (predict, index) in enumerate(zip(batch_logits, indexes)):
                 one_ins = self._process4predict(predict, index, origin_data)
+                one_ins['predict_extend_return'] = self.gather_predict_extend_data(outputs, i, self.config.predict_extend_return)
                 predicts.append(one_ins)
         return predicts
 

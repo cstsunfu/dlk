@@ -19,6 +19,7 @@ import os
 from typing import Callable, Dict, Type, List, Union
 from dlk.utils.register import Register
 from dlk.utils.config import BaseConfig
+import torch
 import pandas as pd
 import abc
 
@@ -27,6 +28,15 @@ class IPostProcessorConfig(BaseConfig):
     def __init__(self, config):
         super(IPostProcessorConfig, self).__init__(config)
         self.config = config.get('config', {})
+
+    @property
+    def predict_extend_return(self):
+        """save the extend data in predict
+
+        Returns: 
+            predict_extend_return
+        """
+        return self.config.get('predict_extend_return', {})
 
     @property
     def input_map(self):
@@ -66,6 +76,26 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             "test": "test",
         }
         return map.get(stage, stage)
+
+    def gather_predict_extend_data(self, input_data: Dict, i: int, predict_extend_return: Dict):
+        """gather the data register in `predict_extend_return`
+        Args:
+            input_data:
+                the model output
+            i:
+                the index is i
+            predict_extend_return: 
+                the name map which will be reserved
+        Returns: 
+            a dict of data in input_data which is register in predict_extend_return
+        """
+        result = {}
+        for key, name in predict_extend_return.items():
+            data = input_data[name][i]
+            if torch.is_tensor(data):
+                data = data.detach().tolist()
+            result[key] = data
+        return result
 
     def average_loss(self, list_batch_outputs: List[Dict])->float:
         """average all the loss of the list_batches

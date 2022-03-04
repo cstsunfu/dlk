@@ -131,7 +131,7 @@ class TxtRegPostProcessor(IPostProcessor):
                 values = outputs[self.config.value]
             else:
                 values = [0.0] * len(indexes)
-            for one_logits, index, value in zip(logits, indexes, values):
+            for i, (one_logits, index, value) in enumerate(zip(logits, indexes, values)):
                 one_ins = {}
                 one_origin = origin_data.iloc[int(index)]
                 if self.config.data_type == 'single':
@@ -147,6 +147,7 @@ class TxtRegPostProcessor(IPostProcessor):
                 one_ins['uuid'] = uuid
                 one_ins['values'] = [float(value)]
                 one_ins['predict_values'] = [float(one_logits)]
+                one_ins['predict_extend_return'] = self.gather_predict_extend_data(outputs, i, self.config.predict_extend_return)
                 results.append(one_ins)
         return results
 

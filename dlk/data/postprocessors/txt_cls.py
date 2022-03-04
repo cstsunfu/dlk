@@ -149,7 +149,7 @@ class TxtClsPostProcessor(IPostProcessor):
                 label_ids = outputs[self.config.label_ids]
             else:
                 label_ids = [None] * len(indexes)
-            for one_logits, index, label_id in zip(logits, indexes, label_ids):
+            for i, (one_logits, index, label_id) in enumerate(zip(logits, indexes, label_ids)):
                 one_ins = {}
                 one_logits = torch.softmax(one_logits, -1)
                 one_origin = origin_data.iloc[int(index)]
@@ -176,6 +176,7 @@ class TxtClsPostProcessor(IPostProcessor):
                 one_ins['uuid'] = uuid
                 one_ins['labels'] = ground_truth
                 one_ins['predicts'] = predict
+                one_ins['predict_extend_return'] = self.gather_predict_extend_data(outputs, i, self.config.predict_extend_return)
                 results.append(one_ins)
         return results
 
