@@ -24,9 +24,8 @@
         /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor']*/
         "callbacks": ['lr_monitor'],
         /*"callbacks": ['lr_monitor', 'weight_average'],*/
-        /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor', 'progressbar', 'weight_average'],*/
         "logger": true,
-        "enable_checkpointing": true,
+        "enable_checkpointing": false,
         "accelerator": null,
         "default_root_dir": null,
         "gradient_clip_val": 5.0,   # gradient clip > 5.0
