@@ -62,6 +62,10 @@ class Load(ISubProcessor):
             return
         self.base_dir = config.base_dir
 
+        self.load_data = {}
+        for key, path in self.config.items():
+            self.load_data[key] = self.load(path)
+
     def load(self, path: str):
         """load data from path
 
@@ -90,8 +94,7 @@ class Load(ISubProcessor):
             data + loaded_data
 
         """
-        for _, path in self.config.items():
-            meta = self.load(path)
+        for _, meta in self.load_data.items():
             for key, value in meta.items():
                 data[key] = value
         return data
