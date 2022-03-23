@@ -46,7 +46,7 @@ class BasicDataLoaderConfig(BaseConfig):
         >>>                 "uuid": "uuid",
         >>>                 "entities_info": "entities_info",
         >>>             },
-        >>>         }, //3
+        >>>         },
         >>>         "predict": "train",
         >>>         "online": "train",
         >>>     }
