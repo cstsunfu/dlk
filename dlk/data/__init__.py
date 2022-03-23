@@ -12,4 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from dlk.data.datamodules import datamodule_register, datamodule_config_register
+from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register
+from dlk.data.processors import processor_config_register, processor_register
+from dlk.data.subprocessors import subprocessor_config_register, subprocessor_register

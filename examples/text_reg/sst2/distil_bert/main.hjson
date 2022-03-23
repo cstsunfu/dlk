@@ -2,14 +2,16 @@
     "root": {
         "_name": "pretrained",
         "_link": {
-            "config.meta_data": ['task.imodel.model.config.embedding_file', 'task.imodel.postprocessor.config.meta'],
+            "config.meta_data": ['task.imodel.postprocessor.config.meta'],
             "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
+            "config.pretrained_model_path": ['task.imodel.model.config.pretrained_model_path'],
         },
         "_search": {},
         "config": {
             "save_dir": "distil_bert/data/output",  # must provide
             "data_path": "distil_bert/data/output/processed_data.pkl",  # must provide
             "meta_data": "distil_bert/data/output/meta.pkl",  # must provide
+            "pretrained_model_path": './distil_bert/model',  # must provide
         },
         "task": {
             "manager": {

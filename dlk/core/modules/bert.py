@@ -133,7 +133,7 @@ class BertWrap(Module):
                 output_hidden_states = True,
                 return_dict = False
             )
-        assert len(outputs) == 4, f"Please check transformers version, the len(outputs) is 4 in version == 4.12, or check your config and remove the 'add_cross_attention'"
+        assert len(outputs) == 4, f"Please check transformers version, the len(outputs) is 4 in version == 4.12|4.15, or check your config and remove the 'add_cross_attention'"
         sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[2], outputs[3]
         sequence_output = self.dropout(sequence_output)
         return sequence_output, all_hidden_states, all_self_attentions

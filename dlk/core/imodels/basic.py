@@ -25,6 +25,7 @@ from dlk.utils.config import BaseConfig, ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
 from dlk.utils.logger import Logger
 from functools import lru_cache
+import copy
 logger = Logger.get_logger()
 
 import pytorch_lightning as pl
@@ -125,7 +126,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         self._origin_valid_data = None
         self._origin_test_data = None
         self.postprocessor = config.postprocess(config.postprocess_config)
-        self.gather_data = config.postprocess_config.input_map
+        self.gather_data: Dict = copy.deepcopy(config.postprocess_config.input_map)
+        self.gather_data.update(config.postprocess_config.predict_extend_return)
 
     def get_progress_bar_dict(self):
         """rewrite the prograss_bar_dict, remove the 'v_num' which we don't need
@@ -134,7 +136,6 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             progress_bar dict
 
         """
-        pass
         tqdm_dict = super().get_progress_bar_dict()
         tqdm_dict.pop("v_num", None)
         return tqdm_dict
@@ -194,6 +195,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         gather_column = list(self.gather_data.keys())
         return_result = {"loss": loss.unsqueeze(0)} # this loss will be used in postprocess
         for column in gather_column:
+            column = self.gather_data[column]
             if column in result:
                 return_result[column] = result[column]
         return_result['_index'] = batch['_index']
@@ -284,7 +286,15 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             the outputs
 
         """
-        return self.model.predict_step(batch)
+        result = self.model.predict_step(batch)
+        gather_column = list(self.gather_data.keys())
+        return_result = {}
+        for column in gather_column:
+            column = self.gather_data[column]
+            if column in result:
+                return_result[column] = result[column]
+        return_result['_index'] = batch['_index']
+        return return_result
 
     @property
     @lru_cache(maxsize=5) # the size should always == 1

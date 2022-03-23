@@ -37,7 +37,7 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         >>>     "_name": "span_cls",
         >>>     "config": {
         >>>         "meta": "*@*",
-        >>>         "ignore_position": true, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        >>>         "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
         >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
         >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
         >>>         "meta_data": {
@@ -222,10 +222,10 @@ class SpanClsPostProcessor(IPostProcessor):
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
-            outputs = []
 
-            for predict, index in zip(batch_logits, indexes):
+            for i, (predict, index) in enumerate(zip(batch_logits, indexes)):
                 one_ins = self._process4predict(predict, index, origin_data)
+                one_ins['predict_extend_return'] = self.gather_predict_extend_data(outputs, i, self.config.predict_extend_return)
                 predicts.append(one_ins)
         return predicts
 

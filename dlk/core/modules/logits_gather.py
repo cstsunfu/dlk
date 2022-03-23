@@ -87,6 +87,9 @@ class LogitsGather(Module):
         if not self.layer_map:
             return result
         for layer, layer_suffix in self.layer_map.items():
-            result[self.prefix+layer_suffix] = self.layers_scale[layer](input[int(layer)])
+            if layer in self.layers_scale:
+                result[self.prefix+layer_suffix] = self.layers_scale[layer](input[int(layer)])
+            else:
+                result[self.prefix+layer_suffix] = input[int(layer)]
 
         return result
