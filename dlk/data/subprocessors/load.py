@@ -57,12 +57,12 @@ class Load(ISubProcessor):
         super().__init__()
         self.stage = stage
         self.config = config.config
+        self.load_data = {}
         if not self.config:
             logger.info(f"Skip 'load' at stage {self.stage}")
             return
         self.base_dir = config.base_dir
 
-        self.load_data = {}
         for key, path in self.config.items():
             self.load_data[key] = self.load(path)
 

@@ -15,7 +15,6 @@
 import hjson
 import pandas as pd
 from typing import Union, Dict
-from dlk.utils.parser import BaseConfigParser
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.config import ConfigTool
 import torch

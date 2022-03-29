@@ -17,7 +17,8 @@
             "manager": {
                 "_base": "lightning",
                 "config":{
-                    "max_epochs": 4,
+                    "callbacks": [],
+                    "max_epochs": 2,
                     "gpus": 0,
                 }
             },

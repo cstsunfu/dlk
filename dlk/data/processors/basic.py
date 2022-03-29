@@ -15,7 +15,6 @@
 import hjson
 import pandas as pd
 from typing import Union, Dict
-from dlk.utils.parser import BaseConfigParser
 from dlk.data.processors import IProcessor, processor_config_register, processor_register
 from dlk.data.subprocessors import subprocessor_config_register, subprocessor_register
 from dlk.utils.config import BaseConfig

@@ -9,15 +9,11 @@
             },
             "input_map": {   // without necessery don't change this
                 "sentence": "sentence", //for single
-                "sentence_a": "sentence_a",  // for pair
-                "sentence_b": "sentence_b",
                 "uuid": "uuid",
                 "values": "values",
             },
             "output_map": {   // without necessery don't change this
                 "sentence": "sentence", //for single
-                "sentence_a": "sentence_a", //for pair
-                "sentence_b": "sentence_b",
                 "uuid": "uuid",
                 "values": "values",
             },
