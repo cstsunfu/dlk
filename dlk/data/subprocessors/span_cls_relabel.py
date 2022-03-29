@@ -20,6 +20,7 @@ from functools import partial
 from dlk.utils.logger import Logger
 import numpy as np
 import pandas as pd
+import os
 
 logger = Logger.get_logger()
 
@@ -121,9 +122,14 @@ class SpanClsRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do span_cls_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[[self.config.output_labels,
-                self.config.entities_info
-            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
+            if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
+                data_set[[self.config.output_labels,
+                    self.config.entities_info
+                ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
+            else:
+                data_set[[self.config.output_labels,
+                    self.config.entities_info
+                ]] = data_set.apply(self.relabel, axis=1, result_type='expand')
 
         return data
 
