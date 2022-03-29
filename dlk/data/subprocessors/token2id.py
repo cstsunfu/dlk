@@ -18,6 +18,7 @@ from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 from dlk.utils.logger import Logger
+import os
 
 logger = Logger.get_logger()
 
@@ -112,5 +113,8 @@ class Token2ID(ISubProcessor):
             data_set = data['data'][data_set_name]
             for key, value in self.data_pair.items():
                 get_index = partial(get_index_wrap, key)
-                data_set[value] = data_set.parallel_apply(get_index, axis=1)
+                if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
+                    data_set[value] = data_set.parallel_apply(get_index, axis=1)
+                else:
+                    data_set[value] = data_set.apply(get_index, axis=1)
         return data
