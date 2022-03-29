@@ -19,7 +19,6 @@ import json
 import pandas as pd
 import numpy as np
 from typing import Union, Dict, Any, List
-from dlk.utils.parser import BaseConfigParser, PostProcessorConfigParser
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.logger import Logger
 import torch
