@@ -20,10 +20,12 @@ class Module(nn.Module):
         x = self.linear2(x)
         return x, out
 
-a = torch.randn(2, 1, 3)
+if __name__ == "__main__":
+    
+    a = torch.randn(2, 1, 3)
 
-model = Module()
+    model = Module()
 
-script = torch.jit.trace(model, (a, a))
-a = torch.randn(5, 3)
-# print(script(a, a))
+    script = torch.jit.trace(model, (a, a))
+    a = torch.randn(5, 3)
+    # print(script(a, a))
