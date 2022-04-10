@@ -153,6 +153,7 @@ class Vocabulary(object):
                     self.word2idx[token] = index
                     self.idx2word[index] = token
                     index += 1
+        return self
 
     def get_word(self, index: int)->str:
         """get the word by index

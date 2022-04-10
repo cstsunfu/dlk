@@ -18,6 +18,7 @@ from dlk.train import Train
 import json
 
 Logger("./conll_norm_char_lstm_crf.log")
+
 pl.seed_everything(88)
 
 trainer = Train('./examples/sequence_labeling/conll2003/norm_char_lstm_crf/main.hjson')

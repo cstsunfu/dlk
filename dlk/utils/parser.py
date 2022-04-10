@@ -93,60 +93,60 @@ class LinkUnionTool(object):
             return self.find(self.link_union[key])
         return self.link_union[key]
 
-    def low_level_union(self, parant: str, child: str):
-        """union the low level parant->child pair
+    def low_level_union(self, link_from: str, link_to: str):
+        """union the low level link_from->link_to pair
 
-        On the basis of the high-level links, `low_level_union` should be used when regist low-level link
-        If parent and child wer all not appeared at before, we will directly regist them.
-        If only one of the parent and child appeared, the value of the parent and child will be overwritten by the corresponding value of the upper level,
-        If they both appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
+        On the basis of the high-level links, this function is used to regist low-level link
+        If `link-from` and `link-to` were all not appeared at before, they will be directly registed.
+        If only one of the `link-from` and `link-to` appeared, the value of the `link-from` and `link-to` will be overwritten by the corresponding value of the upper level,
+        If both `link-from` and `link-to` appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
 
         Args:
-            parant: the from key
-            child: the target key
+            link_from: the link-from key
+            link_to: the link-to key
 
         Returns: 
             None
 
         """
-        if self.find(parant) and self.find(child):  # all has been linked
-            if self.find(parant)!= self.find(child):
-                raise PermissionError(f"The  {parant} and {child} has been linked to different values, but now you want to link them together.")
-            elif self.find(parant) == child:
-                logger.warning(f"High level config has the link '{child} -> {parant}', and the low level reversed link '{parant} -> {child}' is been ignored.")
+        if self.find(link_from) and self.find(link_to):  # all has been linked
+            if self.find(link_from)!= self.find(link_to):
+                raise PermissionError(f"The  {link_from} and {link_to} has been linked to different values, but now you want to link them together.")
+            elif self.find(link_from) == link_to:
+                logger.warning(f"High level config has the link '{link_to} -> {link_from}', and the low level reversed link '{link_from} -> {link_to}' is been ignored.")
             else:
                 return
-        elif self.find(child): # only child has been linked
-            logger.warning(f"Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
-            self.link_union[parant] = self.find(child)
-        elif self.find(parant): # only parant has been linked
-            self.link_union[child] = self.find(parant)
+        elif self.find(link_to): # only link_to has been linked
+            logger.warning(f"Parameter '{link_to}' has been linked in high level config, the link '{link_from} -> {link_to}' is invalid, and the real link is been reversed as '{link_to} -> {link_from}'.")
+            self.link_union[link_from] = self.find(link_to)
+        elif self.find(link_from): # only link_from has been linked
+            self.link_union[link_to] = self.find(link_from)
         else:
-            self.link_union[parant] = parant
-            self.link_union[child] = parant
+            self.link_union[link_from] = link_from
+            self.link_union[link_to] = link_from
 
-    def top_level_union(self, parant: str, child: str):
-        """union the top level parant->child pair
+    def top_level_union(self, link_from: str, link_to: str):
+        """union the top level link_from->link_to pair
 
-        Register the 'link'(parant -> child) in the same(top) level config should be merged using `top_level_union`
-        Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the target position, otherwise it will cause ambiguity.)
+        Register the 'link'(`link-from` -> `link-to`) in the same(top) level config should be merged using `top_level_union`
+        Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the `link-to` position, otherwise it will cause ambiguity.)
 
         Args:
-            parant: the from key
-            child: the target key
+            link_from: the link-from key
+            link_to: the link-to key
 
         Returns: 
             None
 
         """
-        if parant not in self.link_union:
-            self.link_union[parant] = parant
+        if link_from not in self.link_union:
+            self.link_union[link_from] = link_from
 
-        assert child not in self.link_union, f"{child} is repeated assignment"
-        self.link_union[child] = self.find(parant)
+        assert link_to not in self.link_union, f"{link_to} is repeated assignment"
+        self.link_union[link_to] = self.find(link_from)
 
     def register_top_links(self, links: Dict):
-        """register the top level links
+        """register the top level links, top level means the link_to level config
 
         Args:
             links: {"from": ["tolist"], "from2": "to2"}
@@ -163,10 +163,10 @@ class LinkUnionTool(object):
         return self
 
     def register_low_links(self, links: Dict):
-        """register the low level links
+        """register the low level links, low level means the base(parant) level config
 
         Args:
-            links: {"from": ["tolist"], "from2": "to2"}
+            links: {"link-from": ["list of link-to"], "link-from2": "link-to2"}
 
         Returns: 
             self
@@ -188,12 +188,12 @@ class LinkUnionTool(object):
         """
         links = {}
         for key in self.link_union:
-            parant = self.find(key)
-            if parant == key:
+            root = self.find(key)
+            if root == key:
                 continue
-            if parant not in links:
-                links[parant] = []
-            links[parant].append(key)
+            if root not in links:
+                links[root] = []
+            links[root].append(key)
         return links
 
 
@@ -266,7 +266,7 @@ class BaseConfigParser(object):
         """inplace link the config[to] = config[source]
 
         Args:
-            link: {source1:to1, source2:[to2, to3]}
+            link: {link-from:link-to-1, link-from:[link-to-2, link-to-3]}
             config: will linked base config
 
         Returns: 
