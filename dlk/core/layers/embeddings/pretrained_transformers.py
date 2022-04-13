@@ -84,6 +84,7 @@ class PretrainedTransformersConfig(BaseModuleConfig):
             "output_map",
             "input_map",
             "dropout",
+            "return_logits",
             ])
 
 

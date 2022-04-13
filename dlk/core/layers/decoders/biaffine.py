@@ -58,6 +58,7 @@ class BiAffineConfig(BaseModuleConfig):
             "output_size",
             "pool",
             "dropout",
+            "return_logits",
         ])
 
 

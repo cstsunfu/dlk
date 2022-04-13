@@ -55,6 +55,7 @@ class LSTMConfig(BaseModuleConfig):
             "input_size",
             "output_size",
             "num_layers",
+            "return_logits",
             "dropout",
         ])
 

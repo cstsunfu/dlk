@@ -106,6 +106,7 @@ class CombineWordCharCNNEmbeddingConfig(BaseModuleConfig):
             "char.kernel_sizes",
             "dropout",
             "embedding_dim",
+            "return_logits",
         ])
 
 

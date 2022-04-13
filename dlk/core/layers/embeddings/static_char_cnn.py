@@ -83,6 +83,7 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
             "embedding_dim",
             "kernel_sizes",
             "padding_idx",
+            "return_logits",
         ])
 
 
