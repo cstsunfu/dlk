@@ -66,7 +66,8 @@ class StaticEmbeddingConfig(BaseModuleConfig):
             "embedding_trace",
             "freeze",
             "padding_idx",
-            "dropout"
+            "dropout",
+            "return_logits",
         ])
 
 

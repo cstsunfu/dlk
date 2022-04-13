@@ -49,6 +49,7 @@ class LinearConfig(BaseModuleConfig):
         self.post_check(config['config'], used=[
             "input_size",
             "output_size",
+            "return_logits",
             "pool",
             "dropout",
         ])

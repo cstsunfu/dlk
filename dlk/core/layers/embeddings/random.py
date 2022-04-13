@@ -49,7 +49,8 @@ class RandomEmbeddingConfig(BaseModuleConfig):
             "vocab_size",
             "embedding_dim",
             "padding_idx",
-            "dropout"
+            "dropout",
+            "return_logits",
         ])
 
 

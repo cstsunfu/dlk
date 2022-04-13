@@ -93,6 +93,7 @@ class BasicDatamoduleConfig(BaseConfig):
         self.post_check(config, used=[
                "pin_memory",
                "collate_fn",
+               "num_workers",
                "shuffle",
                "key_type_pairs",
                "gen_mask",

@@ -141,6 +141,8 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
             "start_save_epoch",
             "aggregation_strategy",
             "ignore_labels",
+            "ignore_char",
+            "ignore_position",
         ])
 
 
