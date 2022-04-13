@@ -1,11 +1,9 @@
 
-# A Deep Learning Kit
+# A Deep Learning ToolKit
 
-This project is WIP, only provide some basic method, and is not been tested.
+This project is WIP.
 
-```
-WARNING: The documents in `read the docs` is not complete( I do not know what I miss.). You can build the docs locally by read the docs/readme.md.
-```
+[Read the Docs](https://dlk.readthedocs.io/en/latest/)
 
 
 ## Install
@@ -35,7 +33,6 @@ python setup.py install
 - [ ] Add disable tokenizer post process.
 
 - [ ] Predict
-
     - [X] Complete the main predict code.
     - [ ] Test.
     - [ ] Convert to TorchScript.
