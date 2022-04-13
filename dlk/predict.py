@@ -59,10 +59,7 @@ class Predict(object):
         assert len(configs) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
         self.config = configs[0]
 
-        if self.config['root']['task']['manager']['config']['gpus']>0:
-            self.ckpt = torch.load(checkpoint)
-        else:
-            self.ckpt = torch.load(checkpoint, map_location=torch.device('cpu'))
+        self.ckpt = torch.load(checkpoint, map_location=torch.device('cpu'))
         config_name = []
         for source, to in self.focus.items():
             config_point = self.config

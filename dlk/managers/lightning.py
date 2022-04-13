@@ -50,7 +50,6 @@ class LightningManagerConfig(BaseConfig):
         self.num_nodes = manager_config["num_nodes"] # 1
         self.num_processes = manager_config["num_processes"] # 1
         self.devices = manager_config["devices"] # None
-        self.gpus = manager_config["gpus"] # None
         self.auto_select_gpus = manager_config["auto_select_gpus"] # False
         self.tpu_cores = manager_config["tpu_cores"] # None
         self.ipus = manager_config["ipus"] # None
@@ -108,7 +107,6 @@ class LightningManagerConfig(BaseConfig):
             "num_nodes",
             "num_processes",
             "devices",
-            "gpus",
             "auto_select_gpus",
             "tpu_cores",
             "ipus",
