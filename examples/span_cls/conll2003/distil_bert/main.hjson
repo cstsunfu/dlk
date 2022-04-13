@@ -20,7 +20,10 @@
                 "_base": "lightning",
                 "config":{
                     "max_epochs": 4,
-                    "gpus": 0,
+                    "accelerator": 'gpu', //or cpu
+                    "devices": 1,
+                    "precision": 32,
+                    "strategy": "ddp", // if you want use multi-gpus to predict, please use dp now, this is because ddp will prepare data multi times on one node, and the gather process is not implement
                     "detect_anomaly": false,
                 }
             },
