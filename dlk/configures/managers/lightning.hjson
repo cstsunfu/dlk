@@ -9,7 +9,6 @@
         "gradient_clip_val": 5.0,   # gradient clip > 5.0
         "gradient_clip_algorithm": null,
         "num_nodes": 1,
-        "num_processes": 1,
         "devices": null,
         "auto_select_gpus": false,
         "tpu_cores": null,

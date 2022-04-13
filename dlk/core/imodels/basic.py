@@ -330,7 +330,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batches = len(self.trainer.datamodule.train_dataloader())
         batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)
 
-        num_devices = max(1, self.trainer.num_gpus, self.trainer.num_processes)
+        num_devices = max(1, self.trainer.num_gpus)
         if self.trainer.tpu_cores:
             num_devices = max(num_devices, self.trainer.tpu_cores)
 
