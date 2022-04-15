@@ -2,9 +2,10 @@
 In subprocessors, the config is based on the progress stage(train, predict, online, etc.). 
 
 The stage config could be a dict, a str, or a tuple, for different type of config, we will parser the configure the different way. 
-    1. when the config is a dict, this is the default type, all things go as you think.
-    2. when the config is a str, the string must be one of stage name(train, predict, online, etc.) and the stage config is already defined as dict description in "1"
-    3. when the config is a tuple(two elements list), the first element must be a str, which defined in "2", and the second element is a update config, which type is dict(or None) and defined in '1'
+
+1. when the config is a dict, this is the default type, all things go as you think.
+2. when the config is a str, the string must be one of stage name(train, predict, online, etc.) and the stage config is already defined as dict description in "1"
+3. when the config is a tuple(two elements list), the first element must be a str, which defined in "2", and the second element is a update config, which type is dict(or None) and defined in '1'
 
 Some config value set to "*@*", this means you must provided this key-value pair in your own config
 
