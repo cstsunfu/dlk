@@ -50,7 +50,6 @@ class LightningManagerConfig(BaseConfig):
         self.num_nodes = manager_config["num_nodes"] # 1
         self.devices = manager_config["devices"] # None
         self.auto_select_gpus = manager_config["auto_select_gpus"] # False
-        self.tpu_cores = manager_config["tpu_cores"] # None
         self.ipus = manager_config["ipus"] # None
         self.log_gpu_memory = manager_config["log_gpu_memory"] # None
         self.enable_progress_bar = manager_config["enable_progress_bar"] # True
@@ -106,7 +105,6 @@ class LightningManagerConfig(BaseConfig):
             "num_nodes",
             "devices",
             "auto_select_gpus",
-            "tpu_cores",
             "ipus",
             "log_gpu_memory",
             "enable_progress_bar",
