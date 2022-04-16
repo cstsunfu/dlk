@@ -46,5 +46,5 @@ for filed in ['train', 'validation', 'test']:
 
 input = {"data": json_data_map}
 
-processor = Processor('./norm_char_lstm_crf/prepro.hjson')
+processor = Processor('./bert_firstpiece_lstm_crf/prepro.hjson')
 processor.fit(input)

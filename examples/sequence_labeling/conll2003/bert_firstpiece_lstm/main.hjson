@@ -1,11 +1,11 @@
 {
     "root": {
-        "_name": "pretrained_firstpiece_lstm_crf"
+        "_name": "pretrained_firstpiece"
         "_search": {},
         "config": {
-            "save_dir": "./bert_firstpiece_lstm_crf/output",  # must provide
-            "data_path": "./bert_firstpiece_lstm_crf/output/processed_data.pkl",  # must provide
-            "meta_data": "./bert_firstpiece_lstm_crf/output/meta.pkl",  # must provide
+            "save_dir": "./bert_firstpiece_lstm/output",  # must provide
+            "data_path": "./bert_firstpiece_lstm/output/processed_data.pkl",  # must provide
+            "meta_data": "./bert_firstpiece_lstm/output/meta.pkl",  # must provide
             "pretrained_model_path": './data/bert/',  # must provide
             "label_num": 11,  # must provide
         },
@@ -27,9 +27,9 @@
                 }
             },
             "imodel": {
-                "_base": "basic@seq_lab#crf",
+                "_base": "basic@seq_lab",
                 "model": {
-                    "_base": "basic@seq_lab#pretrained_transformers_crf",
+                    "_base": "basic@seq_lab#pretrained_transformers",
                     "embedding": {
                         "_base": "pretrained_transformers@gather",
                         "module": {
@@ -102,9 +102,9 @@
                         "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
                         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
                         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
-                        "use_crf": true, //use or not use crf
+                        "use_crf": false, //use or not use crf
                         "word_ready": true, //already gather the subword first token as the word rep or not
-                        "save_root_path": "./bert_firstpiece_lstm_crf/"
+                        "save_root_path": "./bert_firstpiece_lstm/"
                     }
                 },
             },

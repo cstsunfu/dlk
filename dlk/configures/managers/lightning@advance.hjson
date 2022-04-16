@@ -25,7 +25,7 @@
         "callbacks": ['lr_monitor'],
         /*"callbacks": ['lr_monitor', 'weight_average'],*/
         "logger": true,
-        "enable_checkpointing": false,
+        "enable_checkpointing": true,
         "accelerator": null,
         "default_root_dir": null,
         "gradient_clip_val": 5.0,   # gradient clip > 5.0
@@ -33,7 +33,6 @@
         "num_nodes": 1,
         "devices": null,
         "auto_select_gpus": false,
-        "tpu_cores": null,
         "ipus": null,
         "log_gpu_memory": null,
         "enable_progress_bar": true,
