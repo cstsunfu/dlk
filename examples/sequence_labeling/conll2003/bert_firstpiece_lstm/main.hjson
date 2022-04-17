@@ -19,6 +19,9 @@
             "manager": {
                 "_base": "lightning",
                 "config":{
+                    "callbacks": [ //remove checkpoint callback
+                    ],
+                    "enable_checkpointing": false,
                     "max_epochs": 4,
                     "accelerator": 'gpu', //or cpu
                     "devices": 1,
