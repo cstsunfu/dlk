@@ -10,6 +10,6 @@
         "every_n_train_steps": null, // Number of training steps between checkpoints.
         "every_n_epochs": 1, //Number of epochs between checkpoints.
         "save_on_train_epoch_end": false,// Whether to run checkpointing at the end of the training epoch. If this is False, then the check runs at the end of the validation.
-        "save_weights_only": false, //whether save other status like optimizer, etc.
+        "save_weights_only": true, //whether save other status like optimizer, etc.
     }
 }

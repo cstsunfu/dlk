@@ -22,6 +22,7 @@ dlk.egg-info/**
 test_simple_ner/**
 output/**
 examples/**/data/**
+examples/**/data
 examples/**/output/**
 examples/**/test/**
 examples/**/log.txt

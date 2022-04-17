@@ -175,9 +175,10 @@ class SpanClsPostProcessor(IPostProcessor):
         offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
 
         predict_entities_info = []
+        predict_label_ids = predict_logits.argmax(-1).cpu().numpy()
         for i in range(rel_token_len):
             for j in range(i, rel_token_len):
-                predict_label_id = predict_logits[i][j].argmax(-1)
+                predict_label_id = predict_label_ids[i][j]
                 predict_label = self.config.label_vocab[predict_label_id]
                 if predict_label == self.config.label_vocab.pad or predict_label == self.config.label_vocab.unknown:
                     continue
