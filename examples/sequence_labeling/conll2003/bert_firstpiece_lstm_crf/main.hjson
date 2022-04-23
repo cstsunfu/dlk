@@ -22,7 +22,7 @@
                     "callbacks": [ //remove checkpoint callback
                     ],
                     "enable_checkpointing": false,
-                    "max_epochs": 4,
+                    "max_epochs": 0,
                     "accelerator": 'gpu', //or cpu
                     "devices": 1,
                     "precision": 32,

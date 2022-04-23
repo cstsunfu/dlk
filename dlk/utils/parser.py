@@ -214,10 +214,10 @@ class BaseConfigParser(object):
                 if os.path.isfile(os.path.join(get_root(), config_base_dir, config_file+'.hjson')):
                     self.config_file = self.load_hjson_file(os.path.join(get_root(), config_base_dir, config_file+'.hjson'))
                 else:
-                    self.config_file = register.get(config_file).default_config
+                    self.config_file = copy.deepcopy(register.get(config_file).default_config)
 
             except Exception as e:
-                logger.error(f"There is an error occur when loading {os.path.join(get_root(), config_base_dir, config_file)}")
+                logger.error(f"You must provide a configure file at {os.path.join(get_root(), config_base_dir, config_file)} or provide `default_config` as a class variable")
                 raise KeyError(e)
         elif isinstance(config_file, Dict):
             self.config_file = config_file
@@ -500,6 +500,7 @@ class BaseConfigParser(object):
         """flat all the _search paras to list
 
         support recursive parser _search now, this means you can add _search/_link/_base paras in _search paras
+        but you should only search currently level paras
 
         Args:
             search: search paras, {"para1": [1,2,3], 'para2': 'list(range(10))'}
@@ -519,7 +520,6 @@ class BaseConfigParser(object):
                 base_config.update(search_para)
                 extend_config = cls(base_config).parser(parser_link=False)
                 result.extend(extend_config)
-                # result.append(base_config)
 
         return result
 
@@ -578,7 +578,7 @@ class BaseConfigParser(object):
         """get catesian prod from named lists
 
         Args:
-            dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
+            dict_of_list: {'name1': [1,2,3], 'name2': "list(range(1, 4))"}
 
         Returns: 
             [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
@@ -593,7 +593,7 @@ class BaseConfigParser(object):
         cur_para_search_list = []
         if isinstance(cur_paras, str):
             cur_paras = eval(cur_paras)
-        assert isinstance(cur_paras, list), f"The search options must be list, but you provide {cur_paras}({type(cur_paras)})"
+        assert isinstance(cur_paras, list), f"The search candidates must be list, but you provide {cur_paras}({type(cur_paras)})"
         for para in cur_paras:
             cur_para_search_list.append({cur_name: para})
         if len(dict_of_list) == 0:

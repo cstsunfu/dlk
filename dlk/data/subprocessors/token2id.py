@@ -30,7 +30,7 @@ class Token2IDConfig(BaseConfig):
         >>> {
         >>>     "_name": "token2id",
         >>>     "config": {
-        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "train":{
         >>>             "data_pair": {
         >>>                 "labels": "label_ids"
         >>>             },

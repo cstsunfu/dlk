@@ -32,7 +32,7 @@ class SeqLabRelabelConfig(BaseConfig):
         >>> {
         >>>     "_name": "seq_lab_relabel",
         >>>     "config": {
-        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "train":{
         >>>             "input_map": {  // without necessery, don't change this
         >>>                 "word_ids": "word_ids",
         >>>                 "offsets": "offsets",

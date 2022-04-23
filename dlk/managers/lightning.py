@@ -30,9 +30,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 @manager_config_register('lightning')
 class LightningManagerConfig(BaseConfig):
     """docstring for LightningManagerConfig
-    check
-    https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.trainer.html?highlight=trainer#trainer
-    for para details
+    check https://pytorch-lightning.readthedocs.io trainer for paramaters detail
     """
 
     def __init__(self, config):
