@@ -32,7 +32,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         >>> {
         >>>     "_name": "seq_lab_firstpiece_relabel",
         >>>     "config": {
-        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "train":{
         >>>             "input_map": {  // without necessery, don't change this
         >>>                 "word_ids": "word_ids",
         >>>                 "offsets": "offsets",
@@ -56,7 +56,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         >>>             "entity_priority": [],
         >>>             //"entity_priority": ['Product'],
         >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
-        >>>         }, //3
+        >>>         },
         >>>         "predict": "train",
         >>>         "online": "train",
         >>>     }

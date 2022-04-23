@@ -319,7 +319,9 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
     def num_training_steps(self) -> int:
         """Total training steps inferred from datamodule and devices.
         """
-         # TODO: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
+        # FIXIT: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
+        #        https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
+        # PATCH: https://github.com/PyTorchLightning/pytorch-lightning/issues/12317
         if self.trainer.max_steps != -1:
             return self.trainer.max_steps
 
@@ -330,9 +332,9 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             batches = len(self.trainer.datamodule.train_dataloader())
         batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)
 
-        num_devices = max(1, self.trainer.num_gpus)
-        if self.trainer.tpu_cores:
-            num_devices = max(num_devices, self.trainer.tpu_cores)
+        num_devices = max(1, self.trainer.devices)
+        if self.trainer.num_devices:
+            num_devices = max(num_devices, self.trainer.num_devices)
 
         effective_accum = self.trainer.accumulate_grad_batches * num_devices
         return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs

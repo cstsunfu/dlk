@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from numpy import result_type
 from dlk.utils.vocab import Vocabulary
 from dlk.utils.config import BaseConfig, ConfigTool
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 from dlk.utils.logger import Logger
-import numpy as np
-import pandas as pd
 import os
+import pandas as pd
 
 logger = Logger.get_logger()
 
-@subprocessor_config_register('span_cls_relabel')
-class SpanClsRelabelConfig(BaseConfig):
-    """Config for SpanClsRelabel
+@subprocessor_config_register('word_mask')
+class WordMaskConfig(BaseConfig):
+    """Config for WordMask
 
     Config Example:
         >>> {
-        >>>     "_name": "span_cls_relabel",
+        >>>     "_name": "word_mask",
         >>>     "config": {
         >>>         "train":{
         >>>             "input_map": {  // without necessery, don't change this
@@ -44,15 +44,9 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>                 "online": ['online']
         >>>             },
         >>>             "output_map": {
-        >>>                 "label_ids": "label_ids",
+        >>>                 "labels": "labels",
         >>>             },
-        >>>             "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-        >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
-        >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
-        >>>             "entity_priority": [],
-        >>>             //"entity_priority": ['Product'],
-        >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
-        >>>         }, //3
+        >>>         },
         >>>         "predict": "train",
         >>>         "online": "train",
         >>>     }
@@ -60,7 +54,7 @@ class SpanClsRelabelConfig(BaseConfig):
     """
     def __init__(self, stage, config: Dict):
 
-        super(SpanClsRelabelConfig, self).__init__(config)
+        super(WordMaskConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
@@ -70,39 +64,36 @@ class SpanClsRelabelConfig(BaseConfig):
         self.entities_info = self.config['input_map']['entities_info']
         self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
-        self.vocab = self.config['vocab']
-        self.output_labels = self.config['output_map']['label_ids']
+        self.start_label = self.config['start_label']
+        self.end_label = self.config['end_label']
+        self.output_labels = self.config['output_map']['labels']
         self.entity_priority = {entity: priority for priority, entity in enumerate(self.config['entity_priority'])}
         self.priority_trigger = self.config['priority_trigger']
         self.post_check(self.config, used=[
-            "drop",
-            "vocab",
             "input_map",
             "data_set",
+            "drop",
             "output_map",
-            "clean_droped_entity",
-            "entity_priority",
-            "priority_trigger",
         ])
 
 
-@subprocessor_register('span_cls_relabel')
-class SpanClsRelabel(ISubProcessor):
+@subprocessor_register('word_mask')
+class WordMask(ISubProcessor):
     """
     Relabel the json data to bio
     """
 
-    def __init__(self, stage: str, config: SpanClsRelabelConfig):
+    def __init__(self, stage: str, config: WordMaskConfig):
         super().__init__()
         self.stage = stage
         self.config = config
         self.data_set = config.data_set
         if not self.data_set:
-            logger.info(f"Skip 'span_cls_relabel' at stage {self.stage}")
+            logger.info(f"Skip 'word_mask' at stage {self.stage}")
             return
 
     def process(self, data: Dict)->Dict:
-        """SpanClsRelabel Entry
+        """WordMask Entry
 
         Args:
             data: Dict
@@ -115,11 +106,10 @@ class SpanClsRelabel(ISubProcessor):
 
         if not self.data_set:
             return data
-        self.vocab = Vocabulary.load(data[self.config.vocab])
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
-                logger.info(f'The {data_set_name} not in data. We will skip do span_cls_relabel on it.')
+                logger.info(f'The {data_set_name} not in data. We will skip do word_mask on it.')
                 continue
             data_set = data['data'][data_set_name]
             if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
@@ -165,7 +155,7 @@ class SpanClsRelabel(ISubProcessor):
         return -1
 
     def relabel(self, one_ins: pd.Series):
-        """make token label, if use the first piece label please use the 'span_cls_firstpiece_relabel'
+        """make token label, if use the first piece label please use the 'seq_lab_firstpiece_relabel'
 
         Args:
             one_ins: include sentence, entity_info, offsets
@@ -213,33 +203,39 @@ class SpanClsRelabel(ISubProcessor):
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
-            
+
         cur_token_index = 0
         offset_length = len(offsets)
-
-        unk_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full((offset_length, offset_length), -1)
-        mask_matrices = np.tril(mask_matrices, k=-1)
-
-        unk_matrices = np.full((offset_length, offset_length), unk_id)
-        unk_matrices = np.triu(unk_matrices, k=0)
-
-        label_matrices = unk_matrices + mask_matrices
-        if sub_word_ids[0] is None:
-            label_matrices[0, 0] = -1
-        if sub_word_ids[-1] is None:
-            label_matrices[-1, -1] = -1
-
+        sub_labels = []
         for entity_info in entities_info:
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
             if start_token_index == -1:
                 logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
                 continue
+            for _ in range(start_token_index-cur_token_index):
+                sub_labels.append('O')
             end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
             assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
-            label_id = self.vocab.get_index(entity_info['labels'][0])
-            label_matrices[start_token_index, end_token_index] = label_id
+            sub_labels.append("B-"+entity_info['labels'][0])
+            for _ in range(end_token_index-start_token_index):
+                sub_labels.append("I-"+entity_info['labels'][0])
+            cur_token_index = end_token_index + 1
+        assert cur_token_index<=offset_length
+        for _ in range(offset_length-cur_token_index):
+            sub_labels.append('O')
+
+        if sub_word_ids[0] is None:
+            sub_labels[0] = self.config.start_label
+
+        if sub_word_ids[offset_length-1] is None:
+            sub_labels[offset_length-1] = self.config.end_label
+
+        if len(sub_labels)!= offset_length:
+            logger.error(f"{len(sub_labels)} vs {offset_length}")
+            for i in one_ins:
+                logger.error(f"{i}")
+            raise PermissionError
 
         if not self.config.clean_droped_entity:
             entities_info = one_ins[self.config.entities_info]
-        return label_matrices, entities_info
+        return sub_labels, entities_info

@@ -519,7 +519,7 @@ class SeqLabPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits].detach()
+            batch_logits = outputs[self.config.logits].detach().cpu().numpy()
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
@@ -531,7 +531,7 @@ class SeqLabPostProcessor(IPostProcessor):
                 word_ids = origin_ins[self.config.word_ids]
 
                 rel_token_len = len(word_ids)
-                logits = logits[:rel_token_len].cpu().numpy()
+                logits = logits[:rel_token_len]
 
                 predict = logits.argmax(-1)
                 one_ins = self._process4predict(predict, index, origin_data)
@@ -561,7 +561,7 @@ class SeqLabPostProcessor(IPostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits].detach()
+            batch_logits = outputs[self.config.logits].detach().cpu().numpy()
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
@@ -582,7 +582,7 @@ class SeqLabPostProcessor(IPostProcessor):
                 special_tokens_mask = np.array(origin_data.iloc[int(index)][self.config.special_tokens_mask][:rel_token_len])
                 offset_mapping = origin_data.iloc[int(index)][self.config.offsets][:rel_token_len]
 
-                logits = logits[:rel_token_len].cpu().numpy()
+                logits = logits[:rel_token_len]
 
                 entity_idx = logits.argmax(-1)
                 labels = []

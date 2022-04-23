@@ -30,7 +30,7 @@ class BasicDataLoaderConfig(BaseConfig):
         >>> {
         >>>     "_name": "basic_data_loader@seq_lab",
         >>>     "config": {
-        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "train":{
         >>>             "data_set": {                   // for different stage, this processor will process different part of data
         >>>                 "train": ['train', 'valid', 'test', 'predict'],
         >>>                 "predict": ['predict'],

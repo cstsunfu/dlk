@@ -37,7 +37,7 @@ class FastTokenizerConfig(BaseConfig):
         >>> {
         >>>     "_name": "fast_tokenizer",
         >>>     "config": {
-        >>>         "train": { // you can add some whitespace surround the '&'
+        >>>         "train": {
         >>>             "data_set": {                   // for different stage, this processor will process different part of data
         >>>                 "train": ["train", "valid", 'test'],
         >>>                 "predict": ["predict"],
