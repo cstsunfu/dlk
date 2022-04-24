@@ -136,9 +136,9 @@ class FastTokenizer(ISubProcessor):
             logger.info(f"Skip 'fast_tokenizer' at stage {self.stage}")
             return
         self.tokenizer = Tokenizer.from_file(self.config.config_path)
-        pretokenizer_factory = PreTokenizerFactory()
-        tokenizer_postprocessor_factory = TokenizerPostprocessorFactory()
-        tokenizer_normalizer_factory = TokenizerNormalizerFactory()
+        pretokenizer_factory = PreTokenizerFactory(self.tokenizer)
+        tokenizer_postprocessor_factory = TokenizerPostprocessorFactory(self.tokenizer)
+        tokenizer_normalizer_factory = TokenizerNormalizerFactory(self.tokenizer)
 
         if self.config.data_type=='single':
             self._tokenize = self._single_tokenize

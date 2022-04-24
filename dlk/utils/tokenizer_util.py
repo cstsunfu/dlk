@@ -14,11 +14,17 @@
 
 from tokenizers.processors import TemplateProcessing
 from tokenizers.normalizers import Lowercase, NFD, NFC, StripAccents, Strip
-from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel, Whitespace
+from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel, Whitespace, BertPreTokenizer
+from tokenizers import Tokenizer
+from dlk.utils.logger import Logger
+
+logger = Logger.get_logger()
 
 
 class TokenizerPostprocessorFactory(object):
     """docstring for TokenizerPostprocessorFactory"""
+    def __init__(self, tokenizer: Tokenizer):
+        self.tokenizer = tokenizer
 
     @property
     def bert(self):
@@ -28,14 +34,23 @@ class TokenizerPostprocessorFactory(object):
             bert postprocess
 
         """
-        pass
+        vocab = self.tokenizer.get_vocab()
+        try:
+            cls_id = vocab['[CLS]']
+            sep_id = vocab['[SEP]']
+        except Exception as e:
+            # logger.error(f"`[CLS]` or `[SEP]` is not a token in this tokenizer.", )
+            logger.exception(f"`[CLS]` or `[SEP]` is not a token in this tokenizer.")
+            raise e
+            # raise PermissionError(f"`[CLS]` or `[SEP]` is not a token in this tokenizer.")
+
         def _wrap():
             return TemplateProcessing(
                 single="[CLS] $A [SEP]",
                 pair="[CLS] $A [SEP] $B:1 [SEP]:1",
                 special_tokens=[
-                    ("[CLS]", 1),
-                    ("[SEP]", 2),
+                    ("[CLS]", cls_id),
+                    ("[SEP]", sep_id),
                 ],
             )
         return _wrap
@@ -54,6 +69,8 @@ class TokenizerPostprocessorFactory(object):
 
 class PreTokenizerFactory(object):
     """PreTokenizerFactory"""
+    def __init__(self, tokenizer: Tokenizer):
+        self.tokenizer = tokenizer
 
     @property
     def bytelevel(self):
@@ -64,6 +81,16 @@ class PreTokenizerFactory(object):
 
         """
         return ByteLevel
+
+    @property
+    def bert(self):
+        """bert pre_tokenizer
+
+        Returns: 
+            BertPreTokenizer
+
+        """
+        return BertPreTokenizer
 
     @property
     def whitespace(self):
@@ -97,6 +124,8 @@ class PreTokenizerFactory(object):
 
 class TokenizerNormalizerFactory(object):
     """TokenizerNormalizerFactory"""
+    def __init__(self, tokenizer: Tokenizer):
+        self.tokenizer = tokenizer
 
     @property
     def lowercase(self):

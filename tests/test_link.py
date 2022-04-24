@@ -106,7 +106,7 @@ class TestLinkUnionTool(object):
                                  ],
                              ])
     def test_link_union(self, top_links, low_links, result):
-        """TODO: Docstring for test_link_union.
+        """test for low and top link union logic
         """
         if not isinstance(result, dict):
             try:

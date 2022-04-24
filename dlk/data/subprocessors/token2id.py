@@ -102,8 +102,6 @@ class Token2ID(ISubProcessor):
         vocab = Vocabulary.load(data[self.config.vocab])
 
         def get_index_wrap(key, x):
-            """TODO: Docstring for get_index_wrap.
-            """
             return vocab.auto_get_index(x[key])
 
         for data_set_name in self.data_set:

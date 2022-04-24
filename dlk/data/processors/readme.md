@@ -52,7 +52,7 @@ Some config value set to "*@*", this means you must provided this key-value pair
         },
         "subprocessor@tokenizer":{
             "_base": "wordpiece_tokenizer",
-            "config": {   TODO: REfactor config
+            "config": {
                 "train": { // you can add some whitespace surround the '&' 
                     "data_set": {                   // for different stage, this processor will process different part of data
                         "train": ["train", "dev"],

@@ -25,10 +25,14 @@ sys.path.append('../')
 from dlk.utils.tokenizer_util import TokenizerNormalizerFactory, PreTokenizerFactory, TokenizerPostprocessorFactory
 
 
-def get_trainer(trainer_name:str):
-    """TODO: Docstring for get_trainer.
-    :returns: TODO
+def get_trainer(trainer_name: str):
+    """get Trainer Class by trainer_name
 
+    Args:
+        trainer_name: trainer_name
+
+    Returns: 
+        Trainer Class
     """
     trainers = {
         "wordpiece": WordPieceTrainer,
@@ -40,6 +44,14 @@ def get_trainer(trainer_name:str):
 
 
 def get_model(model_name:str):
+    """get Tokenizer Model Class by model_name
+
+    Args:
+        model_name: model_name
+
+    Returns: 
+         Tokenizer Model Class
+    """
     models = {
         "wordpiece": WordPiece,
         "bpe": BPE,
@@ -50,11 +62,14 @@ def get_model(model_name:str):
 
 
 def get_processor(factory, one_processor):
-    """TODO: Docstring for _get_processor.
+    """get processor from factory
 
-    :factory: TODO
-    :one_processor: TODO
-    :returns: TODO
+    Args:
+        factory: processor factory
+        one_processor: processor name(str), [optional] config(dict)
+
+    Returns: 
+		processor instance
 
     """
     if isinstance(one_processor, dict):
