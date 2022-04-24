@@ -19,3 +19,4 @@ datasets==2.1.0
 tabulate>=0.8.9
 transformers==4.17.0
 pytorch-lightning==1.6.0
+pytest
