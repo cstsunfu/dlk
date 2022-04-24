@@ -23,10 +23,8 @@ data = json.load(open('./predict.json', 'r'))
 
 
 def align(sentence, labels):
-    """TODO: Docstring for aligh.
-    :sentence: TODO
-    :labels: TODO
-    :returns: TODO
+    """
+        convert the Sequence Labeling result to B-I-O resutl
     """
     # predicts = line['predict_entities_info']
     encode = tokenizer.encode(sentence)
