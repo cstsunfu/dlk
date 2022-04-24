@@ -18,7 +18,8 @@ import argparse
 
 pre_tokenizers = {
     "bert": {"type": "BertPreTokenizer"},
-    "whitespacesplit": {"type": "WhitespaceSplit"}
+    "whitespacesplit": {"type": "WhitespaceSplit"},
+    "whitespace": {"type": "Whitespace"}
 }
 
 template = {
@@ -137,7 +138,7 @@ template = {
 }
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Convert the file in --vocab to tokenizer.json for `tokenizer`")
     parser.add_argument(
         "--config",
         type=str,

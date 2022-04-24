@@ -30,7 +30,7 @@ TOKENIZER_MAP = {
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Convert the original vocab.txt and other format tokenizer config for Transformers to tokenizer.json for `tokenizer`")
     parser.add_argument(
         "--config",
         type=str,
