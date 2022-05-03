@@ -46,7 +46,7 @@ setup(
     license="Apache Software License",
     author='cstsunfu',
     author_email='cstsunfu@gmail.com',
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     package_data={"": configures},
     include_package_data=True,
     packages=pkgs,

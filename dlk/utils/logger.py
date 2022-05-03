@@ -111,3 +111,4 @@ class Logger(object):
                 log_colors=Logger.color_config)
             console_handler.setFormatter(console_formatter)
             Logger.global_logger.addHandler(console_handler)
+            Logger.global_logger.propagate = False # FIXIT: this could fix dumplicate logger info?
