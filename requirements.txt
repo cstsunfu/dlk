@@ -2,7 +2,8 @@ twine
 wheel
 setuptools
 packaging>=20.9
-colorlog>=6.6.0
+colorlog>=4.8.0
+smart_open>=6.0.0
 pyahocorasick>=1.4.2
 jsoneditor>=1.4.3
 hjson>=3.0.2

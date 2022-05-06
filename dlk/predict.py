@@ -21,6 +21,7 @@ from dlk.data.datamodules import datamodule_register, datamodule_config_register
 from dlk.managers import manager_register, manager_config_register
 from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
+from smart_open import open
 import torch
 import copy
 import uuid
@@ -49,24 +50,31 @@ class Predict(object):
         >>>     }
         >>> }
     """
-    def __init__(self, config, checkpoint):
+    def __init__(self, config: Union[str, dict], checkpoint: str):
         super(Predict, self).__init__()
         if not isinstance(config, dict):
             config = hjson.load(open(config), object_pairs_hook=dict)
 
         self.focus = config.pop('_focus', {})
         configs = BaseConfigParser(config).parser_with_check()
-        assert len(configs) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
+        assert len(
+            configs
+        ) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
         self.config = configs[0]
 
-        self.ckpt = torch.load(checkpoint, map_location=torch.device('cpu'))
+        if isinstance(checkpoint, str):
+            with open(checkpoint, 'rb') as f:
+                self.ckpt = torch.load(f, map_location=torch.device('cpu'))
+        else:
+            self.ckpt = torch.load(checkpoint,
+                                   map_location=torch.device('cpu'))
         config_name = []
         for source, to in self.focus.items():
             config_point = self.config
             trace = source.split('.')
             for t in trace:
                 config_point = config_point[t]
-            config_name.append(to+str(config_point))
+            config_name.append(to + str(config_point))
         if config_name:
             name_str = '_'.join(config_name)
         else:
@@ -93,7 +101,9 @@ class Predict(object):
         dataloader = datamodule.train_dataloader()
         for data in dataloader:
             # script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
-            script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
+            script = torch.jit.trace(imodel.model,
+                                     example_inputs=data,
+                                     strict=False)
             # script = torch.jit.script(imodel.model, example_inputs=data, strict=False)
             print(script)
             print(script(data))
@@ -129,7 +139,11 @@ class Predict(object):
 
         # start predict
         predict_result = manager.predict(model=imodel, datamodule=datamodule)
-        return imodel.postprocessor(stage='predict', list_batch_outputs=predict_result, origin_data=data['predict'], rt_config={}, save_condition=save_condition)
+        return imodel.postprocessor(stage='predict',
+                                    list_batch_outputs=predict_result,
+                                    origin_data=data['predict'],
+                                    rt_config={},
+                                    save_condition=save_condition)
 
     def get_data(self, config):
         """get the data decided by config
@@ -141,8 +155,9 @@ class Predict(object):
             loaded data
 
         """
-        
-        self.data = pkl.load(open(config['config']['data_path'], 'rb')).get('data', {})
+
+        self.data = pkl.load(open(config['config']['data_path'],
+                                  'rb')).get('data', {})
         return self.data
 
     def get_datamodule(self, config, data):
@@ -156,7 +171,9 @@ class Predict(object):
             datamodule
 
         """
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(datamodule_register, datamodule_config_register, 'datamodule', config['task']['datamodule'])
+        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(
+            datamodule_register, datamodule_config_register, 'datamodule',
+            config['task']['datamodule'])
         datamodule = DataModule(DataModuleConfig, data)
         return datamodule
 
@@ -171,8 +188,14 @@ class Predict(object):
             manager
 
         """
-        Manager, ManagerConfig = ConfigTool.get_leaf_module(manager_register, manager_config_register, 'manager', config.get('task').get('manager'))
-        manager = Manager(ManagerConfig, rt_config={"save_dir": config.get('config').get("save_dir"), "name": name})
+        Manager, ManagerConfig = ConfigTool.get_leaf_module(
+            manager_register, manager_config_register, 'manager',
+            config.get('task').get('manager'))
+        manager = Manager(ManagerConfig,
+                          rt_config={
+                              "save_dir": config.get('config').get("save_dir"),
+                              "name": name
+                          })
         return manager
 
     def get_imodel(self, config, data):
@@ -186,7 +209,9 @@ class Predict(object):
             imodel
 
         """
-        IModel, IModelConfig = ConfigTool.get_leaf_module(imodel_register, imodel_config_register, 'imodel', config.get('task').get('imodel'))
+        IModel, IModelConfig = ConfigTool.get_leaf_module(
+            imodel_register, imodel_config_register, 'imodel',
+            config.get('task').get('imodel'))
         imodel = IModel(IModelConfig, checkpoint=True)
         imodel.load_state_dict(self.ckpt['state_dict'])
         imodel.eval()
