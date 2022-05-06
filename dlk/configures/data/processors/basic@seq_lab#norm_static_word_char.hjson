@@ -3,10 +3,22 @@
     "_name": "basic@seq_lab#norm_static_word_char",
     "config": {
         /*"feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "token_gather", "save"]*/
-        "feed_order": ["load", "seq_lab_loader", "token_norm", "tokenizer", "char_gather", "token2charid", "seq_lab_relabel", 'label_gather', "label_to_id", "token_embedding", "char_embedding", "save"]
+        "feed_order": [
+            "load",
+            "seq_lab_loader",
+            "token_norm",
+            "tokenizer",
+            "char_gather",
+            "token2charid",
+            "seq_lab_relabel", 'label_gather',
+            "label_to_id",
+            "token_embedding",
+            "char_embedding",
+            "save"
+        ],
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*",  // save load data base dir
-        "embedding_size": "*@*",  //the embedding size
+        "data_dir": "*@*", // save load data base dir
+        "embedding_size": "*@*", //the embedding size
         "embedding_file": "*@*",
         "char_embedding_size": "*@*",
     },
@@ -14,8 +26,14 @@
         "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@seq_lab_relabel.config.train.input_map.word_ids",
         "subprocessor@seq_lab_relabel.config.train.output_map.labels": "subprocessor@label_gather.config.train.gather_columns.0",
         "subprocessor@token_norm.config.train.data_pair.sentence": "subprocessor@tokenizer.config.train.input_map.sentence",
-        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer', "subprocessor@token_norm.config.train.tokenizer"],
-        "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
+        "config.tokenizer_config_path": [
+            "subprocessor@tokenizer.config.train.config_path", 'subprocessor@token_embedding.config.train.tokenizer',
+            "subprocessor@token_norm.config.train.tokenizer"
+        ],
+        "config.data_dir": [
+            "subprocessor@load.config.base_dir",
+            "subprocessor@save.config.base_dir"
+        ],
         "config.embedding_size": "subprocessor@token_embedding.config.train.embedding_size",
         "config.char_embedding_size": "subprocessor@char_embedding.config.train.embedding_size",
         "config.embedding_file": "subprocessor@token_embedding.config.train.embedding_file",
@@ -25,12 +43,14 @@
     },
     "subprocessor@save": {
         "_base": "save",
-        "config":{
-            "base_dir": "."
-            "train":{
+        "config": {
+            "base_dir": "",
+            "train": {
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ['label_vocab', "tokenizer", 'token_embedding', 'char_embedding', 'char_vocab'], //only for next time use
+                    "meta.pkl": ['label_vocab',
+                        "tokenizer", 'token_embedding', 'char_embedding', 'char_vocab'
+                    ], //only for next time use
                     /*"meta.pkl": ['token_vocab'] //only for next time use*/
                 }
             },
@@ -39,10 +59,10 @@
             }
         }
     },
-    "subprocessor@seq_lab_loader":{
+    "subprocessor@seq_lab_loader": {
         "_base": "basic_data_loader@seq_lab",
     },
-    "subprocessor@token_norm":{
+    "subprocessor@token_norm": {
         "_base": "token_norm",
         "config": {
             "train": {
@@ -55,14 +75,16 @@
             "online": "train"
         }
     },
-    "subprocessor@tokenizer":{
+    "subprocessor@tokenizer": {
         "_base": "fast_tokenizer",
         "config": {
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": { "is_pretokenized": false},
+                "process_data": {
+                    "is_pretokenized": false
+                },
                 "input_map": {
                     "sentence": "sentence", //for sigle input, tokenizer the "sentence"
                 },
@@ -71,19 +93,21 @@
             "online": "train",
         }
     },
-    "subprocessor@char_gather":{
+    "subprocessor@char_gather": {
         "_base": "char_gather",
         "config": {
             "train": { // only train stage using
-                "gather_columns": ["sentence"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "gather_columns": [
+                    "sentence"
+                ], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
-    "subprocessor@token2charid":{
+    "subprocessor@token2charid": {
         "_base": "token2charid",
         "config": {
-            "train":{
+            "train": {
                 "data_pair": {
                     "sentence & offsets": "char_ids"
                 },
@@ -93,10 +117,10 @@
             "online": "train",
         }
     },
-    "subprocessor@seq_lab_relabel":{
+    "subprocessor@seq_lab_relabel": {
         "_base": "seq_lab_relabel",
         "config": {
-            "train":{
+            "train": {
                 "start_label": "S",
                 "end_label": "E",
                 "output_map": {
@@ -105,36 +129,46 @@
             },
         }
     },
-    "subprocessor@token_gather":{
+    "subprocessor@token_gather": {
         "_base": "token_gather",
         "config": {
             "train": { // only train stage using
-                "data_set": {      // for different stage, this processor will process different part of data
-                    "train": ["train", "valid", 'test']
+                "data_set": { // for different stage, this processor will process different part of data
+                    "train": [
+                        "train",
+                        "valid", 'test'
+                    ]
                 },
-                "gather_columns": ["tokens"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "gather_columns": [
+                    "tokens"
+                ], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
-    "subprocessor@label_gather":{
+    "subprocessor@label_gather": {
         "_base": "token_gather",
         "config": {
             "train": { // only train stage using
-                "data_set": {      // for different stage, this processor will process different part of data
-                    "train": ["train", "valid"]
+                "data_set": { // for different stage, this processor will process different part of data
+                    "train": [
+                        "train",
+                        "valid"
+                    ]
                 },
-                "gather_columns": ["labels"], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "gather_columns": [
+                    "labels"
+                ], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
                 "unk": "",
                 "pad": "",
                 "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
-    "subprocessor@label_to_id":{
+    "subprocessor@label_to_id": {
         "_base": "token2id",
         "config": {
-            "train":{
+            "train": {
                 "data_pair": {
                     "labels": "label_ids"
                 },
@@ -144,10 +178,9 @@
             "online": "train",
         }
     },
-
     "subprocessor@token_embedding": {
         "_base": "token_embedding",
-        "config":{
+        "config": {
             "train": { // only train stage using
                 "embedding_file": "*@*",
                 "tokenizer": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
@@ -158,7 +191,7 @@
     },
     "subprocessor@char_embedding": {
         "_base": "token_embedding",
-        "config":{
+        "config": {
             "train": { // only train stage using
                 "embedding_file": null,
                 "tokenizer": null,

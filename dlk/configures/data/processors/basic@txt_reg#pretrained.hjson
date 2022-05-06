@@ -2,25 +2,37 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_reg#pretrained",
     "config": {
-        "feed_order": ["load", "txt_reg_loader", "tokenizer", "save"]
+        "feed_order": [
+            "load",
+            "txt_reg_loader",
+            "tokenizer",
+            "save"
+        ]
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*",  // save load data base dir
+        "data_dir": "*@*", // save load data base dir
     },
     "_link": {
-        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path"],
-        "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
+        "config.tokenizer_config_path": [
+            "subprocessor@tokenizer.config.train.config_path"
+        ],
+        "config.data_dir": [
+            "subprocessor@load.config.base_dir",
+            "subprocessor@save.config.base_dir"
+        ],
     },
     "subprocessor@load": {
         "_base": "load",
     },
     "subprocessor@save": {
         "_base": "save",
-        "config":{
-            "base_dir": "."
-            "train":{
+        "config": {
+            "base_dir": "",
+            "train": {
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ["tokenizer"] //only for next time use
+                    "meta.pkl": [
+                        "tokenizer"
+                    ] //only for next time use
                 }
             },
             "predict": {
@@ -28,20 +40,22 @@
             }
         }
     },
-    "subprocessor@txt_reg_loader":{
+    "subprocessor@txt_reg_loader": {
         "_base": "basic_data_loader@txt_reg",
-        "config":{
+        "config": {
             "data_type": "single",
         }
     },
-    "subprocessor@tokenizer":{
+    "subprocessor@tokenizer": {
         "_base": "fast_tokenizer",
         "config": {
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": { "is_pretokenized": false},
+                "process_data": {
+                    "is_pretokenized": false
+                },
                 "input_map": {
                     "sentence": "sentence", //for sigle input, tokenizer the "sentence"
                 },

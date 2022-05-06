@@ -19,8 +19,10 @@ from dlk.data.processors import IProcessor, processor_config_register, processor
 from dlk.data.subprocessors import subprocessor_config_register, subprocessor_register
 from dlk.utils.config import BaseConfig
 from dlk.utils.logger import Logger
+from dlk.utils.io import open
 
 logger = Logger.get_logger()
+
 
 @processor_config_register('basic')
 class BasicProcessorConfig(BaseConfig):
@@ -36,7 +38,7 @@ class BasicProcessorConfig(BaseConfig):
         >>>     "subprocessor@load": {
         >>>         "_base": "load",
         >>>         "config":{
-        >>>             "base_dir": "."
+        >>>             "base_dir": "",
         >>>             "predict":{
         >>>                 "meta": "./meta.pkl",
         >>>             },
@@ -50,7 +52,7 @@ class BasicProcessorConfig(BaseConfig):
         >>>     "subprocessor@save": {
         >>>         "_base": "save",
         >>>         "config":{
-        >>>             "base_dir": "."
+        >>>             "base_dir": "",
         >>>             "train":{
         >>>                 "processed": "processed_data.pkl", // all data
         >>>                 "meta": {
@@ -124,11 +126,11 @@ class BasicProcessorConfig(BaseConfig):
         >>>     },
         >>> }
     """
-
     def __init__(self, stage, config: Dict):
         super(BasicProcessorConfig, self).__init__(config)
         if isinstance(config, str):
-            config = hjson.load(open(config), object_pairs_hook=dict)
+            with open(config) as f:
+                config = hjson.load(f, object_pairs_hook=dict)
         self.feed_order = config["config"]['feed_order']
         self.subprocessors = config
         self.stage = stage
@@ -147,14 +149,18 @@ class BasicProcessor(IProcessor):
 
         self.subprocessors = {}
         for name in self.feed_order:
-            subprocessor_config_dict = config.subprocessors[f'subprocessor@{name}']
+            subprocessor_config_dict = config.subprocessors[
+                f'subprocessor@{name}']
             logger.info(f"Init '{name}' ....")
             subprocessor_name = subprocessor_config_dict["_name"]
-            subprocessor_config = subprocessor_config_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config_dict)
-            subprocessor = subprocessor_register.get(subprocessor_name)(stage=self.stage, config=subprocessor_config)
+            subprocessor_config = subprocessor_config_register.get(
+                subprocessor_name)(stage=self.stage,
+                                   config=subprocessor_config_dict)
+            subprocessor = subprocessor_register.get(subprocessor_name)(
+                stage=self.stage, config=subprocessor_config)
             self.subprocessors[name] = subprocessor
 
-    def process(self, data: Dict)->Dict:
+    def process(self, data: Dict) -> Dict:
         """Process entry
 
         Args:
@@ -176,4 +182,3 @@ class BasicProcessor(IProcessor):
         logger.info(f"Data Processed.")
 
         return data
-

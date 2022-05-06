@@ -23,6 +23,7 @@ from dlk.utils.get_root import get_root
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint
 from dlk.core.callbacks import callback_register, callback_config_register
+from dlk.utils.io import open
 import dlk.utils.parser as parser
 from pytorch_lightning.loggers import TensorBoardLogger
 
@@ -162,7 +163,8 @@ class LightningManagerConfig(BaseConfig):
         for callback_name in callback_names:
             callback_config = config.get(f"callback@{callback_name}", {})
             if not callback_config:
-                callback_config = hjson.load(open(os.path.join(get_root(), f'dlk/configures/core/callbacks/{callback_name}.hjson'), 'r'), object_pairs_hook=dict)
+                with open(os.path.join(get_root(), f'dlk/configures/core/callbacks/{callback_name}.hjson'), 'r') as f:
+                    callback_config = hjson.load(f, object_pairs_hook=dict)
                 parser_callback_config = parser.config_parser_register.get('callback')(callback_config).parser_with_check(parser_link=False)
                 assert len(parser_callback_config) == 1, f"Don't support multi callback config for one callback."
                 callback_config = parser_callback_config[0]
