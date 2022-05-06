@@ -17,6 +17,7 @@ import json
 import hjson
 from typing import Dict, Union, Any
 from dlk.data.processors import processor_config_register, processor_register
+from dlk.utils.io import open
 
 
 class Processor(object):
@@ -24,7 +25,8 @@ class Processor(object):
     def __init__(self, config: Union[str, Dict]):
         super(Processor, self).__init__()
         if not isinstance(config, dict):
-            config = hjson.load(open(config), object_pairs_hook=dict)
+            with open(config) as f:
+                config = hjson.load(f, object_pairs_hook=dict)
             config = BaseConfigParser(config).parser_with_check()
             assert len(config) == 1, f"Currently we didn't support search for Processor, if you require this feature please create an issue to describe the reason details."
             self.config = config[0]

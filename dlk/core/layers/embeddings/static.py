@@ -16,6 +16,7 @@ import torch.nn as nn
 from . import embedding_register, embedding_config_register
 from typing import Dict, List, Set
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
+from dlk.utils.io import open
 import pickle as pkl
 from dlk.utils.logger import Logger
 import torch
@@ -49,7 +50,8 @@ class StaticEmbeddingConfig(BaseModuleConfig):
         config = config['config']
 
         embedding_file = config['embedding_file']
-        embedding_file = pkl.load(open(embedding_file, 'rb'))
+        with open(embedding_file, 'rb') as f:
+            embedding_file = pkl.load(f)
         embedding_trace = config["embedding_trace"]
         if embedding_trace != '.':
             traces = embedding_trace.split('.')

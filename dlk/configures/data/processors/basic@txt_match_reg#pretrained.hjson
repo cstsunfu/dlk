@@ -2,30 +2,44 @@
     // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_match_reg#pretrained",
     "config": {
-        "feed_order": ["load", "txt_reg_loader", "tokenizer", "save"]
+        "feed_order": [
+            "load",
+            "txt_reg_loader",
+            "tokenizer",
+            "save"
+        ],
         "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*",  // save load data base dir
-        "truncation": {     // if this is set to None or empty, will not do trunc
+        "data_dir": "*@*", // save load data base dir
+        "truncation": { // if this is set to None or empty, will not do trunc
             "max_length": 512,
             "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
         },
     },
     "_link": {
-        "config.tokenizer_config_path": ["subprocessor@tokenizer.config.train.config_path"],
-        "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
-        "config.truncation": ["subprocessor@tokenizer.config.train.truncation"],
+        "config.tokenizer_config_path": [
+            "subprocessor@tokenizer.config.train.config_path"
+        ],
+        "config.data_dir": [
+            "subprocessor@load.config.base_dir",
+            "subprocessor@save.config.base_dir"
+        ],
+        "config.truncation": [
+            "subprocessor@tokenizer.config.train.truncation"
+        ],
     },
     "subprocessor@load": {
         "_base": "load",
     },
     "subprocessor@save": {
         "_base": "save",
-        "config":{
-            "base_dir": "."
-            "train":{
+        "config": {
+            "base_dir": "",
+            "train": {
                 "processed": "processed_data.pkl", // all data
                 "meta": {
-                    "meta.pkl": ["tokenizer"] //only for next time use
+                    "meta.pkl": [
+                        "tokenizer"
+                    ] //only for next time use
                 }
             },
             "predict": {
@@ -33,10 +47,10 @@
             }
         }
     },
-    "subprocessor@txt_reg_loader":{
+    "subprocessor@txt_reg_loader": {
         "_base": "basic_data_loader@txt_reg_pair",
     },
-    "subprocessor@tokenizer":{
+    "subprocessor@tokenizer": {
         "_base": "fast_tokenizer@pair",
     },
 }

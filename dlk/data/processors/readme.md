@@ -21,11 +21,11 @@ Some config value set to "*@*", this means you must provided this key-value pair
         "subprocessor@load": {
             "_name": "load",
             "config":{
-                "base_dir": "."
+                "base_dir": "",
                 "predict":{
                     "token_ids": "./token_ids.pkl",
                     "embedding": "./embedding.pkl",
-                    "label_ids": "./label_ids.pkl",
+                    "label_ids": "./label_ids.pkl"
                 },
                 "online": [
                     "predict", //base predict
@@ -37,13 +37,13 @@ Some config value set to "*@*", this means you must provided this key-value pair
         "subprocessor@save": {
             "_name": "save",
             "config":{
-                "base_dir": "."
+                "base_dir": "",
                 "train":{
                     "data.train": "./train.pkl",
                     "data.dev": "./dev.pkl",
                     "token_ids": "./token_ids.pkl",
                     "embedding": "./embedding.pkl",
-                    "label_ids": "./label_ids.pkl",
+                    "label_ids": "./label_ids.pkl"
                 },
                 "predict": {
                     "data.predict": "./predict.pkl"

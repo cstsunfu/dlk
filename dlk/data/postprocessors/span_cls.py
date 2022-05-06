@@ -23,6 +23,7 @@ from typing import Dict
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register, IPostProcessor, IPostProcessorConfig
 from dlk.utils.logger import Logger
 from dlk.utils.vocab import Vocabulary
+from dlk.utils.io import open
 from tokenizers import Tokenizer
 import torchmetrics
 logger = Logger.get_logger()
@@ -92,7 +93,8 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         self._index = self.input_map['_index']
 
         if isinstance(self.config['meta'], str):
-            meta = pkl.load(open(self.config['meta'], 'rb'))
+            with open(self.config['meta'], 'rb') as f:
+                meta = pkl.load(f)
         else:
             raise PermissionError("You must provide meta data(vocab & tokenizer) for ner postprocess.")
 
@@ -343,14 +345,13 @@ class SpanClsPostProcessor(IPostProcessor):
             save_condition = True
         if save_condition:
             save_path = os.path.join(self.config.save_root_path, self.config.save_path.get(stage, ''))
-            if not os.path.exists(save_path):
-                os.makedirs(save_path, exist_ok=True)
             if "current_step" in rt_config:
                 save_file = os.path.join(save_path, f"step_{str(rt_config['current_step'])}_predict.json")
             else:
                 save_file = os.path.join(save_path, 'predict.json')
             logger.info(f"Save the {stage} predict data at {save_file}")
-            json.dump(predicts, open(save_file, 'w'), indent=4, ensure_ascii=False)
+            with open(save_file, 'w') as f:
+                json.dump(predicts, f, indent=4, ensure_ascii=False)
 
     def calc_score(self, predict_list: List, ground_truth_list: List):
         """use predict_list and ground_truth_list to calc scores

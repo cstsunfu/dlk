@@ -21,7 +21,7 @@ from dlk.data.datamodules import datamodule_register, datamodule_config_register
 from dlk.managers import manager_register, manager_config_register
 from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
-from smart_open import open
+from dlk.utils.io import open
 import torch
 import copy
 import uuid
@@ -53,7 +53,8 @@ class Predict(object):
     def __init__(self, config: Union[str, dict], checkpoint: str):
         super(Predict, self).__init__()
         if not isinstance(config, dict):
-            config = hjson.load(open(config), object_pairs_hook=dict)
+            with open(config) as f:
+                config = hjson.load(f, object_pairs_hook=dict)
 
         self.focus = config.pop('_focus', {})
         configs = BaseConfigParser(config).parser_with_check()
@@ -156,8 +157,8 @@ class Predict(object):
 
         """
 
-        self.data = pkl.load(open(config['config']['data_path'],
-                                  'rb')).get('data', {})
+        with open(config['config']['data_path'], 'rb') as f:
+            self.data = pkl.load(f).get('data', {})
         return self.data
 
     def get_datamodule(self, config, data):

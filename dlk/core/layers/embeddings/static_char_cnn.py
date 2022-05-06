@@ -18,6 +18,7 @@ from dlk.core.modules import module_register, module_config_register
 from typing import Dict, List, Set
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
 import pickle as pkl
+from dlk.utils.io import open
 from dlk.utils.logger import Logger
 import torch
 
@@ -65,7 +66,8 @@ class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
 
         config = config['config']
         embedding_file = config['embedding_file']
-        embedding_file = pkl.load(open(embedding_file, 'rb'))
+        with open(embedding_file, 'rb') as f:
+            embedding_file = pkl.load(f)
         embedding_trace = config["embedding_trace"]
         if embedding_trace != '.':
             traces = embedding_trace.split('.')
