@@ -19,4 +19,4 @@ def open(path: str, *args, **kwargs):
                 except Exception as e:
                     logger.error(f"Currently dlk is only support `hdfs` and `local` file.")
                     raise e
-    return smart_open.smart_open(path, *args, **kwargs)
+    return smart_open.open(path, *args, **kwargs)
