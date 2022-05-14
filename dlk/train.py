@@ -22,10 +22,8 @@ from dlk.managers import manager_register, manager_config_register
 from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
 from dlk.utils.io import open
-import uuid
 import json
 from dlk.utils.logger import Logger
-import logging
 
 logger = Logger.get_logger()
 
