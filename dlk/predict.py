@@ -63,6 +63,8 @@ class Predict(object):
         ) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
         self.config = configs[0]
 
+        # TODO: FIXME: use pytorch-lightning build in remote filesystem
+        # https://pytorch-lightning.readthedocs.io/en/latest/common/remote_fs.html
         if isinstance(checkpoint, str):
             with open(checkpoint, 'rb') as f:
                 self.ckpt = torch.load(f, map_location=torch.device('cpu'))
