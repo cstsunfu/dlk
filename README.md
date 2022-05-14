@@ -38,7 +38,9 @@ python setup.py install
     - [ ] Provide a web server for online predict.
 
 - [ ] One `optimizer` different para groups use different `scheduler`s. [diff_schedule](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
-~~- [ ] Support LightGBM, it's maybe not necessary? Will split to another package.~~
+
+- [ ] ~~Support LightGBM, it's maybe not necessary? Will split to another package.~~
+
 * [ ] Make most modules like CRF to be scriptable
 
 * [X] Add UnitTest
