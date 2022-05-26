@@ -684,11 +684,32 @@ class LinkConfigParser(object):
         return [self.config]
 
 
+module_dir_map = {
+    "task": "dlk/configures/tasks",
+    "manager": "dlk/configures/managers",
+    "callback": "dlk/configures/core/callbacks",
+    "datamodule": "dlk/configures/data/datamodules",
+    "imodel": "dlk/configures/core/imodels",
+    "model": "dlk/configures/core/models",
+    "optimizer": "dlk/configures/core/optimizers",
+    "scheduler": "dlk/configures/core/schedulers",
+    "initmethod": "dlk/configures/core/initmethods",
+    "loss": "dlk/configures/core/losses",
+    "encoder": "dlk/configures/core/layers/encoders",
+    "decoder": "dlk/configures/core/layers/decoders",
+    "embedding": "dlk/configures/core/layers/embeddings",
+    "module": "dlk/configures/core/modules",
+    "processor": "dlk/configures/data/processors",
+    "subprocessor": "dlk/configures/data/subprocessors",
+    "postprocessor": "dlk/configures/data/postprocessors",
+}
+
+
 @config_parser_register('task')
 class TaskConfigParser(BaseConfigParser):
     """docstring for TaskConfigParser"""
     def __init__(self, config_file):
-        super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/tasks/')
+        super(TaskConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['task'])
 
 
 @config_parser_register('root')
@@ -702,108 +723,107 @@ class RootConfigParser(BaseConfigParser):
 class ManagerConfigParser(BaseConfigParser):
     """docstring for ManagerConfigParser"""
     def __init__(self, config_file):
-        super(ManagerConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/managers/', register=manager_config_register)
+        super(ManagerConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['manager'], register=manager_config_register)
 
 
 @config_parser_register('callback')
 class CallbackConfigParser(BaseConfigParser):
     """docstring for CallbackConfigParser"""
     def __init__(self, config_file):
-        super(CallbackConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/callbacks/', register=callback_config_register)
+        super(CallbackConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['callback'], register=callback_config_register)
 
 
 @config_parser_register('datamodule')
 class DatamoduleConfigParser(BaseConfigParser):
     """docstring for DatamoduleConfigParser"""
     def __init__(self, config_file):
-        super(DatamoduleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/datamodules/', register=datamodule_config_register)
+        super(DatamoduleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['datamodule'], register=datamodule_config_register)
 
 
 @config_parser_register('imodel')
 class IModelConfigParser(BaseConfigParser):
     """docstring for IModelConfigParser"""
     def __init__(self, config_file):
-        super(IModelConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/imodels/', register=imodel_config_register)
+        super(IModelConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['imodel'], register=imodel_config_register)
 
 
 @config_parser_register('model')
 class ModelConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""
     def __init__(self, config_file):
-        super(ModelConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/models/', register=model_config_register)
+        super(ModelConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['model'], register=model_config_register)
 
 
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):
     """docstring for OptimizerConfigParser"""
     def __init__(self, config_file):
-        super(OptimizerConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/optimizers/', register=optimizer_config_register)
-
+        super(OptimizerConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['optimizer'], register=optimizer_config_register)
 
 @config_parser_register('scheduler')
 class ScheduleConfigParser(BaseConfigParser):
     """docstring for ScheduleConfigParser"""
     def __init__(self, config_file):
-        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/schedulers/', register=scheduler_config_register)
+        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['scheduler'], register=scheduler_config_register)
 
 @config_parser_register('initmethod')
 class InitMethodConfigParser(BaseConfigParser):
     """docstring for InitMethodConfigParser"""
     def __init__(self, config_file):
-        super(InitMethodConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/initmethods/', register=initmethod_config_register)
+        super(InitMethodConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['initmethod'], register=initmethod_config_register)
 
 
 @config_parser_register('loss')
 class LossConfigParser(BaseConfigParser):
     """docstring for LossConfigParser"""
     def __init__(self, config_file):
-        super(LossConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/losses/', register=loss_config_register)
+        super(LossConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['loss'], register=loss_config_register)
 
 
 @config_parser_register('encoder')
 class EncoderConfigParser(BaseConfigParser):
     """docstring for EncoderConfigParser"""
     def __init__(self, config_file):
-        super(EncoderConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/encoders/', register=encoder_config_register)
+        super(EncoderConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['encoder'], register=encoder_config_register)
 
 
 @config_parser_register('decoder')
 class DecoderConfigParser(BaseConfigParser):
     """docstring for DecoderConfigParser"""
     def __init__(self, config_file):
-        super(DecoderConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/decoders/', register=decoder_config_register)
+        super(DecoderConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['decoder'], register=decoder_config_register)
 
 
 @config_parser_register('embedding')
 class EmbeddingConfigParser(BaseConfigParser):
     """docstring for EmbeddingConfigParser"""
     def __init__(self, config_file):
-        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/embeddings/', register=embedding_config_register)
+        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['embedding'], register=embedding_config_register)
 
 
 @config_parser_register('module')
 class ModuleConfigParser(BaseConfigParser):
     """docstring for ModuleConfigParser"""
     def __init__(self, config_file):
-        super(ModuleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/modules/', register=module_config_register)
+        super(ModuleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['module'], register=module_config_register)
 
 @config_parser_register('processor')
 class ProcessorConfigParser(BaseConfigParser):
     """docstring for ProcessorConfigParser"""
     def __init__(self, config_file):
-        super(ProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/processors/', register=processor_config_register)
+        super(ProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['processor'], register=processor_config_register)
 
 
 @config_parser_register('subprocessor')
 class SubProcessorConfigParser(BaseConfigParser):
     """docstring for SubProcessorConfigParser"""
     def __init__(self, config_file):
-        super(SubProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/subprocessors/', register=subprocessor_config_register)
+        super(SubProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['subprocessor'], register=subprocessor_config_register)
 
 
 @config_parser_register('postprocessor')
 class PostProcessorConfigParser(BaseConfigParser):
     """docstring for PostProcessorConfigParser"""
     def __init__(self, config_file):
-        super(PostProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/postprocessors/', register=postprocessor_config_register)
+        super(PostProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['postprocessor'], register=postprocessor_config_register)
 
