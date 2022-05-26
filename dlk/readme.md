@@ -37,6 +37,57 @@ We set mask==1 for used data, mask==0 for useless data
 
 ### Batch First
 All data set batch_first=True
+
+
+### Task naming appointments
+
+DLK处理的所有问题我们都看做一个任务，而一个任务又会划分为多个子任务, 子任务又可以有自己的子任务，下面是一个任务的定义方式:
+
+```
+{
+    "_name": "task_name", //or "_base", "base_task_name"
+    "_link": {}, // this is reserved keywords
+    "_search: {}, // this is reserved keywords"
+    "sub_task1":{
+    },
+    "sub_task2":{
+    }
+}
+
+```
+
+由于所有的任务他们本身又可以被视为其他任务的子任务，所以我们就来看一下关于一个子任务的一些约定
+```
+这是一个子任务的配置格式
+
+{
+    "sub_task_name": {
+        "_name": "sub_task_config_name",
+        ...config
+    }
+}
+
+or
+
+{
+    "sub_task_name": {
+        "_base": "base_sub_task_config_name",
+        ...additional config
+    }
+}
+
+```
+配置的key表示这个子任务
+
+`sub_task_name` 的命名一般会表示该子任务在这个task中所扮演的角色，而每个子任务一般都是由dlk的一个专门的模块进行处理，比如`processor`任务中的`subprocessor`子任务均由`dlk.data.subprocessors`这个模块集合(这个里面会有多个subprocessor)进行处理，为了能区分不同的`subprocessor`我们在对`sub_task_name`进行命名时会采用`subprocessor@subprocessor_name_a`来表明我们使用的是`subprocessors`这个模块集合中的具有`subprocessor_name_a`这个功能的`subprocessor`来处理.
+
+对于配置文件中的 `_base` 或 `_name` 模块的命名则会省略掉key中已经包含的`sub_task_name`
+
+采用 `AA@BB#CC`的方式对一个子任务的configure进行命名
+
+其中 `AA`表示处理`sub_task_name`所在表示的模块集合中的具体模块名，比如最常见的`basic`表示使用`basic`模块处理这个子任务，处理方法在对应模块集合中的名为`basic`中定义的逻辑处理
+
+`BB`表明这个config处理的是什么问题比如（`seq_lab`/`txt_cls`/ets.）, `CC`则表明处理这个问题的配置文件的核心特征
     
 ## Model appointments
 
