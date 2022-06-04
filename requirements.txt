@@ -1,8 +1,9 @@
+torch>=1.8.2
 twine 
 wheel
 setuptools
 packaging>=20.9
-colorlog>=4.8.0
+loguru>=0.6.0
 smart_open>=6.0.0
 pyahocorasick>=1.4.2
 jsoneditor>=1.4.3

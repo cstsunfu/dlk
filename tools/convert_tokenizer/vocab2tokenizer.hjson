@@ -1,9 +1,0 @@
-{
-    "unk": "[UNK]",
-    "vocab": "./data/vocab.txt",
-    "do_norm": false,
-    "do_lowercase": false,
-    "do_bert_postprocess": false,
-    "pre_tokenizer": 'whitespace',
-    "output": './data/vocab_tokenizer.json',
-}
