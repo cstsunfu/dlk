@@ -29,7 +29,7 @@ class CharGatherConfig(BaseConfig):
         >>> {
         >>>     "_name": "char_gather",
         >>>     "config": {
-        >>>         "train": { // only train stage using
+        >>>         "train": {
         >>>             "data_set": {                   // for different stage, this processor will process different part of data
         >>>                 "train": ["train", "valid", 'test']
         >>>             },

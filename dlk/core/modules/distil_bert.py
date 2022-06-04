@@ -23,6 +23,7 @@ from typing import Dict
 from dlk.utils.logger import Logger
 from . import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
+from dlk.utils.io import open
 
 logger = Logger.get_logger()
 
@@ -51,13 +52,15 @@ class DistilBertWrapConfig(BaseConfig):
         self.dropout = config['config']['dropout']
         if os.path.isdir(self.pretrained_model_path):
             if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
-                self.distil_bert_config = DistilBertConfig(**json.load(open(os.path.join(self.pretrained_model_path, 'config.json'), 'r')))
+                with open(os.path.join(self.pretrained_model_path, 'config.json'), 'r') as f:
+                    self.distil_bert_config = DistilBertConfig(**json.load(f))
             else:
                 raise PermissionError(f"config.json must in the dir {self.pretrained_model_path}")
         else:
             if os.path.isfile(self.pretrained_model_path):
                 try:
-                    self.distil_bert_config = DistilBertConfig(**json.load(open(self.pretrained_model_path, 'r')))
+                    with open(self.pretrained_model_path, 'r') as f:
+                        self.distil_bert_config = DistilBertConfig(**json.load(f))
                 except:
                     raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
         self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain', 'freeze', 'dropout'])

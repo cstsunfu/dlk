@@ -1,11 +1,9 @@
 
-# A Deep Learning Kit
+# A Deep Learning ToolKit
 
-This project is WIP, only provide some basic method, and is not been tested.
+This project is WIP.
 
-```
-WARNING: The documents in `read the docs` is not complete( I do not know what I miss.). You can build the docs locally by read the docs/readme.md.
-```
+[Read the Docs](https://dlk.readthedocs.io/en/latest/)
 
 
 ## Install
@@ -25,30 +23,28 @@ python setup.py install
 * Provide parameters search.
 * Provide basic architecture search.
 * Provide some basic modules and models.
-* Provide basic deploy method.
+* Provide reuse the pretrained model for predict.
 
 ## More Feature is Comming
 
-- [ ] Add more documents.
+
+- [ ] Generate models.
+
 - [ ] Distill structure.
-- [ ] Adv training.
-- [ ] Add disable tokenizer post process.
 
-- [ ] Predict
+- [ ] Computer vision support.
 
-    - [X] Complete the main predict code.
-    - [ ] Test.
-    - [ ] Convert to TorchScript.
-    - [ ] Convert to ONNXRT
+- [ ] Online service
+    - [ ] Provide a web server for online predict.
 
-* [X] When the high config change the _name of the basic config, the base config should be coverd.
+- [ ] One `optimizer` different para groups use different `scheduler`s. [diff_schedule](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
 
-- [ ] One `optimizer` different para groups use different `scheduler`s.
-  
-    - [ ] Ref [diff_schedule](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
-    - [ ] Add loss schedule, get best checkpoint by loss.
+- [ ] ~~Support LightGBM, it's maybe not necessary? Will split to another package.~~
 
-- [ ] Support LightGBM, it's maybe not necessary? Will split to another package.
-* [ ] Make CRF and more modules which uses the op like `for` and `if` to be scriptable（`for`，`if`）
-* [ ] Validating LSTM module is scriptable or not?
-* [ ] Add UnitTest
+* [ ] Make most modules like CRF to be scriptable
+
+* [X] Add UnitTest
+    * [X] Parser
+    * [X] Tokenizer
+    * [X] Config
+    * [X] Link

@@ -84,10 +84,7 @@ class Vocabulary(object):
             KeyError
 
         """
-        try:
-            return self.idx2word[int(index)]
-        except:
-            raise KeyError('Undefined index: {}'.format(index))
+        return self.idx2word[int(index)]
 
     def auto_get_index(self, data: Union[str, List]):
         """get the index of word ∈data from this vocab
@@ -153,6 +150,7 @@ class Vocabulary(object):
                     self.word2idx[token] = index
                     self.idx2word[index] = token
                     index += 1
+        return self
 
     def get_word(self, index: int)->str:
         """get the word by index

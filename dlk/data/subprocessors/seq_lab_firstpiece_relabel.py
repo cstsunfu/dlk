@@ -18,6 +18,7 @@ from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 from functools import partial
 from dlk.utils.logger import Logger
+import os
 import pandas as pd
 
 logger = Logger.get_logger()
@@ -31,7 +32,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         >>> {
         >>>     "_name": "seq_lab_firstpiece_relabel",
         >>>     "config": {
-        >>>         "train":{ //train、predict、online stage config,  using '&' split all stages
+        >>>         "train":{
         >>>             "input_map": {  // without necessery, don't change this
         >>>                 "word_ids": "word_ids",
         >>>                 "offsets": "offsets",
@@ -55,7 +56,7 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         >>>             "entity_priority": [],
         >>>             //"entity_priority": ['Product'],
         >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
-        >>>         }, //3
+        >>>         },
         >>>         "predict": "train",
         >>>         "online": "train",
         >>>     }
@@ -129,12 +130,20 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_firstpiece_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            data_set[[self.config.output_labels,
-                self.config.gather_index,
-                self.config.word_word_ids,
-                self.config.word_offsets,
-                self.config.entities_info
-            ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+            if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
+                data_set[[self.config.output_labels,
+                    self.config.gather_index,
+                    self.config.word_word_ids,
+                    self.config.word_offsets,
+                    self.config.entities_info
+                ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+            else:
+                data_set[[self.config.output_labels,
+                    self.config.gather_index,
+                    self.config.word_word_ids,
+                    self.config.word_offsets,
+                    self.config.entities_info
+                ]] = data_set.apply(self.relabel, axis=1, result_type="expand")
         return data
 
     def find_position_in_offsets(self, position: int, offset_list: List, sub_word_ids: List, start: int, end: int, is_start: bool=False):

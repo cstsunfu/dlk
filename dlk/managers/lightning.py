@@ -23,16 +23,15 @@ from dlk.utils.get_root import get_root
 import os
 from pytorch_lightning.callbacks import ModelCheckpoint
 from dlk.core.callbacks import callback_register, callback_config_register
-from dlk.utils.parser import config_parser_register
+from dlk.utils.io import open
+import dlk.utils.parser as parser
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
 @manager_config_register('lightning')
 class LightningManagerConfig(BaseConfig):
     """docstring for LightningManagerConfig
-    check
-    https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.trainer.trainer.html?highlight=trainer#trainer
-    for para details
+    check https://pytorch-lightning.readthedocs.io trainer for paramaters detail
     """
 
     def __init__(self, config):
@@ -48,11 +47,8 @@ class LightningManagerConfig(BaseConfig):
         self.gradient_clip_val = manager_config["gradient_clip_val"] # None
         self.gradient_clip_algorithm = manager_config["gradient_clip_algorithm"] # None TODO: ? default = 'norm', can select 'norm' or 'value
         self.num_nodes = manager_config["num_nodes"] # 1
-        self.num_processes = manager_config["num_processes"] # 1
         self.devices = manager_config["devices"] # None
-        self.gpus = manager_config["gpus"] # None
         self.auto_select_gpus = manager_config["auto_select_gpus"] # False
-        self.tpu_cores = manager_config["tpu_cores"] # None
         self.ipus = manager_config["ipus"] # None
         self.log_gpu_memory = manager_config["log_gpu_memory"] # None
         self.enable_progress_bar = manager_config["enable_progress_bar"] # True
@@ -106,11 +102,8 @@ class LightningManagerConfig(BaseConfig):
             "gradient_clip_val",
             "gradient_clip_algorithm",
             "num_nodes",
-            "num_processes",
             "devices",
-            "gpus",
             "auto_select_gpus",
-            "tpu_cores",
             "ipus",
             "log_gpu_memory",
             "enable_progress_bar",
@@ -170,8 +163,9 @@ class LightningManagerConfig(BaseConfig):
         for callback_name in callback_names:
             callback_config = config.get(f"callback@{callback_name}", {})
             if not callback_config:
-                callback_config = hjson.load(open(os.path.join(get_root(), f'dlk/configures/core/callbacks/{callback_name}.hjson'), 'r'), object_pairs_hook=dict)
-                parser_callback_config = config_parser_register.get('callback')(callback_config).parser_with_check(parser_link=False)
+                with open(os.path.join(get_root(), f'dlk/configures/core/callbacks/{callback_name}.hjson'), 'r') as f:
+                    callback_config = hjson.load(f, object_pairs_hook=dict)
+                parser_callback_config = parser.config_parser_register.get('callback')(callback_config).parser_with_check(parser_link=False)
                 assert len(parser_callback_config) == 1, f"Don't support multi callback config for one callback."
                 callback_config = parser_callback_config[0]
                 assert not callback_config.get("_link", {}), f"Callback don't support _link"

@@ -78,8 +78,7 @@ class TokenNormConfig(BaseConfig):
         ])
 
     def tokenize(self, seq):
-        """TODO: Docstring for whitespace_split.
-        :returns: TODO
+        """tokenize the seq
         """
         encode = self.tokenizer.encode(seq)
         return encode

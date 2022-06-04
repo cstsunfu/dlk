@@ -93,60 +93,60 @@ class LinkUnionTool(object):
             return self.find(self.link_union[key])
         return self.link_union[key]
 
-    def low_level_union(self, parant: str, child: str):
-        """union the low level parant->child pair
+    def low_level_union(self, link_from: str, link_to: str):
+        """union the low level link_from->link_to pair
 
-        On the basis of the high-level links, `low_level_union` should be used when regist low-level link
-        If parent and child wer all not appeared at before, we will directly regist them.
-        If only one of the parent and child appeared, the value of the parent and child will be overwritten by the corresponding value of the upper level,
-        If they both appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
+        On the basis of the high-level links, this function is used to regist low-level link
+        If `link-from` and `link-to` were all not appeared at before, they will be directly registed.
+        If only one of the `link-from` and `link-to` appeared, the value of the `link-from` and `link-to` will be overwritten by the corresponding value of the upper level,
+        If both `link-from` and `link-to` appeared at before, and if they linked the same value, we will do nothing, otherwise `RAISE AN ERROR`
 
         Args:
-            parant: the from key
-            child: the target key
+            link_from: the link-from key
+            link_to: the link-to key
 
         Returns: 
             None
 
         """
-        if self.find(parant) and self.find(child):  # all has been linked
-            if self.find(parant)!= self.find(child):
-                raise PermissionError(f"The  {parant} and {child} has been linked to different values, but now you want to link them together.")
-            elif self.find(parant) == child:
-                logger.warning(f"High level config has the link '{child} -> {parant}', and the low level reversed link '{parant} -> {child}' is been ignored.")
+        if self.find(link_from) and self.find(link_to):  # all has been linked
+            if self.find(link_from)!= self.find(link_to):
+                raise PermissionError(f"The  {link_from} and {link_to} has been linked to different values, but now you want to link them together.")
+            elif self.find(link_from) == link_to:
+                logger.warning(f"High level config has the link '{link_to} -> {link_from}', and the low level reversed link '{link_from} -> {link_to}' is been ignored.")
             else:
                 return
-        elif self.find(child): # only child has been linked
-            logger.warning(f"Parameter '{child}' has been linked in high level config, the link '{parant} -> {child}' is invalid, and the real link is been reversed as '{child} -> {parant}'.")
-            self.link_union[parant] = self.find(child)
-        elif self.find(parant): # only parant has been linked
-            self.link_union[child] = self.find(parant)
+        elif self.find(link_to): # only link_to has been linked
+            logger.warning(f"Parameter '{link_to}' has been linked in high level config, the link '{link_from} -> {link_to}' is invalid, and the real link is been reversed as '{link_to} -> {link_from}'.")
+            self.link_union[link_from] = self.find(link_to)
+        elif self.find(link_from): # only link_from has been linked
+            self.link_union[link_to] = self.find(link_from)
         else:
-            self.link_union[parant] = parant
-            self.link_union[child] = parant
+            self.link_union[link_from] = link_from
+            self.link_union[link_to] = link_from
 
-    def top_level_union(self, parant: str, child: str):
-        """union the top level parant->child pair
+    def top_level_union(self, link_from: str, link_to: str):
+        """union the top level link_from->link_to pair
 
-        Register the 'link'(parant -> child) in the same(top) level config should be merged using `top_level_union`
-        Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the target position, otherwise it will cause ambiguity.)
+        Register the 'link'(`link-from` -> `link-to`) in the same(top) level config should be merged using `top_level_union`
+        Parameters are not allowed to be assigned repeatedly (the same parameter cannot appear more than once in the `link-to` position, otherwise it will cause ambiguity.)
 
         Args:
-            parant: the from key
-            child: the target key
+            link_from: the link-from key
+            link_to: the link-to key
 
         Returns: 
             None
 
         """
-        if parant not in self.link_union:
-            self.link_union[parant] = parant
+        if link_from not in self.link_union:
+            self.link_union[link_from] = link_from
 
-        assert child not in self.link_union, f"{child} is repeated assignment"
-        self.link_union[child] = self.find(parant)
+        assert link_to not in self.link_union, f"{link_to} is repeated assignment"
+        self.link_union[link_to] = self.find(link_from)
 
     def register_top_links(self, links: Dict):
-        """register the top level links
+        """register the top level links, top level means the link_to level config
 
         Args:
             links: {"from": ["tolist"], "from2": "to2"}
@@ -163,10 +163,10 @@ class LinkUnionTool(object):
         return self
 
     def register_low_links(self, links: Dict):
-        """register the low level links
+        """register the low level links, low level means the base(parant) level config
 
         Args:
-            links: {"from": ["tolist"], "from2": "to2"}
+            links: {"link-from": ["list of link-to"], "link-from2": "link-to2"}
 
         Returns: 
             self
@@ -188,12 +188,12 @@ class LinkUnionTool(object):
         """
         links = {}
         for key in self.link_union:
-            parant = self.find(key)
-            if parant == key:
+            root = self.find(key)
+            if root == key:
                 continue
-            if parant not in links:
-                links[parant] = []
-            links[parant].append(key)
+            if root not in links:
+                links[root] = []
+            links[root].append(key)
         return links
 
 
@@ -214,10 +214,10 @@ class BaseConfigParser(object):
                 if os.path.isfile(os.path.join(get_root(), config_base_dir, config_file+'.hjson')):
                     self.config_file = self.load_hjson_file(os.path.join(get_root(), config_base_dir, config_file+'.hjson'))
                 else:
-                    self.config_file = register.get(config_file).default_config
+                    self.config_file = copy.deepcopy(register.get(config_file).default_config)
 
             except Exception as e:
-                logger.error(f"There is an error occur when loading {os.path.join(get_root(), config_base_dir, config_file)}")
+                logger.error(f"You must provide a configure file at {os.path.join(get_root(), config_base_dir, config_file)} or provide `default_config` as a class variable")
                 raise KeyError(e)
         elif isinstance(config_file, Dict):
             self.config_file = config_file
@@ -266,7 +266,7 @@ class BaseConfigParser(object):
         """inplace link the config[to] = config[source]
 
         Args:
-            link: {source1:to1, source2:[to2, to3]}
+            link: {link-from:link-to-1, link-from:[link-to-2, link-to-3]}
             config: will linked base config
 
         Returns: 
@@ -500,6 +500,7 @@ class BaseConfigParser(object):
         """flat all the _search paras to list
 
         support recursive parser _search now, this means you can add _search/_link/_base paras in _search paras
+        but you should only search currently level paras
 
         Args:
             search: search paras, {"para1": [1,2,3], 'para2': 'list(range(10))'}
@@ -519,7 +520,6 @@ class BaseConfigParser(object):
                 base_config.update(search_para)
                 extend_config = cls(base_config).parser(parser_link=False)
                 result.extend(extend_config)
-                # result.append(base_config)
 
         return result
 
@@ -578,7 +578,7 @@ class BaseConfigParser(object):
         """get catesian prod from named lists
 
         Args:
-            dict_of_list: {'name1': [1,2,3], 'name2': [1,2,3]}
+            dict_of_list: {'name1': [1,2,3], 'name2': "list(range(1, 4))"}
 
         Returns: 
             [{'name1': 1, 'name2': 1}, {'name1': 1, 'name2': 2}, {'name1': 1, 'name2': 3}, ...]
@@ -593,7 +593,7 @@ class BaseConfigParser(object):
         cur_para_search_list = []
         if isinstance(cur_paras, str):
             cur_paras = eval(cur_paras)
-        assert isinstance(cur_paras, list), f"The search options must be list, but you provide {cur_paras}({type(cur_paras)})"
+        assert isinstance(cur_paras, list), f"The search candidates must be list, but you provide {cur_paras}({type(cur_paras)})"
         for para in cur_paras:
             cur_para_search_list.append({cur_name: para})
         if len(dict_of_list) == 0:
@@ -684,11 +684,32 @@ class LinkConfigParser(object):
         return [self.config]
 
 
+module_dir_map = {
+    "task": "dlk/configures/tasks",
+    "manager": "dlk/configures/managers",
+    "callback": "dlk/configures/core/callbacks",
+    "datamodule": "dlk/configures/data/datamodules",
+    "imodel": "dlk/configures/core/imodels",
+    "model": "dlk/configures/core/models",
+    "optimizer": "dlk/configures/core/optimizers",
+    "scheduler": "dlk/configures/core/schedulers",
+    "initmethod": "dlk/configures/core/initmethods",
+    "loss": "dlk/configures/core/losses",
+    "encoder": "dlk/configures/core/layers/encoders",
+    "decoder": "dlk/configures/core/layers/decoders",
+    "embedding": "dlk/configures/core/layers/embeddings",
+    "module": "dlk/configures/core/modules",
+    "processor": "dlk/configures/data/processors",
+    "subprocessor": "dlk/configures/data/subprocessors",
+    "postprocessor": "dlk/configures/data/postprocessors",
+}
+
+
 @config_parser_register('task')
 class TaskConfigParser(BaseConfigParser):
     """docstring for TaskConfigParser"""
     def __init__(self, config_file):
-        super(TaskConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/tasks/')
+        super(TaskConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['task'])
 
 
 @config_parser_register('root')
@@ -702,108 +723,107 @@ class RootConfigParser(BaseConfigParser):
 class ManagerConfigParser(BaseConfigParser):
     """docstring for ManagerConfigParser"""
     def __init__(self, config_file):
-        super(ManagerConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/managers/', register=manager_config_register)
+        super(ManagerConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['manager'], register=manager_config_register)
 
 
 @config_parser_register('callback')
 class CallbackConfigParser(BaseConfigParser):
     """docstring for CallbackConfigParser"""
     def __init__(self, config_file):
-        super(CallbackConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/callbacks/', register=callback_config_register)
+        super(CallbackConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['callback'], register=callback_config_register)
 
 
 @config_parser_register('datamodule')
 class DatamoduleConfigParser(BaseConfigParser):
     """docstring for DatamoduleConfigParser"""
     def __init__(self, config_file):
-        super(DatamoduleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/datamodules/', register=datamodule_config_register)
+        super(DatamoduleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['datamodule'], register=datamodule_config_register)
 
 
 @config_parser_register('imodel')
 class IModelConfigParser(BaseConfigParser):
     """docstring for IModelConfigParser"""
     def __init__(self, config_file):
-        super(IModelConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/imodels/', register=imodel_config_register)
+        super(IModelConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['imodel'], register=imodel_config_register)
 
 
 @config_parser_register('model')
 class ModelConfigParser(BaseConfigParser):
     """docstring for ModelConfigParser"""
     def __init__(self, config_file):
-        super(ModelConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/models/', register=model_config_register)
+        super(ModelConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['model'], register=model_config_register)
 
 
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):
     """docstring for OptimizerConfigParser"""
     def __init__(self, config_file):
-        super(OptimizerConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/optimizers/', register=optimizer_config_register)
-
+        super(OptimizerConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['optimizer'], register=optimizer_config_register)
 
 @config_parser_register('scheduler')
 class ScheduleConfigParser(BaseConfigParser):
     """docstring for ScheduleConfigParser"""
     def __init__(self, config_file):
-        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/schedulers/', register=scheduler_config_register)
+        super(ScheduleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['scheduler'], register=scheduler_config_register)
 
 @config_parser_register('initmethod')
 class InitMethodConfigParser(BaseConfigParser):
     """docstring for InitMethodConfigParser"""
     def __init__(self, config_file):
-        super(InitMethodConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/initmethods/', register=initmethod_config_register)
+        super(InitMethodConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['initmethod'], register=initmethod_config_register)
 
 
 @config_parser_register('loss')
 class LossConfigParser(BaseConfigParser):
     """docstring for LossConfigParser"""
     def __init__(self, config_file):
-        super(LossConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/losses/', register=loss_config_register)
+        super(LossConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['loss'], register=loss_config_register)
 
 
 @config_parser_register('encoder')
 class EncoderConfigParser(BaseConfigParser):
     """docstring for EncoderConfigParser"""
     def __init__(self, config_file):
-        super(EncoderConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/encoders/', register=encoder_config_register)
+        super(EncoderConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['encoder'], register=encoder_config_register)
 
 
 @config_parser_register('decoder')
 class DecoderConfigParser(BaseConfigParser):
     """docstring for DecoderConfigParser"""
     def __init__(self, config_file):
-        super(DecoderConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/decoders/', register=decoder_config_register)
+        super(DecoderConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['decoder'], register=decoder_config_register)
 
 
 @config_parser_register('embedding')
 class EmbeddingConfigParser(BaseConfigParser):
     """docstring for EmbeddingConfigParser"""
     def __init__(self, config_file):
-        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/layers/embeddings/', register=embedding_config_register)
+        super(EmbeddingConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['embedding'], register=embedding_config_register)
 
 
 @config_parser_register('module')
 class ModuleConfigParser(BaseConfigParser):
     """docstring for ModuleConfigParser"""
     def __init__(self, config_file):
-        super(ModuleConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/core/modules/', register=module_config_register)
+        super(ModuleConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['module'], register=module_config_register)
 
 @config_parser_register('processor')
 class ProcessorConfigParser(BaseConfigParser):
     """docstring for ProcessorConfigParser"""
     def __init__(self, config_file):
-        super(ProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/processors/', register=processor_config_register)
+        super(ProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['processor'], register=processor_config_register)
 
 
 @config_parser_register('subprocessor')
 class SubProcessorConfigParser(BaseConfigParser):
     """docstring for SubProcessorConfigParser"""
     def __init__(self, config_file):
-        super(SubProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/subprocessors/', register=subprocessor_config_register)
+        super(SubProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['subprocessor'], register=subprocessor_config_register)
 
 
 @config_parser_register('postprocessor')
 class PostProcessorConfigParser(BaseConfigParser):
     """docstring for PostProcessorConfigParser"""
     def __init__(self, config_file):
-        super(PostProcessorConfigParser, self).__init__(config_file, config_base_dir='dlk/configures/data/postprocessors/', register=postprocessor_config_register)
+        super(PostProcessorConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['postprocessor'], register=postprocessor_config_register)
 

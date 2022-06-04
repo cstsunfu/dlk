@@ -16,10 +16,12 @@ from dlk.utils.config import ConfigTool, BaseConfig
 from dlk.utils.logger import Logger
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
+from dlk.utils.io import open
 import pickle as pkl
 import os
 
 logger = Logger.get_logger()
+
 
 @subprocessor_config_register('load')
 class LoadConfig(BaseConfig):
@@ -29,7 +31,7 @@ class LoadConfig(BaseConfig):
         >>> {
         >>>     "_name": "load",
         >>>     "config":{
-        >>>         "base_dir": "."
+        >>>         "base_dir": ""
         >>>         "predict":{
         >>>             "meta": "./meta.pkl",
         >>>         },
@@ -41,28 +43,26 @@ class LoadConfig(BaseConfig):
         >>>     }
         >>> },
     """
-
     def __init__(self, stage, config):
         super(LoadConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
-        self.base_dir:str = config.get('config').get("base_dir", ".")
+        self.base_dir: str = config.get('config').get("base_dir", "")
 
 
 @subprocessor_register('load')
 class Load(ISubProcessor):
     """ Loader the $meta, etc. to data
     """
-
     def __init__(self, stage: str, config: LoadConfig):
         super().__init__()
         self.stage = stage
         self.config = config.config
+        self.load_data = {}
         if not self.config:
             logger.info(f"Skip 'load' at stage {self.stage}")
             return
         self.base_dir = config.base_dir
 
-        self.load_data = {}
         for key, path in self.config.items():
             self.load_data[key] = self.load(path)
 
@@ -78,9 +78,10 @@ class Load(ISubProcessor):
         """
 
         logger.info(f"Loading file from {os.path.join(self.base_dir, path)}")
-        return pkl.load(open(os.path.join(self.base_dir, path), 'rb'))
+        with open(os.path.join(self.base_dir, path), 'rb') as f:
+            return pkl.load(f)
 
-    def process(self, data: Dict)->Dict:
+    def process(self, data: Dict) -> Dict:
         """Load entry
 
         Args:

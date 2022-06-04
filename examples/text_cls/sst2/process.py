@@ -23,11 +23,7 @@ import uuid
 logger = Logger('log.txt')
 
 def flat(data):
-    """TODO: Docstring for flat.
-
-    :data: TODO
-    :returns: TODO
-
+    """flat the data like zip
     """
     sentences = data['sentence']
     uuids = data['uuid']
@@ -41,4 +37,5 @@ data = data.map(lambda one: {"sentence": one["text"], 'labels': label_map[one['l
 input = {"data": {"train": flat(data['train'].to_dict()), 'valid': flat(data['validation'].to_dict()), 'test': flat(data['test'].to_dict())}}
 
 processor = Processor('./distil_bert/prepro.hjson')
+# print(json.dumps(processor.config, indent=2))
 processor.fit(input)

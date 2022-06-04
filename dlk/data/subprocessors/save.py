@@ -17,10 +17,12 @@ from dlk.utils.logger import Logger
 from typing import Dict, Callable, Set, List
 from dlk.data.subprocessors import subprocessor_register, subprocessor_config_register, ISubProcessor
 import pickle as pkl
+from dlk.utils.io import open
 import copy
 import os
 
 logger = Logger.get_logger()
+
 
 @subprocessor_config_register('save')
 class SaveConfig(BaseConfig):
@@ -30,7 +32,7 @@ class SaveConfig(BaseConfig):
         >>> {
         >>>     "_name": "save",
         >>>     "config":{
-        >>>         "base_dir": "."
+        >>>         "base_dir": ""
         >>>         "train":{
         >>>             "processed": "processed_data.pkl", // all data without meta
         >>>             "meta": {
@@ -43,15 +45,15 @@ class SaveConfig(BaseConfig):
         >>>     }
         >>> },
     """
-
     def __init__(self, stage, config):
         super(SaveConfig, self).__init__(config)
         self.config = ConfigTool.get_config_by_stage(stage, config)
-        self.base_dir:str = config.get('config').get("base_dir", ".")
+        self.base_dir: str = config.get('config').get("base_dir", "")
         self.post_check(self.config, used=[
             "processed",
             "meta",
         ])
+
 
 @subprocessor_register('save')
 class Save(ISubProcessor):
@@ -79,12 +81,11 @@ class Save(ISubProcessor):
             loaded data
 
         """
-        if not os.path.exists(self.base_dir):
-            os.makedirs(self.base_dir)
         logger.info(f"Saving file to {os.path.join(self.base_dir, path)}")
-        return pkl.dump(data, open(os.path.join(self.base_dir, path), 'wb'))
+        with open(os.path.join(self.base_dir, path), 'wb') as f:
+            return pkl.dump(data, f)
 
-    def process(self, data: Dict)->Dict:
+    def process(self, data: Dict) -> Dict:
         """Save entry
 
         Args:

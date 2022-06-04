@@ -30,7 +30,7 @@ class TokenEmbeddingConfig(BaseConfig):
         >>> {
         >>>     "_name": "token_embedding",
         >>>     "config": {
-        >>>         "train": { // only train stage using
+        >>>         "train": {
         >>>             "embedding_file": "*@*",
         >>>             "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
         >>>             "vocab": null,

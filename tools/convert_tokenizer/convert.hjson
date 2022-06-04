@@ -1,5 +1,0 @@
-{
-    "type": "distil_bert", //roberta, bert, vocab, embedding
-    "config_dir": "test", //transformers vocab files
-    "output": "./tokenizer.json"
-}

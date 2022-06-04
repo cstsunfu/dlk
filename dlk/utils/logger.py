@@ -12,44 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+from loguru import logger as logging
+from loguru._logger import Logger as LoggerClass
+import sys
 import os
-import colorlog
 
 
 class Logger(object):
     """docstring for logger"""
-    global_logger = None
-    global_log_file = None
-    global_file_handler = None
-    global_log_file = None
-    color_config = {
-        'DEBUG': 'white',  # cyan white
-        'INFO': 'green',
-        'WARNING': 'yellow',
-        'ERROR': 'red',
-        'CRITICAL': 'bold_red',
-    }
+    global_logger: LoggerClass = None
+    global_log_file: set[str] = set()
+    log_name: str = "dlk"
+    warning_file = True
+
     level_map = {
-        "debug": logging.DEBUG,
-        "info": logging.INFO,
-        "warning": logging.WARNING,
-        "error": logging.ERROR,
-        "critical": logging.CRITICAL,
+        "debug": "DEBUG",
+        "info": "INFO",
+        "warning": "WARNING",
+        "error": "ERROR",
     }
 
-    def __init__(self, log_file: str='', base_dir: str='logs', log_level: str='debug', log_name='dlk'):
+    def __init__(self, log_file: str='', base_dir: str='logs', log_level: str='debug', log_name="dlk"):
         super(Logger, self).__init__()
         self.log_file = log_file
         self.base_dir = base_dir
+        Logger.log_name = log_name
         if self.base_dir and not os.path.isdir(self.base_dir):
             os.mkdir(self.base_dir)
 
-        self.init_global_logger(log_level=log_level, log_name=log_name)
+        self.init_global_logger(log_level=log_level, log_name=Logger.log_name, reinit=True)
         self.init_file_logger(log_file, base_dir, log_level=log_level)
 
     @staticmethod
-    def get_logger()->logging.Logger:
+    def get_logger()->LoggerClass:
         """return the 'dlk' logger if initialized otherwise init and return it
 
         Returns: 
@@ -58,7 +53,9 @@ class Logger(object):
         """
         if Logger.global_logger is None:
             Logger.init_global_logger()
-            Logger.global_logger.warning("You didn't init the logger, so we use the default logger setting to output to terminal, you can always set the file logger by yourself.")
+        if not Logger.global_log_file and Logger.warning_file:
+            Logger.global_logger.warning("You didn't add the logger file, only stdout(stderr) is working.")
+            Logger.warning_file = False
         return Logger.global_logger
 
     @staticmethod
@@ -72,42 +69,32 @@ class Logger(object):
 
         Returns: 
             None
-
         """
         if log_file:
             log_file = os.path.join(base_dir, log_file)
-        if log_file and log_file != Logger.global_log_file:
-            if Logger.global_file_handler is not None:
-                Logger.global_logger.removeHandler(Logger.global_file_handler)
-            file_handler = logging.FileHandler(filename=log_file, mode='a', encoding='utf8')
-            file_handler.setLevel(Logger.level_map[log_level])
-
-            file_formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-                                                      datefmt='%m/%d/%Y %H:%M:%S')
-            file_handler.setFormatter(file_formatter)
-            Logger.global_file_handler = file_handler
-            Logger.global_logger.addHandler(file_handler)
+        if Logger.global_log_file:
+            Logger.global_logger.warning(f"The exists a file handler at '{'; '.join(Logger.global_log_file)}'")
+        Logger.global_log_file.add(log_file)
+        Logger.global_logger.add(log_file, rotation="10 MB", format="{time:MM/DD/YYYY HH:mm:ss} - {level:<8} - "+Logger.log_name+" - {message}")
 
     @staticmethod
-    def init_global_logger(log_level: str='debug', log_name: str='dlk'):
+    def init_global_logger(log_level: str='debug', log_name: str=None, reinit: bool=False):
         """init the global_logger
 
         Args:
             log_level: you can change this to logger to different level
             log_name: change this is not suggested 
+            reinit: if set true, will force reinit
 
         Returns: 
             None
 
         """
-        if Logger.global_logger is None:
-            Logger.global_logger = logging.getLogger(log_name)
-            Logger.global_logger.setLevel(Logger.level_map[log_level])
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(Logger.level_map[log_level])
-            console_formatter = colorlog.ColoredFormatter(
-                fmt='%(log_color)s%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-                datefmt='%m/%d/%Y %H:%M:%S',
-                log_colors=Logger.color_config)
-            console_handler.setFormatter(console_formatter)
-            Logger.global_logger.addHandler(console_handler)
+        if log_name and (log_name != Logger.log_name):
+            Logger.log_name = log_name
+        if reinit or not Logger.global_logger:
+            Logger.global_logger = logging
+            Logger.global_logger.remove()
+            Logger.global_logger.add(sys.stdout, level=Logger.level_map[log_level], format="<level>{time:MM/DD/YYYY HH:mm:ss} - {level:<8}</level> - <cyan>"+Logger.log_name+"</cyan> - <level>{message}</level>")
+            Logger.global_logger.level("INFO",  color="<g>")
+

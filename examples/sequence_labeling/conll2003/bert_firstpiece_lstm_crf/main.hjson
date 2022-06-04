@@ -1,12 +1,12 @@
 {
     "root": {
-        "_name": "pretrained_firstpiece_crf"
+        "_name": "pretrained_firstpiece_lstm_crf"
         "_search": {},
         "config": {
             "save_dir": "./bert_firstpiece_lstm_crf/output",  # must provide
             "data_path": "./bert_firstpiece_lstm_crf/output/processed_data.pkl",  # must provide
             "meta_data": "./bert_firstpiece_lstm_crf/output/meta.pkl",  # must provide
-            "pretrained_model_path": '...',  # must provide
+            "pretrained_model_path": './data/bert/',  # must provide
             "label_num": 11,  # must provide
         },
         "_link": {
@@ -19,8 +19,14 @@
             "manager": {
                 "_base": "lightning",
                 "config":{
-                    "max_epochs": 4,
-                    "gpus": 1,
+                    "callbacks": [ //remove checkpoint callback
+                    ],
+                    "enable_checkpointing": false,
+                    "max_epochs": 0,
+                    "accelerator": 'gpu', //or cpu
+                    "devices": 1,
+                    "precision": 32,
+                    "strategy": "ddp", // if you want use multi-gpus to predict, please use dp now, this is because ddp will prepare data multi times on one node, and the gather process is not implement
                 }
             },
             "imodel": {
@@ -100,7 +106,7 @@
                         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
                         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
                         "use_crf": true, //use or not use crf
-                        "word_ready": false, //already gather the subword first token as the word rep or not
+                        "word_ready": true, //already gather the subword first token as the word rep or not
                         "save_root_path": "./bert_firstpiece_lstm_crf/"
                     }
                 },
@@ -109,7 +115,7 @@
                 "_base": "basic@seq_lab#wordmask",
                 "config":{
                    "train_batch_size": 32,
-                   "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+                   "predict_batch_size": 256, //predict、test batch_size is equals to valid_batch_size
                 }
             },
         },

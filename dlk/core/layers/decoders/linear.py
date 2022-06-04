@@ -52,6 +52,7 @@ class LinearConfig(BaseModuleConfig):
             "output_size",
             "pool",
             "dropout",
+            "return_logits",
         ])
 
 
