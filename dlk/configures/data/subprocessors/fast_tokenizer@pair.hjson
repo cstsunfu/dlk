@@ -12,11 +12,11 @@
                 "max_length": 512,
                 "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
             },
-            /*"normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config*/
+            // "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
             "normalizer": 'default', // if don't set this, will use the default normalizer from config
             "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
-            /*"pre_tokenizer": "default", // if don't set this, will use the default normalizer from config*/
-            /*"post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)*/
+            // "pre_tokenizer": "default", // if don't set this, will use the default normalizer from config
+            // "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
             "post_processor": "default", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
             "output_map": { // this is the default value, you can provide other name
                 "tokens": "tokens",
@@ -36,7 +36,7 @@
             },
             "deliver": "tokenizer",
             "process_data": { "is_pretokenized": false},
-            "data_type": "pair", // single or pair, if not provide, will calc by len(process_data)
+            "data_type": "pair", // single or pair
         },
         "predict": ["train", {"deliver": null}],
         "online": ["train", {"deliver": null}],

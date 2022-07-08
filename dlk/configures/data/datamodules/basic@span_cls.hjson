@@ -25,7 +25,7 @@
              "special_tokens_mask": 0,
          },
          "key_padding_pairs_2d": { //default all 0, for 2 dimension data
-              'label_ids': -1,
+              'label_ids': -100,
          },
         "train_batch_size": 32,
         "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size

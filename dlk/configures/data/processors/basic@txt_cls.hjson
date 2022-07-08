@@ -51,15 +51,9 @@
         "config": {
             "train": {
                 "config_path": "*@*",
-                "prefix": ""
                 "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": [
-                    ["sentence", { "is_pretokenized": false}],
-                ],
+                "process_data": { "is_pretokenized": false},
                 "post_processor": "default"
-                "filed_map": { // this is the default value, you can provide other name
-                    "ids": "input_ids",
-                }, // the tokenizer output(the key) map to the value
             },
             "predict": "train",
             "online": "train"
