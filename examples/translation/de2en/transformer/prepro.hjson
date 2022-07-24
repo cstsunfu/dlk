@@ -1,0 +1,163 @@
+{
+    "processor": {
+        "_name": "basic@translation",
+        "config": {
+            "source_tokenizer_config_path": "./data/tokenizer/de_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "target_tokenizer_config_path": "./data/tokenizer/en_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "data_dir": "./transformer/data/output/",  // save load data base dir
+            "source_embedding_size": 20,
+            "target_embedding_size": 20,
+            "source_embedding_file": null,
+            "target_embedding_file": null,
+            "feed_order": [
+                "load",
+                "translation_loader",
+                "source_tokenizer",
+                "target_tokenizer",
+                "source_token_embedding",
+                "target_token_embedding",
+                "save"
+            ],
+        },
+        "_link": {
+            "config.source_tokenizer_config_path": ["subprocessor@source_tokenizer.config.train.config_path", 'subprocessor@source_token_embedding.config.train.tokenizer'],
+            "config.target_tokenizer_config_path": ["subprocessor@target_tokenizer.config.train.config_path", 'subprocessor@target_token_embedding.config.train.tokenizer'],
+            "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
+            "config.source_embedding_file": "subprocessor@source_token_embedding.config.train.embedding_file",
+            "config.target_embedding_file": "subprocessor@target_token_embedding.config.train.embedding_file",
+            "config.source_embedding_size": "subprocessor@source_token_embedding.config.train.embedding_size",
+            "config.target_embedding_size": "subprocessor@target_token_embedding.config.train.embedding_size",
+        },
+        "subprocessor@load": {
+            "_base": "load",
+            "config":{
+                "base_dir": "*@*",
+                "predict":{
+                    "meta": "./meta.pkl",
+                },
+                "online": [
+                    "predict", //base predict
+                    {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
+                    }
+                ]
+            }
+        },
+        "subprocessor@save": {
+            "_base": "save",
+            "config":{
+                "base_dir": "*@*",
+                "train":{
+                    "processed": "processed_data.pkl", // all data
+                    "meta": {
+                        "meta.pkl": ["source_tokenizer", 'source_token_embedding', "target_tokenizer", "target_token_embedding"], //only for next time use
+                    }
+                },
+                "predict": {
+                    "processed": "processed_data.pkl",
+                }
+            }
+        },
+        "subprocessor@translation_loader":{
+            "_name": "basic_data_loader@translation",
+            "config": {
+                "train":{
+                    "data_set": {                   // for different stage, this processor will process different part of data
+                        "train": ['train', 'valid', 'test', 'predict'],
+                        "predict": ['predict'],
+                        "online": ['online']
+                    },
+                    "input_map": {   // without necessery don't change this
+                        "source": "source",
+                        "uuid": "uuid",
+                        "target": "target",
+                    },
+                    "output_map": {
+                        "source": "source",
+                        "uuid": "uuid",
+                        "target": "target",
+                    },
+                },
+                "predict": "train",
+                "online": "train",
+            }
+        },
+        "subprocessor@source_tokenizer":{
+            "_base": "fast_tokenizer",
+            "config": {
+                "train": {
+                    "config_path": "*@*",
+                    "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                    "process_data": { "is_pretokenized": false},
+                    "post_processor": "default",
+                    "input_map": {   // without necessery don't change this
+                        "sentence": "source",
+                    },
+                    "output_map": { // this is the default value, you can provide other name
+                        "tokens": "source_tokens",
+                        "ids": "source_input_ids",
+                        "attention_mask": "source_attention_mask",
+                        "type_ids": "source_type_ids",
+                        "special_tokens_mask": "source_special_tokens_mask",
+                        "offsets": "source_offsets",
+                        "word_ids": "source_word_ids",
+                        "overflowing": "source_overflowing",
+                        "sequence_ids": "source_sequence_ids",
+                    }, // the tokenizer output(the key) map to the value
+                    "deliver": "source_tokenizer",
+                },
+                "predict": "train",
+                "online": "train"
+            }
+        },
+        "subprocessor@target_tokenizer":{
+            "_base": "fast_tokenizer",
+            "config": {
+                "train": {
+                    "config_path": "*@*",
+                    "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                    "process_data": { "is_pretokenized": false},
+                    "post_processor": "default",
+                    "input_map": {   // without necessery don't change this
+                        "sentence": "target",
+                    },
+                    "output_map": { // this is the default value, you can provide other name
+                        "tokens": "target_tokens",
+                        "ids": "target_input_ids",
+                        "attention_mask": "target_attention_mask",
+                        "type_ids": "target_type_ids",
+                        "special_tokens_mask": "target_special_tokens_mask",
+                        "offsets": "target_offsets",
+                        "word_ids": "target_word_ids",
+                        "overflowing": "target_overflowing",
+                        "sequence_ids": "target_sequence_ids",
+                    }, // the tokenizer output(the key) map to the value
+                    "deliver": "target_tokenizer",
+                },
+                "predict": "train",
+                "online": "train"
+            }
+        },
+        "subprocessor@source_token_embedding": {
+            "_base": "token_embedding",
+            "config":{
+                "train": { // only train stage using
+                    "embedding_file": "*@*",
+                    "tokenizer": "*@*",
+                    "deliver": "source_token_embedding",
+                    "embedding_size": "*@*",
+                }
+            }
+        },
+        "subprocessor@target_token_embedding": {
+            "_base": "token_embedding",
+            "config":{
+                "train": { // only train stage using
+                    "embedding_file": "*@*",
+                    "tokenizer": "*@*",
+                    "deliver": "target_token_embedding",
+                    "embedding_size": "*@*",
+                }
+            }
+        },
+    }
+}

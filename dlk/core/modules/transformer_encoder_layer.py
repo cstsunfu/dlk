@@ -75,7 +75,7 @@ class TransformerEncoderLayerConfig(BaseConfig):
 
 
 @module_register("transformer_encoder_layer")
-class TransformerEncoderLayer(nn.Module):
+class TransformerEncoderLayer(Module):
     def __init__(self, config: TransformerEncoderLayerConfig):
         super().__init__()
         self.input_size = config.input_size

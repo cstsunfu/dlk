@@ -69,7 +69,7 @@ class FastTokenizerConfig(BaseConfig):
         >>>             },
         >>>             "deliver": "tokenizer",
         >>>             "process_data": { "is_pretokenized": false},
-        >>>             "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+        >>>             "data_type": "single", // single or pair
         >>>         },
         >>>         "predict": ["train", {"deliver": null}],
         >>>         "online": ["train", {"deliver": null}],

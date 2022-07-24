@@ -1,0 +1,209 @@
+[
+    {
+        "root": {
+            "task": {
+                "datamodule": {
+                    "config": {
+                        "pin_memory": null,
+                        "collate_fn": "default",
+                        "num_workers": 0,
+                        "shuffle": {
+                            "train": true,
+                            "predict": false,
+                            "valid": false,
+                            "test": false,
+                            "online": false
+                        },
+                        "key_type_pairs": {
+                            "source_input_ids": "int",
+                            "target_input_ids": "int",
+                        },
+                        "gen_mask": {
+                            "source_input_ids": "source_attention_mask"
+                        },
+                        "key_padding_pairs": {
+                            "source_input_ids": -100,
+                            "target_input_ids": -100
+                        },
+                        "train_batch_size": 32,
+                        "predict_batch_size": 256,
+                        "online_batch_size": 1
+                    },
+                    "_name": "basic"
+                },
+                "imodel": {
+                    "config": {},
+                    // "postprocessor": {
+                    //     "config": {
+                    //     },
+                    //     "_name": "generate"
+                    // },
+                    "scheduler": {
+                        "config": {
+                            "last_epoch": -1,
+                            "num_warmup_steps": 0.1,
+                            "num_training_steps": -1
+                        },
+                        "_name": "linear_warmup"
+                    },
+                    "optimizer": {
+                        "config": {
+                            "lr": 3e-05,
+                        },
+                        "_name": "adamw"
+                    },
+                    "loss": {
+                        "config": {
+                            "ignore_index": -100,
+                            "weight": null,
+                            "label_smoothing": 0,
+                            "pred_truth_pair": [
+                                "logits",
+                                "target_input_ids"
+                            ],
+                            "schedule": [
+                                1
+                            ],
+                            "scale": [
+                                1
+                            ]
+                        },
+                        "_name": "cross_entropy"
+                    },
+                    "model": {
+                        "initmethod": {
+                            "config": {},
+                            "_name": "default"
+                        },
+                        "encoder": {
+                            "config": {
+                                "output_map": {},
+                                "input_map": {}
+                            },
+                            "_name": "identity"
+                        },
+                        "decoder": {
+                            "module": {
+                                "config": {
+                                    "input_size": 768,
+                                    "output_size": 5,
+                                    "dropout": 0,
+                                    "bias": true,
+                                    "hidden_size": 0
+                                },
+                                "_name": "biaffine"
+                            },
+                            "config": {
+                                "input_size": 768,
+                                "hidden_size": 0,
+                                "output_size": 5,
+                                "dropout": 0,
+                                "output_map": {},
+                                "input_map": {}
+                            },
+                            "_name": "biaffine"
+                        },
+                        "embedding": {
+                            "module": {
+                                "config": {
+                                    "pretrained_model_path": "./data/bart",
+                                    "from_pretrain": true,
+                                    "freeze": false,
+                                    "dropout": 0.3
+                                },
+                                "_name": "bart"
+                            },
+                            "config": {
+                                "pretrained_model_path": "./data/bart",
+                                "input_map": {
+                                    "input_ids": "input_ids",
+                                    "attention_mask": "attention_mask",
+                                    "type_ids": "type_ids"
+                                },
+                                "output_map": {
+                                    "embedding": "embedding"
+                                },
+                                "embedding_dim": 768,
+                                "dropout": 0.3
+                            },
+                            "_name": "pretrained_transformers"
+                        },
+                        "config": {
+                            "embedding_dim": 768,
+                            "pretrained_model_path": "./data/bart",
+                            "dropout": 0.3,
+                            "label_num": 5
+                        },
+                        "_name": "basic"
+                    },
+                    "_name": "basic"
+                },
+                "manager": {
+                    "config": {
+                        "callbacks": [],
+                        "logger": true,
+                        "enable_checkpointing": false,
+                        "accelerator": "gpu",
+                        "default_root_dir": null,
+                        "gradient_clip_val": 5,
+                        "gradient_clip_algorithm": null,
+                        "num_nodes": 1,
+                        "devices": 1,
+                        "auto_select_gpus": false,
+                        "ipus": null,
+                        "log_gpu_memory": null,
+                        "enable_progress_bar": true,
+                        "overfit_batches": "0.0",
+                        "track_grad_norm": -1,
+                        "check_val_every_n_epoch": 1,
+                        "fast_dev_run": false,
+                        "accumulate_grad_batches": 1,
+                        "max_epochs": 5,
+                        "min_epochs": null,
+                        "max_steps": -1,
+                        "min_steps": null,
+                        "max_time": null,
+                        "limit_train_batches": "1.0",
+                        "limit_val_batches": "1.0",
+                        "limit_test_batches": "1.0",
+                        "limit_predict_batches": "1.0",
+                        "val_check_interval": "1.0",
+                        "log_every_n_steps": 50,
+                        "strategy": "ddp",
+                        "sync_batchnorm": false,
+                        "precision": 32,
+                        "enable_model_summary": true,
+                        "weights_summary": "top",
+                        "weights_save_path": null,
+                        "num_sanity_val_steps": 2,
+                        "resume_from_checkpoint": null,
+                        "profiler": null,
+                        "benchmark": false,
+                        "deterministic": false,
+                        "reload_dataloaders_every_n_epochs": 0,
+                        "auto_lr_find": false,
+                        "replace_sampler_ddp": true,
+                        "detect_anomaly": false,
+                        "auto_scale_batch_size": false,
+                        "plugins": null,
+                        "amp_backend": "native",
+                        "amp_level": null,
+                        "move_metrics_to_cpu": false,
+                        "multiple_trainloader_mode": "max_size_cycle",
+                        "stochastic_weight_avg": false,
+                        "terminate_on_nan": null
+                    },
+                    "_name": "lightning"
+                }
+            },
+            "config": {
+                "save_dir": "./transformer/output",
+                "data_path": "./transformer/output/processed_data.pkl",
+                "meta_data": "./transformer/output/meta.pkl",
+                "pretrained_model_path": "./data/bart",
+                "label_num": 5
+            },
+            "_name": "transformer"
+        }
+    }
+]

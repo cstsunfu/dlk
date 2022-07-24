@@ -28,7 +28,7 @@ class MultiLossConfig(object):
         >>> {
         >>>     "loss@the_first": {
         >>>         config: {
-        >>>             "ignore_index": -1,
+        >>>             "ignore_index": -100,
         >>>             "weight": null, # or a list of value for every class
         >>>             "label_smoothing": 0.0, # torch>=1.10
         >>>             "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
