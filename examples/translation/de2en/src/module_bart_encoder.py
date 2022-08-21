@@ -19,7 +19,7 @@ import os
 import torch.nn as nn
 import torch
 from typing import Dict
-from . import module_register, module_config_register, Module
+from dlk.core.modules import module_register, module_config_register, Module
 from dlk.utils.config import BaseConfig
 from dlk.utils.io import open
 
@@ -108,7 +108,7 @@ class BartEncoderWrap(Module):
                     input_ids = None, # NOTE: we will add embedding in embedding layer
                     attention_mask = inputs.get("attention_mask", None),
                     head_mask = inputs.get("head_mask", None),
-                    inputs_embeds = inputs.get("inputs_embeds", None),
+                    inputs_embeds = inputs.get("", None),
                     output_attentions = True,
                     output_hidden_states = True,
                     return_dict = False

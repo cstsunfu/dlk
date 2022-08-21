@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ from dlk.core.modules import module_config_register, module_register
 from dlk.utils.logger import Logger
 logger = Logger.get_logger()
 
-@encoder_config_register("lstm")
-class LSTMConfig(BaseModuleConfig):
-    """Config for LSTM
+@encoder_config_register("bart_encoder")
+class BartEncoderConfig(BaseModuleConfig):
+    """Config for BartEncoder
 
     Config Example:
         >>> {
         >>>     module: {
-        >>>         _base: "lstm",
+        >>>         _base: "bart_encoder",
         >>>     },
         >>>     config: {
         >>>         input_map: {},
@@ -43,14 +43,14 @@ class LSTMConfig(BaseModuleConfig):
         >>>         config.output_size: [module.config.output_size],
         >>>         config.dropout: [module.config.dropout],
         >>>     },
-        >>>     _name: "lstm",
+        >>>     _name: "bart_encoder",
         >>> }
     """
 
     def __init__(self, config: Dict):
-        super(LSTMConfig, self).__init__(config)
-        self.lstm_config = config["module"]
-        assert self.lstm_config['_name'] == "lstm"
+        super(BartEncoderConfig, self).__init__(config)
+        self.bart_encoder_config = config["module"]
+        assert self.bart_encoder_config['_name'] == "bart_encoder"
         self.post_check(config['config'], used=[
             "input_size",
             "output_size",
@@ -60,17 +60,17 @@ class LSTMConfig(BaseModuleConfig):
         ])
 
 
-@encoder_register("lstm")
-class LSTM(SimpleModule):
-    """Wrap for torch.nn.LSTM
+@encoder_register("bart_encoder")
+class BartEncoder(SimpleModule):
+    """Wrap for torch.nn.BartEncoder
     """
-    def __init__(self, config: LSTMConfig):
-        super(LSTM, self).__init__(config)
+    def __init__(self, config: BartEncoderConfig):
+        super(BartEncoder, self).__init__(config)
         self._provide_keys = {'embedding'}
         self._required_keys = {'embedding', 'attention_mask'}
         self._provided_keys = set()
         self.config = config
-        self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
+        self.bart_encoder = module_register.get('bart_encoder')(module_config_register.get('bart_encoder')(config.bart_encoder_config))
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -82,7 +82,7 @@ class LSTM(SimpleModule):
             None
 
         """
-        self.lstm.init_weight(method)
+        self.bart_encoder.init_weight(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """All step do this
@@ -94,7 +94,7 @@ class LSTM(SimpleModule):
             one mini-batch outputs
 
         """
-        inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
+        inputs[self.get_output_name('input_embedding')] = self.bart_encoder(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
         if self._logits_gather.layer_map:
             inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs

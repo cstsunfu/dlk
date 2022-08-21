@@ -19,14 +19,14 @@ from dlk.core.layers.decoders import decoder_register, decoder_config_register
 from dlk.core.modules import module_config_register, module_register
 import torch.nn as nn
 
-@decoder_config_register("biaffine")
-class BiAffineConfig(BaseModuleConfig):
-    """Config for BiAffine 
+@decoder_config_register("bart_decoder")
+class BartDecoderConfig(BaseModuleConfig):
+    """Config for BartDecoder 
 
     Config Example:
         >>> {
         >>>     "module": {
-        >>>         "_base": "biaffine",
+        >>>         "_base": "bart_decoder",
         >>>     },
         >>>     "config": {
         >>>         "input_size": "*@*",
@@ -40,18 +40,18 @@ class BiAffineConfig(BaseModuleConfig):
         >>>         "config.input_size": ["module.config.hidden_size"],
         >>>         "config.output_size": ["module.config.output_size"],
         >>>     },
-        >>>     "_name": "biaffine",
+        >>>     "_name": "bart_decoder",
         >>> }
     """
     def __init__(self, config: Dict):
-        super(BiAffineConfig, self).__init__(config)
-        self.biaffine_config = config["module"]
+        super(BartDecoderConfig, self).__init__(config)
+        self.bart_decoder_config = config["module"]
         config = config['config']
         self.input_size = config['input_size']
         self.hidden_size = config['hidden_size']
         if not self.hidden_size:
             self.hidden_size = self.input_size
-            self.biaffine_config['input_size'] = self.hidden_size
+            self.bart_decoder_config['input_size'] = self.hidden_size
         self.dropout = config['dropout']
         self.post_check(config, used=[
             "input_size",
@@ -62,12 +62,12 @@ class BiAffineConfig(BaseModuleConfig):
         ])
 
 
-@decoder_register("biaffine")
-class BiAffine(SimpleModule):
-    """biaffine a x A x b
+@decoder_register("bart_decoder")
+class BartDecoder(SimpleModule):
+    """bart_decoder
     """
-    def __init__(self, config: BiAffineConfig):
-        super(BiAffine, self).__init__(config)
+    def __init__(self, config: BartDecoderConfig):
+        super(BartDecoder, self).__init__(config)
         self._provide_keys = {'logits'}
         self._required_keys = {'embedding'}
         self._provided_keys = set()
@@ -78,7 +78,7 @@ class BiAffine(SimpleModule):
         self.dropout = nn.Dropout(p=config.dropout)
         self.active = nn.LeakyReLU() # TODO: why GELU get loss nan?
 
-        self.biaffine = module_register.get('biaffine')(module_config_register.get('biaffine')(config.biaffine_config))
+        self.bart_decoder = module_register.get('bart_decoder')(module_config_register.get('bart_decoder')(config.bart_decoder_config))
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -90,7 +90,7 @@ class BiAffine(SimpleModule):
             None
 
         """
-        self.biaffine.init_weight(method)
+        self.bart_decoder.init_weight(method)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """
@@ -105,7 +105,7 @@ class BiAffine(SimpleModule):
         embedding = inputs[self.get_input_name('embedding')]
         input_a = self.dropout(self.active(self.linear_a(embedding)))
         input_b = self.dropout(self.active(self.linear_b(embedding)))
-        inputs[self.get_output_name("logits")] = self.biaffine(input_a, input_b)
+        inputs[self.get_output_name("logits")] = self.bart_decoder(input_a, input_b)
         if self._logits_gather.layer_map:
             inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
         return inputs

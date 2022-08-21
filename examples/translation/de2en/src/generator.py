@@ -87,9 +87,14 @@ class GenerateModelConfig(BaseConfig):
                     "embedding_trace": ".", # default the file itself is the embedding
                     "freeze": False, # is freeze
                     "dropout": 0, #dropout rate
-                    "output_map": {},
+                    "output_map": {
+                        "embedding": "input_embedding"
+                    },
+                    "input_map": {
+                        "input_ids": "input_ids"
                     },
                 },
+            },
             "embedding@target": {
                 "_base": "static",
                 "config": {
@@ -98,9 +103,14 @@ class GenerateModelConfig(BaseConfig):
                     "embedding_trace": ".", # default the file itself is the embedding
                     "freeze": False, # is freeze
                     "dropout": 0, #dropout rate
-                    "output_map": {},
+                    "output_map": {
+                        "embedding": "input_embedding"
+                    },
+                    "input_map": {
+                        "input_ids": "input_ids"
                     },
                 },
+            },
             "token_decoder": {
                 "_base": "transformer_decoder",
                 "config": {
