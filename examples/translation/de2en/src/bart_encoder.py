@@ -84,6 +84,23 @@ class BartEncoder(SimpleModule):
         """
         self.bart_encoder.init_weight(method)
 
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_outs: Dict[str, torch.Tensor], new_order):
+        """
+        Reorder encoder output according to *new_order*.
+
+        Args:
+            encoder_out: output from the ``forward()`` method
+            new_order (LongTensor): desired order
+
+        Returns:
+            *encoder_out* rearranged according to *new_order*
+        """
+        encoder_output_embedding = encoder_outs.get(self.get_output_name('encoder_output_embedding'), None)
+        if not encoder_output_embedding:
+            return encoder_outs
+
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """All step do this
 
@@ -94,7 +111,14 @@ class BartEncoder(SimpleModule):
             one mini-batch outputs
 
         """
-        inputs[self.get_output_name('input_embedding')] = self.bart_encoder(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
+        module_inputs = {
+                "attention_mask": inputs.get(self.get_input_name("encoder_attention_mask"), None),
+                "head_mask": inputs.get(self.get_input_name("encoder_head_mask"), None),
+                "inputs_embeds": inputs.get(self.get_input_name("encoder_input_embedding"), None),
+        }
+
+        sequence_output, all_hidden_states, all_self_attentions = self.bart_encoder(module_inputs)
+        inputs[self.get_output_name('encoder_output_embedding')] = sequence_output
         if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
+            inputs.update(self._logits_gather(all_hidden_states))
         return inputs

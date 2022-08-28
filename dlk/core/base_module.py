@@ -289,6 +289,23 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         """
         raise NotImplementedError
 
+    @torch.jit.export
+    def reorder_incremental_state(self, incremental_states, new_order):
+        raise NotImplementedError
+
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_outs: Dict[str, List[Tensor]], new_order):
+        """
+        Reorder encoder output according to *new_order*.
+
+        Args:
+            encoder_out: output from the ``forward()`` method
+            new_order (LongTensor): desired order
+
+        Returns:
+            *encoder_out* rearranged according to *new_order*
+        """
+        raise NotImplementedError
 
 class SimpleModule(BaseModule):
     """docstring for SimpleModule, SimpleModule, all train/predict/test/validation step call the forward"""

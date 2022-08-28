@@ -47,17 +47,7 @@ class BartDecoderConfig(BaseModuleConfig):
         super(BartDecoderConfig, self).__init__(config)
         self.bart_decoder_config = config["module"]
         config = config['config']
-        self.input_size = config['input_size']
-        self.hidden_size = config['hidden_size']
-        if not self.hidden_size:
-            self.hidden_size = self.input_size
-            self.bart_decoder_config['input_size'] = self.hidden_size
-        self.dropout = config['dropout']
         self.post_check(config, used=[
-            "input_size",
-            "output_size",
-            "pool",
-            "dropout",
             "return_logits",
         ])
 
@@ -73,12 +63,9 @@ class BartDecoder(SimpleModule):
         self._provided_keys = set()
 
         self.config = config
-        self.linear_a = nn.Linear(config.input_size, config.hidden_size)
-        self.linear_b = nn.Linear(config.input_size, config.hidden_size)
-        self.dropout = nn.Dropout(p=config.dropout)
-        self.active = nn.LeakyReLU() # TODO: why GELU get loss nan?
 
         self.bart_decoder = module_register.get('bart_decoder')(module_config_register.get('bart_decoder')(config.bart_decoder_config))
+
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -102,10 +89,16 @@ class BartDecoder(SimpleModule):
             one mini-batch outputs
 
         """
-        embedding = inputs[self.get_input_name('embedding')]
-        input_a = self.dropout(self.active(self.linear_a(embedding)))
-        input_b = self.dropout(self.active(self.linear_b(embedding)))
-        inputs[self.get_output_name("logits")] = self.bart_decoder(input_a, input_b)
+        module_inputs = {
+                "decoder_attention_mask": inputs.get(self.get_input_name("decoder_attention_mask"), None),
+                "encoder_outputs": inputs.get(self.get_input_name("encoder_output_embedding"), None),
+                "decoder_head_mask": inputs.get(self.get_input_name("decoder_head_mask"), None),
+                "past_caches": inputs.get(self.get_input_name("decode_past_cache"), None),
+                "inputs_embeds": inputs.get(self.get_input_name("decoder_input_embedding"), None),
+        }
+        hidden_states, next_cache, all_hidden_states, all_self_attns, all_cross_attentions = self.bart_decoder(module_inputs)
+        inputs[self.get_output_name('decoder_output_embedding')] = hidden_states
         if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
+            inputs.update(self._logits_gather([inputs[self.get_output_name('decoder_output_embedding')]]))
+        inputs[self.get_output_name('decoder_past_cache')] = next_cache
         return inputs
