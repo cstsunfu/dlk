@@ -45,6 +45,7 @@ class BasicIModelConfig(BaseConfig):
         self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor", 'identity'))
 
         self.config = config.pop('config', {})
+        self.calc_loss_stage = set(self.config.get("calc_loss_stage", {'train', 'valid', 'test'}))
 
     def get_postprocessor(self, config: Dict):
         """Use config to init the postprocessor
@@ -186,14 +187,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         result = self.model.validation_step(batch)
-        loss = self.calc_loss(result, batch, rt_config={  # align with training step
-            "current_step": self.global_step,
-            "current_epoch": self.current_epoch,
-            "total_steps": self.num_training_steps,
-            "total_epochs": self.num_training_epochs
-        })
+        if "valid" in self.config.calc_loss_stage:
+            loss = self.calc_loss(result, batch, rt_config={  # align with training step
+                "current_step": self.global_step,
+                "current_epoch": self.current_epoch,
+                "total_steps": self.num_training_steps,
+                "total_epochs": self.num_training_epochs
+            })
+            return_result = {"loss": loss.unsqueeze(0)} # this loss will be used in postprocess
+        else:
+            return_result = {}
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)} # this loss will be used in postprocess
         for column in gather_column:
             column = self.gather_data[column]
             if column in result:
@@ -238,14 +242,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         result = self.model.test_step(batch)
-        loss = self.calc_loss(result, batch, rt_config={  # align with training step
-            "current_step": self.global_step,
-            "current_epoch": self.current_epoch,
-            "total_steps": self.num_training_steps,
-            "total_epochs": self.num_training_epochs
-        })
+        if "test" in self.config.calc_loss_stage:
+            loss = self.calc_loss(result, batch, rt_config={  # align with training step
+                "current_step": self.global_step,
+                "current_epoch": self.current_epoch,
+                "total_steps": self.num_training_steps,
+                "total_epochs": self.num_training_epochs
+            })
+            return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
+        else:
+            return_result = {}
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]

@@ -2,31 +2,31 @@
     "processor": {
         "_name": "basic@translation",
         "config": {
-            "source_tokenizer_config_path": "./data/tokenizer/de_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
-            "target_tokenizer_config_path": "./data/tokenizer/en_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "encoder_tokenizer_config_path": "./data/tokenizer/de_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "decoder_tokenizer_config_path": "./data/tokenizer/en_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
             "data_dir": "./transformer/data/output/",  // save load data base dir
-            "source_embedding_size": 20,
-            "target_embedding_size": 20,
-            "source_embedding_file": null,
-            "target_embedding_file": null,
+            "encoder_embedding_size": 20,
+            "decoder_embedding_size": 20,
+            "encoder_embedding_file": null,
+            "decoder_embedding_file": null,
             "feed_order": [
                 "load",
                 "translation_loader",
-                "source_tokenizer",
-                "target_tokenizer",
-                "source_token_embedding",
-                "target_token_embedding",
+                "encoder_tokenizer",
+                "decoder_tokenizer",
+                "encoder_token_embedding",
+                "decoder_token_embedding",
                 "save"
             ],
         },
         "_link": {
-            "config.source_tokenizer_config_path": ["subprocessor@source_tokenizer.config.train.config_path", 'subprocessor@source_token_embedding.config.train.tokenizer'],
-            "config.target_tokenizer_config_path": ["subprocessor@target_tokenizer.config.train.config_path", 'subprocessor@target_token_embedding.config.train.tokenizer'],
+            "config.encoder_tokenizer_config_path": ["subprocessor@encoder_tokenizer.config.train.config_path", 'subprocessor@encoder_token_embedding.config.train.tokenizer'],
+            "config.decoder_tokenizer_config_path": ["subprocessor@decoder_tokenizer.config.train.config_path", 'subprocessor@decoder_token_embedding.config.train.tokenizer'],
             "config.data_dir": ["subprocessor@load.config.base_dir", "subprocessor@save.config.base_dir"],
-            "config.source_embedding_file": "subprocessor@source_token_embedding.config.train.embedding_file",
-            "config.target_embedding_file": "subprocessor@target_token_embedding.config.train.embedding_file",
-            "config.source_embedding_size": "subprocessor@source_token_embedding.config.train.embedding_size",
-            "config.target_embedding_size": "subprocessor@target_token_embedding.config.train.embedding_size",
+            "config.encoder_embedding_file": "subprocessor@encoder_token_embedding.config.train.embedding_file",
+            "config.decoder_embedding_file": "subprocessor@decoder_token_embedding.config.train.embedding_file",
+            "config.encoder_embedding_size": "subprocessor@encoder_token_embedding.config.train.embedding_size",
+            "config.decoder_embedding_size": "subprocessor@decoder_token_embedding.config.train.embedding_size",
         },
         "subprocessor@load": {
             "_base": "load",
@@ -49,7 +49,7 @@
                 "train":{
                     "processed": "processed_data.pkl", // all data
                     "meta": {
-                        "meta.pkl": ["source_tokenizer", 'source_token_embedding', "target_tokenizer", "target_token_embedding"], //only for next time use
+                        "meta.pkl": ["encoder_tokenizer", 'encoder_token_embedding', "decoder_tokenizer", "decoder_token_embedding"], //only for next time use
                     }
                 },
                 "predict": {
@@ -67,21 +67,21 @@
                         "online": ['online']
                     },
                     "input_map": {   // without necessery don't change this
-                        "source": "source",
+                        "encoder": "encoder",
                         "uuid": "uuid",
-                        "target": "target",
+                        "decoder": "decoder",
                     },
                     "output_map": {
-                        "source": "source",
+                        "encoder": "encoder",
                         "uuid": "uuid",
-                        "target": "target",
+                        "decoder": "decoder",
                     },
                 },
                 "predict": "train",
                 "online": "train",
             }
         },
-        "subprocessor@source_tokenizer":{
+        "subprocessor@encoder_tokenizer":{
             "_base": "fast_tokenizer",
             "config": {
                 "train": {
@@ -90,26 +90,26 @@
                     "process_data": { "is_pretokenized": false},
                     "post_processor": "default",
                     "input_map": {   // without necessery don't change this
-                        "sentence": "source",
+                        "sentence": "encoder",
                     },
                     "output_map": { // this is the default value, you can provide other name
-                        "tokens": "source_tokens",
-                        "ids": "source_input_ids",
-                        "attention_mask": "source_attention_mask",
-                        "type_ids": "source_type_ids",
-                        "special_tokens_mask": "source_special_tokens_mask",
-                        "offsets": "source_offsets",
-                        "word_ids": "source_word_ids",
-                        "overflowing": "source_overflowing",
-                        "sequence_ids": "source_sequence_ids",
+                        "tokens": "encoder_tokens",
+                        "ids": "encoder_input_ids",
+                        "attention_mask": "encoder_attention_mask",
+                        "type_ids": "encoder_type_ids",
+                        "special_tokens_mask": "encoder_special_tokens_mask",
+                        "offsets": "encoder_offsets",
+                        "word_ids": "encoder_word_ids",
+                        "overflowing": "encoder_overflowing",
+                        "sequence_ids": "encoder_sequence_ids",
                     }, // the tokenizer output(the key) map to the value
-                    "deliver": "source_tokenizer",
+                    "deliver": "encoder_tokenizer",
                 },
                 "predict": "train",
                 "online": "train"
             }
         },
-        "subprocessor@target_tokenizer":{
+        "subprocessor@decoder_tokenizer":{
             "_base": "fast_tokenizer",
             "config": {
                 "train": {
@@ -118,43 +118,43 @@
                     "process_data": { "is_pretokenized": false},
                     "post_processor": "default",
                     "input_map": {   // without necessery don't change this
-                        "sentence": "target",
+                        "sentence": "decoder",
                     },
                     "output_map": { // this is the default value, you can provide other name
-                        "tokens": "target_tokens",
-                        "ids": "target_input_ids",
-                        "attention_mask": "target_attention_mask",
-                        "type_ids": "target_type_ids",
-                        "special_tokens_mask": "target_special_tokens_mask",
-                        "offsets": "target_offsets",
-                        "word_ids": "target_word_ids",
-                        "overflowing": "target_overflowing",
-                        "sequence_ids": "target_sequence_ids",
+                        "tokens": "decoder_tokens",
+                        "ids": "decoder_input_ids",
+                        "attention_mask": "decoder_attention_mask",
+                        "type_ids": "decoder_type_ids",
+                        "special_tokens_mask": "decoder_special_tokens_mask",
+                        "offsets": "decoder_offsets",
+                        "word_ids": "decoder_word_ids",
+                        "overflowing": "decoder_overflowing",
+                        "sequence_ids": "decoder_sequence_ids",
                     }, // the tokenizer output(the key) map to the value
-                    "deliver": "target_tokenizer",
+                    "deliver": "decoder_tokenizer",
                 },
                 "predict": "train",
                 "online": "train"
             }
         },
-        "subprocessor@source_token_embedding": {
+        "subprocessor@encoder_token_embedding": {
             "_base": "token_embedding",
             "config":{
                 "train": { // only train stage using
                     "embedding_file": "*@*",
                     "tokenizer": "*@*",
-                    "deliver": "source_token_embedding",
+                    "deliver": "encoder_token_embedding",
                     "embedding_size": "*@*",
                 }
             }
         },
-        "subprocessor@target_token_embedding": {
+        "subprocessor@decoder_token_embedding": {
             "_base": "token_embedding",
             "config":{
                 "train": { // only train stage using
                     "embedding_file": "*@*",
                     "tokenizer": "*@*",
-                    "deliver": "target_token_embedding",
+                    "deliver": "decoder_token_embedding",
                     "embedding_size": "*@*",
                 }
             }

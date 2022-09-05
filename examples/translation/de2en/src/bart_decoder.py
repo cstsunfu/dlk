@@ -21,6 +21,23 @@ import torch.nn as nn
 
 @decoder_config_register("bart_decoder")
 class BartDecoderConfig(BaseModuleConfig):
+    default_config = {
+            "module": {
+                "_base": "bart_decoder",
+                },
+            "config": {
+                "dropout": 0.0,
+                "output_map": {},
+                "input_map": {}, #  required_key: provide_key
+                "pretrained_model_path": "*@*",
+                "from_pretrain": True,
+                },
+            "_link":{
+                "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+                "config.from_pretrain": ["module.config.from_pretrain"],
+                },
+            "_name": "bart_decoder",
+    }
     """Config for BartDecoder 
 
     Config Example:
@@ -78,6 +95,18 @@ class BartDecoder(SimpleModule):
 
         """
         self.bart_decoder.init_weight(method)
+
+    @torch.jit.export
+    def reorder_incremental_state(
+        self,
+        encoder_outs: Dict[str, torch.Tensor],
+        new_order,
+    ):
+        decoder_past_cache = encoder_outs.get(self.get_output_name('decoder_past_cache'), None)
+        if decoder_past_cache is None:
+            return encoder_outs
+        encoder_outs[self.get_output_name('decoder_past_cache')] = self.bart_decoder.reorder_incremental_state(decoder_past_cache, new_order)
+        return encoder_outs
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """

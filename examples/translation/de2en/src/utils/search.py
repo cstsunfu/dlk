@@ -8,7 +8,8 @@ from typing import List, Optional
 
 import torch
 import torch.nn as nn
-from dlk.core.models.utils.token_generation_constraints import (
+# from dlk.core.models.utils.token_generation_constraints import (
+from .token_generation_constraints import (
     ConstraintState,
     OrderedConstraintState,
     UnorderedConstraintState,

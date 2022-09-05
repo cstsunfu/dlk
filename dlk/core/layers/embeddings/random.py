@@ -67,7 +67,7 @@ class RandomEmbedding(SimpleModule):
         self.config = config
         self.dropout = nn.Dropout(float(self.config.dropout))
         normal =  torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
-        self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)), padding_idx=self.config.padding_idx)
+        self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)).squeeze_(-1), padding_idx=self.config.padding_idx)
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'

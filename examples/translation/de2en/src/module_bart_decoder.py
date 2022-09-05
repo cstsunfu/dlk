@@ -26,6 +26,15 @@ from dlk.utils.io import open
 
 @module_config_register("bart_decoder")
 class BartDecoderWrapConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "pretrained_model_path": "*@*",
+                "from_pretrain": True,
+                "freeze": False,
+                "dropout": 0.0,
+            },
+            "_name": "bart_decoder",
+        }
     """Config for BartDecoderWrap
 
     Config Example:
@@ -92,6 +101,14 @@ class BartDecoderWrap(Module):
         """
         self.bart_decoder: BartDecoder = BartDecoder.from_pretrained(self.config.pretrained_model_path)
 
+    @torch.jit.export
+    def reorder_incremental_state(
+        self,
+        past_caches,
+        new_order,
+    ):
+        return self.bart_decoder._reorder_cache(past_caches, new_order)
+
     def training_step(self, inputs: Dict[str, torch.Tensor]):
         """do train for one batch
 
@@ -157,7 +174,7 @@ class BartDecoderWrap(Module):
                 output_hidden_states = True,
                 return_dict = False
             )
-        assert len(outputs) == 3, f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
+        assert len(outputs) == 5, f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
         # sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[2]
         hidden_states, next_cache, all_hidden_states, all_self_attns, all_cross_attentions = outputs[0], outputs[1], outputs[2], outputs[3], outputs[4]
         return hidden_states, next_cache, all_hidden_states, all_self_attns, all_cross_attentions 

@@ -4,7 +4,7 @@
     "optimizer": {
         "_base": "adamw@bias_nodecay",
     },
-    "schedule": {
+    "scheduler": {
         "_base": "linear_warmup"
     },
     "postprocessor": {
@@ -13,5 +13,5 @@
     "config": {
 
     },
-    _name: "basic"
+    "_name": "basic"
 }

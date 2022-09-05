@@ -294,7 +294,7 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         raise NotImplementedError
 
     @torch.jit.export
-    def reorder_encoder_out(self, encoder_outs: Dict[str, List[Tensor]], new_order):
+    def reorder_encoder_out(self, encoder_outs: Dict[str, List[torch.Tensor]], new_order):
         """
         Reorder encoder output according to *new_order*.
 

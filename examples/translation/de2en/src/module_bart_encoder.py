@@ -26,6 +26,15 @@ from dlk.utils.io import open
 
 @module_config_register("bart_encoder")
 class BartEncoderWrapConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "pretrained_model_path": "*@*",
+                "from_pretrain": True,
+                "freeze": False,
+                "dropout": 0.0,
+                },
+            "_name": "bart_encoder",
+            }
     """Config for BartEncoderWrap
 
     Config Example:
@@ -108,7 +117,7 @@ class BartEncoderWrap(Module):
                     input_ids = None, # NOTE: we will add embedding in embedding layer
                     attention_mask = inputs.get("attention_mask", None),
                     head_mask = inputs.get("head_mask", None),
-                    inputs_embeds = inputs.get("", None),
+                    inputs_embeds = inputs.get("inputs_embeds", None),
                     output_attentions = True,
                     output_hidden_states = True,
                     return_dict = False

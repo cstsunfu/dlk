@@ -36,7 +36,8 @@ class Register(object):
                 raise ValueError(f'You must set a name for {module.__name__}')
 
             if name in self.registry:
-                raise ValueError(f'The {name} is already registed in {self.register_name}.')
+                # raise ValueError(f'The {name} is already registed in {self.register_name}.')
+                print(f'The {name} is already registed in {self.register_name}.')
             self.registry[name] = module
             return module
         return decorator

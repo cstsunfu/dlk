@@ -23,28 +23,45 @@ logger = Logger.get_logger()
 
 @encoder_config_register("bart_encoder")
 class BartEncoderConfig(BaseModuleConfig):
+    default_config = {
+            "module": {
+                "_base": "bart_encoder",
+            },
+            "config": {
+                "input_map": {},
+                "output_map": {},
+                "dropout": 0.0, # dropout between layers
+                "pretrained_model_path": "*@*",
+                "from_pretrain": True,
+                },
+            "_link": {
+                "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+                "config.from_pretrain": ["module.config.from_pretrain"],
+                },
+            "_name": "bart_encoder",
+    }
     """Config for BartEncoder
 
     Config Example:
-        >>> {
-        >>>     module: {
-        >>>         _base: "bart_encoder",
-        >>>     },
-        >>>     config: {
-        >>>         input_map: {},
-        >>>         output_map: {},
-        >>>         input_size: *@*,
-        >>>         output_size: "*@*",
-        >>>         num_layers: 1,
-        >>>         dropout: "*@*", // dropout between layers
-        >>>     },
-        >>>     _link: {
-        >>>         config.input_size: [module.config.input_size],
-        >>>         config.output_size: [module.config.output_size],
-        >>>         config.dropout: [module.config.dropout],
-        >>>     },
-        >>>     _name: "bart_encoder",
-        >>> }
+            {
+                "module": {
+                    "_base": "bart_encoder",
+                    },
+                "config": {
+                    "input_map": {},
+                    "output_map": {},
+                    "input_size": "*@*",
+                    "output_size": "*@*",
+                    "num_layers": 1,
+                    "dropout": "*@*", # dropout between layers
+                    },
+                "_link": {
+                    "config.input_size": ["module.config.input_size"],
+                    "config.output_size": ["module.config.output_size"],
+                    "config.dropout": ["module.config.dropout"],
+                    },
+                "_name": "bart_encoder",
+            }
     """
 
     def __init__(self, config: Dict):
@@ -97,8 +114,18 @@ class BartEncoder(SimpleModule):
             *encoder_out* rearranged according to *new_order*
         """
         encoder_output_embedding = encoder_outs.get(self.get_output_name('encoder_output_embedding'), None)
-        if not encoder_output_embedding:
-            return encoder_outs
+        if encoder_output_embedding is not None:
+           encoder_outs[self.get_output_name('encoder_output_embedding')]  = encoder_output_embedding.index_select(1, new_order)
+
+        encoder_head_mask = encoder_outs.get(self.get_output_name('encoder_head_mask'), None)
+        if encoder_head_mask is not None:
+           encoder_outs[self.get_output_name('encoder_head_mask')]  = encoder_head_mask.index_select(1, new_order)
+
+        encoder_input_embedding = encoder_outs.get(self.get_output_name('encoder_input_embedding'), None)
+        if encoder_input_embedding is not None:
+           encoder_outs[self.get_output_name('encoder_input_embedding')]  = encoder_input_embedding.index_select(1, new_order)
+
+        return encoder_outs
 
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
