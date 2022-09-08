@@ -100,6 +100,18 @@ class StaticEmbedding(SimpleModule):
         """
         logger.info(f'The static embedding is loaded the pretrained.')
 
+    def share_embedding(self, embedding):
+        """link the embedding.embedding to self.embedding
+
+        Args:
+            embedding: source embedding
+
+        Returns: 
+            None
+
+        """
+        self.embedding = embedding.embedding
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """get the pretrained static embedding like glove word2vec
 

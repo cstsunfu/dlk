@@ -146,7 +146,7 @@ class BartDecoderWrap(Module):
                 output_hidden_states = True,
                 return_dict = False
             )
-        assert len(outputs) == 3, f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
+        assert len(outputs) == 5, f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
         # sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[2]
         hidden_states, next_cache, all_hidden_states, all_self_attns, all_cross_attentions = outputs[0], outputs[1], outputs[2], outputs[3], outputs[4]
         return hidden_states, next_cache, all_hidden_states, all_self_attns, all_cross_attentions 
@@ -161,10 +161,24 @@ class BartDecoderWrap(Module):
             sequence_output, all_hidden_states, all_self_attentions
 
         """
-        with torch.no_grad():
+        if self.config.freeze:
+            with torch.no_grad():
+                outputs = self.bart_decoder(
+                    input_ids = None, # NOTE: we will add embedding in embedding layer
+                    attention_mask = inputs.get("decoder_attention_mask", None),
+                    encoder_hidden_states=inputs.get("encoder_outputs", None),
+                    head_mask = inputs.get("decoder_head_mask", None),
+                    past_key_values=inputs.get("past_caches", None),
+                    inputs_embeds = inputs.get("inputs_embeds", None),
+                    use_cache = True,
+                    output_attentions = True,
+                    output_hidden_states = True,
+                    return_dict = False
+                )
+        else:
             outputs = self.bart_decoder(
                 input_ids = None, # NOTE: we will add embedding in embedding layer
-                attention_mask = None,
+                attention_mask = inputs.get("decoder_attention_mask", None),
                 encoder_hidden_states=inputs.get("encoder_outputs", None),
                 head_mask = inputs.get("decoder_head_mask", None),
                 past_key_values=inputs.get("past_caches", None),

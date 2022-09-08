@@ -104,16 +104,18 @@ class TokenGeneratePostProcessor(IPostProcessor):
         Returns: 
             all predicts
         """
+        print('\n---')
         print(len(list_batch_outputs))
         outputs = list_batch_outputs[0]
         # print(outputs)
-        print(self.tokenizer.decode(list(outputs['target_ids'][0])))
+        print(f"Source:\n", self.tokenizer.decode(list(outputs['target_ids'][0])))
         # print(outputs['encoder_input_ids'].shape)
         # print(outputs['decoder_input_ids'].shape)
-        print(self.tokenizer.decode(list(outputs['generated'][0][0]['tokens'])))
-        print(self.tokenizer.decode(list(outputs['generated'][0][1]['tokens'])))
-        print(self.tokenizer.decode(list(outputs['generated'][0][2]['tokens'])))
+        print(f"Generate 1:\n", self.tokenizer.decode(list(outputs['generated'][0][0]['tokens'])))
+        print(f"Generate 2:\n", self.tokenizer.decode(list(outputs['generated'][0][1]['tokens'])))
+        print(f"Generate 3:\n", self.tokenizer.decode(list(outputs['generated'][0][2]['tokens'])))
         # print(list(outputs['generated'][0][0]))
+        print('---')
         pass
         # return results
 

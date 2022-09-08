@@ -66,7 +66,7 @@ class RandomEmbedding(SimpleModule):
         self._required_keys = {'input_ids'} # required by this module
         self.config = config
         self.dropout = nn.Dropout(float(self.config.dropout))
-        normal =  torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
+        normal = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
         self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)).squeeze_(-1), padding_idx=self.config.padding_idx)
 
     def init_weight(self, method: Callable):
@@ -80,6 +80,18 @@ class RandomEmbedding(SimpleModule):
 
         """
         self.embedding.apply(method)
+
+    def share_embedding(self, embedding):
+        """link the embedding.embedding to self.embedding
+
+        Args:
+            embedding: source embedding
+
+        Returns: 
+            None
+
+        """
+        self.embedding = embedding.embedding
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """get the random embedding

@@ -118,6 +118,7 @@ class BartDecoder(SimpleModule):
             one mini-batch outputs
 
         """
+        # print("cache: ", inputs.get("encoder_output_embedding", None).shape)
         module_inputs = {
                 "decoder_attention_mask": inputs.get(self.get_input_name("decoder_attention_mask"), None),
                 "encoder_outputs": inputs.get(self.get_input_name("encoder_output_embedding"), None),

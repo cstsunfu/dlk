@@ -43,6 +43,7 @@ class SpecialVocab(object):
         self.tokenizer = Tokenizer.from_file(config['config']['tgt_tokenizer'])
         
         self._eos = config['config']['tgt_eos']
+        self._bos = config['config']['tgt_bos']
         self._pad = config['config']['tgt_pad']
         self._unk = config['config']['tgt_unk']
 
@@ -52,6 +53,15 @@ class SpecialVocab(object):
             eos value
         """
         return self.tokenizer.token_to_id(self._eos)
+
+    def bos(self):
+        """
+        Returns:
+            bos value
+        """
+        if self._bos is None:
+            return self.tokenizer.token_to_id(self._eos)
+        return self.tokenizer.token_to_id(self._bos)
 
     def pad(self):
         """
@@ -152,9 +162,10 @@ class GenerateModelConfig(BaseConfig):
                 "match_source_len": False, # outputs should match the sourcelength (default: False)
                 "no_repeat_ngram_size": 0, # prevent ngram repeat
                 "search_strategy": None,
-                "tgt_eos": "[SEP]",
+                "tgt_eos": "[EOS]",
                 "tgt_pad": "[PAD]",
                 "tgt_unk": "[UNK]",
+                "tgt_bos": None,
                 "tgt_tokenizer": "*@*",
                 },
             "_link": {
@@ -179,8 +190,7 @@ class GenerateModelConfig(BaseConfig):
         self.init_method, self.init_method_config = self.get_init_method(config["initmethod"])
         self.share_embedding = config['config']["share_embedding"]
         self.source_embedding, self.source_embedding_config = self.get_embedding(config["embedding@encoder"])
-        if not self.share_embedding:
-            self.target_embedding, self.target_embedding_config = self.get_embedding(config["embedding@decoder"]) 
+        self.target_embedding, self.target_embedding_config = self.get_embedding(config["embedding@decoder"]) 
         self.beam_size = config['config']["beam_size"]
         self.decoder_hidden_size = config['config']['hidden_size']
         self.max_len_a = config['config']["max_len_a"]
@@ -255,10 +265,9 @@ class GeneratorModel(BaseModel):
         super().__init__()
         self.config = config
         self.source_embedding = self.config.source_embedding(self.config.source_embedding_config)
-        if not self.config.share_embedding:
-            self.target_embedding = self.config.target_embedding(self.config.target_embedding_config)
-        else:
-            self.target_embedding = self.source_embedding
+        self.target_embedding = self.config.target_embedding(self.config.target_embedding_config)
+        if  self.config.share_embedding:
+            self.target_embedding.share_embedding(self.source_embedding)
         self.encoder = self.config.encoder(self.config.encoder_config)
         self.decoder = self.config.decoder(self.config.decoder_config)
         self.lm_head = nn.Linear(self.config.decoder_hidden_size, self.config.vocab_size, bias=False)
@@ -274,6 +283,7 @@ class GeneratorModel(BaseModel):
         self.pad = self.config.tgt_dict.pad()
         self.unk = self.config.tgt_dict.unk()
         self.eos = self.config.tgt_dict.eos()
+        self.bos = self.config.tgt_dict.eos()
         if self.config.no_repeat_ngram_size > 0:
             self.repeat_ngram_blocker = NGramRepeatBlock(self.config.no_repeat_ngram_size)
         else:
@@ -290,6 +300,8 @@ class GeneratorModel(BaseModel):
         self.should_set_src_lengths = (
             hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
         )
+        # self.epoch = 0
+
 
     def provide_keys(self)->List[str]:
         """return all keys of the dict of the model returned
@@ -347,6 +359,11 @@ class GeneratorModel(BaseModel):
             the training outputs
 
         """
+
+        decoder_input_ids = inputs[self.target_embedding.get_input_name('decoder_input_ids')]
+        bs, _ = decoder_input_ids.shape
+        decoder_target_ids = torch.concat([decoder_input_ids[:, 1:], torch.LongTensor([self.pad]*bs).view(bs, -1).to(decoder_input_ids)], -1)
+        # inputs[self.target_embedding.get_input_name('decoder_input_ids')] = decoder_input_ids
         embedding_outputs = self.source_embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
         decoder_embedding_outputs = self.target_embedding.training_step(encode_outputs)
@@ -354,6 +371,7 @@ class GeneratorModel(BaseModel):
         decoder_output_embedding = decode_outputs[self.decoder.get_output_name('decoder_output_embedding')]
         logits = self.lm_head(decoder_output_embedding)
         decode_outputs['logits'] = logits
+        decode_outputs['decoder_target_ids'] = decoder_target_ids
         return decode_outputs
 
     def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
@@ -424,13 +442,26 @@ class GeneratorModel(BaseModel):
         ), "min_len cannot be larger than max_len, please adjust these!"
 
         embedding_outputs = self.source_embedding.forward(inputs)
+        # print(embedding_outputs.keys())
+        # print(embedding_outputs['encoder_input_ids'].shape)
+        # print(embedding_outputs['encoder_input_embedding'].shape)
         encoder_outs = self.encoder.forward(embedding_outputs)
+        # print(embedding_outputs['encoder_output_embedding'].shape)
+
+# #### WARN:  DEL
+#         self.epoch += 1
+#         decoder_embedding_outputs = self.target_embedding.training_step(encoder_outs)
+#         decode_outputs = self.decoder.training_step(decoder_embedding_outputs)
+#         back_decoder_output_embedding = decode_outputs[self.decoder.get_output_name('decoder_output_embedding')]
+# #### del
 
         # placeholder of indices for bsz * beam_size to hold tokens and accumulative scores
         new_order = torch.arange(bsz).view(-1, 1).repeat(1, beam_size).view(-1)
         new_order = new_order.to(src_tokens.device).long()
 
+        # print(new_order)
         encoder_outs = self.encoder.reorder_encoder_out(encoder_outs, new_order)
+        # print(embedding_outputs['encoder_output_embedding'].shape)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
 
@@ -444,7 +475,7 @@ class GeneratorModel(BaseModel):
             .long()
             .fill_(self.pad)
         )  # +2 for eos and pad
-        tokens[:, 0] = self.eos
+        tokens[:, 0] = self.bos
         attn: Optional[torch.Tensor] = None
 
         # A list that indicates candidates that should be ignored.
@@ -500,6 +531,10 @@ class GeneratorModel(BaseModel):
                     encoder_outs, reorder_state
                 )
             encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = tokens[:, :step+1]
+#### WARN: DEL
+            # encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = inputs['target_ids'][:, :step+1]
+#### WARN: DEL
+            # print(f"Predict decode inputs ids: \n", encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')])
 
             decoder_embedding_outputs = self.target_embedding.forward(encoder_outs)
             decoder_outs = self.decoder.forward(
@@ -507,15 +542,32 @@ class GeneratorModel(BaseModel):
             )
 
             decoder_output_embedding = decoder_outs[self.decoder.get_output_name('decoder_output_embedding')]
-            decoder_output_embedding = decoder_output_embedding[:, 0, :]
+            # print(decoder_output_embedding.shape)
+            decoder_output_embedding = decoder_output_embedding[:, -1, :]
             lprobs = self.lm_head(decoder_output_embedding)
+            # print(f"max :\n", torch.argmax(lprobs, -1))
 
             avg_attn_scores = None # TODO:get average attention score
 
             lprobs[lprobs != lprobs] = torch.tensor(-math.inf).to(lprobs)
 
             lprobs[:, self.pad] = -math.inf  # never select pad
+            if self.bos != self.eos:
+                lprobs[:, self.bos] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.config.unk_penalty  # apply unk penalty
+# #### WARN: DEL
+#             if self.epoch == 4: # and step == 1:
+#                 print("tokens: \t\n", tokens)
+#                 print(torch.argmax(lprobs, -1))
+#                 # print(back_decoder_output_embedding[:, step, :])
+
+#                 print(self.config.tgt_dict.tokenizer.decode(list(tokens[0][:step+1])))
+#                 print(self.config.tgt_dict.tokenizer.decode(list(inputs['target_ids'][0][:step+1])))
+#                 # print(decoder_output_embedding)
+#                 print(f"step {step}")
+#                 # print((decoder_output_embedding-back_decoder_output_embedding[:, step, :]) * (decoder_output_embedding-back_decoder_output_embedding[:, step, :])<0.01)
+#                 print("------------")
+# #### WARN: DEL
 
             # handle max length constraint
             if step >= max_len:
@@ -555,8 +607,10 @@ class GeneratorModel(BaseModel):
             if self.should_set_src_lengths:
                 self.search.set_src_lengths(src_lengths)
 
+            # print(f"Before {lprobs}")
             if self.repeat_ngram_blocker is not None:
                 lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
+            # print(f"after {lprobs}")
 
             # Shape: (batch, cand_size)
             cand_scores, cand_indices, cand_beams = self.search.step(

@@ -22,9 +22,9 @@
                     },
                     "key_padding_pairs": {
                         "encoder_input_ids": 0,
-                        "decoder_input_ids": 0
+                        "decoder_target_ids": 0
                     },
-                    "train_batch_size": 32,
+                    "train_batch_size": 4,
                     "predict_batch_size": 256,
                     "online_batch_size": 1
                 },
@@ -69,7 +69,7 @@
                         "label_smoothing": 0,
                         "pred_truth_pair": [
                             "logits",
-                            "decoder_input_ids"
+                            "decoder_target_ids"
                         ],
                         "schedule": [
                             1
@@ -116,7 +116,7 @@
                     "embedding@encoder": {
                         "_base": "random",
                         "config": {
-                            "vocab_size": 9,
+                            "vocab_size": 3000,
                             "embedding_dim": 128,
                             "dropout": 0, //dropout rate
                             "padding_idx": 0,
@@ -131,7 +131,7 @@
                     "embedding@decoder": {
                         "_base": "random",
                         "config": {
-                            "vocab_size": 9,
+                            "vocab_size": 3000,
                             "embedding_dim": 128,
                             "dropout": 0, //dropout rate
                             "padding_idx": 0,
@@ -168,9 +168,9 @@
                         // "embedding_file": "*@*",
                         // "embedding_trace": "token_embedding",
                         "hidden_size": "*@*"
-                        "share_embedding": false,
+                        "share_embedding": true,
                         "pretrained_model_path": "./config.json",
-                        "beam_size": 3,  # beam width (default: 1)
+                        "beam_size": 5,  # beam width (default: 1)
                         "max_len_a": 0, 
                         "max_len_b": 100,  # generate sequences of maximum length ax + b, where x is the source length
                         "max_len": 100, # the maximum length of the generated output(not including end-of-sentence)
@@ -182,7 +182,8 @@
                         "match_source_len": false, # outputs should match the sourcelength (default: false)
                         "no_repeat_ngram_size": 0, # prevent ngram repeat
                         "search_strategy": null,
-                        "tgt_eos": "[EOS]",
+                        "tgt_eos": "[MASK]",
+                        "tgt_bos": null,
                         "tgt_pad": "[PAD]",
                         "tgt_unk": "[UNK]",
                         "tgt_tokenizer": "./data/tokenizer/de_tokenizer.json",

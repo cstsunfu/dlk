@@ -21,20 +21,20 @@ import uuid
 
 logger = Logger('log.txt')
 
-with open('./data/source.txt') as f:
+with open('./data/train.tags.de-en.clean.de') as f:
     de_lines = f.readlines()
 
-with open('./data/target.txt') as f:
+with open('./data/train.tags.de-en.clean.en') as f:
     en_lines = f.readlines()
 
 data = []
 for en_line, de_line in zip(en_lines, de_lines):
     data.append({
-        "encoder": de_line,
-        "decoder": en_line,
+        "encoder": f"[MASK] {en_line} [MASK]",
+        "decoder": f"[MASK] {de_line} [MASK]",
         "uuid": str(uuid.uuid1()),
     })
-input = {"data": {"train": data[:2], 'valid': data[:2]}}
+input = {"data": {"train": data[:1000], 'valid': data[:10]}}
 
 processor = Processor('./transformer/prepro.hjson')
 # print(json.dumps(processor.config, indent=2))

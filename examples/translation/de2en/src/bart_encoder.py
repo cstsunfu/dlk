@@ -115,15 +115,15 @@ class BartEncoder(SimpleModule):
         """
         encoder_output_embedding = encoder_outs.get(self.get_output_name('encoder_output_embedding'), None)
         if encoder_output_embedding is not None:
-           encoder_outs[self.get_output_name('encoder_output_embedding')]  = encoder_output_embedding.index_select(1, new_order)
+           encoder_outs[self.get_output_name('encoder_output_embedding')]  = encoder_output_embedding.index_select(0, new_order)
 
         encoder_head_mask = encoder_outs.get(self.get_output_name('encoder_head_mask'), None)
         if encoder_head_mask is not None:
-           encoder_outs[self.get_output_name('encoder_head_mask')]  = encoder_head_mask.index_select(1, new_order)
+           encoder_outs[self.get_output_name('encoder_head_mask')]  = encoder_head_mask.index_select(0, new_order)
 
         encoder_input_embedding = encoder_outs.get(self.get_output_name('encoder_input_embedding'), None)
         if encoder_input_embedding is not None:
-           encoder_outs[self.get_output_name('encoder_input_embedding')]  = encoder_input_embedding.index_select(1, new_order)
+           encoder_outs[self.get_output_name('encoder_input_embedding')]  = encoder_input_embedding.index_select(0, new_order)
 
         return encoder_outs
 
