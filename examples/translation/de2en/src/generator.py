@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# There are some code copied from fairseq
+# There are many code copied from fairseq
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the MIT license
+# This source code copied is licensed under the MIT license
 
 import math
 import sys
@@ -204,6 +204,8 @@ class GenerateModelConfig(BaseConfig):
         self.match_source_len = config['config']["match_source_len"]
         self.search_strategy = config['config']["search_strategy"] # TODO: add strategy init
         self.no_repeat_ngram_size = config['config']["no_repeat_ngram_size"]
+        # NOTE: no repeat ngram size https://github.com/facebookresearch/fairseq/issues/4709
+        assert self.no_repeat_ngram_size == 0 or self.no_repeat_ngram_size >1, f"No repeat ngram can only prevent >=2 tokens repeat"
         self.tgt_dict = SpecialVocab(config) # TODO: add target dictionary
         self.vocab_size = len(self.tgt_dict)
 
@@ -362,7 +364,8 @@ class GeneratorModel(BaseModel):
 
         decoder_input_ids = inputs[self.target_embedding.get_input_name('decoder_input_ids')]
         bs, _ = decoder_input_ids.shape
-        decoder_target_ids = torch.concat([decoder_input_ids[:, 1:], torch.LongTensor([self.pad]*bs).view(bs, -1).to(decoder_input_ids)], -1)
+        decoder_target_ids = torch.concat([decoder_input_ids[:, 1:], torch.LongTensor([self.eos]*bs).view(bs, -1).to(decoder_input_ids)], -1)
+        # print(f"target:\n", self.config.tgt_dict.tokenizer.decode(list(decoder_target_ids[0])))
         # inputs[self.target_embedding.get_input_name('decoder_input_ids')] = decoder_input_ids
         embedding_outputs = self.source_embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
@@ -474,7 +477,7 @@ class GeneratorModel(BaseModel):
             .to(src_tokens)
             .long()
             .fill_(self.pad)
-        )  # +2 for eos and pad
+        )  # +2 for bos and pad
         tokens[:, 0] = self.bos
         attn: Optional[torch.Tensor] = None
 
@@ -609,7 +612,7 @@ class GeneratorModel(BaseModel):
 
             # print(f"Before {lprobs}")
             if self.repeat_ngram_blocker is not None:
-                lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
+                lprobs = self.repeat_ngram_blocker(tokens[:, :step+1], lprobs, bsz, beam_size, step)
             # print(f"after {lprobs}")
 
             # Shape: (batch, cand_size)
@@ -730,6 +733,13 @@ class GeneratorModel(BaseModel):
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
             # Make sure there is at least one active item for each sentence in the batch.
+            if 'flag' in self.__dict__:
+                print(f"eos_mask: {eos_mask}")
+                print(f"active_mask: {active_mask}")
+                print(f"new_cands_to_ignore: {new_cands_to_ignore}")
+                print(f"active_hypos: {active_hypos}")
+                print(f"cands_to_ignore: {cands_to_ignore}")
+                raise KeyError
             assert (~cands_to_ignore).any(dim=1).all()
 
             # update cands_to_ignore to ignore any finalized hypos
@@ -848,7 +858,7 @@ class GeneratorModel(BaseModel):
         # gets the newly EOS rows, then selects cols 1..{step + 2}
         tokens_clone = tokens.index_select(0, bbsz_idx)[
             :, 1 : step + 2
-        ]  # skip the first index, which is EOS
+        ]  # skip the first index, which is BOS
 
         tokens_clone[:, step] = self.eos
         attn_clone = (
@@ -873,6 +883,8 @@ class GeneratorModel(BaseModel):
         # sentences.
         cum_unfin: List[int] = []
         prev = 0
+        # [1, 0, 1, 0, 0, 1]
+        # [1, 2, 2]
         for f in finished:
             if f:
                 prev += 1
@@ -891,6 +903,16 @@ class GeneratorModel(BaseModel):
         # sentence index in the current (possibly reduced) batch
         seen = (sent << 32) + unfin_idx
         unique_seen: List[int] = torch.unique(seen).tolist()
+        if [False, False, True, False] == finished:
+            print(f"cum_fin_tensor: {cum_fin_tensor}")
+            print(f"unfin_idx: {unfin_idx}")
+            print(f"sent: {sent}")
+            print(f"finished: {finished}")
+            print(f"seen: {seen}")
+            print(f"unique_seen: {unique_seen}")
+            self.flag = True
+
+
 
         if self.config.match_source_len:
             condition = step > torch.index_select(src_lengths, 0, unfin_idx)

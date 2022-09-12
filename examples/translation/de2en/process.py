@@ -27,11 +27,19 @@ with open('./data/train.tags.de-en.clean.de') as f:
 with open('./data/train.tags.de-en.clean.en') as f:
     en_lines = f.readlines()
 
+with open('./data/target.txt') as f:
+    de_lines = f.readlines()
+
+with open('./data/source.txt') as f:
+    en_lines = f.readlines()
+
 data = []
 for en_line, de_line in zip(en_lines, de_lines):
     data.append({
-        "encoder": f"[MASK] {en_line} [MASK]",
-        "decoder": f"[MASK] {de_line} [MASK]",
+        # "encoder": f"[MASK] {en_line} [MASK]",
+        # "decoder": f"[MASK] {de_line} [MASK]",
+        "encoder": f"{en_line}",
+        "decoder": f"{de_line}",
         "uuid": str(uuid.uuid1()),
     })
 input = {"data": {"train": data[:1000], 'valid': data[:10]}}

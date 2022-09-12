@@ -57,6 +57,7 @@ class NGramRepeatBlock(nn.Module):
         banned_tokens = [
             torch.jit.annotate(List[int], []) for bbsz_idx in range(bsz * beam_size)
         ]
+        # print(f"banned, {step}")
         if step + 2 - self.no_repeat_ngram_size >= 0:
             cpu_tokens: List[List[int]] = tokens.cpu().tolist()
             check_start_pos = step + 2 - self.no_repeat_ngram_size
@@ -64,11 +65,13 @@ class NGramRepeatBlock(nn.Module):
                 ngram_to_check = cpu_tokens[bbsz_idx][
                     -(self.no_repeat_ngram_size - 1) :
                 ]
+                # print(f"to check: {ngram_to_check}")
                 for i in range(check_start_pos):
                     if (
                         ngram_to_check
                         == cpu_tokens[bbsz_idx][i : i + self.no_repeat_ngram_size - 1]
                     ):
+                        # print(f"banned, {cpu_tokens[bbsz_idx][i + self.no_repeat_ngram_size - 1]}")
                         banned_tokens[bbsz_idx].append(
                             cpu_tokens[bbsz_idx][i + self.no_repeat_ngram_size - 1]
                         )

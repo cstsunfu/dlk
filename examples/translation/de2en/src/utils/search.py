@@ -147,6 +147,21 @@ class BeamSearch(Search):
 
 class PrefixConstrainedBeamSearch(Search):
     def __init__(self, tgt_dict, prefix_allowed_tokens_fn):
+        """
+            `prefix_allowed_tokens_fn` constrains the beam search to
+            allowed tokens only at each step. The provided function
+            should take 2 arguments: the batch ID (`batch_id: int`)
+            and a unidimensional tensor of token ids (`inputs_ids:
+            torch.Tensor`). It has to return a `List[int]` with the
+            allowed tokens for the next generation step conditioned
+            on the previously generated tokens (`inputs_ids`) and
+            the batch ID (`batch_id`). This argument is useful for
+            constrained generation conditioned on the prefix, as
+            described in "Autoregressive Entity Retrieval"
+            (https://arxiv.org/abs/2010.00904) and
+            https://github.com/facebookresearch/GENRE.
+            https://blog.csdn.net/ljp1919/article/details/116867815
+        """
         super().__init__(tgt_dict)
         self.prefix_allowed_tokens_fn = prefix_allowed_tokens_fn
         self.stop_on_max_len = True
@@ -557,6 +572,7 @@ class DiverseBeamSearch(Search):
 
     We only implement the Hamming Diversity penalty here, which performed best
     in the original paper.
+    https://blog.csdn.net/YUFAN_ZHAO/article/details/79132898
     """
 
     def __init__(self, tgt_dict, num_groups, diversity_strength):
@@ -623,6 +639,7 @@ class Sampling(Search):
     sampling_topk: int
     sampling_topp: float
 
+    # TODO: REF to the hf implement(https://huggingface.co/blog/how-to-generate), using temperature to control the lprobs sharp rate. This is optional, because we can use the topk or topp to prevent the very weird sequence.
     def __init__(self, tgt_dict, sampling_topk=-1, sampling_topp=-1.0):
         super().__init__(tgt_dict)
         self.sampling_topk = sampling_topk
@@ -756,6 +773,8 @@ class DiverseSiblingsSearch(Search):
     4/ Choose top K hypotheses
 
     if diversity_rate == 0 is equivalent to BeamSearch
+
+    https://zhuanlan.zhihu.com/p/61471150
     """
 
     def __init__(self, tgt_dict, diversity_rate):

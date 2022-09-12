@@ -182,7 +182,7 @@
                         "match_source_len": false, # outputs should match the sourcelength (default: false)
                         "no_repeat_ngram_size": 0, # prevent ngram repeat
                         "search_strategy": null,
-                        "tgt_eos": "[MASK]",
+                        "tgt_eos": "[EOS]",
                         "tgt_bos": null,
                         "tgt_pad": "[PAD]",
                         "tgt_unk": "[UNK]",
@@ -217,7 +217,7 @@
                     "check_val_every_n_epoch": 1,
                     "fast_dev_run": false,
                     "accumulate_grad_batches": 1,
-                    "max_epochs": 500,
+                    "max_epochs": 20,
                     "min_epochs": null,
                     "max_steps": -1,
                     "min_steps": null,
