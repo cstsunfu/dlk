@@ -83,7 +83,7 @@ class TokenGeneratePostProcessor(IPostProcessor):
         super(TokenGeneratePostProcessor, self).__init__()
         self.config = config
 
-        self.tokenizer = Tokenizer.from_file('./data/tokenizer/de_tokenizer.json')
+        self.tokenizer = Tokenizer.from_file('./bart/tokenizer.json')
 
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
         """Process the model predict to human readable format

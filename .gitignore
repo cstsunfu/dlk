@@ -27,4 +27,5 @@ examples/**/output/**
 examples/**/test/**
 examples/**/log.txt
 examples/**/valid/**
+**/de2en/bart/**
 *.DS_Store

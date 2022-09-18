@@ -33,6 +33,7 @@ from dlk.core.layers.embeddings import embedding_config_register, embedding_regi
 from dlk.core.initmethods import initmethod_config_register, initmethod_register
 from dlk.core.layers.encoders import encoder_config_register, encoder_register
 from dlk.core.layers.decoders import decoder_config_register, decoder_register
+from dlk.core.search_methods import search_method_config_register, search_method_register
 from dlk.utils.config import BaseConfig, ConfigTool
 from tokenizers import Tokenizer
 
@@ -88,17 +89,19 @@ class SpecialVocab(object):
 
 @model_config_register('generator')
 class GenerateModelConfig(BaseConfig):
-    defaut_config = {
+    default_config = {
+            "search_method": {
+                "_base": "beam_search", # for beam search, nothing to config
+            },
             "embedding@encoder": {
-                "_base": "static",
+                "_base": "random",
                 "config": {
-                    "embedding_file": "*@*",
-                    "embedding_dim": "*@*", # if the embedding_file is a dict, you should provide the dict trace to embedding
-                    "embedding_trace": ".", # default the file itself is the embedding
-                    "freeze": False, # is freeze
-                    "dropout": 0, #dropout rate
+                    "vocab_size": "*@*",
+                    "embedding_dim": "*@*",
+                    "dropout": 0, # dropout rate
+                    "padding_idx": 0,
                     "output_map": {
-                        "embedding": "embedding"
+                        "embedding": "encoder_input_embedding"
                     },
                     "input_map": {
                         "input_ids": "encoder_input_ids"
@@ -106,15 +109,14 @@ class GenerateModelConfig(BaseConfig):
                 },
             },
             "embedding@decoder": {
-                "_base": "static",
+                "_base": "random",
                 "config": {
-                    "embedding_file": "*@*",
-                    "embedding_dim": "*@*", # if the embedding_file is a dict, you should provide the dict trace to embedding
-                    "embedding_trace": ".", # default the file itself is the embedding
-                    "freeze": False, # is freeze
-                    "dropout": 0, #dropout rate
+                    "vocab_size": "*@*",
+                    "embedding_dim": "*@*",
+                    "dropout": 0, # dropout rate
+                    "padding_idx": 0,
                     "output_map": {
-                        "embedding": "decoder_embedding"
+                        "embedding": "decoder_input_embedding"
                     },
                     "input_map": {
                         "input_ids": "decoder_input_ids"
@@ -122,33 +124,29 @@ class GenerateModelConfig(BaseConfig):
                 },
             },
             "decoder": {
-                "_base": "transformer_decoder",
+                "_base": "bart_decoder",
                 "config": {
-                    "input_size": "*@*",
-                    "output_size": "*@*",
-                    "pool": None,
-                    "dropout": "*@*", #the decoder output no need dropout
-                    "output_map": {}
-                    },
+                    "dropout": 0.0, #the decoder output no need dropout
+                    "output_map": {},
+                    "from_pretrain": False,
                 },
+            },
             "encoder": {
-                "_base": "transformer_encoder",
+                "_base": "bart_encoder",
                 "config": {
                     "output_map": {},
-                    "hidden_size": "*@*",
-                    "input_size": "*@*",
-                    "output_size": "*@*",
-                    "num_layers": 1,
-                    "dropout": "*@*", # dropout between layers
-                    },
+                    "dropout": 0.0, # dropout between layers
+                    "from_pretrain": False,
                 },
+            },
             "initmethod": {
                 "_base": "range_norm"
                 },
             "config": {
+                "encoder_vocab_size": "*@*",
+                "decoder_vocab_size": "*@*",
                 "embedding_dim": "*@*",
                 "dropout": "*@*",
-                "embedding_file": "*@*",
                 "embedding_trace": "token_embedding",
                 "beam_size": 1,  # beam width (default: 1)
                 "max_len_a": 0, 
@@ -161,26 +159,20 @@ class GenerateModelConfig(BaseConfig):
                 "temperature": 1.0, # temperature, where values >1.0 produce more uniform samples and values <1.0 produce sharper samples (default: 1.0)
                 "match_source_len": False, # outputs should match the sourcelength (default: False)
                 "no_repeat_ngram_size": 0, # prevent ngram repeat
-                "search_strategy": None,
-                "tgt_eos": "[EOS]",
-                "tgt_pad": "[PAD]",
-                "tgt_unk": "[UNK]",
+                "tgt_eos": "*@*",
+                "tgt_pad": "*@*",
+                "tgt_unk": "*@*",
                 "tgt_bos": None,
                 "tgt_tokenizer": "*@*",
                 },
             "_link": {
-                    "config.embedding_dim": ["embedding.config.embedding_dim",
-                        "encoder.config.input_size",
-                        "encoder.config.output_size",
-                        "encoder.config.hidden_size",
-                        "decoder.config.output_size",
-                        "decoder.config.input_size"
-                        ],
-                    "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
-                    "config.embedding_file": ['embedding.config.embedding_file'],
-                    "config.embedding_trace": ['embedding.config.embedding_trace']
+                    "config.embedding_dim": ["embedding@encoder.config.embedding_dim", "embedding@decoder.config.embedding_dim", "config.hidden_size"],
+                    "config.encoder_vocab_size": "embedding@encoder.config.vocab_size",
+                    "config.decoder_vocab_size": "embedding@decoder.config.vocab_size",
+                    "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding@encoder.config.dropout", "embedding@decoder.config.dropout"],
+                    "config.pretrained_model_path": ['encoder.config.pretrained_model_path', 'decoder.config.pretrained_model_path'],
             },
-            "_name": "summary_generate"
+            "_name": "generator"
         }
     def __init__(self, config):
         super(GenerateModelConfig, self).__init__(config)
@@ -191,6 +183,7 @@ class GenerateModelConfig(BaseConfig):
         self.share_embedding = config['config']["share_embedding"]
         self.source_embedding, self.source_embedding_config = self.get_embedding(config["embedding@encoder"])
         self.target_embedding, self.target_embedding_config = self.get_embedding(config["embedding@decoder"]) 
+        self.search_method, self.search_method_config = self.get_search_method(config["search_method"]) 
         self.beam_size = config['config']["beam_size"]
         self.decoder_hidden_size = config['config']['hidden_size']
         self.max_len_a = config['config']["max_len_a"]
@@ -202,12 +195,24 @@ class GenerateModelConfig(BaseConfig):
         self.unk_penalty = config['config']["unk_penalty"]
         self.temperature = config['config']["temperature"]
         self.match_source_len = config['config']["match_source_len"]
-        self.search_strategy = config['config']["search_strategy"] # TODO: add strategy init
         self.no_repeat_ngram_size = config['config']["no_repeat_ngram_size"]
         # NOTE: no repeat ngram size https://github.com/facebookresearch/fairseq/issues/4709
         assert self.no_repeat_ngram_size == 0 or self.no_repeat_ngram_size >1, f"No repeat ngram can only prevent >=2 tokens repeat"
         self.tgt_dict = SpecialVocab(config) # TODO: add target dictionary
         self.vocab_size = len(self.tgt_dict)
+
+    def get_search_method(self, config: Dict):
+        """return the SearchMethod and SearchMethodConfig
+
+        Args:
+            config: the search_method config
+
+        Returns: 
+            SearchMethod, SearchMethodConfig
+
+        """
+        return ConfigTool.get_leaf_module(search_method_register, search_method_config_register, "search_method", config)
+
 
     def get_embedding(self, config: Dict):
         """return the Embedding and EmbeddingConfig
@@ -286,6 +291,10 @@ class GeneratorModel(BaseModel):
         self.unk = self.config.tgt_dict.unk()
         self.eos = self.config.tgt_dict.eos()
         self.bos = self.config.tgt_dict.eos()
+        print(self.pad)
+        print(self.unk)
+        print(self.eos)
+        print(self.bos)
         if self.config.no_repeat_ngram_size > 0:
             self.repeat_ngram_blocker = NGramRepeatBlock(self.config.no_repeat_ngram_size)
         else:
@@ -293,9 +302,7 @@ class GeneratorModel(BaseModel):
 
         assert self.config.temperature > 0, "--temperature must be greater than 0"
 
-        self.search = (
-            search.BeamSearch(self.config.tgt_dict) if self.config.search_strategy is None else self.config.search_strategy
-        )
+        self.search = self.config.search_method(self.config.tgt_dict, self.config.search_method_config)
         # We only need to set src_lengths in LengthConstrainedBeamSearch.
         # As a module attribute, setting it would break in multithread
         # settings when the model is shared.
@@ -365,8 +372,6 @@ class GeneratorModel(BaseModel):
         decoder_input_ids = inputs[self.target_embedding.get_input_name('decoder_input_ids')]
         bs, _ = decoder_input_ids.shape
         decoder_target_ids = torch.concat([decoder_input_ids[:, 1:], torch.LongTensor([self.eos]*bs).view(bs, -1).to(decoder_input_ids)], -1)
-        # print(f"target:\n", self.config.tgt_dict.tokenizer.decode(list(decoder_target_ids[0])))
-        # inputs[self.target_embedding.get_input_name('decoder_input_ids')] = decoder_input_ids
         embedding_outputs = self.source_embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
         decoder_embedding_outputs = self.target_embedding.training_step(encode_outputs)
@@ -445,26 +450,13 @@ class GeneratorModel(BaseModel):
         ), "min_len cannot be larger than max_len, please adjust these!"
 
         embedding_outputs = self.source_embedding.forward(inputs)
-        # print(embedding_outputs.keys())
-        # print(embedding_outputs['encoder_input_ids'].shape)
-        # print(embedding_outputs['encoder_input_embedding'].shape)
         encoder_outs = self.encoder.forward(embedding_outputs)
-        # print(embedding_outputs['encoder_output_embedding'].shape)
-
-# #### WARN:  DEL
-#         self.epoch += 1
-#         decoder_embedding_outputs = self.target_embedding.training_step(encoder_outs)
-#         decode_outputs = self.decoder.training_step(decoder_embedding_outputs)
-#         back_decoder_output_embedding = decode_outputs[self.decoder.get_output_name('decoder_output_embedding')]
-# #### del
 
         # placeholder of indices for bsz * beam_size to hold tokens and accumulative scores
         new_order = torch.arange(bsz).view(-1, 1).repeat(1, beam_size).view(-1)
         new_order = new_order.to(src_tokens.device).long()
 
-        # print(new_order)
         encoder_outs = self.encoder.reorder_encoder_out(encoder_outs, new_order)
-        # print(embedding_outputs['encoder_output_embedding'].shape)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
 
@@ -534,11 +526,6 @@ class GeneratorModel(BaseModel):
                     encoder_outs, reorder_state
                 )
             encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = tokens[:, :step+1]
-#### WARN: DEL
-            # encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = inputs['target_ids'][:, :step+1]
-#### WARN: DEL
-            # print(f"Predict decode inputs ids: \n", encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')])
-
             decoder_embedding_outputs = self.target_embedding.forward(encoder_outs)
             decoder_outs = self.decoder.forward(
                     decoder_embedding_outputs
@@ -558,19 +545,6 @@ class GeneratorModel(BaseModel):
             if self.bos != self.eos:
                 lprobs[:, self.bos] = -math.inf  # never select pad
             lprobs[:, self.unk] -= self.config.unk_penalty  # apply unk penalty
-# #### WARN: DEL
-#             if self.epoch == 4: # and step == 1:
-#                 print("tokens: \t\n", tokens)
-#                 print(torch.argmax(lprobs, -1))
-#                 # print(back_decoder_output_embedding[:, step, :])
-
-#                 print(self.config.tgt_dict.tokenizer.decode(list(tokens[0][:step+1])))
-#                 print(self.config.tgt_dict.tokenizer.decode(list(inputs['target_ids'][0][:step+1])))
-#                 # print(decoder_output_embedding)
-#                 print(f"step {step}")
-#                 # print((decoder_output_embedding-back_decoder_output_embedding[:, step, :]) * (decoder_output_embedding-back_decoder_output_embedding[:, step, :])<0.01)
-#                 print("------------")
-# #### WARN: DEL
 
             # handle max length constraint
             if step >= max_len:
@@ -733,13 +707,6 @@ class GeneratorModel(BaseModel):
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
             # Make sure there is at least one active item for each sentence in the batch.
-            if 'flag' in self.__dict__:
-                print(f"eos_mask: {eos_mask}")
-                print(f"active_mask: {active_mask}")
-                print(f"new_cands_to_ignore: {new_cands_to_ignore}")
-                print(f"active_hypos: {active_hypos}")
-                print(f"cands_to_ignore: {cands_to_ignore}")
-                raise KeyError
             assert (~cands_to_ignore).any(dim=1).all()
 
             # update cands_to_ignore to ignore any finalized hypos

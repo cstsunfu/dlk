@@ -10,20 +10,22 @@ from dlk.core.models.utils.token_generation_constraints import (
 from typing import List, Optional, Dict
 from dlk.utils.config import BaseConfig
 
+constraint_id_map = {
+    1: OrderedConstraintState, 
+    2: UnorderedConstraintState
+}
+
 @search_method_config_register("lexically_constrained_beam_search")
 class LexicallyConstrainedBeamSearchConfig(BaseConfig):
     default_config = {
         "_name": "lexically_constrained_beam_search",
         "config": {
-            "representation": "ordered", # "ordered" or "unordered" or "optional"
         }
     }
     def __init__(self, config: Dict):
         super(LexicallyConstrainedBeamSearchConfig, self).__init__(config)
         config = config['config']
-        self.representation = config['representation']
         self.post_check(config, used=[
-            "representation",
         ])
 
 
@@ -49,7 +51,6 @@ class LexicallyConstrainedBeamSearch(Search):
 
     def __init__(self, tgt_dict, config: LexicallyConstrainedBeamSearchConfig):
         super().__init__(tgt_dict)
-        self.representation = config.representation
         self.vocab_size = len(tgt_dict)
         self.num_cands = 0
         self.supports_constraints = True
@@ -58,11 +59,9 @@ class LexicallyConstrainedBeamSearch(Search):
     def init_constraints(self, batch_constraints: Optional[Tensor], beam_size: int):
         self.constraint_states = []
         for constraint_tensor in batch_constraints:
-            if self.representation == "ordered":
-                constraint_state = OrderedConstraintState.create(constraint_tensor)
-            elif self.representation == "unordered":
-                constraint_state = UnorderedConstraintState.create(constraint_tensor)
-
+            constraint_id = int(constraint_tensor[0].cpu())
+            ConstraintClass = constraint_id_map[constraint_id]
+            constraint_state = ConstraintClass.create(constraint_tensor[1:])
             self.constraint_states.append([constraint_state for i in range(beam_size)])
 
     @torch.jit.export

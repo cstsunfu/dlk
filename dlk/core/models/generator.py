@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# There are some code copied from fairseq
+# There are many code copied from fairseq
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the MIT license
+# This source code copied is licensed under the MIT license
 
 import math
 import sys
@@ -26,9 +26,9 @@ import torch.nn as nn
 
 from dlk.core.models import model_register, model_config_register
 from dlk.core.base_module import BaseModel
-from dlk.core.models.utils import collate_tokens
-from dlk.core.models.utils import search
-from dlk.core.models.utils.ngram_repeat_block import NGramRepeatBlock
+from .utils import collate_tokens
+from .utils import search
+from .utils.ngram_repeat_block import NGramRepeatBlock
 from dlk.core.layers.embeddings import embedding_config_register, embedding_register
 from dlk.core.initmethods import initmethod_config_register, initmethod_register
 from dlk.core.layers.encoders import encoder_config_register, encoder_register
@@ -43,6 +43,7 @@ class SpecialVocab(object):
         self.tokenizer = Tokenizer.from_file(config['config']['tgt_tokenizer'])
         
         self._eos = config['config']['tgt_eos']
+        self._bos = config['config']['tgt_bos']
         self._pad = config['config']['tgt_pad']
         self._unk = config['config']['tgt_unk']
 
@@ -52,6 +53,15 @@ class SpecialVocab(object):
             eos value
         """
         return self.tokenizer.token_to_id(self._eos)
+
+    def bos(self):
+        """
+        Returns:
+            bos value
+        """
+        if self._bos is None:
+            return self.tokenizer.token_to_id(self._eos)
+        return self.tokenizer.token_to_id(self._bos)
 
     def pad(self):
         """
@@ -79,7 +89,7 @@ class SpecialVocab(object):
 @model_config_register('generator')
 class GenerateModelConfig(BaseConfig):
     defaut_config = {
-            "embedding@source": {
+            "embedding@encoder": {
                 "_base": "static",
                 "config": {
                     "embedding_file": "*@*",
@@ -87,10 +97,15 @@ class GenerateModelConfig(BaseConfig):
                     "embedding_trace": ".", # default the file itself is the embedding
                     "freeze": False, # is freeze
                     "dropout": 0, #dropout rate
-                    "output_map": {},
+                    "output_map": {
+                        "embedding": "embedding"
+                    },
+                    "input_map": {
+                        "input_ids": "encoder_input_ids"
                     },
                 },
-            "embedding@target": {
+            },
+            "embedding@decoder": {
                 "_base": "static",
                 "config": {
                     "embedding_file": "*@*",
@@ -98,10 +113,15 @@ class GenerateModelConfig(BaseConfig):
                     "embedding_trace": ".", # default the file itself is the embedding
                     "freeze": False, # is freeze
                     "dropout": 0, #dropout rate
-                    "output_map": {},
+                    "output_map": {
+                        "embedding": "decoder_embedding"
+                    },
+                    "input_map": {
+                        "input_ids": "decoder_input_ids"
                     },
                 },
-            "token_decoder": {
+            },
+            "decoder": {
                 "_base": "transformer_decoder",
                 "config": {
                     "input_size": "*@*",
@@ -133,7 +153,7 @@ class GenerateModelConfig(BaseConfig):
                 "beam_size": 1,  # beam width (default: 1)
                 "max_len_a": 0, 
                 "max_len_b": 100,  # generate sequences of maximum length ax + b, where x is the source length
-                "max_len": 0, # the maximum length of the generated output(not including end-of-sentence)
+                "max_len": 100, # the maximum length of the generated output(not including end-of-sentence)
                 "min_len": 1, # the minimum length of the generated output(not including end-of-sentence)
                 "normalize_scores": True, # normalize scores by the length of the output (default: True)
                 "len_penalty": 1.0, # length penalty, where <1.0 favors shorter, >1.0 favors longer sentences (default: 1.0)
@@ -142,9 +162,10 @@ class GenerateModelConfig(BaseConfig):
                 "match_source_len": False, # outputs should match the sourcelength (default: False)
                 "no_repeat_ngram_size": 0, # prevent ngram repeat
                 "search_strategy": None,
-                "tgt_eos": "[SEP]",
+                "tgt_eos": "[EOS]",
                 "tgt_pad": "[PAD]",
                 "tgt_unk": "[UNK]",
+                "tgt_bos": None,
                 "tgt_tokenizer": "*@*",
                 },
             "_link": {
@@ -158,13 +179,9 @@ class GenerateModelConfig(BaseConfig):
                     "config.dropout": ["encoder.config.dropout", "decoder.config.dropout", "embedding.config.dropout"],
                     "config.embedding_file": ['embedding.config.embedding_file'],
                     "config.embedding_trace": ['embedding.config.embedding_trace']
-                    },
+            },
             "_name": "summary_generate"
         }
-    """Config for SummaryGenerateModel
-
-    Config Example:
-    """
     def __init__(self, config):
         super(GenerateModelConfig, self).__init__(config)
 
@@ -172,10 +189,10 @@ class GenerateModelConfig(BaseConfig):
         self.decoder, self.decoder_config = self.get_decoder(config["decoder"])
         self.init_method, self.init_method_config = self.get_init_method(config["initmethod"])
         self.share_embedding = config['config']["share_embedding"]
-        self.source_embedding, self.source_embedding_config = self.get_embedding(config["embedding@source"])
-        if not self.share_embedding:
-            self.target_embedding, self.target_embedding_config = self.get_embedding(config["embedding@target"]) 
+        self.source_embedding, self.source_embedding_config = self.get_embedding(config["embedding@encoder"])
+        self.target_embedding, self.target_embedding_config = self.get_embedding(config["embedding@decoder"]) 
         self.beam_size = config['config']["beam_size"]
+        self.decoder_hidden_size = config['config']['hidden_size']
         self.max_len_a = config['config']["max_len_a"]
         self.max_len_b = config['config']["max_len_b"]
         self.max_len = config['config']["max_len"]
@@ -187,7 +204,10 @@ class GenerateModelConfig(BaseConfig):
         self.match_source_len = config['config']["match_source_len"]
         self.search_strategy = config['config']["search_strategy"] # TODO: add strategy init
         self.no_repeat_ngram_size = config['config']["no_repeat_ngram_size"]
+        # NOTE: no repeat ngram size https://github.com/facebookresearch/fairseq/issues/4709
+        assert self.no_repeat_ngram_size == 0 or self.no_repeat_ngram_size >1, f"No repeat ngram can only prevent >=2 tokens repeat"
         self.tgt_dict = SpecialVocab(config) # TODO: add target dictionary
+        self.vocab_size = len(self.tgt_dict)
 
     def get_embedding(self, config: Dict):
         """return the Embedding and EmbeddingConfig
@@ -235,7 +255,7 @@ class GenerateModelConfig(BaseConfig):
             Decoder, DecoderConfig
 
         """
-        return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "token_decoder", config)
+        return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config)
 
 
 @model_register('generator')
@@ -247,13 +267,13 @@ class GeneratorModel(BaseModel):
         super().__init__()
         self.config = config
         self.source_embedding = self.config.source_embedding(self.config.source_embedding_config)
-        if not self.config.share_embedding:
-            self.target_embedding = self.config.target_embedding(self.config.target_embedding_config)
-        else:
-            self.target_embedding = self.source_embedding
+        self.target_embedding = self.config.target_embedding(self.config.target_embedding_config)
+        if  self.config.share_embedding:
+            self.target_embedding.share_embedding(self.source_embedding)
         self.encoder = self.config.encoder(self.config.encoder_config)
         self.decoder = self.config.decoder(self.config.decoder_config)
-        self.decoder.embedding = self.target_embeddng
+        self.lm_head = nn.Linear(self.config.decoder_hidden_size, self.config.vocab_size, bias=False)
+        self.decoder.embedding = self.target_embedding
         if not checkpoint:
             init_method = config.init_method(config.init_method_config)
             self.source_embedding.init_weight(init_method)
@@ -261,9 +281,11 @@ class GeneratorModel(BaseModel):
                 self.target_embedding.init_weight(init_method)
             self.encoder.init_weight(init_method)
             self.decoder.init_weight(init_method)
+            self.lm_head.apply(init_method)
         self.pad = self.config.tgt_dict.pad()
         self.unk = self.config.tgt_dict.unk()
         self.eos = self.config.tgt_dict.eos()
+        self.bos = self.config.tgt_dict.eos()
         if self.config.no_repeat_ngram_size > 0:
             self.repeat_ngram_blocker = NGramRepeatBlock(self.config.no_repeat_ngram_size)
         else:
@@ -280,6 +302,30 @@ class GeneratorModel(BaseModel):
         self.should_set_src_lengths = (
             hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
         )
+        # self.epoch = 0
+
+
+    def provide_keys(self)->List[str]:
+        """return all keys of the dict of the model returned
+
+        This method may no use, so we will remove this.
+
+        Returns:
+            all keys
+        """
+        return []
+
+    def check_keys_are_provided(self, provide: List[str]=[])->None:
+        """check this all the submodules required key are provided
+
+        Returns:
+            None
+
+        Raises:
+            PermissionError
+
+        """
+        pass
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do forward on a mini batch
@@ -315,9 +361,20 @@ class GeneratorModel(BaseModel):
             the training outputs
 
         """
+
+        decoder_input_ids = inputs[self.target_embedding.get_input_name('decoder_input_ids')]
+        bs, _ = decoder_input_ids.shape
+        decoder_target_ids = torch.concat([decoder_input_ids[:, 1:], torch.LongTensor([self.eos]*bs).view(bs, -1).to(decoder_input_ids)], -1)
+        # print(f"target:\n", self.config.tgt_dict.tokenizer.decode(list(decoder_target_ids[0])))
+        # inputs[self.target_embedding.get_input_name('decoder_input_ids')] = decoder_input_ids
         embedding_outputs = self.source_embedding.training_step(inputs)
         encode_outputs = self.encoder.training_step(embedding_outputs)
-        decode_outputs = self.decoder.training_step(encode_outputs)
+        decoder_embedding_outputs = self.target_embedding.training_step(encode_outputs)
+        decode_outputs = self.decoder.training_step(decoder_embedding_outputs)
+        decoder_output_embedding = decode_outputs[self.decoder.get_output_name('decoder_output_embedding')]
+        logits = self.lm_head(decoder_output_embedding)
+        decode_outputs['logits'] = logits
+        decode_outputs['decoder_target_ids'] = decoder_target_ids
         return decode_outputs
 
     def validation_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
@@ -344,22 +401,8 @@ class GeneratorModel(BaseModel):
         """
         return self.generate(inputs)
 
-    def reorder_encoder_out(self, encoder_outputs, reorder):
-        """TODO: Docstring for reorder_encoder_out.
-
-        Args:
-            encoder_outputs (TODO): TODO
-            reorder (TODO): TODO
-
-        Returns: TODO
-
-        """
-        # FIXME: implement
-        raise NotImplementedError
-
     @torch.no_grad()
     def generate(self, inputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-    # def generate(self, inputs: Dict[str, torch.Tensor]) -> List[List[Dict[str, Tensor]]]:
         """Generate translations. Match the api of other fairseq generators.
 
         Args:
@@ -372,7 +415,8 @@ class GeneratorModel(BaseModel):
         """
         incremental_states = torch.jit.annotate(Dict[str, Dict[str, Optional[torch.Tensor]]], {})
 
-        src_tokens = inputs["input_ids"]
+        src_tokens = inputs["encoder_input_ids"]
+        inputs['target_ids'] = inputs["decoder_input_ids"]
         # length of the source text being the character length except EndOfSentence and pad
         src_lengths = (
             (src_tokens.ne(self.eos) & src_tokens.ne(self.pad)).long().sum(dim=1)
@@ -392,20 +436,35 @@ class GeneratorModel(BaseModel):
         self.search.init_constraints(inputs.get("constraints", None), beam_size)
 
         max_len: int = -1
-        if self.match_source_len:
+        if self.config.match_source_len:
             max_len = src_lengths.max().item()
         else:
             max_len = min(int(self.config.max_len_a * src_len + self.config.max_len_b), self.config.max_len - 1)
         assert (
             self.config.min_len <= max_len
         ), "min_len cannot be larger than max_len, please adjust these!"
-        encoder_outs = self.encoder.forward(inputs)
+
+        embedding_outputs = self.source_embedding.forward(inputs)
+        # print(embedding_outputs.keys())
+        # print(embedding_outputs['encoder_input_ids'].shape)
+        # print(embedding_outputs['encoder_input_embedding'].shape)
+        encoder_outs = self.encoder.forward(embedding_outputs)
+        # print(embedding_outputs['encoder_output_embedding'].shape)
+
+# #### WARN:  DEL
+#         self.epoch += 1
+#         decoder_embedding_outputs = self.target_embedding.training_step(encoder_outs)
+#         decode_outputs = self.decoder.training_step(decoder_embedding_outputs)
+#         back_decoder_output_embedding = decode_outputs[self.decoder.get_output_name('decoder_output_embedding')]
+# #### del
 
         # placeholder of indices for bsz * beam_size to hold tokens and accumulative scores
         new_order = torch.arange(bsz).view(-1, 1).repeat(1, beam_size).view(-1)
         new_order = new_order.to(src_tokens.device).long()
 
-        encoder_outs = self.reorder_encoder_out(encoder_outs, new_order)
+        # print(new_order)
+        encoder_outs = self.encoder.reorder_encoder_out(encoder_outs, new_order)
+        # print(embedding_outputs['encoder_output_embedding'].shape)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
 
@@ -418,8 +477,8 @@ class GeneratorModel(BaseModel):
             .to(src_tokens)
             .long()
             .fill_(self.pad)
-        )  # +2 for eos and pad
-        tokens[:, 0] = self.eos
+        )  # +2 for bos and pad
+        tokens[:, 0] = self.bos
         attn: Optional[torch.Tensor] = None
 
         # A list that indicates candidates that should be ignored.
@@ -474,17 +533,44 @@ class GeneratorModel(BaseModel):
                 encoder_outs = self.encoder.reorder_encoder_out(
                     encoder_outs, reorder_state
                 )
-            lprobs, avg_attn_scores = self.decoder.forward( # TODO: decode forward
-                tokens[:, : step + 1],
-                encoder_outs,
-                incremental_states,
-                self.temperature,
+            encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = tokens[:, :step+1]
+#### WARN: DEL
+            # encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')] = inputs['target_ids'][:, :step+1]
+#### WARN: DEL
+            # print(f"Predict decode inputs ids: \n", encoder_outs[self.target_embedding.get_input_name('decoder_input_ids')])
+
+            decoder_embedding_outputs = self.target_embedding.forward(encoder_outs)
+            decoder_outs = self.decoder.forward(
+                    decoder_embedding_outputs
             )
+
+            decoder_output_embedding = decoder_outs[self.decoder.get_output_name('decoder_output_embedding')]
+            # print(decoder_output_embedding.shape)
+            decoder_output_embedding = decoder_output_embedding[:, -1, :]
+            lprobs = self.lm_head(decoder_output_embedding)
+            # print(f"max :\n", torch.argmax(lprobs, -1))
+
+            avg_attn_scores = None # TODO:get average attention score
 
             lprobs[lprobs != lprobs] = torch.tensor(-math.inf).to(lprobs)
 
             lprobs[:, self.pad] = -math.inf  # never select pad
-            lprobs[:, self.unk] -= self.unk_penalty  # apply unk penalty
+            if self.bos != self.eos:
+                lprobs[:, self.bos] = -math.inf  # never select pad
+            lprobs[:, self.unk] -= self.config.unk_penalty  # apply unk penalty
+# #### WARN: DEL
+#             if self.epoch == 4: # and step == 1:
+#                 print("tokens: \t\n", tokens)
+#                 print(torch.argmax(lprobs, -1))
+#                 # print(back_decoder_output_embedding[:, step, :])
+
+#                 print(self.config.tgt_dict.tokenizer.decode(list(tokens[0][:step+1])))
+#                 print(self.config.tgt_dict.tokenizer.decode(list(inputs['target_ids'][0][:step+1])))
+#                 # print(decoder_output_embedding)
+#                 print(f"step {step}")
+#                 # print((decoder_output_embedding-back_decoder_output_embedding[:, step, :]) * (decoder_output_embedding-back_decoder_output_embedding[:, step, :])<0.01)
+#                 print("------------")
+# #### WARN: DEL
 
             # handle max length constraint
             if step >= max_len:
@@ -524,13 +610,15 @@ class GeneratorModel(BaseModel):
             if self.should_set_src_lengths:
                 self.search.set_src_lengths(src_lengths)
 
+            # print(f"Before {lprobs}")
             if self.repeat_ngram_blocker is not None:
-                lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
+                lprobs = self.repeat_ngram_blocker(tokens[:, :step+1], lprobs, bsz, beam_size, step)
+            # print(f"after {lprobs}")
 
             # Shape: (batch, cand_size)
             cand_scores, cand_indices, cand_beams = self.search.step(
                 step,
-                lprobs.view(bsz, -1, self.vocab_size),
+                lprobs.view(bsz, -1, self.config.vocab_size),
                 scores.view(bsz, beam_size, -1)[:, :, :step],
                 tokens[:, : step + 1],
                 original_batch_idxs,
@@ -645,6 +733,13 @@ class GeneratorModel(BaseModel):
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
             # Make sure there is at least one active item for each sentence in the batch.
+            if 'flag' in self.__dict__:
+                print(f"eos_mask: {eos_mask}")
+                print(f"active_mask: {active_mask}")
+                print(f"new_cands_to_ignore: {new_cands_to_ignore}")
+                print(f"active_hypos: {active_hypos}")
+                print(f"cands_to_ignore: {cands_to_ignore}")
+                raise KeyError
             assert (~cands_to_ignore).any(dim=1).all()
 
             # update cands_to_ignore to ignore any finalized hypos
@@ -697,7 +792,8 @@ class GeneratorModel(BaseModel):
             finalized[sent] = torch.jit.annotate(
                 List[Dict[str, torch.Tensor]], finalized[sent]
             )
-        return finalized
+        inputs['generated'] = finalized
+        return inputs
 
     def _prefix_tokens(
         self, step: int, lprobs, scores, tokens, prefix_tokens, beam_size: int
@@ -762,7 +858,7 @@ class GeneratorModel(BaseModel):
         # gets the newly EOS rows, then selects cols 1..{step + 2}
         tokens_clone = tokens.index_select(0, bbsz_idx)[
             :, 1 : step + 2
-        ]  # skip the first index, which is EOS
+        ]  # skip the first index, which is BOS
 
         tokens_clone[:, step] = self.eos
         attn_clone = (
@@ -778,7 +874,7 @@ class GeneratorModel(BaseModel):
         pos_scores[:, 1:] = pos_scores[:, 1:] - pos_scores[:, :-1]
 
         # normalize sentence-level scores
-        if self.normalize_scores:
+        if self.config.normalize_scores:
             eos_scores /= (step + 1) ** self.config.len_penalty
 
         # cum_unfin records which sentences in the batch are finished.
@@ -787,6 +883,8 @@ class GeneratorModel(BaseModel):
         # sentences.
         cum_unfin: List[int] = []
         prev = 0
+        # [1, 0, 1, 0, 0, 1]
+        # [1, 2, 2]
         for f in finished:
             if f:
                 prev += 1
@@ -805,8 +903,18 @@ class GeneratorModel(BaseModel):
         # sentence index in the current (possibly reduced) batch
         seen = (sent << 32) + unfin_idx
         unique_seen: List[int] = torch.unique(seen).tolist()
+        if [False, False, True, False] == finished:
+            print(f"cum_fin_tensor: {cum_fin_tensor}")
+            print(f"unfin_idx: {unfin_idx}")
+            print(f"sent: {sent}")
+            print(f"finished: {finished}")
+            print(f"seen: {seen}")
+            print(f"unique_seen: {unique_seen}")
+            self.flag = True
 
-        if self.match_source_len:
+
+
+        if self.config.match_source_len:
             condition = step > torch.index_select(src_lengths, 0, unfin_idx)
             eos_scores = torch.where(condition, torch.tensor(-math.inf), eos_scores)
         sent_list: List[int] = sent.tolist()
@@ -861,155 +969,3 @@ class GeneratorModel(BaseModel):
         if finalized_sent_len == beam_size or step == max_len:
             return True
         return False
-
-
-# class EnsembleModel(nn.Module):
-#     """A wrapper around an ensemble of models."""
-
-#     def __init__(self, models):
-#         super().__init__()
-#         self.models_size = len(models)
-#         # method '__len__' is not supported in ModuleList for torch script
-#         self.single_model = models[0]
-#         self.models = nn.ModuleList(models)
-
-#         self.has_incremental: bool = False
-#         if all(
-#             hasattr(m, "decoder") and isinstance(m.decoder, FairseqIncrementalDecoder)
-#             for m in models
-#         ):
-#             self.has_incremental = True
-
-#     def forward(self):
-#         pass
-
-#     def has_encoder(self):
-#         return hasattr(self.single_model, "encoder")
-
-#     def has_incremental_states(self):
-#         return self.has_incremental
-
-#     def max_decoder_positions(self):
-#         return min(
-#             [
-#                 m.max_decoder_positions()
-#                 for m in self.models
-#                 if hasattr(m, "max_decoder_positions")
-#             ]
-#             + [sys.maxsize]
-#         )
-
-#     def set_decoder_beam_size(self, beam_size):
-#         """Set beam size for efficient beamable enc-dec attention."""
-#         if beam_size > 1:
-#             for model in self.models:
-#                 if hasattr(model, "set_beam_size"):
-#                     model.set_beam_size(beam_size)
-
-#     @torch.jit.export
-#     def forward_encoder(self, net_input: Dict[str, Tensor]):
-#         if not self.has_encoder():
-#             return None
-#         return [model.encoder.forward_torchscript(net_input) for model in self.models]
-
-#     @torch.jit.export
-#     def forward_decoder(
-#         self,
-#         tokens,
-#         encoder_outs: List[Dict[str, List[Tensor]]],
-#         incremental_states: List[Dict[str, Dict[str, Optional[Tensor]]]],
-#         temperature: float = 1.0,
-#     ):
-#         log_probs = []
-#         avg_attn: Optional[Tensor] = None
-#         encoder_out: Optional[Dict[str, List[Tensor]]] = None
-#         for i, model in enumerate(self.models):
-#             if self.has_encoder():
-#                 encoder_out = encoder_outs[i]
-#             # decode each model
-#             if self.has_incremental_states():
-#                 decoder_out = model.decoder.forward(
-#                     tokens,
-#                     encoder_out=encoder_out,
-#                     incremental_state=incremental_states[i],
-#                 )
-#             else:
-#                 if hasattr(model, "decoder"):
-#                     decoder_out = model.decoder.forward(tokens, encoder_out=encoder_out)
-#                 else:
-#                     decoder_out = model.forward(tokens)
-
-#             attn: Optional[Tensor] = None
-#             decoder_len = len(decoder_out)
-#             if decoder_len > 1 and decoder_out[1] is not None:
-#                 if isinstance(decoder_out[1], Tensor):
-#                     attn = decoder_out[1]
-#                 else:
-#                     attn_holder = decoder_out[1]["attn"]
-#                     if isinstance(attn_holder, Tensor):
-#                         attn = attn_holder
-#                     elif attn_holder is not None:
-#                         attn = attn_holder[0]
-#                 if attn is not None:
-#                     attn = attn[:, -1, :]
-
-#             decoder_out_tuple = (
-#                 decoder_out[0][:, -1:, :].div_(temperature),
-#                 None if decoder_len <= 1 else decoder_out[1],
-#             )
-#             probs = model.get_normalized_probs(
-#                 decoder_out_tuple, log_probs=True, sample=None
-#             )
-#             probs = probs[:, -1, :]
-#             if self.models_size == 1:
-#                 return probs, attn
-
-#             log_probs.append(probs)
-#             if attn is not None:
-#                 if avg_attn is None:
-#                     avg_attn = attn
-#                 else:
-#                     avg_attn.add_(attn)
-
-#         avg_probs = torch.logsumexp(torch.stack(log_probs, dim=0), dim=0) - math.log(
-#             self.models_size
-#         )
-
-#         if avg_attn is not None:
-#             avg_attn.div_(self.models_size)
-#         return avg_probs, avg_attn
-
-#     @torch.jit.export
-#     def reorder_encoder_out(
-#         self, encoder_outs: Optional[List[Dict[str, List[Tensor]]]], new_order
-#     ):
-#         """
-#         Reorder encoder output according to *new_order*.
-
-#         Args:
-#             encoder_out: output from the ``forward()`` method
-#             new_order (LongTensor): desired order
-
-#         Returns:
-#             *encoder_out* rearranged according to *new_order*
-#         """
-#         new_outs: List[Dict[str, List[Tensor]]] = []
-#         if not self.has_encoder():
-#             return new_outs
-#         for i, model in enumerate(self.models):
-#             assert encoder_outs is not None
-#             new_outs.append(
-#                 model.encoder.reorder_encoder_out(encoder_outs[i], new_order)
-#             )
-#         return new_outs
-
-#     @torch.jit.export
-#     def reorder_incremental_state(
-#         self,
-#         incremental_states: List[Dict[str, Dict[str, Optional[Tensor]]]],
-#         new_order,
-#     ):
-#         if not self.has_incremental_states():
-#             return
-#         for i, model in enumerate(self.models):
-#             model.decoder.reorder_incremental_state_scripting(incremental_states[i], new_order)

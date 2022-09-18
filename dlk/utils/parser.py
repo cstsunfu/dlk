@@ -44,7 +44,9 @@ from dlk.core import (
     module_register,
     optimizer_config_register,
     optimizer_register,
-    scheduler_register
+    scheduler_register,
+    search_method_register,
+    search_method_config_register,
 )
 from dlk.data import (
     datamodule_config_register,
@@ -691,6 +693,7 @@ module_dir_map = {
     "datamodule": "dlk/configures/data/datamodules",
     "imodel": "dlk/configures/core/imodels",
     "model": "dlk/configures/core/models",
+    "search_method": "dlk/configures/core/search_methods",
     "optimizer": "dlk/configures/core/optimizers",
     "scheduler": "dlk/configures/core/schedulers",
     "initmethod": "dlk/configures/core/initmethods",
@@ -753,6 +756,11 @@ class ModelConfigParser(BaseConfigParser):
     def __init__(self, config_file):
         super(ModelConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['model'], register=model_config_register)
 
+@config_parser_register('search_method')
+class SearchMethodConfigParser(BaseConfigParser):
+    """docstring for SearchMethodConfigParser"""
+    def __init__(self, config_file):
+        super(SearchMethodConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['search_method'], register=search_method_config_register)
 
 @config_parser_register('optimizer')
 class OptimizerConfigParser(BaseConfigParser):

@@ -81,95 +81,14 @@
                     "_name": "cross_entropy"
                 },
                 "model": {
-                    // "embedding@source": {
-                    //     "_base": "static",
-                    //     "config": {
-                    //         "embedding_file": "*@*",
-                    //         "embedding_dim": "*@*", # if the embedding_file is a dict, you should provide the dict trace to embedding
-                    //             "embedding_trace": ".", # default the file itself is the embedding
-                    //             "freeze": false, # is freeze
-                    //             "dropout": 0, #dropout rate
-                    //             "output_map": {
-                    //                 "embedding": "embedding"
-                    //             },
-                    //         "input_map": {
-                    //             "input_ids": "encoder_input_ids"
-                    //         },
-                    //     },
-                    // },
-                    // "embedding@target": {
-                    //     "_base": "static",
-                    //     "config": {
-                    //         "embedding_file": "*@*",
-                    //         "embedding_dim": "*@*", # if the embedding_file is a dict, you should provide the dict trace to embedding
-                    //             "embedding_trace": ".", # default the file itself is the embedding
-                    //             "freeze": false, # is freeze
-                    //             "dropout": 0, #dropout rate
-                    //             "output_map": {
-                    //                 "embedding": "decoder_embedding"
-                    //             },
-                    //         "input_map": {
-                    //             "input_ids": "decoder_input_ids"
-                    //         },
-                    //     },
-                    // },
-                    "embedding@encoder": {
-                        "_base": "random",
-                        "config": {
-                            "vocab_size": 3000,
-                            "embedding_dim": 128,
-                            "dropout": 0, //dropout rate
-                            "padding_idx": 0,
-                            "output_map": {
-                                "embedding": "encoder_input_embedding"
-                            },
-                            "input_map": {
-                                "input_ids": "encoder_input_ids"
-                            },
-                        },
-                    },
-                    "embedding@decoder": {
-                        "_base": "random",
-                        "config": {
-                            "vocab_size": 3000,
-                            "embedding_dim": 128,
-                            "dropout": 0, //dropout rate
-                            "padding_idx": 0,
-                            "output_map": {
-                                "embedding": "decoder_input_embedding"
-                            },
-                            "input_map": {
-                                "input_ids": "decoder_input_ids"
-                            },
-                        },
-                    },
-                    "decoder": {
-                        "_base": "bart_decoder",
-                        "config": {
-                            "dropout": 0.0, #the decoder output no need dropout
-                            "output_map": {},
-                            "from_pretrain": false,
-                        },
-                    },
-                    "encoder": {
-                        "_base": "bart_encoder",
-                        "config": {
-                            "output_map": {},
-                            "dropout": 0.0, # dropout between layers
-                            "from_pretrain": false,
-                        },
-                    },
-                    "initmethod": {
-                        "_base": "range_norm"
-                    },
                     "config": {
-                        "embedding_dim": 96,
+                        "encoder_vocab_size": 50265,
+                        "decoder_vocab_size": 50265,
+                        "embedding_dim": 768,
                         "dropout": 0.1,
-                        // "embedding_file": "*@*",
-                        // "embedding_trace": "token_embedding",
                         "hidden_size": "*@*"
                         "share_embedding": true,
-                        "pretrained_model_path": "./config.json",
+                        "pretrained_model_path": "./bart/config.json",
                         "beam_size": 5,  # beam width (default: 1)
                         "max_len_a": 0, 
                         "max_len_b": 100,  # generate sequences of maximum length ax + b, where x is the source length
@@ -182,11 +101,11 @@
                         "match_source_len": false, # outputs should match the sourcelength (default: false)
                         "no_repeat_ngram_size": 0, # prevent ngram repeat
                         "search_strategy": null,
-                        "tgt_eos": "[EOS]",
-                        "tgt_bos": null,
-                        "tgt_pad": "[PAD]",
-                        "tgt_unk": "[UNK]",
-                        "tgt_tokenizer": "./data/tokenizer/de_tokenizer.json",
+                        "tgt_eos": "</s>",
+                        "tgt_bos": "<s>",
+                        "tgt_pad": "<pad>",
+                        "tgt_unk": "<unk>",
+                        "tgt_tokenizer": "./bart/tokenizer.json",
                     },
                     "_link": {
                         "config.embedding_dim": ["embedding@encoder.config.embedding_dim", "embedding@decoder.config.embedding_dim", "config.hidden_size"],
@@ -194,7 +113,7 @@
                         "config.pretrained_model_path": ['encoder.config.pretrained_model_path', 'decoder.config.pretrained_model_path'],
                         // "config.embedding_trace": ['embedding.config.embedding_trace']
                     },
-                    "_name": "generator"
+                    "_base": "generator"
                 }
             },
             "manager": {

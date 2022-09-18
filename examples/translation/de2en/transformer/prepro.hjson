@@ -2,8 +2,8 @@
     "processor": {
         "_name": "basic@translation",
         "config": {
-            "encoder_tokenizer_config_path": "./data/tokenizer/de_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
-            "decoder_tokenizer_config_path": "./data/tokenizer/en_tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "encoder_tokenizer_config_path": "./bart/tokenizer.json", // the tokenizer config path (the tokenizer.json path)
+            "decoder_tokenizer_config_path": "./bart/tokenizer.json", // the tokenizer config path (the tokenizer.json path)
             "data_dir": "./transformer/data/output/",  // save load data base dir
             "encoder_embedding_size": 20,
             "decoder_embedding_size": 20,
