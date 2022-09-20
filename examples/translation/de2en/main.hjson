@@ -120,7 +120,7 @@
                 "config": {
                     "callbacks": [],
                     "logger": true,
-                    "enable_checkpointing": false,
+                    "enable_checkpointing": true,
                     "accelerator": "cpu",
                     "default_root_dir": null,
                     "gradient_clip_val": 5,

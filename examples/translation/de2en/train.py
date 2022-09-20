@@ -22,7 +22,7 @@ logger = Logger('log.txt')
 pl.seed_everything(88)
 
 # trainer = Train('./examples/sequence_labeling/benchmark/pretrained/first_piece_lstm_crf_main.hjson')
-trainer = Train('./main.hjson')
+trainer = Train('./main.hjson', "./bart/dlk_model.bin", state_dict_only=True)
 # print(json.dumps(trainer.configs, indent=4))
 
 trainer.run()

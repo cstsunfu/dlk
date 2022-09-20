@@ -22,6 +22,7 @@ from dlk.managers import manager_register, manager_config_register
 from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
 from dlk.utils.io import open
+import torch
 import json
 from dlk.utils.logger import Logger
 
@@ -47,13 +48,14 @@ class Train(object):
         >>>     }
         >>> }
     """
-    def __init__(self, config: Union[str, Dict], ckpt: str = ""):
+    def __init__(self, config: Union[str, Dict], ckpt: str = "", state_dict_only=False):
         super(Train, self).__init__()
         if not isinstance(config, dict):
             with open(config, 'r') as f:
                 config = hjson.load(f, object_pairs_hook=dict)
 
         self.ckpt = ckpt
+        self.state_dict_only = state_dict_only
         self.focus = config.pop('_focus', {})
         self.configs = BaseConfigParser(config).parser_with_check()
         if self.ckpt:
@@ -222,7 +224,10 @@ class Train(object):
         imodel = IModel(IModelConfig)
         if self.ckpt:
             logger.info(f"reuse the checkpoint at {self.ckpt}")
-            imodel.load_from_checkpoint(self.ckpt)
+            if self.state_dict_only:
+                imodel.model.load_state_dict(torch.load(self.ckpt), strict=False)
+            else:
+                imodel.load_from_checkpoint(self.ckpt)
         if 'valid' in data:
             imodel._origin_valid_data = data['valid']
 

@@ -278,7 +278,6 @@ class GeneratorModel(BaseModel):
         self.encoder = self.config.encoder(self.config.encoder_config)
         self.decoder = self.config.decoder(self.config.decoder_config)
         self.lm_head = nn.Linear(self.config.decoder_hidden_size, self.config.vocab_size, bias=False)
-        self.decoder.embedding = self.target_embedding
         if not checkpoint:
             init_method = config.init_method(config.init_method_config)
             self.source_embedding.init_weight(init_method)
