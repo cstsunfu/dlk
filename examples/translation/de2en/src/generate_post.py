@@ -108,12 +108,12 @@ class TokenGeneratePostProcessor(IPostProcessor):
         print(len(list_batch_outputs))
         outputs = list_batch_outputs[0]
         # print(outputs)
-        print(f"Source:\n", self.tokenizer.decode(list(outputs['target_ids'][0])))
+        print(f"Source:\n", self.tokenizer.decode(list(outputs['target_ids'][0]), skip_special_tokens=False))
         # print(outputs['encoder_input_ids'].shape)
         # print(outputs['decoder_input_ids'].shape)
-        print(f"Generate 1:\n", self.tokenizer.decode(list(outputs['generated'][0][0]['tokens'])))
-        print(f"Generate 2:\n", self.tokenizer.decode(list(outputs['generated'][0][1]['tokens'])))
-        print(f"Generate 3:\n", self.tokenizer.decode(list(outputs['generated'][0][2]['tokens'])))
+        print(f"Generate 1:\n", self.tokenizer.decode(list(outputs['generated'][0][0]['tokens']), skip_special_tokens=False))
+        print(f"Generate 2:\n", self.tokenizer.decode(list(outputs['generated'][0][1]['tokens']), skip_special_tokens=False))
+        print(f"Generate 3:\n", self.tokenizer.decode(list(outputs['generated'][0][2]['tokens']), skip_special_tokens=False))
         # print(list(outputs['generated'][0][0]))
         print('---')
         pass

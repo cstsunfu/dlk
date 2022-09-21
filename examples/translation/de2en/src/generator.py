@@ -99,7 +99,7 @@ class GenerateModelConfig(BaseConfig):
                     "vocab_size": "*@*",
                     "embedding_dim": "*@*",
                     "dropout": 0, # dropout rate
-                    "padding_idx": 0,
+                    "padding_idx": 1,
                     "output_map": {
                         "embedding": "encoder_input_embedding"
                     },
@@ -114,7 +114,7 @@ class GenerateModelConfig(BaseConfig):
                     "vocab_size": "*@*",
                     "embedding_dim": "*@*",
                     "dropout": 0, # dropout rate
-                    "padding_idx": 0,
+                    "padding_idx": 1,
                     "output_map": {
                         "embedding": "decoder_input_embedding"
                     },
@@ -289,11 +289,7 @@ class GeneratorModel(BaseModel):
         self.pad = self.config.tgt_dict.pad()
         self.unk = self.config.tgt_dict.unk()
         self.eos = self.config.tgt_dict.eos()
-        self.bos = self.config.tgt_dict.eos()
-        print(self.pad)
-        print(self.unk)
-        print(self.eos)
-        print(self.bos)
+        self.bos = self.config.tgt_dict.bos()
         if self.config.no_repeat_ngram_size > 0:
             self.repeat_ngram_blocker = NGramRepeatBlock(self.config.no_repeat_ngram_size)
         else:

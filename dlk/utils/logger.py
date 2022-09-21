@@ -14,6 +14,7 @@
 
 from loguru import logger as logging
 from loguru._logger import Logger as LoggerClass
+from typing import Set
 import sys
 import os
 
@@ -21,7 +22,7 @@ import os
 class Logger(object):
     """docstring for logger"""
     global_logger: LoggerClass = None
-    global_log_file: set[str] = set()
+    global_log_file: Set[str] = set()
     log_name: str = "dlk"
     warning_file = True
 

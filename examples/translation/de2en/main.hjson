@@ -21,8 +21,8 @@
                         "encoder_input_ids": "encoder_attention_mask"
                     },
                     "key_padding_pairs": {
-                        "encoder_input_ids": 0,
-                        "decoder_target_ids": 0
+                        "encoder_input_ids": 1,
+                        "decoder_target_ids": 1
                     },
                     "train_batch_size": 4,
                     "predict_batch_size": 256,
@@ -58,7 +58,7 @@
                 },
                 "optimizer": {
                     "config": {
-                        "lr": 3e-03,
+                        "lr": 5e-05,
                     },
                     "_name": "adamw"
                 },
@@ -89,7 +89,7 @@
                         "hidden_size": "*@*"
                         "share_embedding": true,
                         "pretrained_model_path": "./bart/config.json",
-                        "beam_size": 5,  # beam width (default: 1)
+                        "beam_size": 3,  # beam width (default: 1)
                         "max_len_a": 0, 
                         "max_len_b": 100,  # generate sequences of maximum length ax + b, where x is the source length
                         "max_len": 100, # the maximum length of the generated output(not including end-of-sentence)
@@ -121,7 +121,7 @@
                     "callbacks": [],
                     "logger": true,
                     "enable_checkpointing": true,
-                    "accelerator": "cpu",
+                    "accelerator": "gpu",
                     "default_root_dir": null,
                     "gradient_clip_val": 5,
                     "gradient_clip_algorithm": null,
@@ -136,7 +136,7 @@
                     "check_val_every_n_epoch": 1,
                     "fast_dev_run": false,
                     "accumulate_grad_batches": 1,
-                    "max_epochs": 20,
+                    "max_epochs": 100,
                     "min_epochs": null,
                     "max_steps": -1,
                     "min_steps": null,
@@ -149,7 +149,7 @@
                     "log_every_n_steps": 50,
                     "strategy": "ddp",
                     "sync_batchnorm": false,
-                    "precision": 32,
+                    "precision": 16,
                     "enable_model_summary": true,
                     "weights_summary": "top",
                     "weights_save_path": null,
