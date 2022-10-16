@@ -50,6 +50,7 @@ class SpanClsRelabelConfig(BaseConfig):
                 "clean_droped_entity": True, # after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
                 "entity_priority": [],
                 "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
+                "pad": -100,
             }
         }
     }
@@ -81,6 +82,7 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>             "entity_priority": [],
         >>>             //"entity_priority": ['Product'],
         >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
+        >>>             "pad": -100,
         >>>         },
         >>>         "predict": "train",
         >>>         "online": "train",
@@ -96,6 +98,7 @@ class SpanClsRelabelConfig(BaseConfig):
             return
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
+        self.pad = self.config['pad']
         self.entities_info = self.config['input_map']['entities_info']
         self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
@@ -122,7 +125,7 @@ class SpanClsRelabelConfig(BaseConfig):
 @subprocessor_register('span_cls_relabel')
 class SpanClsRelabel(ISubProcessor):
     """
-    Relabel the json data to bio
+    Relabel the char level entity span to token level and construct matrix
     """
 
     def __init__(self, stage: str, config: SpanClsRelabelConfig):
@@ -258,7 +261,7 @@ class SpanClsRelabel(ISubProcessor):
         offset_length = len(offsets)
 
         unk_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full((offset_length, offset_length), -1)
+        mask_matrices = np.full((offset_length, offset_length), self.config.pad)
         mask_matrices = np.tril(mask_matrices, k=-1)
 
         unk_matrices = np.full((offset_length, offset_length), unk_id)
@@ -266,9 +269,9 @@ class SpanClsRelabel(ISubProcessor):
 
         label_matrices = unk_matrices + mask_matrices
         if sub_word_ids[0] is None:
-            label_matrices[0, 0] = -1
+            label_matrices[0, 0] = self.config.pad
         if sub_word_ids[-1] is None:
-            label_matrices[-1, -1] = -1
+            label_matrices[-1, -1] = self.config.pad
         deliver_entities_info = {}
         for i, entity_info in enumerate(entities_info):
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
