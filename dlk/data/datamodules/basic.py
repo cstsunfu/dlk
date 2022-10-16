@@ -27,6 +27,34 @@ logger = Logger.get_logger()
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(BaseConfig):
+    default_config = {
+        "_name": "basic",
+        "config": {
+            "pin_memory": None,
+            "collate_fn": "default",
+            "num_workers": None,
+            "shuffle": {
+                "train": True,
+                "predict": False,
+                "valid": False,
+                "test": False,
+                "online": False
+                },
+            "key_type_pairs": {
+                'input_ids': 'int',
+                'label_ids': 'long',
+                'type_ids': 'long',
+                },
+            "gen_mask": {
+                'input_ids': 'attention_mask',
+                },
+            "key_padding_pairs": { 'input_ids': 0, 'label_ids': -100},
+            "key_padding_pairs_2d": { 'label_ids': -100 },
+            "train_batch_size": 32,
+            "predict_batch_size": 32,
+            "online_batch_size": 1,
+        }
+    }
     """Config for BasicDatamodule
 
     Config Example:
@@ -175,8 +203,8 @@ class BasicDatamodule(IBaseDataModule):
         for key in copy_key_type_pairs:
             if key not in has_key:
                 remove.add(key)
-        if remove:
-            logger.warning(f"There are not '{', '.join(remove)}' in data field {field}.")
+        # if remove:
+        #     logger.warning(f"There are not '{', '.join(remove)}' in data field {field}.")
         for key in remove:
             copy_key_type_pairs.pop(key)
         return copy_key_type_pairs

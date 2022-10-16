@@ -24,7 +24,7 @@
          },
         "key_padding_pairs": { //default all 0
              'input_ids': 0,
-             'label_ids': -1,
+             'label_ids': -100,
              "special_tokens_mask": 0,
          },
         "train_batch_size": 32,

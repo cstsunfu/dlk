@@ -38,6 +38,7 @@ class DefaultCollate(object):
         super(DefaultCollate, self).__init__()
         self.key_padding_pairs = config.get("key_padding_pairs", {})
         self.key_padding_pairs_2d = config.get("key_padding_pairs_2d", {})
+        self.key_padding_pairs_3d = config.get("key_padding_pairs_3d", {})
         self.gen_mask = config.get("gen_mask", {})
 
     def __call__(self, batch):
@@ -54,25 +55,37 @@ class DefaultCollate(object):
                 for item in data_map[key]:
                     data_map[mask].append(torch.tensor([1] * len(item), dtype=torch.int))
         for key in data_map:
+            if key in self.key_padding_pairs_3d:
+                max_x, max_y, max_z = 0, 0, 0
+                for ins in data_map[key]:
+                    cur_x, cur_y, cur_z = ins.shape
+                    max_x = max(max_x, cur_x)
+                    max_y = max(max_y, cur_y)
+                    max_z = max(max_z, cur_z)
+                _data = torch.full((len(data_map[key]), max_x, max_y, max_z), fill_value=self.key_padding_pairs_2d[key], dtype=data_map[key][0].dtype)
+                for i, ins in enumerate(data_map[key]):
+                    cur_m, cur_n = ins.shape
+                    _data[i][:cur_m,:cur_n] = ins
+                data_map[key] = _data
             if key in self.key_padding_pairs_2d:
                 max_m, max_n = 0, 0
                 for ins in data_map[key]:
                     cur_m, cur_n = ins.shape
                     max_m = max(max_m, cur_m)
                     max_n = max(max_n, cur_n)
-                _data = torch.full((len(data_map[key]), max_m, max_n), fill_value=self.key_padding_pairs_2d.get(key, -1), dtype=data_map[key][0].dtype)
+                _data = torch.full((len(data_map[key]), max_m, max_n), fill_value=self.key_padding_pairs_2d[key], dtype=data_map[key][0].dtype)
                 for i, ins in enumerate(data_map[key]):
                     cur_m, cur_n = ins.shape
                     _data[i][:cur_m,:cur_n] = ins
                 data_map[key] = _data
             else:
                 try:
-                    data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0))
+                    data_map[key] = pad_sequence(data_map[key], batch_first=True, padding_value=self.key_padding_pairs[key])
                 except:
                     # if the data_map[key] is size 0, we can concat them
                     if data_map[key][0].size():
                         raise ValueError(f"The {data_map[key]} can not be concat by pad_sequence.")
-                    _data = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=self.key_padding_pairs.get(key, 0)).squeeze()
+                    _data = pad_sequence([i.unsqueeze(0) for i in data_map[key]], batch_first=True, padding_value=self.key_padding_pairs[key]).squeeze()
                     if not _data.size():
                         _data.unsqueeze_(0)
                     data_map[key] = _data
