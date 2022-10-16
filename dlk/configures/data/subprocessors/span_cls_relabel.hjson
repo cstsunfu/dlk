@@ -23,6 +23,7 @@
             "clean_droped_entity": true, # after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
             "entity_priority": [],
             "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
+            "pad": -100,
         }
     }
 }

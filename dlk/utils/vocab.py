@@ -32,8 +32,8 @@ class Vocabulary(object):
         self.ignore = ignore
         self.pad = pad
         if ignore:
-            self.word2idx[ignore] = -1
-            self.idx2word[-1] = ignore
+            self.word2idx[ignore] = -100
+            self.idx2word[-100] = ignore
             self.word_count[ignore] += int(1e10)
         if pad:
             assert self.word_num == 0, f"The pad id must be 0"
