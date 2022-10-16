@@ -6,7 +6,7 @@
         "pool": null,
         "dropout": 0.0,
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {}, # required_key: provide_key
     },
     "_link":{
         "config.input_size": ["module.config.input_size"],

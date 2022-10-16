@@ -1,7 +1,7 @@
 {
     "config": {
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {}, # required_key: provide_key
     },
     "_name": "identity",
 }

@@ -28,7 +28,7 @@
             "input_size": "*@*",
             "output_size": "*@*",
             "pool": 'first',
-            "dropout": 0.0, //the decoder output no need dropout
+            "dropout": 0.0, # the decoder output no need dropout
             "output_map": {}
         },
     },

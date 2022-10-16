@@ -6,7 +6,7 @@
         "input_size": "*@*",
         "output_size": "*@*",
         "num_layers": 1,
-        "dropout": "*@*", // dropout between layers
+        "dropout": "*@*", # dropout between layers
     },
     "_link": {
         "config.input_size": ["module.config.input_size"],

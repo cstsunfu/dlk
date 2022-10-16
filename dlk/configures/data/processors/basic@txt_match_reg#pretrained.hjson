@@ -1,5 +1,5 @@
 {
-    // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
+    # input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_match_reg#pretrained",
     "config": {
         "feed_order": [
@@ -8,11 +8,11 @@
             "tokenizer",
             "save"
         ],
-        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*", // save load data base dir
-        "truncation": { // if this is set to None or empty, will not do trunc
+        "tokenizer_config_path": "*@*", # the tokenizer config path (the tokenizer.json path)
+        "data_dir": "*@*", # save load data base dir
+        "truncation": { # if this is set to None or empty, will not do trunc
             "max_length": 512,
-            "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
+            "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
         },
     },
     "_link": {
@@ -35,11 +35,11 @@
         "config": {
             "base_dir": "",
             "train": {
-                "processed": "processed_data.pkl", // all data
+                "processed": "processed_data.pkl", # all data
                 "meta": {
                     "meta.pkl": [
                         "tokenizer"
-                    ] //only for next time use
+                    ] #only for next time use
                 }
             },
             "predict": {

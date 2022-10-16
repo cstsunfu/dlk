@@ -2,9 +2,9 @@
     "config": {
         "schedule": [1],
         "scale": [1], # scale the loss for every schedule
-        // "schedule": [0.3, 1.0], # can be a list or str
-        // "scale": "[0.5, 1]",
-        "loss": "loss", // the real loss from result['loss']
+        # "schedule": [0.3, 1.0], # can be a list or str
+        # "scale": "[0.5, 1]",
+        "loss": "loss", # the real loss from result['loss']
     },
     "_name": "identity",
 }

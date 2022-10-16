@@ -2,28 +2,28 @@
     "_name": "combine_word_char_cnn",
     "config": {
         "word": {
-            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+            "embedding_file": "*@*", # the embedding file, must be saved as numpy array by pickle
             "embedding_dim": "*@*",
-            "embedding_trace": ".", //default the file itself is the embedding
-            "freeze": false, // is freeze
-            "padding_idx": 0, //dropout rate
+            "embedding_trace": ".", # default the file itself is the embedding
+            "freeze": false, # is freeze
+            "padding_idx": 0, # dropout rate
             "output_map": {"embedding": "word_embedding"},
-            "input_map": {}, // required_key: provide_key
+            "input_map": {}, # required_key: provide_key
         },
         "char": {
-            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-            "embedding_dim": 35, //dropout rate
-            "embedding_trace": ".", //default the file itself is the embedding
-            "freeze": false, // is freeze
-            "kernel_sizes": [3], //dropout rate
+            "embedding_file": "*@*", # the embedding file, must be saved as numpy array by pickle
+            "embedding_dim": 35, # dropout rate
+            "embedding_trace": ".", # default the file itself is the embedding
+            "freeze": false, # is freeze
+            "kernel_sizes": [3], # dropout rate
             "padding_idx": 0,
             "output_map": {"char_embedding": "char_embedding"},
             "input_map": {"char_ids": "char_ids"},
         },
-        "dropout": 0, //dropout rate
-        "embedding_dim": "*@*", // this must equal to char.embedding_dim + word.embedding_dim
-        "output_map": {"embedding": "embedding"}, // this config do nothing, you can change this
-        "input_map": {"char_embedding": "char_embedding", "word_embedding": "word_embedding"}, // if the output of char and word embedding changed, you also should change this
+        "dropout": 0, # dropout rate
+        "embedding_dim": "*@*", # this must equal to char.embedding_dim + word.embedding_dim
+        "output_map": {"embedding": "embedding"}, # this config do nothing, you can change this
+        "input_map": {"char_embedding": "char_embedding", "word_embedding": "word_embedding"}, # if the output of char and word embedding changed, you also should change this
     },
     "_link":{
         "config.word.embedding_file": ["embedding@word.config.embedding_file"],

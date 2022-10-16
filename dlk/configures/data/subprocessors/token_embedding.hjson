@@ -3,11 +3,11 @@
     "config": {
         "train": {
             "embedding_file": "*@*",
-            "tokenizer": null, //List of columns. Every cell must be sigle token or list of tokens or set of tokens
+            "tokenizer": null, #List of columns. Every cell must be sigle token or list of tokens or set of tokens
             "vocab": null,
-            "deliver": "token_embedding", // output Vocabulary object (the Vocabulary of labels) name.
+            "deliver": "token_embedding", # output Vocabulary object (the Vocabulary of labels) name.
             "embedding_size": 200,
-            "bias_clip_range": [0.5, 0.1], // the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
+            "bias_clip_range": [0.5, 0.1], # the init embedding bias weight range, if you provide two, the larger is the up bound the lower is low bound; if you provide one value, we will use it as the bias
         }
     }
 }

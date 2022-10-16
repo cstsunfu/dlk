@@ -2,6 +2,6 @@
     "_base": "checkpoint",
     "config": {
         "monitor": "train_loss",
-        "mode": "min", //"max" or "min" select topk min or max checkpoint, min for loss, max for acc
+        "mode": "min", #"max" or "min" select topk min or max checkpoint, min for loss, max for acc
     }
 }

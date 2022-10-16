@@ -1,0 +1,97 @@
+{
+    "root": {
+        "_name": "bert"
+        "_search": {},
+        "config": {
+            "save_dir": "./bert/output",  # must provide
+            "data_path": "./bert/output/processed_data.pkl",  # must provide
+            "meta_data": "./bert/output/meta.pkl",  # must provide
+            "pretrained_model_path": './data/bert',  # must provide
+            "label_num": 5,  # must provide
+        },
+        "_link": {
+            "config.meta_data": ['task.imodel.postprocessor.config.meta'],
+            "config.label_num": ['task.imodel.model.config.label_num'],
+            "config.pretrained_model_path": ['task.imodel.model.config.pretrained_model_path'],
+            "config.save_dir": ['task.imodel.postprocessor.config.save_root_path'],
+        },
+        "task": {
+            "manager": {
+                "_base": "lightning",
+                "config":{
+                    "callbacks": [ //remove checkpoint callback
+                    ],
+                    "enable_checkpointing": false,
+                    /*"profiler": "simple",*/
+                    "profiler": null,
+                    "max_epochs": 5,
+                    "accelerator": 'gpu', //or cpu
+                    "devices": 1,
+                    "precision": 32,
+                    "strategy": "ddp", // if you want use multi-gpus to predict, please use dp now, this is because ddp will prepare data multi times on one node, and the gather process is not implement
+                    "detect_anomaly": false,
+                }
+            },
+            "imodel": {
+                "_base": "basic@span_cls",
+                "model": {
+                    "_base": "basic@span_cls#pretrained_transformer",
+                    "config": {
+                        "embedding_dim": 768,
+                        "pretrained_model_path": "*@*",
+                        "dropout": 0.3,
+                        "label_num": "*@*",
+                    },
+                    "embedding": {
+                        "_base": "pretrained_transformers",
+                        "module": {
+                            "_base": "bert",
+                        },
+                    },
+                },
+                "scheduler": {
+                    "_base": "linear_warmup",
+                },
+                "optimizer": {
+                    "_base": "adamw@bias_nodecay",
+                    "config": {
+                        "lr": 3e-5,
+                        "optimizer_special_groups": {
+                            /*"order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder*/
+                            "order": ['bias', 'decoder'], 
+                            "bias": {
+                                "config": {
+                                    "weight_decay": 0
+                                },
+                                "pattern": ["bias",  "LayerNorm\\.bias", "LayerNorm\\.weight"]
+                            },
+                            "decoder": {
+                                "config": {
+                                    "lr": 1e-3
+                                },
+                                "pattern": ["decoder"]
+                            },
+                        }
+                    },
+                },
+                "postprocessor": {
+                    "config": {
+                        "meta": '*@*'
+                        "start_save_epoch": 1,
+                        "save_root_path": "./bert/"
+                    }
+                },
+            },
+            "datamodule": {
+                "_base": "basic@span_cls",
+                "config":{
+                   "train_batch_size": 32,
+                   "predict_batch_size": 256, //predict、test batch_size is equals to valid_batch_size
+                }
+            },
+        },
+    },
+    "_focus": {
+        "root._name": "task."
+    },
+}

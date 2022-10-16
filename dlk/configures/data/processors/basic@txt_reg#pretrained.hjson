@@ -1,5 +1,5 @@
 {
-    // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
+    # input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@txt_reg#pretrained",
     "config": {
         "feed_order": [
@@ -8,8 +8,8 @@
             "tokenizer",
             "save"
         ]
-        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*", // save load data base dir
+        "tokenizer_config_path": "*@*", # the tokenizer config path (the tokenizer.json path)
+        "data_dir": "*@*", # save load data base dir
     },
     "_link": {
         "config.tokenizer_config_path": [
@@ -28,11 +28,11 @@
         "config": {
             "base_dir": "",
             "train": {
-                "processed": "processed_data.pkl", // all data
+                "processed": "processed_data.pkl", # all data
                 "meta": {
                     "meta.pkl": [
                         "tokenizer"
-                    ] //only for next time use
+                    ] #only for next time use
                 }
             },
             "predict": {
@@ -52,12 +52,12 @@
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "data_type": "single", # single or pair, if not provide, will calc by len(process_data)
                 "process_data": {
                     "is_pretokenized": false
                 },
                 "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
+                    "sentence": "sentence", #for sigle input, tokenizer the "sentence"
                 },
             },
             "predict": "train",

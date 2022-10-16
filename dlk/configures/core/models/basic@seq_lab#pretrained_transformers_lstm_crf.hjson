@@ -8,8 +8,6 @@
     },
     "_link": {
         "config.embedding_dim": ["embedding.config.embedding_dim",
-                                 /*"encoder.config.input_size", */
-                                 /*"encoder.config.output_size", */
                                  "decoder.config.input_size",
                                 ],
         "config.dropout": ["encoder.config.dropout", "embedding.config.dropout"],
@@ -41,7 +39,7 @@
             "input_size": "*@*",
             "output_size": "*@*",
             "num_layers": 1,
-            "dropout": "*@*", // dropout between layers
+            "dropout": "*@*", # dropout between layers
         },
     },
     "initmethod": {

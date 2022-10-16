@@ -21,9 +21,9 @@
         }
     },
     "config":{
-        /*"callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor']*/
+        # "callbacks": ["checkpoint@val_loss", "early_stop", 'lr_monitor']
         "callbacks": ['lr_monitor'],
-        /*"callbacks": ['lr_monitor', 'weight_average'],*/
+        # "callbacks": ['lr_monitor', 'weight_average'],
         "logger": true,
         "enable_checkpointing": true,
         "accelerator": null,

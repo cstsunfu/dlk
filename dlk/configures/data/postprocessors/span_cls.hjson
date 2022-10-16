@@ -2,9 +2,9 @@
     "_name": "span_cls",
     "config": {
         "meta": "*@*",
-        "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
-        "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
-        //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
+        "ignore_position": false, # calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
+        #"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
         "meta_data": {
             "label_vocab": 'label_vocab',
             "tokenizer": "tokenizer",
@@ -23,14 +23,14 @@
             "word_ids": "word_ids",
             "label_ids": "label_ids",
         },
-        "save_root_path": ".",  //save data root dir
+        "save_root_path": ".",  #save data root dir
         "save_path": {
-            "valid": "valid",  // relative dir for valid stage
-            "test": "test",    // relative dir for test stage
+            "valid": "valid",  # relative dir for valid stage
+            "test": "test",    # relative dir for test stage
         },
-        "start_save_step": 0,  // -1 means the last
+        "start_save_step": 0,  # -1 means the last
         "start_save_epoch": -1,
-        "aggregation_strategy": "max", // AggregationStrategy item
-        "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+        "aggregation_strategy": "max", # AggregationStrategy item
+        "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
     }
 }
