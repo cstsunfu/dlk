@@ -46,6 +46,8 @@ class SpanRelationRelabelConfig(BaseConfig):
                 "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                 "vocab": "label_vocab#relation", # usually provided by the "token_gather" module
                 "pad": -100,
+                "label_seperate": False, # seperate differences types of relations to different label matrix or use universal matrix(universal matrix may have conflict issue, like the 2 entities of the head of 2 different relations is same)
+                "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
             },
         }
     }
@@ -62,6 +64,8 @@ class SpanRelationRelabelConfig(BaseConfig):
         self.offsets = self.config['input_map']['offsets']
         self.word_ids = self.config['input_map']['word_ids']
         self.pad = self.config['pad']
+        self.sym = self.config['sym']
+        self.label_seperate = self.config['label_seperate']
         self.relations_info = self.config['input_map']['relations_info']
         self.entities_index_info = self.config['input_map']['entities_index_info']
         self.vocab = self.config['vocab']
@@ -108,6 +112,8 @@ class SpanRelationRelabel(ISubProcessor):
         # NOTE: only load once, because the vocab should not be changed in same process
         if not self.vocab:
             self.vocab = Vocabulary.load(data[self.config.vocab])
+            assert self.vocab.word2idx(self.vocab.unknown) == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert not self.vocab.pad, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
@@ -134,34 +140,105 @@ class SpanRelationRelabel(ISubProcessor):
 
         """
         relations_info = one_ins[self.config.relations_info]
+        entities_index_info = one_ins[self.config.entities_index_info]
         sub_word_ids = one_ins[self.config.word_ids]
         offsets = one_ins[self.config.offsets]
-        cur_token_index = 0
         offset_length = len(offsets)
 
         unk_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full((offset_length, offset_length), self.config.pad)
-        mask_matrices = np.tril(mask_matrices, k=-1)
+        mask_matrix = np.full((offset_length, offset_length), self.config.pad)
+        unk_matrix = np.full((offset_length, offset_length), unk_id)
+        if self.config.sym:
+            mask_matrix = np.tril(mask_matrix, k=-1)
+            unk_matrix = np.triu(unk_matrix, k=0)
 
-        unk_matrices = np.full((offset_length, offset_length), unk_id)
-        unk_matrices = np.triu(unk_matrices, k=0)
-
-        label_matrices = unk_matrices + mask_matrices
+        label_matrix = unk_matrix + mask_matrix
         if sub_word_ids[0] is None:
-            label_matrices[0, 0] = self.config.pad
+            label_matrix[0, :] = self.config.pad
         if sub_word_ids[-1] is None:
-            label_matrices[-1, -1] = self.config.pad
+            label_matrix[:, -1] = self.config.pad
+        if self.config.label_seperate:
+            label_matrices = self.get_seperate_label_matrix(label_matrix, relations_info, entities_index_info)
+        else:
+            label_matrices = self.get_universal_label_matrix(label_matrix, relations_info, entities_index_info)
 
-        for entity_info in entities_info:
-            start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
-            if start_token_index == -1:
-                logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
-                continue
-            end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
-            assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
-            label_id = self.vocab.get_index(entity_info['labels'][0])
-            label_matrices[start_token_index, end_token_index] = label_id
+        return label_matrices
 
-        if not self.config.clean_droped_entity:
-            entities_info = one_ins[self.config.entities_info]
-        return label_matrices, entities_info
+    def _get_entities_index(self, relation_info, entities_index_info):
+        """get the from entity head, to entity head, from entity tail, to entity tail
+        """
+        from_index = relation_info['from']
+        to_index = relation_info['to']
+        from_entity = entities_index_info[from_index]
+        from_start_index = from_entity['start']
+        from_end_index = from_entity['end']
+        to_entity = entities_index_info[to_index]
+        to_start_index = to_entity['start']
+        to_end_index = to_entity['end']
+
+        if self.config.sym:
+            if from_start_index > to_start_index:
+                from_start_index, to_start_index = to_start_index, from_start_index
+            if from_end_index > to_end_index:
+                from_end_index, to_end_index = to_end_index, from_end_index
+        return from_start_index, to_start_index, from_end_index, to_end_index 
+
+    def get_seperate_label_matrix(self, label_matrix, relations_info: List, entities_index_info: Dict[int, Dict]):
+        """seperate different type of relations to different matrix(as one dimension)
+
+        Args:
+            label_matrices: matrix
+            relations_info: like
+                [
+                    {
+                        "labels": [
+                            "belong_to"
+                        ],
+                        "from": 1, # index of entity
+                        "to": 0,
+                    }
+                ]
+            entities_index_info: generate by span_cls_relabel
+
+        Returns: 
+            label_id matrix
+
+        """
+        label_types = len(self.vocab) - 1
+        label_matrix = np.expand_dims(label_matrix, 0).repeat(2*label_types, 0)
+
+        for relation_info in relations_info:
+            label_id = self.vocab.word2idx[relation_info['labels'][0]]
+            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_index_info)
+            # NOTE: label_id ==0 is unknown
+            label_matrix[(label_id-1)*2][from_start_index][to_start_index] = 1
+            label_matrix[(label_id-1)*2+1][from_end_index][to_end_index] = 1
+        return label_matrix
+
+    def get_universal_label_matrix(self, label_matrix, relations_info: List, entities_index_info: Dict[int, Dict]):
+        """different type of relations to one matrix
+
+        Args:
+            label_matrices: matrix
+            relations_info: like
+                [
+                    {
+                        "labels": [
+                            "belong_to"
+                        ],
+                        "from": 1, # index of entity
+                        "to": 0,
+                    }
+                ]
+            entities_index_info: generate by span_cls_relabel
+
+        Returns:
+            label_id matrix
+        """
+        label_matrix = np.expand_dims(label_matrix, 0).repeat(2, 0)
+        for relation_info in relations_info:
+            label_id = self.vocab.word2idx[relation_info['labels'][0]]
+            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_index_info)
+            label_matrix[0][from_start_index][to_start_index] = label_id
+            label_matrix[1][from_end_index][to_end_index] = label_id
+        return label_matrix

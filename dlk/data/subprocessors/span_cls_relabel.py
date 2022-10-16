@@ -84,8 +84,6 @@ class SpanClsRelabelConfig(BaseConfig):
         >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
         >>>             "pad": -100,
         >>>         },
-        >>>         "predict": "train",
-        >>>         "online": "train",
         >>>     }
         >>> }
     """
@@ -269,9 +267,9 @@ class SpanClsRelabel(ISubProcessor):
 
         label_matrices = unk_matrices + mask_matrices
         if sub_word_ids[0] is None:
-            label_matrices[0, 0] = self.config.pad
+            label_matrices[0, :] = self.config.pad
         if sub_word_ids[-1] is None:
-            label_matrices[-1, -1] = self.config.pad
+            label_matrices[:, -1] = self.config.pad
         deliver_entities_info = {}
         for i, entity_info in enumerate(entities_info):
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
