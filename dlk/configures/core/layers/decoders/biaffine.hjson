@@ -12,6 +12,7 @@
         "config.hidden_size": ["module.config.hidden_size"],
         "config.input_size": ["module.config.input_size"],
         "config.output_size": ["module.config.output_size"],
+        "config.dropout": ["module.config.dropout"],
     },
     "module": {
         "_base": "biaffine",

@@ -30,7 +30,7 @@ class SpanRelationRelabelConfig(BaseConfig):
     default_config = {
         "_name": "span_relation_relabel",
         "config": {
-            "train":{
+            "train": {
                 "input_map": { 
                      "word_ids": "word_ids",
                      "offsets": "offsets",
@@ -41,7 +41,7 @@ class SpanRelationRelabelConfig(BaseConfig):
                      "train": ['train', 'valid', 'test'],
                 },
                 "output_map": {
-                    "relation_label_ids": "relation_label_ids",
+                    "label_ids": "relation_label_ids",
                 },
                 "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                 "vocab": "label_vocab#relation", # usually provided by the "token_gather" module
@@ -69,10 +69,13 @@ class SpanRelationRelabelConfig(BaseConfig):
         self.relations_info = self.config['input_map']['relations_info']
         self.entities_index_info = self.config['input_map']['entities_index_info']
         self.vocab = self.config['vocab']
-        self.output_labels = self.config['output_map']['relation_label_ids']
+        self.output_labels = self.config['output_map']['label_ids']
         self.post_check(self.config, used=[
             "drop",
             "vocab",
+            "pad",
+            "label_seperate",
+            "sym",
             "input_map",
             "data_set",
             "output_map",
@@ -112,7 +115,7 @@ class SpanRelationRelabel(ISubProcessor):
         # NOTE: only load once, because the vocab should not be changed in same process
         if not self.vocab:
             self.vocab = Vocabulary.load(data[self.config.vocab])
-            assert self.vocab.word2idx(self.vocab.unknown) == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert self.vocab.word2idx[self.vocab.unknown] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
             assert not self.vocab.pad, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
 
         for data_set_name in self.data_set:
@@ -121,11 +124,9 @@ class SpanRelationRelabel(ISubProcessor):
                 continue
             data_set = data['data'][data_set_name]
             if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
-                data_set[[self.config.output_labels,
-                ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
+                data_set[self.config.output_labels] = data_set.parallel_apply(self.relabel, axis=1)
             else:
-                data_set[[self.config.output_labels,
-                ]] = data_set.apply(self.relabel, axis=1, result_type='expand')
+                data_set[self.config.output_labels] = data_set.apply(self.relabel, axis=1)
 
         return data
 

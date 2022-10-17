@@ -117,6 +117,7 @@ class SpanClsRelabelConfig(BaseConfig):
             "clean_droped_entity",
             "entity_priority",
             "priority_trigger",
+            "pad"
         ])
 
 

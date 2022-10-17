@@ -50,6 +50,7 @@ class BasicDatamoduleConfig(BaseConfig):
                 },
             "key_padding_pairs": { 'input_ids': 0, 'label_ids': -100},
             "key_padding_pairs_2d": { 'label_ids': -100 },
+            "key_padding_pairs_3d": { 'relation_label_ids': -100 },
             "train_batch_size": 32,
             "predict_batch_size": 32,
             "online_batch_size": 1,
@@ -100,6 +101,7 @@ class BasicDatamoduleConfig(BaseConfig):
             logger.warning(f"'_index' is a preserved key, we will use this to indicate the index of item, if you ignore this warning, we will ignore the origin '_index' data.")
         self.key_padding_pairs = config.get('key_padding_pairs', {})
         self.key_padding_pairs_2d = config.get('key_padding_pairs_2d', {})
+        self.key_padding_pairs_3d = config.get('key_padding_pairs_3d', {})
         self.gen_mask = config.get("gen_mask", {})
         self.collate_fn = config.get('collate_fn', 'default')
         self.pin_memory = config.get('pin_memory', False)
@@ -127,6 +129,7 @@ class BasicDatamoduleConfig(BaseConfig):
                "gen_mask",
                "key_padding_pairs",
                "key_padding_pairs_2d",
+               "key_padding_pairs_3d",
                "train_batch_size",
                "predict_batch_size",
                "online_batch_size",
@@ -183,7 +186,7 @@ class BasicDatamodule(IBaseDataModule):
             self.valid_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'valid'), data['valid'])
         if "predict" in data:
             self.predict_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'predict'), data['predict'])
-        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask, key_padding_pairs_2d=config.key_padding_pairs_2d)
+        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask, key_padding_pairs_2d=config.key_padding_pairs_2d, key_padding_pairs_3d=config.key_padding_pairs_3d)
 
     def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
         """return the keys = key_type_pairs.keys() ∩ data.columns

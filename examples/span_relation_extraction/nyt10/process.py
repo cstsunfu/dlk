@@ -167,11 +167,9 @@ def get_data():
 with open('./test.json', 'r') as f:
     data = json.load(f)
 
-#     pass
+train = data[:len(data)//2]
+valid = data[len(data)//2:]
+input = {"data": {"train": train, "valid": valid}}
 
-
-
-# # input = {"data": json_data_map}
-
-# # processor = Processor('./bert/prepro.hjson')
-# # processor.fit(input)
+processor = Processor('./bert/prepro.hjson')
+processor.fit(input)

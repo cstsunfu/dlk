@@ -1,156 +1,139 @@
 {
     "processor": {
-        "_base": "basic@span_cls#pretrained",
+        "_name": "basic@span_relation#pretrained",
         "config": {
-            "feed_order": ["load", "seq_lab_loader", "tokenizer", "label_gather", "span_cls_relabel", "save"]
-            "tokenizer_config_path": "./data/bert/tokenizer.json", // the tokenizer config path (the tokenizer.json path)
-            "data_dir": "./bert/output/",  // save load data base dir
+            "feed_order": [
+                "load",
+                "relation_extract_loader",
+                "tokenizer",
+                "label_gather#entity",
+                "label_gather#relation",
+                "span_cls_relabel",
+                "span_relation_relabel",
+                "save"
+            ],
+            "tokenizer_config_path": "./model/tokenizer.json", # the tokenizer config path (the tokenizer.json path)
+                "data_dir": "./data", # save load data base dir
+                "truncation": { # if this is set to None or empty, will not do trunc
+                    "max_length": 512,
+                    "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
+                },
+        },
+        "_link": {
+            "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@span_cls_relabel.config.train.input_map.word_ids",
+            "config.tokenizer_config_path": [
+                "subprocessor@tokenizer.config.train.config_path"
+            ],
+            "config.data_dir": [
+                "subprocessor@load.config.base_dir",
+            "subprocessor@save.config.base_dir"
+            ],
+            "config.truncation": [
+                "subprocessor@tokenizer.config.train.truncation"
+            ],
+            "subprocessor@label_gather#relation.config.train.deliver": "subprocessor@span_relation_relabel.config.train.vocab",
+            "subprocessor@label_gather#entity.config.train.deliver": "subprocessor@span_cls_relabel.config.train.vocab",
+            "subprocessor@span_cls_relabel.config.train.output_map.entities_index_info": "subprocessor@span_relation_relabel.config.train.input_map.entities_index_info",
+        },
+        "subprocessor@load": {
+            "_base": "load",
+        },
+        "subprocessor@save": {
+            "_base": "save",
+            "config": {
+                "base_dir": "",
+                "train": {
+                    "processed": "processed_data.pkl", # all data
+                        "meta": {
+                            "meta.pkl": [
+                                'label_vocab#entity',
+                                'label_vocab#relation',
+                                "tokenizer"
+                            ] # only for next time use
+                        }
+                },
+                "predict": {
+                    "processed": "processed_data.pkl",
+                }
+            }
+        },
+        "subprocessor@relation_extract_loader": { # the span_cls dataloader is the same as seq_lab
+            "_base": "basic_data_loader@relation_extract",
+        },
+        "subprocessor@tokenizer": {
+            "_base": "fast_tokenizer",
+        },
+        "subprocessor@label_gather#entity": {
+            "_base": "token_gather",
+            "config": {
+                "train": { # only train stage using
+                    "data_set": { # for different stage, this processor will process different part of data
+                        "train": [
+                            "train",
+                        "valid"
+                        ]
+                    },
+                    "deliver": "label_vocab#entity", # output Vocabulary object (the Vocabulary of labels) name.
+                        "gather_columns": [
+                        {
+                            "column": "entities_info",
+                            "trace": 'labels'
+                        }
+                        ],
+                        "unk": "[UNK]",
+                        "pad": "",
+                }
+            }
+        },
+        "subprocessor@label_gather#relation": {
+            "_base": "token_gather",
+            "config": {
+                "train": { # only train stage using
+                    "data_set": { # for different stage, this processor will process different part of data
+                        "train": [
+                            "train",
+                        "valid"
+                        ]
+                    },
+                    "deliver": "label_vocab#relation", # output Vocabulary object (the Vocabulary of labels) name.
+                    "gather_columns": [
+                        {
+                            "column": "relations_info",
+                            "trace": 'labels'
+                        }
+                    ],
+                    "unk": "[UNK]",
+                    "pad": "",
+                }
+            }
+        },
+        "subprocessor@span_cls_relabel": {
+            "_base": "span_cls_relabel",
+            "config": {
+                "train": {
+                    "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
+                    "output_map": {
+                        "label_ids": "label_ids",
+# for span relation extract relabel, deliver should be {index: {"start": start, "end": end}}, which the start and end should be the index of the token level  WARNING: and if entities_index_info != "_entities_index_info", the drop must set to 'none', because the 'drop' will change the index
+# _entities_index_info means donot use
+                        "entities_index_info": "entities_index_info",
+                    },
+                    "vocab": "*@*", # usually provided by the "token_gather" module
+                }
+            }
+        },
+
+        "subprocessor@span_relation_relabel": {
+            "_base": "span_relation_relabel",
+            "config": {
+                "train": {
+                    "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
+                    "vocab": "*@*", # usually provided by the "token_gather" module
+                    "output_map": {
+                        "label_ids": "label_ids",
+                    }
+                },
+            }
         },
     }
-}
-{
-    "_name": "basic@span_relation#pretrained",
-    "config": {
-        "feed_order": [
-            "load",
-            "relation_extract_loader",
-            "tokenizer",
-            "label_gather#entity",
-            "label_gather#relation",
-            "span_cls_relabel",
-            "save"
-        ],
-        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*", // save load data base dir
-        "truncation": { // if this is set to None or empty, will not do trunc
-            "max_length": 512,
-            "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
-        },
-    },
-    "_link": {
-        "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@span_cls_relabel.config.train.input_map.word_ids",
-        "config.tokenizer_config_path": [
-            "subprocessor@tokenizer.config.train.config_path"
-        ],
-        "config.data_dir": [
-            "subprocessor@load.config.base_dir",
-            "subprocessor@save.config.base_dir"
-        ],
-        "config.truncation": [
-            "subprocessor@tokenizer.config.train.truncation"
-        ],
-    },
-    "subprocessor@load": {
-        "_base": "load",
-    },
-    "subprocessor@save": {
-        "_base": "save",
-        "config": {
-            "base_dir": "",
-            "train": {
-                "processed": "processed_data.pkl", // all data
-                "meta": {
-                    "meta.pkl": [
-                        'label_vocab#entity',
-                        'label_vocab#relation',
-                        "tokenizer"
-                    ] //only for next time use
-                }
-            },
-            "predict": {
-                "processed": "processed_data.pkl",
-            }
-        }
-    },
-    "subprocessor@relation_extract_loader": { // the span_cls dataloader is the same as seq_lab
-        "_base": "basic_data_loader@relation_extract",
-    },
-    "subprocessor@tokenizer": {
-        "_base": "fast_tokenizer",
-        "config": {
-            "train": {
-                "config_path": "*@*",
-                "deliver": "tokenizer",
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
-                "process_data": {
-                    "is_pretokenized": false
-                },
-                "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
-                },
-            },
-            "predict": "train",
-            "online": "train"
-        }
-    },
-    "subprocessor@label_gather#entity": {
-        "_base": "token_gather",
-        "config": {
-            "train": { // only train stage using
-                "data_set": { // for different stage, this processor will process different part of data
-                    "train": [
-                        "train",
-                        "valid"
-                    ]
-                },
-                "deliver": "label_vocab#entity", // output Vocabulary object (the Vocabulary of labels) name.
-                "gather_columns": [
-                    {
-                        "column": "entities_info",
-                        "trace": 'labels'
-                    }
-                ],
-                "unk": "[UNK]",
-                "pad": "",
-            }
-        }
-    },
-    "subprocessor@label_gather#relation": {
-        "_base": "token_gather",
-        "config": {
-            "train": { // only train stage using
-                "data_set": { // for different stage, this processor will process different part of data
-                    "train": [
-                        "train",
-                        "valid"
-                    ]
-                },
-                "deliver": "label_vocab#relation", // output Vocabulary object (the Vocabulary of labels) name.
-                "gather_columns": [
-                    {
-                        "column": "relations_info",
-                        "trace": 'labels'
-                    }
-                ],
-                "unk": "[UNK]",
-                "pad": "",
-            }
-        }
-    },
-    "subprocessor@span_cls_relabel": {
-        "_base": "span_cls_relabel",
-        "config": {
-            "train": {
-                "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-                "output_map": {
-                     "label_ids": "label_ids",
-                     # for span relation extract relabel, deliver should be {index: {"start": start, "end": end}}, which the start and end should be the index of the token level  WARNING: and if entities_index_info != "_entities_index_info", the drop must set to 'none', because the 'drop' will change the index
-                     # _entities_index_info means donot use
-                     "entities_index_info": "entities_index_info",
-                },
-            }
-        }
-    },
-    "subprocessor@span_relatoin_relabel": {
-        "_name": "span_relation_relabel",
-        "config": {
-            "train": {
-                "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-            },
-            "predict": "train",
-            "online": "train",
-        }
-    },
 }

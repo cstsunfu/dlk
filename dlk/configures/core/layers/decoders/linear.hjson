@@ -1,18 +1,5 @@
 {
     "_name": "linear",
-    "config": {
-        "input_size": "*@*",
-        "output_size": "*@*",
-        "pool": null,
-        "dropout": 0.0,
-        "output_map": {},
-        "input_map": {}, # required_key: provide_key
-    },
-    "_link":{
-        "config.input_size": ["module.config.input_size"],
-        "config.output_size": ["module.config.output_size"],
-        "config.pool": ["module.config.pool"],
-    },
     "module": {
         "_base": "linear",
     },

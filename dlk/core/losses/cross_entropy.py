@@ -16,7 +16,6 @@ from typing import Dict
 import torch.nn as nn
 from . import loss_register, loss_config_register
 from packaging import version
-import torch.nn as nn
 from dlk.utils.logger import Logger
 from dlk.core.base_module import BaseModuleConfig
 import torch

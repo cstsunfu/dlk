@@ -35,7 +35,7 @@
             "imodel": {
                 "_base": "basic@span_cls",
                 "model": {
-                    "_base": "basic@span_cls#pretrained_transformer",
+                    "_base": "basic@span_relation#pretrained_transformer",
                     "config": {
                         "embedding_dim": 768,
                         "pretrained_model_path": "*@*",
@@ -83,7 +83,7 @@
                 },
             },
             "datamodule": {
-                "_base": "basic@span_cls",
+                "_base": "basic@span_relation",
                 "config":{
                    "train_batch_size": 32,
                    "predict_batch_size": 256, //predict、test batch_size is equals to valid_batch_size

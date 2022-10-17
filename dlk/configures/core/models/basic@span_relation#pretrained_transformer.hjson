@@ -1,0 +1,59 @@
+{
+    "_name": "basic",
+    "config": {
+        "embedding_dim": "*@*",
+        "pretrained_model_path": "*@*",
+        "dropout": "*@*",
+        "label_num": "*@*",
+    },
+    "_link": {
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 "decoder.config.input_size",
+                                ],
+        "config.dropout": ["embedding.config.dropout"],
+        "config.label_num": "decoder.config.output_size",
+        "config.pretrained_model_path": "embedding.config.pretrained_model_path",
+    },
+    "embedding": {
+        "_base": "pretrained_transformers",
+        "module": {
+            "_base": "roberta",
+        },
+        "config": {
+            "pretrained_model_path": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
+        },
+    },
+    "decoder": {
+        "_name": "multi_decoder",
+        "decoder@entity": {
+            "_base": "biaffine",
+            "config": {
+                "input_size": "*@*",
+                "hidden_size": 0, # default equals to input_size
+                "output_size": "*@*",
+                "dropout": 0.0,
+                "output_map": {},
+                "input_map": {}, # required_key: provide_key
+            },
+        },
+        "decoder@relation": {
+            "_base": "biaffine",
+            "config": {
+                "input_size": "*@*",
+                "hidden_size": 0, # default equals to input_size
+                "output_size": "*@*",
+                "dropout": 0.0,
+                "output_map": {},
+                "input_map": {}, # required_key: provide_key
+            },
+        },
+    },
+    "encoder": {
+        "_base": "identity",
+    },
+    "initmethod": {
+        "_base": "default",
+    },
+}

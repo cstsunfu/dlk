@@ -35,7 +35,9 @@ class BiAffineConfig(BaseModuleConfig):
             },
         "_link":{
             "config.input_size": ["module.config.hidden_size"],
+            "config.hidden_size": ["module.config.hidden_size"],
             "config.output_size": ["module.config.output_size"],
+            "config.dropout": ["module.config.dropout"],
             },
         "_name": "biaffine",
     }
@@ -45,16 +47,9 @@ class BiAffineConfig(BaseModuleConfig):
         super(BiAffineConfig, self).__init__(config)
         self.biaffine_config = config["module"]
         config = config['config']
-        self.input_size = config['input_size']
-        self.hidden_size = config['hidden_size']
-        if not self.hidden_size:
-            self.hidden_size = self.input_size
-            self.biaffine_config['input_size'] = self.hidden_size
-        self.dropout = config['dropout']
         self.post_check(config, used=[
             "input_size",
             "output_size",
-            "pool",
             "dropout",
             "return_logits",
         ])
@@ -71,10 +66,6 @@ class BiAffine(SimpleModule):
         self._provided_keys = set()
 
         self.config = config
-        self.linear_a = nn.Linear(config.input_size, config.hidden_size)
-        self.linear_b = nn.Linear(config.input_size, config.hidden_size)
-        self.dropout = nn.Dropout(p=config.dropout)
-        self.active = nn.LeakyReLU() # TODO: why GELU get loss nan?
 
         self.biaffine = module_register.get('biaffine')(module_config_register.get('biaffine')(config.biaffine_config))
 
@@ -101,9 +92,7 @@ class BiAffine(SimpleModule):
 
         """
         embedding = inputs[self.get_input_name('embedding')]
-        input_a = self.dropout(self.active(self.linear_a(embedding)))
-        input_b = self.dropout(self.active(self.linear_b(embedding)))
-        inputs[self.get_output_name("logits")] = self.biaffine(input_a, input_b)
+        inputs[self.get_output_name("logits")] = self.biaffine(embedding)
         if self._logits_gather.layer_map:
             inputs.update(self._logits_gather([inputs[self.get_output_name('logits')]]))
         return inputs

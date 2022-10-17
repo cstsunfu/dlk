@@ -62,10 +62,10 @@ class DefaultCollate(object):
                     max_x = max(max_x, cur_x)
                     max_y = max(max_y, cur_y)
                     max_z = max(max_z, cur_z)
-                _data = torch.full((len(data_map[key]), max_x, max_y, max_z), fill_value=self.key_padding_pairs_2d[key], dtype=data_map[key][0].dtype)
+                _data = torch.full((len(data_map[key]), max_x, max_y, max_z), fill_value=self.key_padding_pairs_3d[key], dtype=data_map[key][0].dtype)
                 for i, ins in enumerate(data_map[key]):
-                    cur_m, cur_n = ins.shape
-                    _data[i][:cur_m,:cur_n] = ins
+                    cur_x, cur_y, cur_z = ins.shape
+                    _data[i][:cur_x,:cur_y, :cur_z] = ins
                 data_map[key] = _data
             if key in self.key_padding_pairs_2d:
                 max_m, max_n = 0, 0
