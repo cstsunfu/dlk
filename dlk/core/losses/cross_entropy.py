@@ -33,7 +33,7 @@ class CrossEntropyLossConfig(BaseModuleConfig):
         >>>         "ignore_index": -100,
         >>>         "weight": null, # or a list of value for every class
         >>>         "label_smoothing": 0.0, # torch>=1.10
-        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs . OR the elements are list too it means there are multiple pred_truth_pairs
         >>>         "schedule": [1],
         >>>         "scale": [1], # scale the loss for every schedule stage
         >>>         // "schdeule": [0.3, 1.0], # can be a list or str

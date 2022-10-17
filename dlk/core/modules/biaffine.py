@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http:# www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,18 +21,17 @@ from dlk.utils.config import BaseConfig
 
 @module_config_register("biaffine")
 class BiAffineConfig(BaseConfig):
+    default_config = {
+        "config": {
+            "input_size": 256,
+            "output_size": 2,
+            "dropout": 0.0, # generally no need dropout
+            "bias": True, # use bias or not in biaffine
+        },
+        "_name": "biaffine",
+    }
     """Config for BiAffine
-
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "input_size": 256,
-        >>>         "output_size": 2,
-        >>>         "dropout": 0.0, //generally no need dropout
-        >>>         "bias": true, // use bias or not in biaffine
-        >>>     },
-        >>>     "_name": "biaffine",
-        >>> }
     """
     def __init__(self, config: Dict):
         super(BiAffineConfig, self).__init__(config)

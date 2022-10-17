@@ -1,10 +1,10 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http:# www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,27 +21,25 @@ import torch.nn as nn
 
 @decoder_config_register("biaffine")
 class BiAffineConfig(BaseModuleConfig):
+    default_config = {
+        "module": {
+            "_base": "biaffine",
+        },
+        "config": {
+            "input_size": "*@*",
+            "hidden_size": 0, # default equals to input_size
+            "output_size": "*@*",
+            "dropout": 0.0,
+            "output_map": {},
+            "input_map": {}, # required_key: provide_key
+            },
+        "_link":{
+            "config.input_size": ["module.config.hidden_size"],
+            "config.output_size": ["module.config.output_size"],
+            },
+        "_name": "biaffine",
+    }
     """Config for BiAffine 
-
-    Config Example:
-        >>> {
-        >>>     "module": {
-        >>>         "_base": "biaffine",
-        >>>     },
-        >>>     "config": {
-        >>>         "input_size": "*@*",
-        >>>         "hidden_size": 0, //default equals to input_size
-        >>>         "output_size": "*@*",
-        >>>         "dropout": 0.0,
-        >>>         "output_map": {},
-        >>>         "input_map": {}, // required_key: provide_key
-        >>>     },
-        >>>     "_link":{
-        >>>         "config.input_size": ["module.config.hidden_size"],
-        >>>         "config.output_size": ["module.config.output_size"],
-        >>>     },
-        >>>     "_name": "biaffine",
-        >>> }
     """
     def __init__(self, config: Dict):
         super(BiAffineConfig, self).__init__(config)
@@ -64,7 +62,7 @@ class BiAffineConfig(BaseModuleConfig):
 
 @decoder_register("biaffine")
 class BiAffine(SimpleModule):
-    """biaffine a x A x b
+    """biaffine
     """
     def __init__(self, config: BiAffineConfig):
         super(BiAffine, self).__init__(config)
