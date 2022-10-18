@@ -6,6 +6,9 @@
         "scale": [1], # scale the loss for every schedule stage
         # "schdeule": [0.3, 1.0], # can be a list or str
         # "scale": "[0.5, 1]",
+        "log_map": {
+            "loss": "loss"
+        },
     },
     "_name": "bce", # this is BCEWithLogitsLoss
 }

@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,20 +25,23 @@ logger = Logger.get_logger()
 
 @loss_config_register("mse")
 class MSELossConfig(BaseModuleConfig):
+    default_config = {
+        "config": {
+            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+            "schedule": [1],
+            "masked_select": None, # if provide, only select the masked(=1) data
+            "scale": [1], # scale the loss for every schedule stage
+            # "schdeule": [0.3, 1.0], # can be a list or str
+            # "scale": "[0.5, 1]",
+            "log_map": {
+                "loss": "loss"
+            },
+        },
+        "_name": "mse",
+    }
     """Config for MSELoss
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-        >>>         "schedule": [1],
-        >>>         "masked_select": null, // if provide, only select the masked(=1) data
-        >>>         "scale": [1], # scale the loss for every schedule stage
-        >>>         // "schdeule": [0.3, 1.0], # can be a list or str
-        >>>         // "scale": "[0.5, 1]",
-        >>>     },
-        >>>     "_name": "mse",
-        >>> }
     """
     def __init__(self, config: Dict):
         super(MSELossConfig, self).__init__(config)
@@ -51,6 +54,10 @@ class MSELossConfig(BaseModuleConfig):
             self.scale = eval(self.scale)
         if isinstance(self.schedule, str):
             self.schedule = eval(self.schedule)
+
+        self.log_map = config['log_map']
+        if isinstance(self.log_map, str):
+            self.log_map = {"loss": self.log_map}
 
         if not isinstance(self.scale, list):
             assert isinstance(float(self.scale), float)
@@ -126,7 +133,7 @@ class MSELoss(object):
             pred = torch.masked_select(pred, inputs[self.config.masked_select])
             target = torch.masked_select(target, inputs[self.config.masked_select])
         loss = self.mse(pred, target) * scale / batch_size # batch mean
-        return loss
+        return loss, {self.config.log_map['loss']: loss}
 
     def __call__(self, result, inputs, rt_config):
         """same as self.calc

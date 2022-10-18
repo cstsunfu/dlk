@@ -23,6 +23,7 @@ import torch.nn as nn
 class MultiDecoderConfig(BaseModuleConfig):
     default_config = {
         "config": {
+            "module_rank": []
         },
         "_name": "multi_decoder",
     }
@@ -30,11 +31,15 @@ class MultiDecoderConfig(BaseModuleConfig):
     """
     def __init__(self, config: Dict):
         super(MultiDecoderConfig, self).__init__(config)
-        decoders = config['config']['decoders']
+        module_rank = config['config']['module_rank']
         self.decode_configs = {}
-        for decode in config:
-            if decode in {"config", "_name"}:
-                continue
+        self.module_rank = []
+        for decode in module_rank:
+            if decode not in config and "@" not in decode:
+                decode = f"decoder@{decode}"
+            if decode not in config:
+                raise KeyError(f"{decode} not configured")
+            self.module_rank.append(decode)
             module_class, module_config = ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config[decode])
             self.decode_configs[decode] = {
                 "decode_class": module_class,
@@ -42,7 +47,7 @@ class MultiDecoderConfig(BaseModuleConfig):
             }
 
         self.post_check(config, used=[
-            "decoders",
+            "module_rank",
         ])
 
 
@@ -86,6 +91,6 @@ class MultiDecoder(SimpleModule):
             one mini-batch outputs
 
         """
-        for decode_name in self.decoders:
+        for decode_name in self.config.module_rank:
             inputs = self.decoders[decode_name](inputs)
         return inputs

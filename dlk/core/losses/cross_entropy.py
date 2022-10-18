@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,22 +24,25 @@ logger = Logger.get_logger()
 
 @loss_config_register("cross_entropy")
 class CrossEntropyLossConfig(BaseModuleConfig):
+    default_config = {
+        "config": {
+            "ignore_index": -100,
+            "weight": None, # or a list of value for every class
+            "label_smoothing": 0.0, # torch>=1.10
+            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs . OR the elements are list too it means there are multiple pred_truth_pairs
+            "log_map": {
+                "loss": "loss"
+            },
+            "schedule": [1],
+            "scale": [1], # scale the loss for every schedule stage
+            # "schdeule": [0.3, 1.0], # can be a list or str
+            # "scale": "[0.5, 1]",
+        },
+        "_name": "cross_entropy",
+    }
     """Config for CrossEntropyLoss
 
-    Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "ignore_index": -100,
-        >>>         "weight": null, # or a list of value for every class
-        >>>         "label_smoothing": 0.0, # torch>=1.10
-        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs . OR the elements are list too it means there are multiple pred_truth_pairs
-        >>>         "schedule": [1],
-        >>>         "scale": [1], # scale the loss for every schedule stage
-        >>>         // "schdeule": [0.3, 1.0], # can be a list or str
-        >>>         // "scale": "[0.5, 1]",
-        >>>     },
-        >>>     "_name": "cross_entropy",
-        >>> }
+    Config Example: default_config
     """
     def __init__(self, config: Dict):
         super(CrossEntropyLossConfig, self).__init__(config)
@@ -62,6 +65,9 @@ class CrossEntropyLossConfig(BaseModuleConfig):
         assert len(self.schedule) == len(self.scale)
         assert self.schedule[-1] - 1 < 0.00001
 
+        self.log_map = config['log_map']
+        if isinstance(self.log_map, str):
+            self.log_map = {"loss": self.log_map}
         self.weight = config['weight']
         self.ignore_index = config['ignore_index']
         self.label_smoothing = config['label_smoothing']
@@ -142,7 +148,7 @@ class CrossEntropyLoss(object):
         pred = pred.reshape(-1, pred.shape[-1])
         target = target.reshape(-1)
         loss = self.cross_entropy(pred, target) * scale
-        return loss
+        return loss, {self.config.log_map['loss']: loss}
 
     def __call__(self, result, inputs, rt_config):
         """same as self.calc

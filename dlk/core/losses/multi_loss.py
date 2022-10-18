@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,54 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: WIP  comming soon!!
-from typing import Dict
+from typing import Dict, List
 import torch.nn as nn
 from . import loss_register, loss_config_register
+from dlk import additional_function
 import torch.nn as nn
 from dlk.utils.config import ConfigTool
 
+@additional_function("multi_loss", "sum")
+def loss_sum(losses: List, **args:Dict):
+    """sum all losses
+
+    Args:
+        losses (List): list of loss
+
+    Returns: 
+        sum of losses
+    """
+    return sum(losses)
 
 @loss_config_register("multi_loss")
 class MultiLossConfig(object):
+    default_config = {
+        "config": {
+            "module_rank": [],
+            "loss_collect": "sum",
+            "args": {},
+            "log_map": {
+                "loss": "loss"
+            },
+        },
+        "_name": "multi_loss",
+    }
     """Config for MultiLoss
 
     Config Example:
-        >>> {
-        >>>     "loss@the_first": {
-        >>>         config: {
-        >>>             "ignore_index": -1,
-        >>>             "weight": null, # or a list of value for every class
-        >>>             "label_smoothing": 0.0, # torch>=1.10
-        >>>             "pred_truth_pair": ["logits1", "label1"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-        >>>             "schedule": [0.3, 0.6, 1],
-        >>>             "scale": [1, 0, 0.5], # scale the loss for every schedule
-        >>>             // "schdeule": [0.3, 1.0],
-        >>>             // "scale": [0, 1, 0.5], # scale the loss
-        >>>         },
-        >>>         _name: "cross_entropy",
-        >>>     },
-        >>>     "loss@the_second": {
-        >>>         config: {
-        >>>             "pred_truth_pair": ["logits2", "label2"], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-        >>>             "schdeule": [0.3, 0.6, 1],
-        >>>             "scale": [0, 1, 0.5], # scale the loss for every schedule
-        >>>             // "schdeule": [0.3, 1.0],
-        >>>             // "scale": [0, 1, 0.5], # scale the loss
-        >>>         },
-        >>>         _base: "cross_entropy",  // _name or _base is all ok
-        >>>     },
-        >>>     config: {
-        >>>         "loss_list": ['the_first', 'the_second'],
-        >>>     },
-        >>>     _name: "cross_entropy",
-        >>> }
     """
     def __init__(self, config: Dict):
         super(MultiLossConfig, self).__init__()
-        config = config.get('config', {})
-
-
+        module_rank = config['config']['module_rank']
+        self.loss_configs = {}
+        self.module_rank = []
+        self.loss_collect = additional_function.get("multi_loss", config['config']['loss_collect'])
+        self.log_map = config['log_map']
+        if isinstance(self.log_map, str):
+            self.log_map = {"loss": self.log_map}
+        for loss in module_rank:
+            if loss not in config and "@" not in loss:
+                loss = f"loss@{loss}"
+            if loss not in config:
+                raise KeyError(f"{loss} not configured")
+            self.module_rank.append(loss)
+            module_class, module_config = ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config[loss])
+            self.loss_configs[loss] = {
+                "loss_class": module_class,
+                "loss_config": module_config,
+            }
 
 @loss_register("multi_loss")
 class MultiLoss(object):
@@ -67,20 +75,13 @@ class MultiLoss(object):
     """
     def __init__(self, config: MultiLossConfig):
         super(MultiLoss, self).__init__()
-        raise NotImplementedError
         self.config = config
-
-    def get_loss(self, config):
-        """Use config to init the loss
-
-        Args:
-            config: loss config
-
-        Returns: 
-            the Loss and the LossConfig
-
-        """
-        return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
+        self.loss_collect = config.loss_collect
+        self.module_rank = config.module_rank
+        self.losses = nn.ModuleDict({
+            loss_name: config.loss_configs[loss_name]['loss_class'](config.loss_configs[loss_name]['loss_config'])
+            for loss_name in config.module_rank
+        })
 
     def calc(self, result, inputs, rt_config):
         """calc the loss the predict is from result, the ground truth is from inputs
@@ -100,10 +101,15 @@ class MultiLoss(object):
             loss
 
         """
-        loss = 0
-        for i, (pred, truth) in enumerate(self.config.pred_truth_pair):
-            loss = loss + self.cross_entropy(result[pred], inputs[truth]) * self.config.loss_scale[i]
-        return loss
+        losses = []
+        log_loss = {}
+        for loss_module in self.module_rank:
+            loss, log = self.losses[loss_module](result, inputs, rt_config)
+            losses.append(loss)
+            log_loss.update(log)
+        loss = self.loss_collect(losses=losses, rt_config=rt_config)
+        log_loss.update({self.config.log_map['loss']: loss})
+        return loss, log_loss
 
     def __call__(self, result, inputs, rt_config):
         """same as self.calc

@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http:// www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,52 +29,61 @@ import torchmetrics
 logger = Logger.get_logger()
 
 
+
+
+
+
+# NOTE: MUST  implement multi loss name
+# NOTE: MUST  inter process
+
 @postprocessor_config_register('span_cls')
 class SpanClsPostProcessorConfig(IPostProcessorConfig):
+    default_config = {
+            "_name": "span_cls",
+            "config": {
+                "meta": "*@*",
+                "inter_process": False,  # is this process is a intermedia stage, if True, the process will return all the info
+                "ignore_position": False, # calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+                "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
+                # "ignore_char": " ()[]-.,:", # if the entity begin or end with this char, will ignore these char
+                "meta_data": {
+                    "label_vocab": 'label_vocab',
+                    "tokenizer": "tokenizer",
+                },
+                "input_map": {
+                    "logits": "logits",
+                    "_index": "_index",
+                },
+                "origin_input_map": {
+                    "uuid": "uuid",
+                    "sentence": "sentence",
+                    "input_ids": "input_ids",
+                    "entities_info": "entities_info",
+                    "offsets": "offsets",
+                    "special_tokens_mask": "special_tokens_mask",
+                    "word_ids": "word_ids",
+                    "label_ids": "label_ids",
+                },
+                "save_root_path": ".",  # save data root dir
+                "save_path": {
+                    "valid": "valid",  # relative dir for valid stage
+                    "test": "test",    # relative dir for test stage
+                },
+                "start_save_step": 0,  # -1 means the last
+                "start_save_epoch": -1,
+                "aggregation_strategy": "max", # AggregationStrategy item
+                "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
+            }
+        }
     """Config for SpanClsPostProcessor
 
     Config Example:
-        >>> {
-        >>>     "_name": "span_cls",
-        >>>     "config": {
-        >>>         "meta": "*@*",
-        >>>         "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
-        >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
-        >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
-        >>>         "meta_data": {
-        >>>             "label_vocab": 'label_vocab',
-        >>>             "tokenizer": "tokenizer",
-        >>>         },
-        >>>         "input_map": {
-        >>>             "logits": "logits",
-        >>>             "_index": "_index",
-        >>>         },
-        >>>         "origin_input_map": {
-        >>>             "uuid": "uuid",
-        >>>             "sentence": "sentence",
-        >>>             "input_ids": "input_ids",
-        >>>             "entities_info": "entities_info",
-        >>>             "offsets": "offsets",
-        >>>             "special_tokens_mask": "special_tokens_mask",
-        >>>             "word_ids": "word_ids",
-        >>>             "label_ids": "label_ids",
-        >>>         },
-        >>>         "save_root_path": ".",  //save data root dir
-        >>>         "save_path": {
-        >>>             "valid": "valid",  // relative dir for valid stage
-        >>>             "test": "test",    // relative dir for test stage
-        >>>         },
-        >>>         "start_save_step": 0,  // -1 means the last
-        >>>         "start_save_epoch": -1,
-        >>>         "aggregation_strategy": "max", // AggregationStrategy item
-        >>>         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-        >>>     }
-        >>> }
     """
 
     def __init__(self, config: Dict):
         super(SpanClsPostProcessorConfig, self).__init__(config)
 
+        self.inter_process = self.config['inter_process']
         self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
         self.ignore_char = set(self.config['ignore_char'])

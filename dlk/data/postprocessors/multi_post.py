@@ -31,48 +31,48 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('seq_lab')
 class SeqLabPostProcessorConfig(IPostProcessorConfig):
-    default_config = {
-            "_name": "seq_lab",
-            "config": {
-                "meta": "*@*",
-                "use_crf": False, # use or not use crf
-                "word_ready": False, # already gather the subword first token as the word rep or not
-                "ignore_position": True, # calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
-                "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
-                # "ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
-                "meta_data": {
-                    "label_vocab": 'label_vocab',
-                    "tokenizer": "tokenizer",
-                },
-                "input_map": {
-                    "logits": "logits",
-                    "predict_seq_label": "predict_seq_label",
-                    "_index": "_index",
-                },
-                "origin_input_map": {
-                    "uuid": "uuid",
-                    "sentence": "sentence",
-                    "input_ids": "input_ids",
-                    "entities_info": "entities_info",
-                    "offsets": "offsets",
-                    "special_tokens_mask": "special_tokens_mask",
-                    "word_ids": "word_ids",
-                    "label_ids": "label_ids",
-                },
-                "save_root_path": ".",  # save data root dir
-                "save_path": {
-                    "valid": "valid",  # relative dir for valid stage
-                    "test": "test",    # relative dir for test stage
-                },
-                "start_save_step": 0,  # -1 means the last
-                "start_save_epoch": -1,
-                "aggregation_strategy": "max", # AggregationStrategy item
-                "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
-            }
-        }
     """Config for SeqLabPostProcessor
 
-    Config Example: default_config
+    Config Example:
+        >>> {
+        >>>     "_name": "seq_lab",
+        >>>     "config": {
+        >>>         "meta": "*@*",
+        >>>         "use_crf": false, //use or not use crf
+        >>>         "word_ready": false, //already gather the subword first token as the word rep or not
+        >>>         "ignore_position": true, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+        >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
+        >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
+        >>>         "meta_data": {
+        >>>             "label_vocab": 'label_vocab',
+        >>>             "tokenizer": "tokenizer",
+        >>>         },
+        >>>         "input_map": {
+        >>>             "logits": "logits",
+        >>>             "predict_seq_label": "predict_seq_label",
+        >>>             "_index": "_index",
+        >>>         },
+        >>>         "origin_input_map": {
+        >>>             "uuid": "uuid",
+        >>>             "sentence": "sentence",
+        >>>             "input_ids": "input_ids",
+        >>>             "entities_info": "entities_info",
+        >>>             "offsets": "offsets",
+        >>>             "special_tokens_mask": "special_tokens_mask",
+        >>>             "word_ids": "word_ids",
+        >>>             "label_ids": "label_ids",
+        >>>         },
+        >>>         "save_root_path": ".",  //save data root dir
+        >>>         "save_path": {
+        >>>             "valid": "valid",  // relative dir for valid stage
+        >>>             "test": "test",    // relative dir for test stage
+        >>>         },
+        >>>         "start_save_step": 0,  // -1 means the last
+        >>>         "start_save_epoch": -1,
+        >>>         "aggregation_strategy": "max", // AggregationStrategy item
+        >>>         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
+        >>>     }
+        >>> }
     """
 
     def __init__(self, config: Dict):

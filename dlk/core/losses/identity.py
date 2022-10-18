@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,19 +21,22 @@ import torch.nn as nn
 
 @loss_config_register("identity")
 class IdentityLossConfig(BaseModuleConfig):
+    default_config = {
+        "config": {
+            "schedule": [1],
+            "scale": [1], # scale the loss for every schedule
+            # "schedule": [0.3, 1.0], # can be a list or str
+            # "scale": "[0.5, 1]",
+            "loss": "loss", # the real loss from result['loss']
+            "log_map": {
+                "loss": "loss"
+            },
+        },
+        "_name": "identity",
+    }
     """Config for IdentityLoss
 
-    Config Example:
-        >>> {
-        >>>     config: {
-        >>>         "schedule": [1],
-        >>>         "scale": [1], # scale the loss for every schedule
-        >>>         // "schedule": [0.3, 1.0], # can be a list or str
-        >>>         // "scale": "[0.5, 1]",
-        >>>         "loss": "loss", // the real loss from result['loss']
-        >>>     },
-        >>>     _name: "identity",
-        >>> }
+    Config Example: default_config
     """
     def __init__(self, config: Dict):
         super(IdentityLossConfig, self).__init__(config)
@@ -42,6 +45,9 @@ class IdentityLossConfig(BaseModuleConfig):
         self.scale = config['scale']
         self.schedule = config['schedule']
         self.loss = config['loss']
+        self.log_map = config['log_map']
+        if isinstance(self.log_map, str):
+            self.log_map = {"loss": self.log_map}
 
         if isinstance(self.scale, str):
             self.scale = eval(self.scale)
@@ -108,7 +114,7 @@ class IdentityLoss(object):
             self.current_stage += 1
         scale = self.config.scale[self.current_stage]
         loss = result[self.config.loss] * scale
-        return loss
+        return loss, {self.config.log_map['loss']: loss}
 
     def __call__(self, result, inputs, rt_config):
         """same as self.calc

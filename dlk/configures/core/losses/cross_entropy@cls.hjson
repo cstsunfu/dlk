@@ -10,6 +10,9 @@
         # "scale": [0, 1, 1], # scale the loss for every schedule
         # "schedule": [0.3, 1.0],
         # "scale": [0, 1, 0.5], # scale the loss
+        "log_map": {
+            "loss": "loss"
+        },
     },
     "_name": "cross_entropy",
 }

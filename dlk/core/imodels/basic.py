@@ -164,13 +164,16 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         result = self.model.training_step(batch)
-        loss = self.calc_loss(result, batch, rt_config={
+        loss, loss_log = self.calc_loss(result, batch, rt_config={
             "current_step": self.global_step,
             "current_epoch": self.current_epoch,
             "total_steps": self.num_training_steps,
             "total_epochs": self.num_training_epochs
         })
-        self.log_dict({"train_loss": loss.unsqueeze(0)}, prog_bar=True)
+        log_info = {}
+        for key in loss_log:
+            log_info[f"train_{key}"] = loss_log[key].unsqueeze(0)
+        self.log_dict(log_info, prog_bar=True)
         return loss
 
     def validation_step(self, batch: Dict[str, torch.Tensor], batch_idx: int)->Dict[str, torch.Tensor]:
@@ -186,14 +189,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         result = self.model.validation_step(batch)
-        loss = self.calc_loss(result, batch, rt_config={  # align with training step
+        loss, loss_log = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,
             "current_epoch": self.current_epoch,
             "total_steps": self.num_training_steps,
             "total_epochs": self.num_training_epochs
         })
+        log_info = {}
+        for key in loss_log:
+            log_info[f"{key}"] = loss_log[key].unsqueeze(0)
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)} # this loss will be used in postprocess
+        return_result = log_info # this loss will be used in postprocess
         for column in gather_column:
             column = self.gather_data[column]
             if column in result:
@@ -238,14 +244,17 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         result = self.model.test_step(batch)
-        loss = self.calc_loss(result, batch, rt_config={  # align with training step
+        loss, loss_log = self.calc_loss(result, batch, rt_config={  # align with training step
             "current_step": self.global_step,
             "current_epoch": self.current_epoch,
             "total_steps": self.num_training_steps,
             "total_epochs": self.num_training_epochs
         })
+        log_info = {}
+        for key in loss_log:
+            log_info[f"{key}"] = loss_log[key].unsqueeze(0)
         gather_column = list(self.gather_data.keys())
-        return_result = {"loss": loss.unsqueeze(0)} # this loss will use in postprocess
+        return_result = log_info # this loss will use in postprocess
         for column in gather_column:
             if column in result:
                 return_result[column] = result[column]
