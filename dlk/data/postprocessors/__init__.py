@@ -57,8 +57,12 @@ class IPostProcessorConfig(BaseConfig):
         return self.config.get("origin_input_map", {})
 
 
-class IPostProcessor(metaclass=abc.ABCMeta):
+class IPostProcessor(object):
     """docstring for IPostProcessor"""
+
+    def __init__(self, config):
+        super(IPostProcessor, self).__init__()
+        self.config = config
 
     def loss_name_map(self, stage)->str:
         """get the stage loss name
@@ -97,7 +101,7 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             result[key] = data
         return result
 
-    def average_loss(self, list_batch_outputs: List[Dict])->float:
+    def average_loss(self, list_batch_outputs: List[Dict])->Dict[str, float]:
         """average all the loss of the list_batches
 
         Args:
@@ -107,10 +111,20 @@ class IPostProcessor(metaclass=abc.ABCMeta):
             average_loss
 
         """
-        sum_loss = 0
+        loss_names = []
+        average_losses = {}
+        batch_num = len(list_batch_outputs)
+        if not batch_num:
+            return average_losses
+        for key in list_batch_outputs[0]:
+            if key.endswith("_loss") or key == 'loss':
+                loss_names.append(key)
+                average_losses[key] = 0
         for batch_output in list_batch_outputs:
-            sum_loss += batch_output.get('loss', 0)
-        return sum_loss / len(list_batch_outputs)
+            for name in loss_names:
+                average_losses[name] = average_losses[name] + batch_output.get(name, 0)
+        average_losses = {key: value/batch_num for key, value in average_losses.items()}
+        return average_losses
 
     @abc.abstractmethod
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
@@ -219,10 +233,12 @@ class IPostProcessor(metaclass=abc.ABCMeta):
         log_info = {}
         if stage not in self.without_ground_truth_stage:
             average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
-            log_info[f'{self.loss_name_map(stage)}_loss'] = average_loss
+            for name in average_loss:
+                log_info[f'{self.loss_name_map(stage)}_{name}'] = average_loss
         predicts = self.do_predict(stage, list_batch_outputs, origin_data, rt_config)
         if stage not in self.without_ground_truth_stage:
             log_info.update(self.do_calc_metrics(predicts, stage, list_batch_outputs, origin_data, rt_config))
+
         if stage == 'online':
             return predicts
         if stage == 'predict':

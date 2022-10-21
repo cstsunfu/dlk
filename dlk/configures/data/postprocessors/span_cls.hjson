@@ -30,7 +30,6 @@
         },
         "start_save_step": 0,  # -1 means the last
         "start_save_epoch": -1,
-        "aggregation_strategy": "max", # AggregationStrategy item
         "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
     }
 }

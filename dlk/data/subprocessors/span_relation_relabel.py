@@ -45,7 +45,7 @@ class SpanRelationRelabelConfig(BaseConfig):
                 },
                 "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                 "vocab": "label_vocab#relation", # usually provided by the "token_gather" module
-                "pad": -100,
+                "mask_fill": -100,
                 "label_seperate": False, # seperate differences types of relations to different label matrix or use universal matrix(universal matrix may have conflict issue, like the 2 entities of the head of 2 different relations is same)
                 "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
             },
@@ -63,7 +63,7 @@ class SpanRelationRelabelConfig(BaseConfig):
             return
         self.offsets = self.config['input_map']['offsets']
         self.word_ids = self.config['input_map']['word_ids']
-        self.pad = self.config['pad']
+        self.mask_fill = self.config['mask_fill']
         self.sym = self.config['sym']
         self.label_seperate = self.config['label_seperate']
         self.relations_info = self.config['input_map']['relations_info']
@@ -73,7 +73,7 @@ class SpanRelationRelabelConfig(BaseConfig):
         self.post_check(self.config, used=[
             "drop",
             "vocab",
-            "pad",
+            "mask_fill",
             "label_seperate",
             "sym",
             "input_map",
@@ -115,8 +115,8 @@ class SpanRelationRelabel(ISubProcessor):
         # NOTE: only load once, because the vocab should not be changed in same process
         if not self.vocab:
             self.vocab = Vocabulary.load(data[self.config.vocab])
-            assert self.vocab.word2idx[self.vocab.unknown] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
-            assert not self.vocab.pad, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert self.vocab.word2idx[self.vocab.pad] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert not self.vocab.unknown, f"For span_relation_relabel, 'pad' must be index 0, and other labels as 1...num_label"
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
@@ -146,18 +146,19 @@ class SpanRelationRelabel(ISubProcessor):
         offsets = one_ins[self.config.offsets]
         offset_length = len(offsets)
 
-        unk_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrix = np.full((offset_length, offset_length), self.config.pad)
-        unk_matrix = np.full((offset_length, offset_length), unk_id)
+        pad_id = self.vocab.get_index(self.vocab.pad)
+        mask_matrix = np.full((offset_length, offset_length), self.config.mask_fill)
         if self.config.sym:
             mask_matrix = np.tril(mask_matrix, k=-1)
-            unk_matrix = np.triu(unk_matrix, k=0)
-
-        label_matrix = unk_matrix + mask_matrix
+            pad_matrix = np.full((offset_length, offset_length), pad_id)
+            pad_matrix = np.triu(pad_matrix, k=0)
+            label_matrix = pad_matrix + mask_matrix
+        else:
+            label_matrix = mask_matrix
         if sub_word_ids[0] is None:
-            label_matrix[0, :] = self.config.pad
+            label_matrix[0, :] = self.config.mask_fill
         if sub_word_ids[-1] is None:
-            label_matrix[:, -1] = self.config.pad
+            label_matrix[:, -1] = self.config.mask_fill
         if self.config.label_seperate:
             label_matrices = self.get_seperate_label_matrix(label_matrix, relations_info, entities_index_info)
         else:

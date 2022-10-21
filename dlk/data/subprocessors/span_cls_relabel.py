@@ -50,42 +50,12 @@ class SpanClsRelabelConfig(BaseConfig):
                 "clean_droped_entity": True, # after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
                 "entity_priority": [],
                 "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
-                "pad": -100,
+                "mask_fill": -100,
             }
         }
     }
     """Config for SpanClsRelabel
-    Config Example:
-        >>> {
-        >>>     "_name": "span_cls_relabel",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "input_map": {  // without necessery, don't change this
-        >>>                 "word_ids": "word_ids",
-        >>>                 "offsets": "offsets",
-        >>>                 "entities_info": "entities_info",
-        >>>             },
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "output_map": {
-        >>>                 "label_ids": "label_ids",
-        >>>                 # for span relation extract relabel, deliver should be {index: {"start": start, "end": end}}, which the start and end should be the index of the token level  WARNING: and if entities_index_info != "_entities_index_info", the drop must set to 'none', because the 'drop' will change the index
-        >>>                 # _entities_index_info means donot use
-        >>>                 "entities_index_info": "_entities_index_info",
-        >>>             },
-        >>>             "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-        >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
-        >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
-        >>>             "entity_priority": [],
-        >>>             //"entity_priority": ['Product'],
-        >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
-        >>>             "pad": -100,
-        >>>         },
-        >>>     }
-        >>> }
+    Config Example: default_config
     """
     def __init__(self, stage, config: Dict):
 
@@ -96,7 +66,7 @@ class SpanClsRelabelConfig(BaseConfig):
             return
         self.word_ids = self.config['input_map']['word_ids']
         self.offsets = self.config['input_map']['offsets']
-        self.pad = self.config['pad']
+        self.mask_fill = self.config['mask_fill']
         self.entities_info = self.config['input_map']['entities_info']
         self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
@@ -117,7 +87,7 @@ class SpanClsRelabelConfig(BaseConfig):
             "clean_droped_entity",
             "entity_priority",
             "priority_trigger",
-            "pad"
+            "mask_fill"
         ])
 
 
@@ -259,18 +229,18 @@ class SpanClsRelabel(ISubProcessor):
         cur_token_index = 0
         offset_length = len(offsets)
 
-        unk_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full((offset_length, offset_length), self.config.pad)
+        pad_id = self.vocab.get_index(self.vocab.pad)
+        mask_matrices = np.full((offset_length, offset_length), self.config.mask_fill)
         mask_matrices = np.tril(mask_matrices, k=-1)
 
-        unk_matrices = np.full((offset_length, offset_length), unk_id)
-        unk_matrices = np.triu(unk_matrices, k=0)
+        pad_matrices = np.full((offset_length, offset_length), pad_id)
+        pad_matrices = np.triu(pad_matrices, k=0)
 
-        label_matrices = unk_matrices + mask_matrices
+        label_matrices = pad_matrices + mask_matrices
         if sub_word_ids[0] is None:
-            label_matrices[0, :] = self.config.pad
+            label_matrices[0, :] = self.config.mask_fill
         if sub_word_ids[-1] is None:
-            label_matrices[:, -1] = self.config.pad
+            label_matrices[:, -1] = self.config.mask_fill
         deliver_entities_info = {}
         for i, entity_info in enumerate(entities_info):
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)

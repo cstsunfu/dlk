@@ -26,24 +26,27 @@ from dlk.utils.vocab import Vocabulary
 from dlk.utils.io import open
 from tokenizers import Tokenizer
 import torchmetrics
+import uuid
 logger = Logger.get_logger()
 
 
-@postprocessor_config_register('span_cls')
-class SpanClsPostProcessorConfig(IPostProcessorConfig):
+@postprocessor_config_register('span_relation')
+class SpanRelationPostProcessorConfig(IPostProcessorConfig):
     default_config = {
-            "_name": "span_cls",
+            "_name": "span_relation",
             "config": {
                 "meta": "*@*",
                 "ignore_position": False, # calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
                 "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
                 # "ignore_char": " ()[]-.,:", # if the entity begin or end with this char, will ignore these char
                 "meta_data": {
-                    "label_vocab": 'label_vocab',
+                    "entity_label_vocab": 'entity_label_vocab',
+                    "relation_label_vocab": 'relation_label_vocab',
                     "tokenizer": "tokenizer",
                 },
                 "input_map": {
-                    "logits": "logits",
+                    "entity_logits": "entity_logits",
+                    "relation_logits": "relation_logits",
                     "_index": "_index",
                 },
                 "origin_input_map": {
@@ -51,6 +54,7 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
                     "sentence": "sentence",
                     "input_ids": "input_ids",
                     "entities_info": "entities_info",
+                    "relations_info": "relations_info",
                     "offsets": "offsets",
                     "special_tokens_mask": "special_tokens_mask",
                     "word_ids": "word_ids",
@@ -61,32 +65,41 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
                     "valid": "valid",  # relative dir for valid stage
                     "test": "test",    # relative dir for test stage
                 },
+                "relation_types": 1,  # relation type numbers
+                "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
                 "start_save_step": 0,  # -1 means the last
                 "start_save_epoch": -1,
-                "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
+                "ignore_relations": [],
+                "ignore_labels": [], # Out, Out, Start, End
             }
         }
-    """Config for SpanClsPostProcessor
+    """Config for SpanRelationPostProcessor
 
     Config Example:
     """
 
     def __init__(self, config: Dict):
-        super(SpanClsPostProcessorConfig, self).__init__(config)
+        super(SpanRelationPostProcessorConfig, self).__init__(config)
+
         self.ignore_labels = set(self.config['ignore_labels'])
+        self.ignore_relations = set(self.config['ignore_relations'])
         self.ignore_char = set(self.config['ignore_char'])
         self.ignore_position = self.config['ignore_position']
+        self.relation_types = self.config['relation_types']
+        self.sym = self.config['sym']
 
         self.sentence = self.origin_input_map['sentence']
         self.offsets = self.origin_input_map['offsets']
         self.entities_info = self.origin_input_map['entities_info']
+        self.relations_info = self.origin_input_map['relations_info']
         self.uuid = self.origin_input_map['uuid']
         self.word_ids = self.origin_input_map['word_ids']
         self.special_tokens_mask = self.origin_input_map['special_tokens_mask']
         self.input_ids = self.origin_input_map['input_ids']
         self.label_ids = self.origin_input_map['label_ids']
 
-        self.logits = self.input_map['logits']
+        self.entity_logits = self.input_map['entity_logits']
+        self.relation_logits = self.input_map['relation_logits']
         self._index = self.input_map['_index']
 
         if isinstance(self.config['meta'], str):
@@ -95,15 +108,25 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         else:
             raise PermissionError("You must provide meta data(vocab & tokenizer) for ner postprocess.")
 
-        vocab_trace_path = []
-        vocab_trace_path_str = self.config['meta_data']['label_vocab']
-        if vocab_trace_path_str and vocab_trace_path_str.strip()!='.':
-            vocab_trace_path = vocab_trace_path_str.split('.')
-        assert vocab_trace_path, "We need vocab and tokenizer all in meta, so you must provide the trace path from meta"
-        self.label_vocab = meta
-        for trace in vocab_trace_path:
-            self.label_vocab = self.label_vocab[trace]
-        self.label_vocab = Vocabulary.load(self.label_vocab)
+        entity_vocab_trace_path = []
+        entity_vocab_trace_path_str = self.config['meta_data']['entity_label_vocab']
+        if entity_vocab_trace_path_str and entity_vocab_trace_path_str.strip()!='.':
+            entity_vocab_trace_path = entity_vocab_trace_path_str.split('.')
+        assert entity_vocab_trace_path, "We need vocab and tokenizer all in meta, so you must provide the trace path from meta"
+        self.entity_label_vocab = meta
+        for trace in entity_vocab_trace_path:
+            self.entity_label_vocab = self.entity_label_vocab[trace]
+        self.entity_label_vocab = Vocabulary.load(self.entity_label_vocab)
+
+        relation_vocab_trace_path = []
+        relation_vocab_trace_path_str = self.config['meta_data']['relation_label_vocab']
+        if relation_vocab_trace_path_str and relation_vocab_trace_path_str.strip()!='.':
+            relation_vocab_trace_path = relation_vocab_trace_path_str.split('.')
+        assert relation_vocab_trace_path, "We need vocab and tokenizer all in meta, so you must provide the trace path from meta"
+        self.relation_label_vocab = meta
+        for trace in relation_vocab_trace_path:
+            self.relation_label_vocab = self.relation_label_vocab[trace]
+        self.relation_label_vocab = Vocabulary.load(self.relation_label_vocab)
 
 
         tokenizer_trace_path = []
@@ -124,6 +147,8 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         self.post_check(self.config, used=[
             "meta",
             "meta_data",
+            "relation_types"
+            "sym"
             "input_map",
             "origin_input_map",
             "save_root_path",
@@ -134,59 +159,15 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
         ])
 
 
-@postprocessor_register('span_cls')
-class SpanClsPostProcessor(IPostProcessor):
+@postprocessor_register('span_relation')
+class SpanRelationPostProcessor(IPostProcessor):
     """PostProcess for sequence labeling task"""
-    def __init__(self, config: SpanClsPostProcessorConfig):
-        super(SpanClsPostProcessor, self).__init__(config)
+    def __init__(self, config: SpanRelationPostProcessorConfig):
+        super(SpanRelationPostProcessor, self).__init__(config)
+        self.config = config
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
-
-    def _process4predict(self, predict_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame)->Dict:
-        """gather the predict and origin text and ground_truth_entities_info for predict
-
-        Args:
-            predict: the predict span logits
-            index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
-
-        Returns: 
-            >>> one_ins info 
-            >>> {
-            >>>     "sentence": "...",
-            >>>     "uuid": "..",
-            >>>     "entities_info": [".."],
-            >>>     "predict_entities_info": [".."],
-            >>> }
-
-        """
-        one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
-        one_ins["sentence"] = origin_ins[self.config.sentence]
-        one_ins["uuid"] = origin_ins[self.config.uuid]
-        one_ins["entities_info"] = origin_ins[self.config.entities_info]
-
-        word_ids = origin_ins[self.config.word_ids]
-        rel_token_len = len(word_ids)
-        offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
-
-        predict_entities_info = []
-        predict_label_ids = predict_logits.argmax(-1).cpu().numpy()
-        for i in range(rel_token_len):
-            for j in range(i, rel_token_len):
-                if word_ids[i] is None or word_ids[j] is None:
-                    continue
-                predict_label_id = predict_label_ids[i][j]
-                predict_label = self.config.label_vocab[predict_label_id]
-                if predict_label == self.config.label_vocab.pad or predict_label == self.config.label_vocab.unknown:
-                    continue
-                else:
-                    entity_info = self.get_entity_info([i, j], offset_mapping, word_ids, predict_label)
-                    if entity_info:
-                        predict_entities_info.append(entity_info)
-        one_ins['predict_entities_info'] = predict_entities_info
-        return one_ins
 
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
         """Process the model predict to human readable format
@@ -215,19 +196,99 @@ class SpanClsPostProcessor(IPostProcessor):
         if self.config.uuid not in origin_data:
             logger.error(f"{self.config.uuid} not in the origin data")
             raise PermissionError(f"{self.config.uuid} must be provided")
-
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.logits]
+            batch_entity_logits = outputs[self.config.entity_logits]
+            batch_relation_logits = outputs[self.config.relation_logits]
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
-
-            for i, (predict, index) in enumerate(zip(batch_logits, indexes)):
-                one_ins = self._process4predict(predict, index, origin_data)
-                one_ins['predict_extend_return'] = self.gather_predict_extend_data(outputs, i, self.config.predict_extend_return)
-                predicts.append(one_ins)
+            for i, (entity_logits, relation_logits, index) in enumerate(zip(batch_entity_logits, batch_relation_logits, indexes)):
+                entities_info = self._process4predict(entity_logits, relation_logits, index, origin_data)
         return predicts
+
+    def _process4predict(self, entity_logits: torch.FloatTensor, relation_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame)->Dict:
+        """gather the predict and origin text and ground_truth_entities_info for predict
+
+        Args:
+            entity_logits: the predict entity span logits
+            relation_logits: the predict relation logits
+            index: the data index in origin_data
+            origin_data: the origin pd.DataFrame
+
+        Returns: 
+            >>> one_ins info 
+            >>> {
+            >>>     "sentence": "...",
+            >>>     "uuid": "..",
+            >>>     "entities_info": [".."],
+            >>>     "predict_entities_info": [".."],
+            >>> }
+
+        """
+        one_ins = {}
+        origin_ins = origin_data.iloc[int(index)]
+        one_ins["sentence"] = origin_ins[self.config.sentence]
+        one_ins["uuid"] = origin_ins[self.config.uuid]
+        one_ins["entities_info"] = origin_ins[self.config.entities_info]
+
+        word_ids = origin_ins[self.config.word_ids]
+        rel_token_len = len(word_ids)
+        offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
+
+        predict_entities_info = {}
+        predict_entity_ids = entity_logits.argmax(-1).cpu().numpy()
+
+        entity_set_d = {} # set_d, set_e, set_t defined in https://arxiv.org/pdf/2010.13415.pdf Algorithm 1
+        for i in range(rel_token_len):
+            for j in range(i, rel_token_len):
+                if word_ids[i] is None or word_ids[j] is None:
+                    continue
+                predict_entity_id = predict_entity_ids[i][j]
+                predict_entity = self.config.entity_label_vocab[predict_entity_id]
+                if predict_entity in {self.config.entity_label_vocab.pad, self.config.entity_label_vocab.unknown}:
+                    continue
+                else:
+                    entity_info = self.get_entity_info([i, j], offset_mapping, word_ids, predict_entity)
+                    if entity_info:
+                        id = str(uuid.uuid1())
+                        predict_entities_info[id] = entity_info
+                        entity_set_d[i] = entity_set_d.get(i, [])
+                        entity_set_d[i].append((i, j, id))
+
+        entity_tail_pair_set_e = set()
+        entity_tail_pair_set_e_with_relation_id = set()
+        candidate_relation_set_c = set()
+        for relation_idx in self.config.relation_types:
+            head_to_head_logits = relation_logits[relation_idx*2]
+            tail_to_tail_logits = relation_logits[relation_idx*2+1]
+            head_to_head_ids = head_to_head_logits.argmax(-1).cpu().numpy()
+            tail_to_tail_ids = tail_to_tail_logits.argmax(-1).cpu().numpy()
+            for i in range(rel_token_len):
+                for j in range(i if self.config.sym else 0, rel_token_len):
+                    if word_ids[i] is None or word_ids[j] is None:
+                        continue
+                    predict_tail_id = tail_to_tail_ids[i][j]
+                    predict_tail_relation = self.config.relation_label_vocab[predict_tail_id]
+                    if predict_tail_relation not in {self.config.relation_label_vocab.pad, self.config.relation_label_vocab.unknown}:
+                        entity_tail_pair_set_e.add((i, j))
+                        entity_tail_pair_set_e_with_relation_id.add((i, j, predict_tail_id))
+
+                    predict_head_id = head_to_head_ids[i][j]
+                    predict_head_relation = self.config.relation_label_vocab[predict_head_id]
+                    if predict_head_relation not in {self.config.relation_label_vocab.pad, self.config.relation_label_vocab.unknown}:
+                        for first_entity in entity_set_d.get(i, []):
+                            for second_entity in entity_set_d.get(j, []):
+                                candidate_relation_set_c.add((first_entity, second_entity, predict_head_id))
+        relations = []
+        for candidate_relation in candidate_relation_set_c:
+            first_entity, second_entity, predict_head_id = candidate_relation
+            if (first_entity[1], second_entity[1]) in entity_tail_pair_set_e:
+                # HACK: if (first_entity[1], second_entity[1], predict_head_id) not in entity_tail_pair_set_e_with_relation_id, this is a conflict
+                relations.append(candidate_relation)
+
+        # TODO: convert relations to dict
+        return relations
 
     def do_calc_metrics(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -435,5 +496,7 @@ class SpanClsPostProcessor(IPostProcessor):
         return {
             "start": start,
             "end": end,
-            "labels": [label]
+            "labels": [label],
+            "sub_token_start": sub_tokens_index[0],
+            "sub_token_end": sub_tokens_index[1],
         }

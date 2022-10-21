@@ -30,38 +30,38 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('txt_cls')
 class TxtClsPostProcessorConfig(IPostProcessorConfig):
+    default_config = {
+        "_name": "txt_cls",
+        "config": {
+            "meta": "*@*",
+            "meta_data": {
+                "label_vocab": 'label_vocab',
+            },
+            "input_map": {
+                "logits": "logits",
+                "label_ids": "label_ids",
+                "_index": "_index",
+            },
+            "origin_input_map": {
+                "sentence": "sentence",
+                "sentence_a": "sentence_a", # for pair
+                "sentence_b": "sentence_b",
+                "uuid": "uuid"
+            },
+            "save_root_path": ".",  # save data root dir
+            "top_k": 1, # the result return top k result
+            "data_type": "single", # single or pair
+            "save_path": {
+                "valid": "valid",  # relative dir for valid stage
+                "test": "test",    # relative dir for test stage
+            },
+            "start_save_step": 0,  # -1 means the last
+            "start_save_epoch": -1,
+        }
+    }
     """Config for TxtClsPostProcessor
 
     Config Example:
-        >>> {
-        >>>     "_name": "txt_cls",
-        >>>     "config": {
-        >>>         "meta": "*@*",
-        >>>         "meta_data": {
-        >>>             "label_vocab": 'label_vocab',
-        >>>         },
-        >>>         "input_map": {
-        >>>             "logits": "logits",
-        >>>             "label_ids": "label_ids"
-        >>>             "_index": "_index",
-        >>>         },
-        >>>         "origin_input_map": {
-        >>>             "sentence": "sentence",
-        >>>             "sentence_a": "sentence_a", // for pair
-        >>>             "sentence_b": "sentence_b",
-        >>>             "uuid": "uuid"
-        >>>         },
-        >>>         "save_root_path": ".",  //save data root dir
-        >>>         "top_k": 1, //the result return top k result
-        >>>         "data_type": "single", //single or pair
-        >>>         "save_path": {
-        >>>             "valid": "valid",  // relative dir for valid stage
-        >>>             "test": "test",    // relative dir for test stage
-        >>>         },
-        >>>         "start_save_step": 0,  // -1 means the last
-        >>>         "start_save_epoch": -1,
-        >>>     }
-        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -115,7 +115,7 @@ class TxtClsPostProcessorConfig(IPostProcessorConfig):
 class TxtClsPostProcessor(IPostProcessor):
     """postprocess for text classfication"""
     def __init__(self, config: TxtClsPostProcessorConfig):
-        super(TxtClsPostProcessor, self).__init__()
+        super(TxtClsPostProcessor, self).__init__(config)
         self.config = config
         self.label_vocab = self.config.label_vocab
 

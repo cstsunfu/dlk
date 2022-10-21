@@ -99,22 +99,22 @@ class BiAffine(Module):
 
         """
 
-        input_a = self.linear_a(embedding)
-        input_b = self.linear_b(embedding)
-        input_a = self.dropout(self.active(input_a))
-        input_b = self.dropout(self.active(input_b))
+        input_a = self.dropout(self.active(embedding))
+        input_b = self.dropout(self.active(embedding))
+        input_a = self.linear_a(input_a)
+        input_b = self.linear_b(input_b)
         if self.config.bias:
-            output = self.dropout(torch.einsum('bmi,ioj,bnj->bmno', 
+            output = torch.einsum('bmi,ioj,bnj->bmno', 
                     torch.cat((input_a, torch.ones_like(input_a[..., :1])), dim=-1), 
                     self.biaffine, 
                     torch.cat((input_b, torch.ones_like(input_b[..., :1])), dim=-1)
-                    ))
+                    )
         else:
-            output = self.dropout(torch.einsum('bmi,ioj,bnj->bmno', 
+            output = torch.einsum('bmi,ioj,bnj->bmno', 
                     input_a,
                     self.biaffine, 
                     input_b,
-                    ))
+                    )
         if self.config.group>1:
             bs, seq_len, _, output_size = output.shape
             output = output.reshape(bs, seq_len, seq_len, self.config.group, self.config.target_size)

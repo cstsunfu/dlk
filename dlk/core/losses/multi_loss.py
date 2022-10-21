@@ -17,10 +17,11 @@ import torch.nn as nn
 from . import loss_register, loss_config_register
 from dlk import additional_function
 import torch.nn as nn
+import torch
 from dlk.utils.config import ConfigTool
 
 @additional_function("multi_loss", "sum")
-def loss_sum(losses: List, **args:Dict):
+def loss_sum(losses: Dict[str, torch.Tensor], **args:Dict):
     """sum all losses
 
     Args:
@@ -29,13 +30,13 @@ def loss_sum(losses: List, **args:Dict):
     Returns: 
         sum of losses
     """
-    return sum(losses)
+    loss = sum([losses[key] for key in losses])
+    return loss
 
 @loss_config_register("multi_loss")
 class MultiLossConfig(object):
     default_config = {
         "config": {
-            "module_rank": [],
             "loss_collect": "sum",
             "args": {},
             "log_map": {
@@ -50,18 +51,15 @@ class MultiLossConfig(object):
     """
     def __init__(self, config: Dict):
         super(MultiLossConfig, self).__init__()
-        module_rank = config['config']['module_rank']
         self.loss_configs = {}
         self.module_rank = []
         self.loss_collect = additional_function.get("multi_loss", config['config']['loss_collect'])
         self.log_map = config['log_map']
         if isinstance(self.log_map, str):
             self.log_map = {"loss": self.log_map}
-        for loss in module_rank:
-            if loss not in config and "@" not in loss:
-                loss = f"loss@{loss}"
-            if loss not in config:
-                raise KeyError(f"{loss} not configured")
+        for loss in config:
+            if loss in {'config', "_name", "_base"}:
+                continue
             self.module_rank.append(loss)
             module_class, module_config = ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config[loss])
             self.loss_configs[loss] = {
@@ -101,11 +99,11 @@ class MultiLoss(object):
             loss
 
         """
-        losses = []
+        losses = {}
         log_loss = {}
         for loss_module in self.module_rank:
             loss, log = self.losses[loss_module](result, inputs, rt_config)
-            losses.append(loss)
+            losses[loss_module] = loss
             log_loss.update(log)
         loss = self.loss_collect(losses=losses, rt_config=rt_config)
         log_loss.update({self.config.log_map['loss']: loss})

@@ -32,7 +32,7 @@ class IdentityPostProcessorConfig(IPostProcessorConfig):
 class IdentityPostProcessor(IPostProcessor):
     """docstring for DataSet"""
     def __init__(self, config: IdentityPostProcessorConfig):
-        super(IdentityPostProcessor, self).__init__()
+        super(IdentityPostProcessor, self).__init__(config)
 
     def process(self, stage, outputs, origin_data)->Dict:
         """do nothing except gather the loss

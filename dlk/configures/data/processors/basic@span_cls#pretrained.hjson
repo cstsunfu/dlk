@@ -89,8 +89,8 @@
                         "trace": 'labels'
                     }
                 ],
-                "unk": "[UNK]",
-                "pad": "",
+                "unk": "",
+                "pad": "[PAD]",
             }
         }
     },
@@ -100,8 +100,6 @@
             "train": {
                 "drop": "none", #'longer'/'shorter'/'none', if entities is overlap, will remove by rule
             },
-            "predict": "train",
-            "online": "train",
         }
     },
 }

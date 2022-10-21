@@ -126,7 +126,7 @@ class SeqLabPostProcessorConfig(IPostProcessorConfig):
         self.tokenizer = Tokenizer.from_str(tokenizer_config)
 
         self.save_path = self.config['save_path']
-        self.save_root_path = self.config['save_root_path']
+        self.savs_root_path = self.config['save_root_path']
         self.start_save_epoch = self.config['start_save_epoch']
         self.start_save_step = self.config['start_save_step']
 
@@ -161,7 +161,7 @@ class AggregationStrategy(object):
 class SeqLabPostProcessor(IPostProcessor):
     """PostProcess for sequence labeling task"""
     def __init__(self, config:    SeqLabPostProcessorConfig):
-        super(   SeqLabPostProcessor, self).__init__()
+        super(   SeqLabPostProcessor, self).__init__(config)
         self.config = config
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer

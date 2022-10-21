@@ -30,34 +30,34 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('txt_reg')
 class TxtRegPostProcessorConfig(IPostProcessorConfig):
+    default_config = {
+        "_name": "txt_reg",
+        "config": {
+            "input_map": {
+                "logits": "logits",
+                "values": "values",
+                "_index": "_index",
+            },
+            "origin_input_map": {
+                "sentence": "sentence",
+                "sentence_a": "sentence_a", # for pair
+                "sentence_b": "sentence_b",
+                "uuid": "uuid"
+            },
+            "data_type": "single", # single or pair
+            "save_root_path": ".",  # save data root dir
+            "save_path": {
+                "valid": "valid",  # relative dir for valid stage
+                "test": "test",    # relative dir for test stage
+            },
+            "log_reg": False, # whether logistic regression
+            "start_save_step": 0,  # -1 means the last
+            "start_save_epoch": -1,
+        }
+    }
     """Config for TxtRegPostProcessor
 
     Config Example:
-        >>> {
-        >>>     "_name": "txt_reg",
-        >>>     "config": {
-        >>>         "input_map": {
-        >>>             "logits": "logits",
-        >>>             "values": "values",
-        >>>             "_index": "_index",
-        >>>         },
-        >>>         "origin_input_map": {
-        >>>             "sentence": "sentence",
-        >>>             "sentence_a": "sentence_a", // for pair
-        >>>             "sentence_b": "sentence_b",
-        >>>             "uuid": "uuid"
-        >>>         },
-        >>>         "data_type": "single", //single or pair
-        >>>         "save_root_path": ".",  //save data root dir
-        >>>         "save_path": {
-        >>>             "valid": "valid",  // relative dir for valid stage
-        >>>             "test": "test",    // relative dir for test stage
-        >>>         },
-        >>>         "log_reg": false, // whether logistic regression
-        >>>         "start_save_step": 0,  // -1 means the last
-        >>>         "start_save_epoch": -1,
-        >>>     }
-        >>> }
     """
 
     def __init__(self, config: Dict):
@@ -96,7 +96,7 @@ class TxtRegPostProcessorConfig(IPostProcessorConfig):
 class TxtRegPostProcessor(IPostProcessor):
     """text regression postprocess"""
     def __init__(self, config: TxtRegPostProcessorConfig):
-        super(TxtRegPostProcessor, self).__init__()
+        super(TxtRegPostProcessor, self).__init__(config)
         self.config = config
 
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
