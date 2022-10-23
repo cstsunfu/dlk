@@ -28,7 +28,9 @@ class BiAffineConfig(BaseModuleConfig):
             "hidden_size": 0, # default equals to input_size
             "output_size": "*@*",
             "dropout": 0.0,
-            "group": 1,
+            "max_seq_len": 1024,
+            "relation_position": False,
+            "multi_matrix": 1,
             "output_map": {},
             "input_map": {}, # required_key: provide_key
         },
@@ -36,7 +38,9 @@ class BiAffineConfig(BaseModuleConfig):
             "config.input_size": ["module.config.input_size"],
             "config.hidden_size": ["module.config.hidden_size"],
             "config.output_size": ["module.config.output_size"],
-            "config.group": ["module.config.group"],
+            "config.max_seq_len": ["module.config.max_seq_len"],
+            "config.relation_position": ["module.config.relation_position"],
+            "config.multi_matrix": ["module.config.multi_matrix"],
             "config.dropout": ["module.config.dropout"],
         },
         "module": {
@@ -53,8 +57,10 @@ class BiAffineConfig(BaseModuleConfig):
             "input_size",
             "output_size",
             "hidden_size",
-            "group",
+            "multi_matrix",
             "dropout",
+            "max_seq_len",
+            "relation_position",
             "return_logits",
         ])
 
