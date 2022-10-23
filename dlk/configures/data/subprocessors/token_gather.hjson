@@ -9,8 +9,8 @@
             "deliver": "*@*", # output Vocabulary object (the Vocabulary of labels) name.
             "ignore": "", # ignore the token, the id of this token will be -1
             "update": null, # null or another Vocabulary object to update
-            "unk": "[UNK]",
-            "pad": "[PAD]",
+            "unk": "", # default null, generally set to [UNK]
+            "pad": "", # default null, generally set to [PAD]
             "min_freq": 1,
             "most_common": -1, #-1 for all
         }

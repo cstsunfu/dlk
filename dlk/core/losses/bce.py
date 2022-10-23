@@ -81,7 +81,7 @@ class BCEWithLogitsLossConfig(BaseModuleConfig):
 
 
 @loss_register("bce")
-class BCEWithLogitsLoss(object):
+class BCEWithLogitsLoss(nn.Module):
     """binary crossentropy for bi-class classification
     """
     def __init__(self, config: BCEWithLogitsLossConfig):

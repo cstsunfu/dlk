@@ -161,6 +161,29 @@ class SpanClsPostProcessor(IPostProcessor):
             >>> }
 
         """
+
+        def _get_entity_info(sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
+            """gather sub_tokens to get the start and end
+
+            Args:
+                sub_tokens_index: the entity tokens index list
+                offset_mapping: every token offset in text
+                word_ids: every token in the index of words
+                label: predict label
+
+            Returns: 
+                entity_info
+
+            """
+            if not sub_tokens_index or not label:
+                return {}
+            start = offset_mapping[sub_tokens_index[0]][0]
+            end = offset_mapping[sub_tokens_index[-1]][1]
+            return {
+                "start": start,
+                "end": end,
+                "labels": [label]
+            }
         one_ins = {}
         origin_ins = origin_data.iloc[int(index)]
         one_ins["sentence"] = origin_ins[self.config.sentence]
@@ -182,7 +205,7 @@ class SpanClsPostProcessor(IPostProcessor):
                 if predict_label == self.config.label_vocab.pad or predict_label == self.config.label_vocab.unknown:
                     continue
                 else:
-                    entity_info = self.get_entity_info([i, j], offset_mapping, word_ids, predict_label)
+                    entity_info = _get_entity_info([i, j], offset_mapping, word_ids, predict_label)
                     if entity_info:
                         predict_entities_info.append(entity_info)
         one_ins['predict_entities_info'] = predict_entities_info
@@ -299,6 +322,71 @@ class SpanClsPostProcessor(IPostProcessor):
                     info[label].append((start_position, end_position))
             return info
 
+        def _calc_score(predict_list: List, ground_truth_list: List):
+            """use predict_list and ground_truth_list to calc scores
+
+            Args:
+                predict_list: list of predict
+                ground_truth_list: list of ground_truth
+
+            Returns: 
+                precision, recall, f1
+
+            """
+            category_tp = {}
+            category_fp = {}
+            category_fn = {}
+            def _care_div(a, b):
+                """return a/b or 0.0 if b == 0
+                """
+                if b==0:
+                    return 0.0
+                return a/b
+
+
+            def _calc_num(_pred: List, _ground_truth: List):
+                """calc tp, fn, fp
+
+                Args:
+                    pred: pred list
+                    ground_truth: groud truth list
+
+                Returns: 
+                    tp, fn, fp
+
+                """
+                num_p = len(_pred)
+                num_t = len(_ground_truth)
+                truth = 0
+                for p in _pred:
+                    if p in _ground_truth:
+                        truth += 1
+                return truth, num_t-truth, num_p-truth
+
+            for predict, ground_truth in zip(predict_list, ground_truth_list):
+                keys = set(list(predict.keys())+list(ground_truth.keys()))
+                for key in keys:
+                    tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
+                    # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
+                    category_tp[key] = category_tp.get(key, 0) + tp
+                    category_fn[key] = category_fn.get(key, 0) + fn
+                    category_fp[key] = category_fp.get(key, 0) + fp
+
+            all_tp, all_fn, all_fp = 0, 0, 0
+            for key in category_tp:
+                tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
+                all_tp += tp
+                all_fn += fn
+                all_fp += fp
+                precision = _care_div(tp, tp+fp)
+                recall = _care_div(tp, tp+fn)
+                f1 = _care_div(2*precision*recall, precision+recall)
+                logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+            precision = _care_div(all_tp,all_tp+all_fp)
+            recall = _care_div(all_tp, all_tp+all_fn)
+            f1 = _care_div(2*precision*recall, precision+recall)
+            return precision, recall, f1
+
         all_predicts = []
         all_ground_truths = []
         for predict in predicts:
@@ -308,7 +396,7 @@ class SpanClsPostProcessor(IPostProcessor):
             all_predicts.append(predict_ins)
             all_ground_truths.append(ground_truth_ins)
 
-        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
+        precision, recall, f1 = _calc_score(all_predicts, all_ground_truths)
         real_name = self.loss_name_map(stage)
         logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
         return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
@@ -349,91 +437,3 @@ class SpanClsPostProcessor(IPostProcessor):
             logger.info(f"Save the {stage} predict data at {save_file}")
             with open(save_file, 'w') as f:
                 json.dump(predicts, f, indent=4, ensure_ascii=False)
-
-    def calc_score(self, predict_list: List, ground_truth_list: List):
-        """use predict_list and ground_truth_list to calc scores
-
-        Args:
-            predict_list: list of predict
-            ground_truth_list: list of ground_truth
-
-        Returns: 
-            precision, recall, f1
-
-        """
-        category_tp = {}
-        category_fp = {}
-        category_fn = {}
-        def _care_div(a, b):
-            """return a/b or 0.0 if b == 0
-            """
-            if b==0:
-                return 0.0
-            return a/b
-
-
-        def _calc_num(_pred: List, _ground_truth: List):
-            """calc tp, fn, fp
-
-            Args:
-                pred: pred list
-                ground_truth: groud truth list
-
-            Returns: 
-                tp, fn, fp
-
-            """
-            num_p = len(_pred)
-            num_t = len(_ground_truth)
-            truth = 0
-            for p in _pred:
-                if p in _ground_truth:
-                    truth += 1
-            return truth, num_t-truth, num_p-truth
-
-        for predict, ground_truth in zip(predict_list, ground_truth_list):
-            keys = set(list(predict.keys())+list(ground_truth.keys()))
-            for key in keys:
-                tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
-                # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
-                category_tp[key] = category_tp.get(key, 0) + tp
-                category_fn[key] = category_fn.get(key, 0) + fn
-                category_fp[key] = category_fp.get(key, 0) + fp
-
-        all_tp, all_fn, all_fp = 0, 0, 0
-        for key in category_tp:
-            tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
-            all_tp += tp
-            all_fn += fn
-            all_fp += fp
-            precision = _care_div(tp, tp+fp)
-            recall = _care_div(tp, tp+fn)
-            f1 = _care_div(2*precision*recall, precision+recall)
-            logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
-        precision = _care_div(all_tp,all_tp+all_fp)
-        recall = _care_div(all_tp, all_tp+all_fn)
-        f1 = _care_div(2*precision*recall, precision+recall)
-        return precision, recall, f1
-
-    def get_entity_info(self, sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
-        """gather sub_tokens to get the start and end
-
-        Args:
-            sub_tokens_index: the entity tokens index list
-            offset_mapping: every token offset in text
-            word_ids: every token in the index of words
-            label: predict label
-
-        Returns: 
-            entity_info
-
-        """
-        if not sub_tokens_index or not label:
-            return {}
-        start = offset_mapping[sub_tokens_index[0]][0]
-        end = offset_mapping[sub_tokens_index[-1]][1]
-        return {
-            "start": start,
-            "end": end,
-            "labels": [label]
-        }

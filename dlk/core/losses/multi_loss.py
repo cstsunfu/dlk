@@ -54,7 +54,8 @@ class MultiLossConfig(object):
         self.loss_configs = {}
         self.module_rank = []
         self.loss_collect = additional_function.get("multi_loss", config['config']['loss_collect'])
-        self.log_map = config['log_map']
+        self.loss_collect_name = config['config']['loss_collect']
+        self.log_map = config['config']['log_map']
         if isinstance(self.log_map, str):
             self.log_map = {"loss": self.log_map}
         for loss in config:
@@ -68,7 +69,7 @@ class MultiLossConfig(object):
             }
 
 @loss_register("multi_loss")
-class MultiLoss(object):
+class MultiLoss(nn.Module):
     """ This module is NotImplemented yet don't use it
     """
     def __init__(self, config: MultiLossConfig):
@@ -80,6 +81,21 @@ class MultiLoss(object):
             loss_name: config.loss_configs[loss_name]['loss_class'](config.loss_configs[loss_name]['loss_config'])
             for loss_name in config.module_rank
         })
+
+    def update_config(self, rt_config):
+        """callback for imodel to update the total steps and epochs
+
+        when init the loss module, the total step and epoch is not known, when all data ready, the imodel update the value for loss module
+
+        Args:
+            rt_config: { "total_steps": self.num_training_steps, "total_epochs": self.num_training_epochs}
+
+        Returns: 
+            None
+
+        """
+        for _, loss_module in self.losses.items():
+            loss_module.update_config(rt_config)
 
     def calc(self, result, inputs, rt_config):
         """calc the loss the predict is from result, the ground truth is from inputs
@@ -106,6 +122,8 @@ class MultiLoss(object):
             losses[loss_module] = loss
             log_loss.update(log)
         loss = self.loss_collect(losses=losses, rt_config=rt_config)
+        if self.config.loss_collect_name != 'sum':
+            log_loss.update({self.config.log_map.get("sum_loss", "sum_loss"): sum([losses[key] for key in losses])})
         log_loss.update({self.config.log_map['loss']: loss})
         return loss, log_loss
 

@@ -27,6 +27,7 @@ from dlk.utils.io import open
 from tokenizers import Tokenizer
 import torchmetrics
 import uuid
+import time
 logger = Logger.get_logger()
 
 
@@ -40,8 +41,8 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
                 "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
                 # "ignore_char": " ()[]-.,:", # if the entity begin or end with this char, will ignore these char
                 "meta_data": {
-                    "entity_label_vocab": 'entity_label_vocab',
-                    "relation_label_vocab": 'relation_label_vocab',
+                    "entity_label_vocab": 'label_vocab#entity',
+                    "relation_label_vocab": 'label_vocab#relation',
                     "tokenizer": "tokenizer",
                 },
                 "input_map": {
@@ -58,14 +59,14 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
                     "offsets": "offsets",
                     "special_tokens_mask": "special_tokens_mask",
                     "word_ids": "word_ids",
-                    "label_ids": "label_ids",
                 },
                 "save_root_path": ".",  # save data root dir
                 "save_path": {
                     "valid": "valid",  # relative dir for valid stage
                     "test": "test",    # relative dir for test stage
                 },
-                "relation_types": 1,  # relation type numbers
+                "unrelated_entity": True,  # save or not the entity which is not related to other entities
+                "relation_groups": 1,  # if set label_seperate ==True in span_relation_relabel, the relation_groups maybe >1, but currently we donot support it
                 "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
                 "start_save_step": 0,  # -1 means the last
                 "start_save_epoch": -1,
@@ -85,7 +86,8 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
         self.ignore_relations = set(self.config['ignore_relations'])
         self.ignore_char = set(self.config['ignore_char'])
         self.ignore_position = self.config['ignore_position']
-        self.relation_types = self.config['relation_types']
+        self.relation_groups = self.config['relation_groups']
+        self.unrelated_entity = self.config['unrelated_entity']
         self.sym = self.config['sym']
 
         self.sentence = self.origin_input_map['sentence']
@@ -96,7 +98,6 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
         self.word_ids = self.origin_input_map['word_ids']
         self.special_tokens_mask = self.origin_input_map['special_tokens_mask']
         self.input_ids = self.origin_input_map['input_ids']
-        self.label_ids = self.origin_input_map['label_ids']
 
         self.entity_logits = self.input_map['entity_logits']
         self.relation_logits = self.input_map['relation_logits']
@@ -147,7 +148,8 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
         self.post_check(self.config, used=[
             "meta",
             "meta_data",
-            "relation_types"
+            "relation_groups"
+            "unrelated_entity"
             "sym"
             "input_map",
             "origin_input_map",
@@ -165,7 +167,6 @@ class SpanRelationPostProcessor(IPostProcessor):
     def __init__(self, config: SpanRelationPostProcessorConfig):
         super(SpanRelationPostProcessor, self).__init__(config)
         self.config = config
-        self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
 
@@ -203,8 +204,9 @@ class SpanRelationPostProcessor(IPostProcessor):
             # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
 
             indexes = list(outputs[self.config._index])
-            for i, (entity_logits, relation_logits, index) in enumerate(zip(batch_entity_logits, batch_relation_logits, indexes)):
-                entities_info = self._process4predict(entity_logits, relation_logits, index, origin_data)
+            for entity_logits, relation_logits, index in zip(batch_entity_logits, batch_relation_logits, indexes):
+                one_ins_info = self._process4predict(entity_logits, relation_logits, index, origin_data)
+                predicts.append(one_ins_info)
         return predicts
 
     def _process4predict(self, entity_logits: torch.FloatTensor, relation_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame)->Dict:
@@ -226,20 +228,49 @@ class SpanRelationPostProcessor(IPostProcessor):
             >>> }
 
         """
+        def _get_entity_info(sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
+            """gather sub_tokens to get the start and end
+
+            Args:
+                sub_tokens_index: the entity tokens index list
+                offset_mapping: every token offset in text
+                word_ids: every token in the index of words
+                label: predict label
+
+            Returns: 
+                entity_info
+
+            """
+            if not sub_tokens_index or not label:
+                return {}
+            start = offset_mapping[sub_tokens_index[0]][0]
+            end = offset_mapping[sub_tokens_index[-1]][1]
+            return {
+                "start": start,
+                "end": end,
+                "labels": [label],
+                "sub_token_start": sub_tokens_index[0],
+                "sub_token_end": sub_tokens_index[1],
+            }
+
         one_ins = {}
         origin_ins = origin_data.iloc[int(index)]
         one_ins["sentence"] = origin_ins[self.config.sentence]
         one_ins["uuid"] = origin_ins[self.config.uuid]
-        one_ins["entities_info"] = origin_ins[self.config.entities_info]
+        one_ins["entities_info"] = origin_ins.get(self.config.entities_info, [])
+        one_ins["relations_info"] = origin_ins.get(self.config.relations_info, [])
 
         word_ids = origin_ins[self.config.word_ids]
         rel_token_len = len(word_ids)
         offset_mapping = origin_ins[self.config.offsets][:rel_token_len]
 
-        predict_entities_info = {}
+        predict_entities_id_info_map = {}
+        entities_in_relations_id = set()
         predict_entity_ids = entity_logits.argmax(-1).cpu().numpy()
 
+        # gather all predicted entities
         entity_set_d = {} # set_d, set_e, set_t defined in https://arxiv.org/pdf/2010.13415.pdf Algorithm 1
+        entity_cnt = 0
         for i in range(rel_token_len):
             for j in range(i, rel_token_len):
                 if word_ids[i] is None or word_ids[j] is None:
@@ -249,46 +280,91 @@ class SpanRelationPostProcessor(IPostProcessor):
                 if predict_entity in {self.config.entity_label_vocab.pad, self.config.entity_label_vocab.unknown}:
                     continue
                 else:
-                    entity_info = self.get_entity_info([i, j], offset_mapping, word_ids, predict_entity)
+                    entity_info = _get_entity_info([i, j], offset_mapping, word_ids, predict_entity)
                     if entity_info:
-                        id = str(uuid.uuid1())
-                        predict_entities_info[id] = entity_info
+                        entity_id = str(uuid.uuid1())
+                        predict_entities_id_info_map[entity_id] = entity_info
                         entity_set_d[i] = entity_set_d.get(i, [])
-                        entity_set_d[i].append((i, j, id))
+                        entity_set_d[i].append((i, j, entity_id))
+                        entity_cnt += 1
+                        if entity_cnt > rel_token_len:
+                            # HACK: too many predict, maybe wrong
+                            break
+            if entity_cnt > rel_token_len:
+                # HACK: too many predict, maybe wrong
+                break
 
-        entity_tail_pair_set_e = set()
-        entity_tail_pair_set_e_with_relation_id = set()
-        candidate_relation_set_c = set()
-        for relation_idx in self.config.relation_types:
+        # all predicted relations entity tail pair
+        entity_tail_pair_set_e = set() # for each element (first_entity_tail_token_idx, second_entity_tail_token_idx, relation_idx)
+        entity_tail_pair_set_e_with_relation_id = set() # for each element (first_entity_tail_token_idx, second_entity_tail_token_idx, relation_idx, tail_relation_label_id)
+
+        # all candidate relation set(only consider the entity head pair and the entity_set_d)
+        candidate_relation_set_c = set() # for each element (first_entity_info, second_entity_info, relation_idx, head_relation_label_id)
+        candidate_cnt = 0
+        for relation_idx in range(self.config.relation_groups):
             head_to_head_logits = relation_logits[relation_idx*2]
             tail_to_tail_logits = relation_logits[relation_idx*2+1]
             head_to_head_ids = head_to_head_logits.argmax(-1).cpu().numpy()
             tail_to_tail_ids = tail_to_tail_logits.argmax(-1).cpu().numpy()
             for i in range(rel_token_len):
+                if candidate_cnt > 2*rel_token_len:
+                    # HACK: too many predict, maybe wrong
+                    break
                 for j in range(i if self.config.sym else 0, rel_token_len):
                     if word_ids[i] is None or word_ids[j] is None:
                         continue
+                    if candidate_cnt > 2*rel_token_len:
+                        # HACK: too many predict, maybe wrong
+                        break
                     predict_tail_id = tail_to_tail_ids[i][j]
                     predict_tail_relation = self.config.relation_label_vocab[predict_tail_id]
                     if predict_tail_relation not in {self.config.relation_label_vocab.pad, self.config.relation_label_vocab.unknown}:
-                        entity_tail_pair_set_e.add((i, j))
-                        entity_tail_pair_set_e_with_relation_id.add((i, j, predict_tail_id))
+                        entity_tail_pair_set_e.add((i, j, relation_idx))
+                        entity_tail_pair_set_e_with_relation_id.add((i, j, relation_idx, predict_tail_id))
 
                     predict_head_id = head_to_head_ids[i][j]
                     predict_head_relation = self.config.relation_label_vocab[predict_head_id]
                     if predict_head_relation not in {self.config.relation_label_vocab.pad, self.config.relation_label_vocab.unknown}:
                         for first_entity in entity_set_d.get(i, []):
                             for second_entity in entity_set_d.get(j, []):
-                                candidate_relation_set_c.add((first_entity, second_entity, predict_head_id))
-        relations = []
+                                candidate_relation_set_c.add((first_entity, second_entity, relation_idx, predict_head_id))
+                                candidate_cnt += 1
+                                if candidate_cnt > 2*rel_token_len:
+                                    # HACK: too many predict, maybe wrong
+                                    break
+                            if candidate_cnt > 2*rel_token_len:
+                                # HACK: too many predict, maybe wrong
+                                break
+        predict_relations_info = []
         for candidate_relation in candidate_relation_set_c:
-            first_entity, second_entity, predict_head_id = candidate_relation
-            if (first_entity[1], second_entity[1]) in entity_tail_pair_set_e:
-                # HACK: if (first_entity[1], second_entity[1], predict_head_id) not in entity_tail_pair_set_e_with_relation_id, this is a conflict
-                relations.append(candidate_relation)
+            first_entity, second_entity, relation_idx, predict_head_id = candidate_relation
+            if (first_entity[1], second_entity[1], relation_idx) in entity_tail_pair_set_e:
+                # HACK: if (first_entity[1], second_entity[1], relation_idx, predict_head_id) not in entity_tail_pair_set_e_with_relation_id, we can do better on it
+                predict_label = self.config.relation_label_vocab[predict_head_id]
 
-        # TODO: convert relations to dict
-        return relations
+                if first_entity[2] not in entities_in_relations_id:
+                    entities_in_relations_id.add(first_entity[2])
+                if second_entity[2] not in entities_in_relations_id:
+                    entities_in_relations_id.add(second_entity[2])
+                predict_relation_info = {
+                    "from": first_entity[2],
+                    "to": second_entity[2],
+                    "labels": [predict_label]
+                }
+                predict_relations_info.append(predict_relation_info)
+
+        entity_ids = entities_in_relations_id
+        if self.config.unrelated_entity:
+            entity_ids = predict_entities_id_info_map.keys()
+        predict_entities_info = []
+        for entity_id in entity_ids:
+            entity_info = predict_entities_id_info_map[entity_id]
+            entity_info['entity_id'] = entity_id
+            predict_entities_info.append(entity_info)
+
+        one_ins['predict_entities_info'] = predict_entities_info
+        one_ins['predict_relations_info'] = predict_relations_info
+        return one_ins
 
     def do_calc_metrics(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -360,19 +436,84 @@ class SpanRelationPostProcessor(IPostProcessor):
                     info[label].append((start_position, end_position))
             return info
 
-        all_predicts = []
-        all_ground_truths = []
-        for predict in predicts:
-            text = predict['sentence']
-            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
-            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
-            all_predicts.append(predict_ins)
-            all_ground_truths.append(ground_truth_ins)
+        def _calc_score(predict_list: List, ground_truth_list: List):
+            """use predict_list and ground_truth_list to calc scores
 
-        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
-        real_name = self.loss_name_map(stage)
-        logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
-        return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
+            Args:
+                predict_list: list of predict
+                ground_truth_list: list of ground_truth
+
+            Returns: 
+                precision, recall, f1
+
+            """
+            category_tp = {}
+            category_fp = {}
+            category_fn = {}
+            def _care_div(a, b):
+                """return a/b or 0.0 if b == 0
+                """
+                if b==0:
+                    return 0.0
+                return a/b
+
+
+            def _calc_num(_pred: List, _ground_truth: List):
+                """calc tp, fn, fp
+
+                Args:
+                    pred: pred list
+                    ground_truth: groud truth list
+
+                Returns: 
+                    tp, fn, fp
+
+                """
+                num_p = len(_pred)
+                num_t = len(_ground_truth)
+                truth = 0
+                for p in _pred:
+                    if p in _ground_truth:
+                        truth += 1
+                return truth, num_t-truth, num_p-truth
+
+            for predict, ground_truth in zip(predict_list, ground_truth_list):
+                keys = set(list(predict.keys())+list(ground_truth.keys()))
+                for key in keys:
+                    tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
+                    category_tp[key] = category_tp.get(key, 0) + tp
+                    category_fn[key] = category_fn.get(key, 0) + fn
+                    category_fp[key] = category_fp.get(key, 0) + fp
+
+            all_tp, all_fn, all_fp = 0, 0, 0
+            for key in category_tp:
+                tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
+                all_tp += tp
+                all_fn += fn
+                all_fp += fp
+                precision = _care_div(tp, tp+fp)
+                recall = _care_div(tp, tp+fn)
+                f1 = _care_div(2*precision*recall, precision+recall)
+                logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+            precision = _care_div(all_tp,all_tp+all_fp)
+            recall = _care_div(all_tp, all_tp+all_fn)
+            f1 = _care_div(2*precision*recall, precision+recall)
+            return precision, recall, f1
+
+        return {"F1": 0.5}
+        # all_predicts = []
+        # all_ground_truths = []
+        # for predict in predicts:
+        #     text = predict['sentence']
+        #     predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
+        #     ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
+        #     all_predicts.append(predict_ins)
+        #     all_ground_truths.append(ground_truth_ins)
+
+        # precision, recall, f1 = _calc_score(all_predicts, all_ground_truths)
+        # real_name = self.loss_name_map(stage)
+        # logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
+        # return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
 
     def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
         """save the predict when save_condition==True
@@ -410,93 +551,3 @@ class SpanRelationPostProcessor(IPostProcessor):
             logger.info(f"Save the {stage} predict data at {save_file}")
             with open(save_file, 'w') as f:
                 json.dump(predicts, f, indent=4, ensure_ascii=False)
-
-    def calc_score(self, predict_list: List, ground_truth_list: List):
-        """use predict_list and ground_truth_list to calc scores
-
-        Args:
-            predict_list: list of predict
-            ground_truth_list: list of ground_truth
-
-        Returns: 
-            precision, recall, f1
-
-        """
-        category_tp = {}
-        category_fp = {}
-        category_fn = {}
-        def _care_div(a, b):
-            """return a/b or 0.0 if b == 0
-            """
-            if b==0:
-                return 0.0
-            return a/b
-
-
-        def _calc_num(_pred: List, _ground_truth: List):
-            """calc tp, fn, fp
-
-            Args:
-                pred: pred list
-                ground_truth: groud truth list
-
-            Returns: 
-                tp, fn, fp
-
-            """
-            num_p = len(_pred)
-            num_t = len(_ground_truth)
-            truth = 0
-            for p in _pred:
-                if p in _ground_truth:
-                    truth += 1
-            return truth, num_t-truth, num_p-truth
-
-        for predict, ground_truth in zip(predict_list, ground_truth_list):
-            keys = set(list(predict.keys())+list(ground_truth.keys()))
-            for key in keys:
-                tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
-                # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
-                category_tp[key] = category_tp.get(key, 0) + tp
-                category_fn[key] = category_fn.get(key, 0) + fn
-                category_fp[key] = category_fp.get(key, 0) + fp
-
-        all_tp, all_fn, all_fp = 0, 0, 0
-        for key in category_tp:
-            tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
-            all_tp += tp
-            all_fn += fn
-            all_fp += fp
-            precision = _care_div(tp, tp+fp)
-            recall = _care_div(tp, tp+fn)
-            f1 = _care_div(2*precision*recall, precision+recall)
-            logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
-        precision = _care_div(all_tp,all_tp+all_fp)
-        recall = _care_div(all_tp, all_tp+all_fn)
-        f1 = _care_div(2*precision*recall, precision+recall)
-        return precision, recall, f1
-
-    def get_entity_info(self, sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
-        """gather sub_tokens to get the start and end
-
-        Args:
-            sub_tokens_index: the entity tokens index list
-            offset_mapping: every token offset in text
-            word_ids: every token in the index of words
-            label: predict label
-
-        Returns: 
-            entity_info
-
-        """
-        if not sub_tokens_index or not label:
-            return {}
-        start = offset_mapping[sub_tokens_index[0]][0]
-        end = offset_mapping[sub_tokens_index[-1]][1]
-        return {
-            "start": start,
-            "end": end,
-            "labels": [label],
-            "sub_token_start": sub_tokens_index[0],
-            "sub_token_end": sub_tokens_index[1],
-        }

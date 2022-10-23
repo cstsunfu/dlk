@@ -1,4 +1,5 @@
 {
+    "_name": "basic"
     "model": "*@*",
     "loss": {
         "_base": "identity",
@@ -18,5 +19,4 @@
     "config": {
 
     },
-    "_name": "basic"
 }

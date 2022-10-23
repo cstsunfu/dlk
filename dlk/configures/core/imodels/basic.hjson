@@ -1,6 +1,7 @@
 {
-    model: "*@*",
-    loss: "*@*",
+    "_name": "basic"
+    "model": "*@*",
+    "loss": "*@*",
     "optimizer": {
         "_base": "adamw@bias_nodecay",
     },
@@ -11,7 +12,5 @@
         "_base": "identity"
     },
     "config": {
-
     },
-    _name: "basic"
 }

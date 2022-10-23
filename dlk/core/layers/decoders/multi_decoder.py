@@ -40,9 +40,6 @@ class MultiDecoderConfig(BaseModuleConfig):
                 "decode_config": module_config,
             }
 
-        self.post_check(config, used=[
-        ])
-
 
 @decoder_register("multi_decoder")
 class MultiDecoder(SimpleModule):

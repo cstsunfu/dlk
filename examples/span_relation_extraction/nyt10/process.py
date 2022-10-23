@@ -19,6 +19,7 @@ data format
     "sentence": "",
     "entities_info": [
         {
+            "entity_id": "bd798da3-52a8-11ed-801c-18c04d299e80",
             "start":1,
             "end": 3,
             "labels": [
@@ -26,6 +27,7 @@ data format
             ]
         },
         {
+            "entity_id": "bd7a2928-52a8-11ed-8b5c-18c04d299e80",
             "start":5,
             "end": 9,
             "labels": [
@@ -38,8 +40,8 @@ data format
             "labels": [
                 "belong_to"
             ],
-            "from": 1, # index of entity
-            "to": 0,
+            "from": "bd7a2928-52a8-11ed-8b5c-18c04d299e80", # id of entity
+            "to": "bd798da3-52a8-11ed-801c-18c04d299e80",
         }
     ]
 }
@@ -133,7 +135,7 @@ def get_data():
                 position_entity['labels'] = [entity_type_map[position_entity['token']]]
                 position_entity_str = json.dumps(position_entity)
                 if position_entity_str not in entities_info_dict:
-                    entities_info_dict[position_entity_str] = len(entities_info_dict)
+                    entities_info_dict[position_entity_str] = str(uuid.uuid1())
                 if position_entity['token'] == relation['em1']:
                     first = entities_info_dict[position_entity_str]
                 else:
@@ -149,10 +151,10 @@ def get_data():
             no_regular_cnt += 1
             continue
         entities_info = []
-        entities_info_index_dict = {value: key for key, value in entities_info_dict.items()}
-        for i in range(len(entities_info_dict)):
-            entity_info = json.loads(entities_info_index_dict[i])
+        for entity_info, id in entities_info_dict.items():
+            entity_info = json.loads(entity_info)
             entity_info.pop('token')
+            entity_info['entity_id'] = id
             entities_info.append(entity_info)
 
         data_list.append({
@@ -167,9 +169,9 @@ def get_data():
 with open('./test.json', 'r') as f:
     data = json.load(f)
 
-train = data[:len(data)//2]
-valid = data[len(data)//2:]
-input = {"data": {"train": train, "valid": valid}}
+# train = data[:len(data)//2]
+valid = data[:1]
+input = {"data": {"train": valid, "valid": valid}}
 
 processor = Processor('./bert/prepro.hjson')
 processor.fit(input)

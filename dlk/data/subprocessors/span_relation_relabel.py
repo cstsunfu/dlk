@@ -35,7 +35,7 @@ class SpanRelationRelabelConfig(BaseConfig):
                      "word_ids": "word_ids",
                      "offsets": "offsets",
                      "relations_info": "relations_info",
-                     "entities_index_info": "entities_index_info",
+                     "processed_entities_info": "processed_entities_info",
                 },
                 "data_set": {
                      "train": ['train', 'valid', 'test'],
@@ -67,7 +67,7 @@ class SpanRelationRelabelConfig(BaseConfig):
         self.sym = self.config['sym']
         self.label_seperate = self.config['label_seperate']
         self.relations_info = self.config['input_map']['relations_info']
-        self.entities_index_info = self.config['input_map']['entities_index_info']
+        self.processed_entities_info = self.config['input_map']['processed_entities_info']
         self.vocab = self.config['vocab']
         self.output_labels = self.config['output_map']['label_ids']
         self.post_check(self.config, used=[
@@ -115,8 +115,8 @@ class SpanRelationRelabel(ISubProcessor):
         # NOTE: only load once, because the vocab should not be changed in same process
         if not self.vocab:
             self.vocab = Vocabulary.load(data[self.config.vocab])
-            assert self.vocab.word2idx[self.vocab.pad] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
-            assert not self.vocab.unknown, f"For span_relation_relabel, 'pad' must be index 0, and other labels as 1...num_label"
+            assert self.vocab.word2idx[self.vocab.unknown] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert not self.vocab.pad, f"For span_relation_relabel, 'pad' must be index 0, and other labels as 1...num_label"
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
@@ -141,18 +141,21 @@ class SpanRelationRelabel(ISubProcessor):
 
         """
         relations_info = one_ins[self.config.relations_info]
-        entities_index_info = one_ins[self.config.entities_index_info]
+        processed_entities_info = one_ins[self.config.processed_entities_info]
+        entities_id_info_map = {}
+        for processed_entity_info in processed_entities_info:
+            entities_id_info_map[processed_entity_info['entity_id']] = processed_entity_info
         sub_word_ids = one_ins[self.config.word_ids]
         offsets = one_ins[self.config.offsets]
         offset_length = len(offsets)
 
-        pad_id = self.vocab.get_index(self.vocab.pad)
+        unknown_id = self.vocab.get_index(self.vocab.unknown)
         mask_matrix = np.full((offset_length, offset_length), self.config.mask_fill)
         if self.config.sym:
             mask_matrix = np.tril(mask_matrix, k=-1)
-            pad_matrix = np.full((offset_length, offset_length), pad_id)
-            pad_matrix = np.triu(pad_matrix, k=0)
-            label_matrix = pad_matrix + mask_matrix
+            unknown_matrix = np.full((offset_length, offset_length), unknown_id)
+            unknown_matrix = np.triu(unknown_matrix, k=0)
+            label_matrix = unknown_matrix + mask_matrix
         else:
             label_matrix = mask_matrix
         if sub_word_ids[0] is None:
@@ -160,23 +163,23 @@ class SpanRelationRelabel(ISubProcessor):
         if sub_word_ids[-1] is None:
             label_matrix[:, -1] = self.config.mask_fill
         if self.config.label_seperate:
-            label_matrices = self.get_seperate_label_matrix(label_matrix, relations_info, entities_index_info)
+            label_matrices = self.get_seperate_label_matrix(label_matrix, relations_info, entities_id_info_map)
         else:
-            label_matrices = self.get_universal_label_matrix(label_matrix, relations_info, entities_index_info)
+            label_matrices = self.get_universal_label_matrix(label_matrix, relations_info, entities_id_info_map)
 
         return label_matrices
 
-    def _get_entities_index(self, relation_info, entities_index_info):
+    def _get_entities_index(self, relation_info, entities_id_info_map):
         """get the from entity head, to entity head, from entity tail, to entity tail
         """
         from_index = relation_info['from']
         to_index = relation_info['to']
-        from_entity = entities_index_info[from_index]
-        from_start_index = from_entity['start']
-        from_end_index = from_entity['end']
-        to_entity = entities_index_info[to_index]
-        to_start_index = to_entity['start']
-        to_end_index = to_entity['end']
+        from_entity = entities_id_info_map[from_index]
+        from_start_index = from_entity['sub_token_start']
+        from_end_index = from_entity['sub_token_end']
+        to_entity = entities_id_info_map[to_index]
+        to_start_index = to_entity['sub_token_start']
+        to_end_index = to_entity['sub_token_end']
 
         if self.config.sym:
             if from_start_index > to_start_index:
@@ -185,7 +188,7 @@ class SpanRelationRelabel(ISubProcessor):
                 from_end_index, to_end_index = to_end_index, from_end_index
         return from_start_index, to_start_index, from_end_index, to_end_index 
 
-    def get_seperate_label_matrix(self, label_matrix, relations_info: List, entities_index_info: Dict[int, Dict]):
+    def get_seperate_label_matrix(self, label_matrix, relations_info: List, entities_id_info_map: Dict[int, Dict]):
         """seperate different type of relations to different matrix(as one dimension)
 
         Args:
@@ -200,7 +203,7 @@ class SpanRelationRelabel(ISubProcessor):
                         "to": 0,
                     }
                 ]
-            entities_index_info: generate by span_cls_relabel
+            entities_id_info_map: generate by span_cls_relabel
 
         Returns: 
             label_id matrix
@@ -211,13 +214,13 @@ class SpanRelationRelabel(ISubProcessor):
 
         for relation_info in relations_info:
             label_id = self.vocab.word2idx[relation_info['labels'][0]]
-            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_index_info)
+            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_id_info_map)
             # NOTE: label_id ==0 is unknown
             label_matrix[(label_id-1)*2][from_start_index][to_start_index] = 1
             label_matrix[(label_id-1)*2+1][from_end_index][to_end_index] = 1
         return label_matrix
 
-    def get_universal_label_matrix(self, label_matrix, relations_info: List, entities_index_info: Dict[int, Dict]):
+    def get_universal_label_matrix(self, label_matrix, relations_info: List, entities_id_info_map: Dict[int, Dict]):
         """different type of relations to one matrix
 
         Args:
@@ -232,7 +235,7 @@ class SpanRelationRelabel(ISubProcessor):
                         "to": 0,
                     }
                 ]
-            entities_index_info: generate by span_cls_relabel
+            entities_id_info_map: generate by span_cls_relabel
 
         Returns:
             label_id matrix
@@ -240,7 +243,7 @@ class SpanRelationRelabel(ISubProcessor):
         label_matrix = np.expand_dims(label_matrix, 0).repeat(2, 0)
         for relation_info in relations_info:
             label_id = self.vocab.word2idx[relation_info['labels'][0]]
-            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_index_info)
+            from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_id_info_map)
             label_matrix[0][from_start_index][to_start_index] = label_id
             label_matrix[1][from_end_index][to_end_index] = label_id
         return label_matrix

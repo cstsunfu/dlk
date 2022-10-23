@@ -81,19 +81,23 @@ class CrossEntropyLossConfig(BaseModuleConfig):
             "pred_truth_pair",
             "schedule",
             "scale",
+            "log_map"
         ])
 
 
 @loss_register("cross_entropy")
-class CrossEntropyLoss(object):
+class CrossEntropyLoss(nn.Module):
     """for multi class classification
     """
     def __init__(self, config: CrossEntropyLossConfig):
         super(CrossEntropyLoss, self).__init__()
         self.config = config
+        weight = None
+        if config.weight:
+            weight = torch.tensor(config.weight, dtype=torch.float)
         if (version.parse(torch.__version__)>=version.parse("1.10")):
             self.cross_entropy = nn.CrossEntropyLoss(
-                weight=config.weight,
+                weight=weight,
                 ignore_index=config.ignore_index,
                 label_smoothing=config.label_smoothing
             )
@@ -101,7 +105,7 @@ class CrossEntropyLoss(object):
             if config.label_smoothing:
                 logger.info("Torch version is <1.10, so ignore label_smoothing")
             self.cross_entropy = nn.CrossEntropyLoss(
-                weight=config.weight,
+                weight=weight,
                 ignore_index=config.ignore_index,
             )
 

@@ -69,7 +69,7 @@ class IdentityLossConfig(BaseModuleConfig):
         ])
 
 @loss_register("identity")
-class IdentityLoss(object):
+class IdentityLoss(nn.Module):
     """gather the loss and return when the loss is calc previor module like crf
     """
     def __init__(self, config: IdentityLossConfig):

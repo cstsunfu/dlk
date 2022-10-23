@@ -13,11 +13,11 @@
                 "save"
             ],
             "tokenizer_config_path": "./model/tokenizer.json", # the tokenizer config path (the tokenizer.json path)
-                "data_dir": "./data", # save load data base dir
-                "truncation": { # if this is set to None or empty, will not do trunc
-                    "max_length": 512,
-                    "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
-                },
+            "data_dir": "./bert/output", # save load data base dir
+            "truncation": { # if this is set to None or empty, will not do trunc
+                "max_length": 512,
+                "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
+            },
         },
         "_link": {
             "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@span_cls_relabel.config.train.input_map.word_ids",
@@ -44,13 +44,13 @@
                 "base_dir": "",
                 "train": {
                     "processed": "processed_data.pkl", # all data
-                        "meta": {
-                            "meta.pkl": [
-                                'label_vocab#entity',
-                                'label_vocab#relation',
-                                "tokenizer"
-                            ] # only for next time use
-                        }
+                    "meta": {
+                        "meta.pkl": [
+                            'label_vocab#entity',
+                            'label_vocab#relation',
+                            "tokenizer"
+                        ] # only for next time use
+                    }
                 },
                 "predict": {
                     "processed": "processed_data.pkl",
@@ -74,14 +74,13 @@
                         ]
                     },
                     "deliver": "label_vocab#entity", # output Vocabulary object (the Vocabulary of labels) name.
-                        "gather_columns": [
+                    "gather_columns": [
                         {
                             "column": "entities_info",
                             "trace": 'labels'
                         }
-                        ],
-                        "unk": "[UNK]",
-                        "pad": "",
+                    ],
+                    "unk": "[UNK]", # for no relation
                 }
             }
         },
@@ -102,8 +101,7 @@
                             "trace": 'labels'
                         }
                     ],
-                    "unk": "[UNK]",
-                    "pad": "",
+                    "unk": "[UNK]", # for no relation
                 }
             }
         },
@@ -113,8 +111,7 @@
                 "train": {
                     "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                     "output_map": {
-                        "label_ids": "label_ids",
-# for span relation extract relabel, deliver should be {index: {"start": start, "end": end}}, which the start and end should be the index of the token level  WARNING: and if entities_index_info != "_entities_index_info", the drop must set to 'none', because the 'drop' will change the index
+                        "label_ids": "entity_label_ids",
 # _entities_index_info means donot use
                         "entities_index_info": "entities_index_info",
                     },
@@ -130,7 +127,7 @@
                     "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                     "vocab": "*@*", # usually provided by the "token_gather" module
                     "output_map": {
-                        "label_ids": "label_ids",
+                        "label_ids": "relation_label_ids",
                     }
                 },
             }

@@ -14,6 +14,7 @@
 
 from loguru import logger as logging
 from loguru._logger import Logger as LoggerClass
+from typing import Set
 import sys
 import os
 
@@ -21,7 +22,7 @@ import os
 class Logger(object):
     """docstring for logger"""
     global_logger: LoggerClass = None
-    global_log_file: set[str] = set()
+    global_log_file: Set[str] = set()
     log_name: str = "dlk"
     warning_file = True
 
@@ -73,7 +74,7 @@ class Logger(object):
         if log_file:
             log_file = os.path.join(base_dir, log_file)
         if Logger.global_log_file:
-            Logger.global_logger.warning(f"The exists a file handler at '{'; '.join(Logger.global_log_file)}'")
+            Logger.global_logger.warning(f"Exists a file handler at '{'; '.join(Logger.global_log_file)}'")
         Logger.global_log_file.add(log_file)
         Logger.global_logger.add(log_file, rotation="10 MB", format="{time:MM/DD/YYYY HH:mm:ss} - {level:<8} - "+Logger.log_name+" - {message}")
 

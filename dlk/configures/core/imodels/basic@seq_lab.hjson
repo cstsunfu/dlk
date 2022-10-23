@@ -1,4 +1,5 @@
 {
+    "_name": "basic"
     "model": "*@*",
     "loss": {
         "_base": "cross_entropy@cls",
@@ -15,5 +16,4 @@
     "config": {
 
     },
-    "_name": "basic"
 }

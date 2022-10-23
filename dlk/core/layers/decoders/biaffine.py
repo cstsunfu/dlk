@@ -22,24 +22,26 @@ import torch.nn as nn
 @decoder_config_register("biaffine")
 class BiAffineConfig(BaseModuleConfig):
     default_config = {
-        "module": {
-            "_base": "biaffine",
-        },
+        "_name": "biaffine",
         "config": {
             "input_size": "*@*",
             "hidden_size": 0, # default equals to input_size
             "output_size": "*@*",
             "dropout": 0.0,
+            "group": 1,
             "output_map": {},
             "input_map": {}, # required_key: provide_key
-            },
+        },
         "_link":{
-            "config.input_size": ["module.config.hidden_size"],
+            "config.input_size": ["module.config.input_size"],
             "config.hidden_size": ["module.config.hidden_size"],
             "config.output_size": ["module.config.output_size"],
+            "config.group": ["module.config.group"],
             "config.dropout": ["module.config.dropout"],
-            },
-        "_name": "biaffine",
+        },
+        "module": {
+            "_base": "biaffine",
+        },
     }
     """Config for BiAffine 
     """
@@ -50,6 +52,8 @@ class BiAffineConfig(BaseModuleConfig):
         self.post_check(config, used=[
             "input_size",
             "output_size",
+            "hidden_size",
+            "group",
             "dropout",
             "return_logits",
         ])

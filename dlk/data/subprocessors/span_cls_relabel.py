@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,13 +41,11 @@ class SpanClsRelabelConfig(BaseConfig):
                 },
                 "output_map": {
                      "label_ids": "label_ids",
-                     # for span relation extract relabel, deliver should be {index: {"start": start, "end": end}}, which the start and end should be the index of the token level  WARNING: and if entities_index_info != "_entities_index_info", the drop must set to 'none', because the 'drop' will change the index
-                     # _entities_index_info means donot use
-                     "entities_index_info": "_entities_index_info",
+                     # for span relation extract relabel, deliver should be {"entity_id": {"start": start, "end": end}}, which the start and end should be the index of the token level
+                     "processed_entities_info": "processed_entities_info",
                 },
                 "drop": "none", # 'longer'/'shorter'/'none', if entities is overlap, will remove by rule
                 "vocab": "label_vocab", # usually provided by the "token_gather" module
-                "clean_droped_entity": True, # after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
                 "entity_priority": [],
                 "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
                 "mask_fill": -100,
@@ -68,13 +66,10 @@ class SpanClsRelabelConfig(BaseConfig):
         self.offsets = self.config['input_map']['offsets']
         self.mask_fill = self.config['mask_fill']
         self.entities_info = self.config['input_map']['entities_info']
-        self.clean_droped_entity = self.config['clean_droped_entity']
         self.drop = self.config['drop']
         assert self.drop in {'none', 'longer', 'shorter'}
         self.vocab = self.config['vocab']
-        if self.config['output_map']['entities_index_info'] != "_entities_index_info":
-            assert self.drop == 'none', f"drop will change the index of the entities, and deliver entities info depend on the entities index"
-        self.entities_index_info = self.config['output_map']['entities_index_info']
+        self.processed_entities_info = self.config['output_map']['processed_entities_info']
         self.output_labels = self.config['output_map']['label_ids']
         self.entity_priority = {entity: priority for priority, entity in enumerate(self.config['entity_priority'])}
         self.priority_trigger = self.config['priority_trigger']
@@ -84,7 +79,6 @@ class SpanClsRelabelConfig(BaseConfig):
             "input_map",
             "data_set",
             "output_map",
-            "clean_droped_entity",
             "entity_priority",
             "priority_trigger",
             "mask_fill"
@@ -124,6 +118,8 @@ class SpanClsRelabel(ISubProcessor):
         # NOTE: only load once, because the vocab should not be changed in same process
         if not self.vocab:
             self.vocab = Vocabulary.load(data[self.config.vocab])
+            assert self.vocab.word2idx[self.vocab.unknown] == 0, f"For span_relation_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
+            assert not self.vocab.pad, f"For span_relation_relabel, 'pad' must be index 0, and other labels as 1...num_label"
 
         for data_set_name in self.data_set:
             if data_set_name not in data['data']:
@@ -132,13 +128,11 @@ class SpanClsRelabel(ISubProcessor):
             data_set = data['data'][data_set_name]
             if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
                 data_set[[self.config.output_labels,
-                    self.config.entities_info,
-                    self.config.entities_index_info
+                    self.config.processed_entities_info,
                 ]] = data_set.parallel_apply(self.relabel, axis=1, result_type='expand')
             else:
                 data_set[[self.config.output_labels,
-                    self.config.entities_info,
-                    self.config.entities_index_info
+                    self.config.processed_entities_info,
                 ]] = data_set.apply(self.relabel, axis=1, result_type='expand')
 
         return data
@@ -183,7 +177,7 @@ class SpanClsRelabel(ISubProcessor):
         Returns: 
             labels(labels for each subtoken)
             entities_info
-            entities_index_info: for relation relabal
+            processed_entities_info: for relation relabal
         """
         pre_clean_entities_info = one_ins[self.config.entities_info]
         if self.config.drop != 'none':
@@ -221,7 +215,7 @@ class SpanClsRelabel(ISubProcessor):
                         continue
                 else:
                     raise PermissionError(f"The drop method must in 'none'/'shorter'/'longer'")
-                pre_label = entity_info['labels'][0]
+            pre_label = entity_info['labels'][0]
             entities_info.append(entity_info)
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
@@ -229,20 +223,20 @@ class SpanClsRelabel(ISubProcessor):
         cur_token_index = 0
         offset_length = len(offsets)
 
-        pad_id = self.vocab.get_index(self.vocab.pad)
+        unknown_id = self.vocab.get_index(self.vocab.unknown)
         mask_matrices = np.full((offset_length, offset_length), self.config.mask_fill)
         mask_matrices = np.tril(mask_matrices, k=-1)
 
-        pad_matrices = np.full((offset_length, offset_length), pad_id)
-        pad_matrices = np.triu(pad_matrices, k=0)
+        unknown_matrices = np.full((offset_length, offset_length), unknown_id)
+        unknown_matrices = np.triu(unknown_matrices, k=0)
 
-        label_matrices = pad_matrices + mask_matrices
+        label_matrices = unknown_matrices + mask_matrices
         if sub_word_ids[0] is None:
             label_matrices[0, :] = self.config.mask_fill
         if sub_word_ids[-1] is None:
             label_matrices[:, -1] = self.config.mask_fill
-        deliver_entities_info = {}
-        for i, entity_info in enumerate(entities_info):
+        processed_entities_info = []
+        for entity_info in entities_info:
             start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
             if start_token_index == -1:
                 logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
@@ -251,11 +245,8 @@ class SpanClsRelabel(ISubProcessor):
             assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
             label_id = self.vocab.get_index(entity_info['labels'][0])
             label_matrices[start_token_index, end_token_index] = label_id
-            deliver_entities_info[i] = {
-                "start": start_token_index,
-                "end": end_token_index
-            }
+            entity_info['sub_token_start'] = start_token_index
+            entity_info['sub_token_end'] = end_token_index
+            processed_entities_info.append(entity_info)
 
-        if not self.config.clean_droped_entity:
-            entities_info = one_ins[self.config.entities_info]
-        return label_matrices, entities_info, deliver_entities_info
+        return label_matrices, processed_entities_info

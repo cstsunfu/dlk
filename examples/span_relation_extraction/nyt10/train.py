@@ -24,5 +24,6 @@ pl.seed_everything(88)
 # trainer = Train('./norm_lstm_crf/main.hjson')
 trainer = Train('./bert/main.hjson')
 
+# json.dump(trainer.configs, open('trainer.hjson', 'w'), indent=4, ensure_ascii=False)
 # print(json.dumps(trainer.configs, indent=3))
 trainer.run()

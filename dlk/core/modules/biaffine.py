@@ -22,16 +22,16 @@ from dlk.utils.config import BaseConfig
 @module_config_register("biaffine")
 class BiAffineConfig(BaseConfig):
     default_config = {
+        "_name": "biaffine",
         "config": {
-            "input_size": 256,
+            "input_size": "*@*",
             "hidden_size": 0, # default == input_size
-            "output_size": 2,
+            "output_size": "*@*",
             "dropout": 0.0, # generally no need dropout
-            "group": 1, # like relation need head pair and tail pair, so the group should set to >1
+            "multi_matrix": 1, # like relation need head pair and tail pair calc togather, so the multi_matrix should set to >1
             "relation_position": False, # whether add relation_position before align
             "bias": True, # use bias or not in biaffine
         },
-        "_name": "biaffine",
     }
     """Config for BiAffine
     Config Example:
@@ -40,19 +40,20 @@ class BiAffineConfig(BaseConfig):
         super(BiAffineConfig, self).__init__(config)
         config = config['config']
         self.input_size = config['input_size']
-        self.group = config['group']
+        self.multi_matrix = config['multi_matrix']
         self.relation_position = config['relation_position']
-        self.target_size = config['output_size'] # NOTE: if group == 1 then target_size == output_size
-        self.output_size = config['output_size'] * self.group
+        self.target_size = config['output_size']
+        self.output_size = config['output_size'] * self.multi_matrix
         self.hidden_size = config['hidden_size']
         if not self.hidden_size:
             self.hidden_size = self.input_size
-        self.target_size = self.output_size
         self.dropout = config['dropout']
         self.dropout = float(config['dropout'])
         self.bias = config['bias']
         self.post_check(config, used=[
             "input_size",
+            "hidden_size",
+            "multi_matrix",
             "output_size",
             "dropout",
             "bias",
@@ -115,8 +116,8 @@ class BiAffine(Module):
                     self.biaffine, 
                     input_b,
                     )
-        if self.config.group>1:
+        if self.config.multi_matrix>1:
             bs, seq_len, _, output_size = output.shape
-            output = output.reshape(bs, seq_len, seq_len, self.config.group, self.config.target_size)
+            output = output.reshape(bs, seq_len, seq_len, self.config.multi_matrix, self.config.target_size)
             output = output.permute(0, 3, 1, 2, 4) # bs, group, seq_len, seq_len, target_size)
         return output
