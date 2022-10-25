@@ -6,6 +6,8 @@
         "dropout": "*@*",
         "entity_label_num": "*@*",
         "relation_label_num": "*@*", # each group
+        "relation_position": true,
+        "decoder_hidden": 0, # default as embedding size
         "multi_matrix": "*@*",
     },
     "_link": {
@@ -16,13 +18,15 @@
         "config.dropout": ["embedding.config.dropout"],
         "config.entity_label_num": "decoder.decoder@entity.config.output_size",
         "config.relation_label_num": "decoder.decoder@relation.config.output_size",
+        "config.relation_position": ["decoder.decoder@relation.config.relation_position","decoder.decoder@entity.config.relation_position"]
+        "config.decoder_hidden": ["decoder.decoder@relation.config.hidden_size","decoder.decoder@entity.config.hidden_size"]
         "config.multi_matrix": "decoder.decoder@relation.config.multi_matrix",
         "config.pretrained_model_path": "embedding.config.pretrained_model_path",
     },
     "embedding": {
         "_base": "pretrained_transformers",
         "module": {
-            "_base": "roberta",
+            "_base": "*@*",
         },
         "config": {
             "pretrained_model_path": "*@*",
