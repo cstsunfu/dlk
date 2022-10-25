@@ -456,7 +456,7 @@ class SpanRelationPostProcessor(IPostProcessor):
             """
             entities_id_info_map = {}
             for entity_info in entities_info:
-                entities_id_info_map[entity_info['entity_id']] = entities_info
+                entities_id_info_map[entity_info['entity_id']] = entity_info
 
             flat_relations = {}
             for relation_info in relations_info:
@@ -509,7 +509,7 @@ class SpanRelationPostProcessor(IPostProcessor):
             all_tp += tp
             all_fn += fn
             all_fp += fp
-            logger.info(f"For relation 「{key[:10]:10}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+            logger.info(f"For relation 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
 
         precision = _care_div(all_tp, all_tp+all_fp)
         recall = _care_div(all_tp, all_tp+all_fn)
@@ -628,7 +628,7 @@ class SpanRelationPostProcessor(IPostProcessor):
                 precision = _care_div(tp, tp+fp)
                 recall = _care_div(tp, tp+fn)
                 f1 = _care_div(2*precision*recall, precision+recall)
-                logger.info(f"For entity 「{key[:10]:10}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+                logger.info(f"For entity 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
             precision = _care_div(all_tp,all_tp+all_fp)
             recall = _care_div(all_tp, all_tp+all_fn)
             f1 = _care_div(2*precision*recall, precision+recall)
