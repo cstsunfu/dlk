@@ -393,8 +393,8 @@ class SpanRelationPostProcessor(IPostProcessor):
         logger.info(f'{real_name:>8}_entity_precision: {entity_precision*100:.2f}, {real_name:>8}_recall: {entity_recall*100:.2f}, {real_name:>8}_f1: {entity_f1*100:.2f}')
         logger.info(f'{real_name:>8}_relation_precision: {relation_precision*100:.2f}, {real_name:>8}_recall: {relation_recall*100:.2f}, {real_name:>8}_f1: {relation_f1*100:.2f}')
         return {
-                f'{real_name}_ent_p': f"{entity_precision*100:.2f}", f'{real_name}_ent_r': f"{entity_recall*100:.2f}", f'{real_name}_ent_f1': f"{entity_f1*100:.2f}",
-                f'{real_name}_rel_p': f"{relation_precision*100:.2f}", f'{real_name}_rel_r': f"{relation_recall*100:.2f}", f'{real_name}_rel_f1': f"{relation_f1*100:.2f}",
+                f'{real_name}_ent_p': entity_precision*100, f'{real_name}_ent_r': entity_recall*100, f'{real_name}_ent_f1': entity_f1*100,
+                f'{real_name}_rel_p': relation_precision*100, f'{real_name}_rel_r': relation_recall*100, f'{real_name}_rel_f1': relation_f1*100,
         }
 
     def _do_calc_relation_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
@@ -485,9 +485,9 @@ class SpanRelationPostProcessor(IPostProcessor):
                 for ground_truth_relation in ground_truth_relations[key]:
                     if ground_truth_relation in predict_relations.get(key, {}):
                         predict_relations[key].remove(ground_truth_relation)
-                        relation_match_info['match'] += 1
+                        relation_match_info[key]['match'] += 1
                     else:
-                        relation_match_info['miss'] += 1
+                        relation_match_info[key]['miss'] += 1
             for key in predict_relations:
                 for wrong in predict_relations[key]:
                     relation_match_info[key]['wrong'] += 1
@@ -509,7 +509,7 @@ class SpanRelationPostProcessor(IPostProcessor):
             all_tp += tp
             all_fn += fn
             all_fp += fp
-            logger.info(f"For relation 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+            logger.info(f"For {'relation':16} 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
 
         precision = _care_div(all_tp, all_tp+all_fp)
         recall = _care_div(all_tp, all_tp+all_fn)
@@ -628,7 +628,7 @@ class SpanRelationPostProcessor(IPostProcessor):
                 precision = _care_div(tp, tp+fp)
                 recall = _care_div(tp, tp+fn)
                 f1 = _care_div(2*precision*recall, precision+recall)
-                logger.info(f"For entity 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+                logger.info(f"For {'entity':16} 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
             precision = _care_div(all_tp,all_tp+all_fp)
             recall = _care_div(all_tp, all_tp+all_fn)
             f1 = _care_div(2*precision*recall, precision+recall)
