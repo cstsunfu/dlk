@@ -14,7 +14,7 @@
 
 import pickle as pkl
 import json
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Set
 import os
 import numpy as np
 import pandas as pd
@@ -387,8 +387,142 @@ class SpanRelationPostProcessor(IPostProcessor):
             the named scores, recall, precision, f1
 
         """
+        real_name = self.loss_name_map(stage)
+        entity_precision, entity_recall, entity_f1 = self._do_calc_entity_metrics(predicts, list_batch_outputs)
+        relation_precision, relation_recall, relation_f1 = self._do_calc_relation_metrics(predicts, list_batch_outputs)
+        logger.info(f'{real_name:>8}_entity_precision: {entity_precision*100:.2f}, {real_name:>8}_recall: {entity_recall*100:.2f}, {real_name:>8}_f1: {entity_f1*100:.2f}')
+        logger.info(f'{real_name:>8}_relation_precision: {relation_precision*100:.2f}, {real_name:>8}_recall: {relation_recall*100:.2f}, {real_name:>8}_f1: {relation_f1*100:.2f}')
+        return {
+                f'{real_name}_ent_p': f"{entity_precision*100:.2f}", f'{real_name}_ent_r': f"{entity_recall*100:.2f}", f'{real_name}_ent_f1': f"{entity_f1*100:.2f}",
+                f'{real_name}_rel_p': f"{relation_precision*100:.2f}", f'{real_name}_rel_r': f"{relation_recall*100:.2f}", f'{real_name}_rel_f1': f"{relation_f1*100:.2f}",
+        }
 
-        def _flat_entities_info(entities_info: List[Dict], text: str)->Dict:
+    def _do_calc_relation_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
+        """calc relation related metrics
+        Returns: 
+            relation related metrics
+
+        """
+        def _group_relations_info(relations_info: List[Dict], entities_info: List[Dict])->Dict[str, Set[Tuple]]:
+            """flat the relations info by relations info dict and entities info dict
+
+            Args:
+                relations_info (List[Dict]): like
+                        [
+                            {
+                                "labels": [
+                                    "belong_to"
+                                ],
+                                "from": "bd7a2928-52a8-11ed-8b5c-18c04d299e80", # id of entity
+                                "to": "bd798da3-52a8-11ed-801c-18c04d299e80",
+                            }
+                        ]
+                entities_info (List[Dict]): like
+                        [
+                            {
+                                "entity_id": "bd798da3-52a8-11ed-801c-18c04d299e80",
+                                "start_sub_token":1,
+                                "end_sub_token": 3,
+                                "labels": [
+                                    "Brand"
+                                ]
+                            },
+                            {
+                                "entity_id": "bd7a2928-52a8-11ed-8b5c-18c04d299e80",
+                                "start_sub_token":5,
+                                "end_sub_token": 9,
+                                "labels": [
+                                    "Product"
+                                ]
+                            }
+                        ],
+
+            Returns: 
+                relations type relation info set pair, like
+                    {
+                        "belong_to": {
+                            (1, 3, 5, 9), 
+                            ...
+                        }
+                    }
+
+            Explaination: 
+                in the returns example, 
+                    1 ==> from_entity.sub_token_start
+                    3 ==> from_entity.sub_token_end
+                    5 ==> to_entity.sub_token_start
+                    9 ==> to_entity.sub_token_end
+            belong_to ==> the relation type
+            """
+            entities_id_info_map = {}
+            for entity_info in entities_info:
+                entities_id_info_map[entity_info['entity_id']] = entities_info
+
+            flat_relations = {}
+            for relation_info in relations_info:
+                from_entity = entities_id_info_map[relation_info['from']]
+                to_entity = entities_id_info_map[relation_info['to']]
+                relation_type = relation_info['labels'][0] # NOTE: you can also change the relation type format for different label format
+                if relation_type not in flat_relations:
+                    flat_relations[relation_type] = set()
+
+                flat_relations[relation_type].add((from_entity['sub_token_start'], from_entity['sub_token_end'], to_entity['sub_token_start'], to_entity['sub_token_end']))
+            return flat_relations
+
+        relation_match_info = {}
+        for predict in predicts:
+            text = predict['sentence']
+            predict_relations = _group_relations_info(predict['predict_relations_info'], predict['predict_entities_info'])
+            ground_truth_relations = _group_relations_info(predict['relations_info'], predict['entities_info'])
+            for key in set(ground_truth_relations.keys()).union(set(predict_relations.keys())):
+                if key not in relation_match_info:
+                    relation_match_info[key] = {
+                        "match": 0,
+                        "miss": 0,
+                        "wrong": 0,
+                    }
+            for key in ground_truth_relations:
+                for ground_truth_relation in ground_truth_relations[key]:
+                    if ground_truth_relation in predict_relations.get(key, {}):
+                        predict_relations[key].remove(ground_truth_relation)
+                        relation_match_info['match'] += 1
+                    else:
+                        relation_match_info['miss'] += 1
+            for key in predict_relations:
+                for wrong in predict_relations[key]:
+                    relation_match_info[key]['wrong'] += 1
+        all_tp, all_fn, all_fp = 0, 0, 0
+        def _care_div(a, b):
+            """return a/b or 0.0 if b == 0
+            """
+            if b==0:
+                return 0.0
+            return a/b
+        for key in relation_match_info:
+            tp = relation_match_info[key]['match']
+            fn = relation_match_info[key]['miss']
+            fp = relation_match_info[key]['wrong']
+            precision = _care_div(tp, tp+fp)
+            recall = _care_div(tp, tp+fn)
+            f1 = 2 * _care_div(precision*recall, precision+recall)
+
+            all_tp += tp
+            all_fn += fn
+            all_fp += fp
+            logger.info(f"For relation 「{key[:10]:10}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+
+        precision = _care_div(all_tp, all_tp+all_fp)
+        recall = _care_div(all_tp, all_tp+all_fn)
+        f1 = 2 * _care_div(precision*recall, precision+recall)
+        return precision, recall, f1
+
+    def _do_calc_entity_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
+        """calc entity related metrics
+        Returns: 
+            entity related metrics
+
+        """
+        def _group_entities_info(entities_info: List[Dict], text: str)->Dict:
             """gather the same labeled entity to the same list
 
             Args:
@@ -436,7 +570,7 @@ class SpanRelationPostProcessor(IPostProcessor):
                     info[label].append((start_position, end_position))
             return info
 
-        def _calc_score(predict_list: List, ground_truth_list: List):
+        def _calc_entity_score(predict_list: List, ground_truth_list: List):
             """use predict_list and ground_truth_list to calc scores
 
             Args:
@@ -494,26 +628,23 @@ class SpanRelationPostProcessor(IPostProcessor):
                 precision = _care_div(tp, tp+fp)
                 recall = _care_div(tp, tp+fn)
                 f1 = _care_div(2*precision*recall, precision+recall)
-                logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+                logger.info(f"For entity 「{key[:10]:10}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
             precision = _care_div(all_tp,all_tp+all_fp)
             recall = _care_div(all_tp, all_tp+all_fn)
             f1 = _care_div(2*precision*recall, precision+recall)
             return precision, recall, f1
 
-        return {"F1": 0.5}
-        # all_predicts = []
-        # all_ground_truths = []
-        # for predict in predicts:
-        #     text = predict['sentence']
-        #     predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
-        #     ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
-        #     all_predicts.append(predict_ins)
-        #     all_ground_truths.append(ground_truth_ins)
+        all_predicts = []
+        all_ground_truths = []
+        for predict in predicts:
+            text = predict['sentence']
+            predict_ins = _group_entities_info(predict['predict_entities_info'], text)
+            ground_truth_ins = _group_entities_info(predict['entities_info'], text)
+            all_predicts.append(predict_ins)
+            all_ground_truths.append(ground_truth_ins)
 
-        # precision, recall, f1 = _calc_score(all_predicts, all_ground_truths)
-        # real_name = self.loss_name_map(stage)
-        # logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
-        # return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
+        entity_precision, entity_recall, entity_f1 = _calc_entity_score(all_predicts, all_ground_truths)
+        return entity_precision, entity_recall, entity_f1
 
     def do_save(self, predicts: List, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict, save_condition: bool=False):
         """save the predict when save_condition==True

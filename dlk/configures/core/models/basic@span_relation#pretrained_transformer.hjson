@@ -6,6 +6,7 @@
         "dropout": "*@*",
         "entity_label_num": "*@*",
         "relation_label_num": "*@*", # each group
+        "relation_position": true, # each group
         "multi_matrix": "*@*",
     },
     "_link": {
@@ -16,6 +17,7 @@
         "config.dropout": ["embedding.config.dropout"],
         "config.entity_label_num": "decoder.decoder@entity.config.output_size",
         "config.relation_label_num": "decoder.decoder@relation.config.output_size",
+        "config.relation_position": ["decoder.decoder@relation.config.relation_position","decoder.decoder@entity.config.relation_position"]
         "config.multi_matrix": "decoder.decoder@relation.config.multi_matrix",
         "config.pretrained_model_path": "embedding.config.pretrained_model_path",
     },

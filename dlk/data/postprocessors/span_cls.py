@@ -274,7 +274,7 @@ class SpanClsPostProcessor(IPostProcessor):
 
         """
 
-        def _flat_entities_info(entities_info: List[Dict], text: str)->Dict:
+        def _group_entities_info(entities_info: List[Dict], text: str)->Dict:
             """gather the same labeled entity to the same list
 
             Args:
@@ -391,8 +391,8 @@ class SpanClsPostProcessor(IPostProcessor):
         all_ground_truths = []
         for predict in predicts:
             text = predict['sentence']
-            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
-            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
+            predict_ins = _group_entities_info(predict['predict_entities_info'], text)
+            ground_truth_ins = _group_entities_info(predict['entities_info'], text)
             all_predicts.append(predict_ins)
             all_ground_truths.append(ground_truth_ins)
 
