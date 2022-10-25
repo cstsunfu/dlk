@@ -234,7 +234,7 @@ class IPostProcessor(object):
         if stage not in self.without_ground_truth_stage:
             average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
             for name in average_loss:
-                log_info[f'{self.loss_name_map(stage)}_{name}'] = average_loss
+                log_info[f'{self.loss_name_map(stage)}_{name}'] = average_loss[name]
         predicts = self.do_predict(stage, list_batch_outputs, origin_data, rt_config)
         if stage not in self.without_ground_truth_stage:
             log_info.update(self.do_calc_metrics(predicts, stage, list_batch_outputs, origin_data, rt_config))
