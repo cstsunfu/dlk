@@ -26,7 +26,6 @@
     "embedding": {
         "_base": "pretrained_transformers",
         "module": {
-            "_base": "*@*",
         },
         "config": {
             "pretrained_model_path": "*@*",
