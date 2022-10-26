@@ -1,9 +1,6 @@
 {
     "config": {
-        "last_epoch": -1,
-        "num_training_steps": -1,
-        "decay": 0.05,
-        "epoch_training_steps": -1,
+        "decay": 0.05, # epoch dacay
     },
     "_name": "rec_decay",
 }

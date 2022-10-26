@@ -27,9 +27,7 @@ class CosineWarmupScheduleConfig(BaseConfig):
     Config Example:
         >>> {
         >>>     "config": {
-        >>>         "last_epoch": -1,
         >>>         "num_warmup_steps": 0,
-        >>>         "num_training_steps": -1,
         >>>         "num_cycles": 0.5,
         >>>     },
         >>>     "_name": "cosine_warmup",
@@ -38,14 +36,11 @@ class CosineWarmupScheduleConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(CosineWarmupScheduleConfig, self).__init__(config)
         config = config['config']
-        self.last_epoch = config["last_epoch"]
+        # NOTE: self.num_training_epochs & self.epoch_training_steps & self.num_training_steps will register in imodel
         self.num_warmup_steps = config["num_warmup_steps"]
-        self.num_training_steps = config["num_training_steps"]
         self.num_cycles = config['num_cycles']
         self.post_check(config, used=[
-            "last_epoch",
             "num_warmup_steps",
-            "num_training_steps",
             "num_cycles",
         ])
 
@@ -69,7 +64,6 @@ class CosineWarmupSchedule(BaseScheduler):
         num_warmup_steps = self.config.num_warmup_steps
         if num_warmup_steps >0 and num_warmup_steps < 1:
             num_warmup_steps = int(num_warmup_steps * num_training_steps)
-        last_epoch = self.config.last_epoch
 
         num_cycles = self.config.num_cycles
 
@@ -80,4 +74,4 @@ class CosineWarmupSchedule(BaseScheduler):
             progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
             return max(0.0, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
 
-        return LambdaLR(self.optimizer, lr_lambda, last_epoch)
+        return LambdaLR(self.optimizer, lr_lambda, last_epoch=-1)

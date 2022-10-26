@@ -313,7 +313,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return self.trainer.max_epochs
 
     @property
-    @lru_cache(maxsize=5) # the size should always == 1
+    @lru_cache(maxsize=2) # the size should always == 1
     def epoch_training_steps(self) -> int:
         """every epoch training steps inferred from datamodule and devices.
         """
@@ -324,29 +324,31 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         return batches
 
     @property
-    @lru_cache(maxsize=5) # the size should always == 1
+    @lru_cache(maxsize=2) # the size should always == 1
     def num_training_steps(self) -> int:
         """Total training steps inferred from datamodule and devices.
         """
-        # FIXIT: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
-        #        https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
-        # PATCH: https://github.com/PyTorchLightning/pytorch-lightning/issues/12317
         if self.trainer.max_steps != -1:
             return self.trainer.max_steps
+        # FIXED: https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
+        # NEED TEST
+        return self.trainer.estimated_stepping_batches
+        # legacy version pl<=1.5.8
+        # FIXIT: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
+        #        
+        # limit_batches = self.trainer.limit_train_batches
+        # if self.trainer.datamodule.train_dataloader() is None:
+        #     batches = 0
+        # else:
+        #     batches = len(self.trainer.datamodule.train_dataloader())
+        # batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)
 
-        limit_batches = self.trainer.limit_train_batches
-        if self.trainer.datamodule.train_dataloader() is None:
-            batches = 0
-        else:
-            batches = len(self.trainer.datamodule.train_dataloader())
-        batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)
+        # num_devices = max(1, self.trainer.devices)
+        # if self.trainer.num_devices:
+        #     num_devices = max(num_devices, self.trainer.num_devices)
 
-        num_devices = max(1, self.trainer.devices)
-        if self.trainer.num_devices:
-            num_devices = max(num_devices, self.trainer.num_devices)
-
-        effective_accum = self.trainer.accumulate_grad_batches * num_devices
-        return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs
+        # effective_accum = self.trainer.accumulate_grad_batches * num_devices
+        # return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs
 
     def configure_optimizers(self):
         """Configure the optimizer and scheduler
