@@ -40,7 +40,7 @@ class CosineRestartScheduleConfig(BaseSchedulerConfig):
         config = config['config']
         self.first_restart_epoch = config["first_restart_epoch"]
         self.first_restart_step = config["first_restart_step"]
-        assert self.first_restart_epoch != -1 and self.first_restart_step != -1, "You must provide one of them"
+        assert self.first_restart_epoch != -1 or self.first_restart_step != -1, "You must provide one of them"
         assert self.first_restart_epoch == -1 or self.first_restart_step == -1, "You must provide one of them"
         self.mult_fact = config['mult_fact']
         self.post_check(config, used=[
