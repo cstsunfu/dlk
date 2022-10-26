@@ -18,7 +18,7 @@ from typing import Dict, Union, Callable, List
 import torch
 from dlk.core.models import model_register, model_config_register
 from dlk.core.optimizers import optimizer_register, optimizer_config_register
-from dlk.core.schedulers import scheduler_register, scheduler_config_register
+from dlk.core.schedulers import scheduler_register, scheduler_config_register, BaseSchedulerConfig
 from dlk.core.losses import loss_register, loss_config_register
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlk.utils.config import BaseConfig, ConfigTool
@@ -42,6 +42,7 @@ class BasicIModelConfig(BaseConfig):
         self.optimizer, self.optimizer_config = self.get_optimizer(config.pop("optimizer", 'adamw'))
 
         self.scheduler, self.scheduler_config = self.get_scheduler(config.pop("scheduler", "basic"))
+        self.scheduler_config: BaseSchedulerConfig
         self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor", 'identity'))
 
         self.config = config.pop('config', {})
@@ -360,13 +361,10 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         })
 
         optimizer = self.get_optimizer()
-        if "num_training_steps" in self.config.scheduler_config.__dict__:
-            self.config.scheduler_config.num_training_steps = self.num_training_steps
-        if "epoch_training_steps" in self.config.scheduler_config.__dict__:
-            self.config.scheduler_config.epoch_training_steps = self.epoch_training_steps
-        if "num_training_epochs" in self.config.scheduler_config.__dict__:
-            self.config.scheduler_config.num_training_epochs = self.num_training_epochs
-        # self.config.scheduler_config.last_epoch = -1
+        self.config.scheduler_config.num_training_steps = self.num_training_steps
+        self.config.scheduler_config.epoch_training_steps = self.epoch_training_steps
+        self.config.scheduler_config.num_training_epochs = self.num_training_epochs
+        self.config.scheduler_config.last_epoch = self.num_training_epochs
         scheduler = self.config.scheduler(optimizer, self.config.scheduler_config)()
 
         return {

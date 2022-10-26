@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from typing import Dict
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 from dlk.utils.logger import Logger
 import torch.optim as optim
@@ -22,7 +21,7 @@ logger = Logger.get_logger()
 
 
 @scheduler_config_register("linear_warmup")
-class LinearWarmupScheduleConfig(BaseConfig):
+class LinearWarmupScheduleConfig(BaseSchedulerConfig):
     """
     Config Example:
         >>> {
@@ -35,7 +34,6 @@ class LinearWarmupScheduleConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(LinearWarmupScheduleConfig, self).__init__(config)
         config = config['config']
-        # NOTE: self.num_training_epochs & self.epoch_training_steps & self.num_training_steps will register in imodel
         self.num_warmup_steps = config["num_warmup_steps"]
         self.post_check(config, used=[
             "num_warmup_steps",

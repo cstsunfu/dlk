@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from typing import Dict
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 from dlk.utils.logger import Logger
 import torch.optim as optim
@@ -22,7 +21,7 @@ logger = Logger.get_logger()
 
 
 @scheduler_config_register("rec_decay")
-class RecDecayScheduleConfig(BaseConfig):
+class RecDecayScheduleConfig(BaseSchedulerConfig):
     """Config for RecDecaySchedule
 
     Config Example:
@@ -37,7 +36,6 @@ class RecDecayScheduleConfig(BaseConfig):
     """
     def __init__(self, config: Dict):
         super(RecDecayScheduleConfig, self).__init__(config)
-        # NOTE: self.num_training_epochs & self.epoch_training_steps & self.num_training_steps will register in imodel
         config = config['config']
         self.decay = config["decay"]
         self.post_check(config, used=[
@@ -72,4 +70,4 @@ class RecDecaySchedule(BaseScheduler):
             cur_epoch = (current_step+1)//epoch_training_steps if epoch_training_steps!=0 else 0
             # return 1/(1+decay*cur_epoch)
             return 1/((1+decay)**cur_epoch)
-        return LambdaLR(self.optimizer, lr_lambda, last_epoch-1)
+        return LambdaLR(self.optimizer, lr_lambda, last_epoch=1)

@@ -14,8 +14,7 @@
 
 from typing import Dict
 import math
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 import torch.optim as optim
 from dlk.utils.logger import Logger
@@ -23,7 +22,7 @@ logger = Logger.get_logger()
 
 
 @scheduler_config_register("cosine_restart")
-class CosineRestartScheduleConfig(BaseConfig):
+class CosineRestartScheduleConfig(BaseSchedulerConfig):
     default_config = {
         "config": {
             "first_restart_step": -1, # you can just set first_restart_step or first_restart_epoch
@@ -39,7 +38,6 @@ class CosineRestartScheduleConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(CosineRestartScheduleConfig, self).__init__(config)
         config = config['config']
-        # NOTE: self.num_training_epochs & self.epoch_training_steps & self.num_training_steps will register in imodel
         self.first_restart_epoch = config["first_restart_epoch"]
         self.first_restart_step = config["first_restart_step"]
         assert self.first_restart_epoch != -1 and self.first_restart_step != -1, "You must provide one of them"

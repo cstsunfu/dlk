@@ -13,14 +13,13 @@
 # limitations under the License.
 
 from typing import Dict
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 
 
 @scheduler_config_register("constant_warmup")
-class ConstantWarmupScheduleConfig(BaseConfig):
+class ConstantWarmupScheduleConfig(BaseSchedulerConfig):
     """Config for ConstantWarmupSchedule
 
     Config Example:

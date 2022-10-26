@@ -17,6 +17,7 @@ import importlib
 import os
 from dlk.utils.register import Register
 from torch.optim import Optimizer
+from dlk.utils.config import BaseConfig
 from torch.optim.lr_scheduler import LambdaLR
 import math
 
@@ -24,6 +25,14 @@ import math
 scheduler_config_register = Register("Schedule config register.")
 scheduler_register = Register("Schedule register.")
 
+class BaseSchedulerConfig(BaseConfig):
+    """interface for Schedule"""
+    def __init__(self, config):
+        super(BaseSchedulerConfig, self).__init__(config)
+        self.num_training_epochs :int = None
+        self.epoch_training_steps :int = None
+        self.num_training_steps :int = None
+        self.last_epoch :int = None
 
 class BaseScheduler(object):
     """interface for Schedule"""

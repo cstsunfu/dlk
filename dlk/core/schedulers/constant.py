@@ -14,14 +14,13 @@
 
 from typing import Dict
 import torch.nn as nn
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 
 
 @scheduler_config_register("constant")
-class ConstantScheduleConfig(BaseConfig):
+class ConstantScheduleConfig(BaseSchedulerConfig):
     """Config for ConstantSchedule
 
     Config Example:

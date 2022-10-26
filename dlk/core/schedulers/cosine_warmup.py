@@ -14,14 +14,13 @@
 
 from typing import Dict
 import math
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 
 
 @scheduler_config_register("cosine_warmup")
-class CosineWarmupScheduleConfig(BaseConfig):
+class CosineWarmupScheduleConfig(BaseSchedulerConfig):
     """Config for CosineWarmupSchedule
 
     Config Example:
@@ -36,7 +35,6 @@ class CosineWarmupScheduleConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(CosineWarmupScheduleConfig, self).__init__(config)
         config = config['config']
-        # NOTE: self.num_training_epochs & self.epoch_training_steps & self.num_training_steps will register in imodel
         self.num_warmup_steps = config["num_warmup_steps"]
         self.num_cycles = config['num_cycles']
         self.post_check(config, used=[
