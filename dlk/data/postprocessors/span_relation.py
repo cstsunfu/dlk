@@ -158,6 +158,12 @@ class SpanRelationPostProcessorConfig(IPostProcessorConfig):
             "start_save_step",
             "start_save_epoch",
             "ignore_labels",
+            "ignore_position",
+            "ignore_char",
+            "input_map",
+            "unrelated_entity",
+            "relation_groups",
+            "ignore_relations",
         ])
 
 

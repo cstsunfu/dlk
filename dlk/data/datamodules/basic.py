@@ -104,6 +104,7 @@ class BasicDatamoduleConfig(BaseConfig):
                "train_batch_size",
                "predict_batch_size",
                "online_batch_size",
+               "repeat_for_valid",
         ])
 
 

@@ -150,14 +150,14 @@ class SpanRelationRelabel(ISubProcessor):
         offset_length = len(offsets)
 
         unknown_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrix = np.full((offset_length, offset_length), self.config.mask_fill)
+        unknown_matrix = np.full((offset_length, offset_length), unknown_id)
         if self.config.sym:
+            mask_matrix = np.full((offset_length, offset_length), self.config.mask_fill)
             mask_matrix = np.tril(mask_matrix, k=-1)
-            unknown_matrix = np.full((offset_length, offset_length), unknown_id)
             unknown_matrix = np.triu(unknown_matrix, k=0)
             label_matrix = unknown_matrix + mask_matrix
         else:
-            label_matrix = mask_matrix
+            label_matrix = unknown_matrix
         if sub_word_ids[0] is None:
             label_matrix[0, :] = self.config.mask_fill
         if sub_word_ids[-1] is None:
