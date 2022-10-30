@@ -59,7 +59,7 @@ class GatherOutputMixin(object):
 
         """
         if self.trainer.world_size>1:
-            dist_outputs = self.all_gather(outputs)
+            dist_outputs = self.all_gather(outputs) # WARN: must padding all the dim to same except batch_size, otherwise will be trunc by the default all_gather function. Or check pytorch_lightning/utilities/distributed.gather_all_tensors 
             if self.local_rank in [0, -1]:
                 outputs = self.proc_dist_outputs(dist_outputs)
         return outputs

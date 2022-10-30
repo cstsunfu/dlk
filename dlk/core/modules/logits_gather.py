@@ -72,6 +72,12 @@ class LogitsGather(Module):
                 for from_dim, to_dim in scale.items:
                     self.layers_scale[str(layer)] = nn.Linear(int(from_dim), int(to_dim))
 
+        if not self.layer_map:
+            self.pass_gather = True
+        else:
+            self.pass_gather = False
+
+
     def forward(self, input: List[torch.Tensor])->Dict[str, torch.Tensor]:
         """gather the needed input to dict
 
@@ -84,7 +90,7 @@ class LogitsGather(Module):
         """
         result = torch.jit.annotate(Dict[str, torch.Tensor], {})
 
-        if not self.layer_map:
+        if self.pass_gather:
             return result
         for layer, layer_suffix in self.layer_map.items():
             if layer in self.layers_scale:

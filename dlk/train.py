@@ -140,11 +140,12 @@ class Train(object):
         # get data
         data = self.get_data(config)
 
-        # set datamodule
-        datamodule = self.get_datamodule(config, data)
-
         # set training manager
         manager = self.get_manager(config, name)
+
+        # register devices for valid repeat
+        # set datamodule
+        datamodule = self.get_datamodule(config, data, world_size = manager.manager.world_size)
 
         # init imodel and inject the origin test and valid data
         imodel = self.get_imodel(config, data)
@@ -167,21 +168,23 @@ class Train(object):
             self.data = pkl.load(f).get('data', {})
         return self.data
 
-    def get_datamodule(self, config, data):
+    def get_datamodule(self, config, data, world_size):
         """get the datamodule decided by config, and fit the data to datamodule
 
         Args:
             config: {"task": {"datamodule": '..'}}
             data: {"train": '..', 'valid': '..', ..}
+            devices: when the devices >1 and repeat_for_valid is True, we will repeat the 
 
         Returns: 
             datamodule
 
         """
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(
+        DataModule, data_module_config = ConfigTool.get_leaf_module(
             datamodule_register, datamodule_config_register, 'datamodule',
             config['task']['datamodule'])
-        datamodule = DataModule(DataModuleConfig, data)
+        data_module_config.world_size = world_size
+        datamodule = DataModule(data_module_config, data)
         return datamodule
 
     def get_manager(self, config, name):
@@ -195,10 +198,10 @@ class Train(object):
             manager
 
         """
-        Manager, ManagerConfig = ConfigTool.get_leaf_module(
+        Manager, manager_config = ConfigTool.get_leaf_module(
             manager_register, manager_config_register, 'manager',
             config.get('task').get('manager'))
-        manager = Manager(ManagerConfig,
+        manager = Manager(manager_config,
                           rt_config={
                               "save_dir": config.get('config').get("save_dir"),
                               "name": name
@@ -216,10 +219,10 @@ class Train(object):
             imodel
 
         """
-        IModel, IModelConfig = ConfigTool.get_leaf_module(
+        IModel, imodel_config = ConfigTool.get_leaf_module(
             imodel_register, imodel_config_register, 'imodel',
             config.get('task').get('imodel'))
-        imodel = IModel(IModelConfig)
+        imodel = IModel(imodel_config)
         if self.ckpt:
             logger.info(f"reuse the checkpoint at {self.ckpt}")
             imodel.load_from_checkpoint(self.ckpt)

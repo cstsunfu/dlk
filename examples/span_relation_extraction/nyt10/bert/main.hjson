@@ -23,7 +23,8 @@
                 "config":{
                     "callbacks": [ # remove checkpoint callback
                     ],
-                    "enable_checkpointing": false,
+                    // "callbacks": ["checkpoint@val_loss"],
+                    "enable_checkpointing": true,
                     "profiler": null,
                     "max_epochs": 50,
                     "accelerator": 'gpu', # or cpu

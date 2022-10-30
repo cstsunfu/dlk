@@ -70,7 +70,7 @@ class BertWrap(Module):
         super(BertWrap, self).__init__()
         self.config = config
 
-        self.bert = BertModel(config.bert_config, add_pooling_layer=False)
+        self.bert = BertModel(config.bert_config, add_pooling_layer=True)
         self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):

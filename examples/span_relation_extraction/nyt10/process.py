@@ -164,8 +164,8 @@ def get_data():
             "relations_info": relations_info
         })
     return data_list
-# with open('./test.json', 'w') as f:
-#     json.dump(get_data(), f, indent=4, ensure_ascii=False)
+with open('./test.json', 'w') as f:
+    json.dump(get_data(), f, indent=4, ensure_ascii=False)
 with open('./test.json', 'r') as f:
     data = json.load(f)
 

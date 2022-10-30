@@ -219,7 +219,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             all node outputs
 
         """
-        outputs = self.gather_outputs(outputs)
+        # BUG: the gather method is not implement well, so if you use ddp, the postprocessor will seperately run in deferent processores
+        # outputs = self.gather_outputs(outputs)
 
         self.log_dict(
             self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
@@ -272,7 +273,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             all node outputs
 
         """
-        outputs = self.gather_outputs(outputs)
+        # BUG: the gather method is not implement well, so if you use ddp, the postprocessor will seperately run in deferent processores
+        # outputs = self.gather_outputs(outputs)
 
         self.log_dict(
             self.postprocessor(stage='test', list_batch_outputs=outputs, origin_data=self._origin_test_data,

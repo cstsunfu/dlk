@@ -287,9 +287,6 @@ class SpanRelationPostProcessor(IPostProcessor):
                         entity_set_d[i] = entity_set_d.get(i, [])
                         entity_set_d[i].append((i, j, entity_id))
                         entity_cnt += 1
-                        if entity_cnt > rel_token_len:
-                            # HACK: too many predict, maybe wrong
-                            break
             if entity_cnt > rel_token_len:
                 # HACK: too many predict, maybe wrong
                 break
@@ -313,9 +310,6 @@ class SpanRelationPostProcessor(IPostProcessor):
                 for j in range(i if self.config.sym else 0, rel_token_len):
                     if word_ids[i] is None or word_ids[j] is None:
                         continue
-                    if candidate_cnt > 2*rel_token_len:
-                        # HACK: too many predict, maybe wrong
-                        break
                     predict_tail_id = tail_to_tail_ids[i][j]
                     predict_tail_relation = self.config.relation_label_vocab[predict_tail_id]
                     if predict_tail_relation not in {self.config.relation_label_vocab.pad, self.config.relation_label_vocab.unknown}:
@@ -329,15 +323,11 @@ class SpanRelationPostProcessor(IPostProcessor):
                             for second_entity in entity_set_d.get(j, []):
                                 candidate_relation_set_c.add((first_entity, second_entity, relation_idx, predict_head_id))
                                 candidate_cnt += 1
-                                if candidate_cnt > 2*rel_token_len:
-                                    # HACK: too many predict, maybe wrong
-                                    break
-                            if candidate_cnt > 2*rel_token_len:
-                                # HACK: too many predict, maybe wrong
-                                break
         predict_relations_info = []
         for candidate_relation in candidate_relation_set_c:
             first_entity, second_entity, relation_idx, predict_head_id = candidate_relation
+            if self.config.sym and first_entity[1] > second_entity[1]:
+                first_entity, second_entity = second_entity, first_entity
             if (first_entity[1], second_entity[1], relation_idx) in entity_tail_pair_set_e:
                 # HACK: if (first_entity[1], second_entity[1], relation_idx, predict_head_id) not in entity_tail_pair_set_e_with_relation_id, we can do better on it
                 predict_label = self.config.relation_label_vocab[predict_head_id]
@@ -485,6 +475,9 @@ class SpanRelationPostProcessor(IPostProcessor):
                 for ground_truth_relation in ground_truth_relations[key]:
                     if ground_truth_relation in predict_relations.get(key, {}):
                         predict_relations[key].remove(ground_truth_relation)
+                        relation_match_info[key]['match'] += 1
+                    elif self.config.sym and (ground_truth_relation[2], ground_truth_relation[3], ground_truth_relation[0], ground_truth_relation[1]) in predict_relations.get(key, {}):
+                        predict_relations[key].remove((ground_truth_relation[2], ground_truth_relation[3], ground_truth_relation[0], ground_truth_relation[1]))
                         relation_match_info[key]['match'] += 1
                     else:
                         relation_match_info[key]['miss'] += 1

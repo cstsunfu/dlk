@@ -71,6 +71,10 @@ class Logger(object):
         Returns: 
             None
         """
+        if "LOCAL_RANK" in os.environ and os.environ["LOCAL_RANK"] not in [-1, 0]:
+            return 
+        if "GLOBAL_RANK" in os.environ and os.environ["GLOBAL_RANK"] != 0:
+            return 
         if log_file:
             log_file = os.path.join(base_dir, log_file)
         if Logger.global_log_file:
@@ -96,6 +100,10 @@ class Logger(object):
         if reinit or not Logger.global_logger:
             Logger.global_logger = logging
             Logger.global_logger.remove()
-            Logger.global_logger.add(sys.stdout, level=Logger.level_map[log_level], format="<level>{time:MM/DD/YYYY HH:mm:ss} - {level:<8}</level> - <cyan>"+Logger.log_name+"</cyan> - <level>{message}</level>")
-            Logger.global_logger.level("INFO",  color="<g>")
+
+            if ("LOCAL_RANK" in os.environ and os.environ["LOCAL_RANK"] not in [-1, 0]) or ("GLOBAL_RANK" in os.environ and os.environ["GLOBAL_RANK"] != 0):
+                Logger.global_logger.add(sys.stdout, level=Logger.level_map["error"], format="<level>{time:MM/DD/YYYY HH:mm:ss} - {level:<8}</level> - <cyan>"+Logger.log_name+"</cyan> - <level>{message}</level>")
+            else:
+                Logger.global_logger.add(sys.stdout, level=Logger.level_map[log_level], format="<level>{time:MM/DD/YYYY HH:mm:ss} - {level:<8}</level> - <cyan>"+Logger.log_name+"</cyan> - <level>{message}</level>")
+            # Logger.global_logger.level("INFO",  color="<g>")
 
