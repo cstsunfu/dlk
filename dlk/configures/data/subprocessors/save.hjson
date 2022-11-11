@@ -1,8 +1,0 @@
-{
-    "_name": "save",
-    "config": {
-        "base_dir": "",
-        "train": "*@*",
-        "predict": "*@*"
-    }
-}
