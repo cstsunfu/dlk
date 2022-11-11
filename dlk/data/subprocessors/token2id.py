@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,27 +24,29 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token2id')
 class Token2IDConfig(BaseConfig):
+    default_config = {
+        "_name": "token2id",
+        "config": {
+            "train":{
+                "data_pair": {
+                    "labels": "label_ids"
+                },
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "vocab": "label_vocab", # usually provided by the "token_gather" module
+            },
+            "predict": "train",
+            "extend_train": "train",
+            "online": "train",
+        }
+    }
     """Config for Token2ID
 
     Config Example:
-        >>> {
-        >>>     "_name": "token2id",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "data_pair": {
-        >>>                 "labels": "label_ids"
-        >>>             },
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test', 'predict'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "vocab": "label_vocab", // usually provided by the "token_gather" module
-        >>>         }, //3
-        >>>         "predict": "train",
-        >>>         "online": "train",
-        >>>     }
-        >>> }
+        default_config
     """
 
     def __init__(self, stage, config: Dict):

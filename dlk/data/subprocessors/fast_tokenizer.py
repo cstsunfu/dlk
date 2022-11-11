@@ -78,6 +78,7 @@ class FastTokenizerConfig(BaseConfig):
                    "fix_offset": False, # whether fix the offset for pretokenizerd word
                },
                "predict": ["train", {"deliver": None}],
+               "extend_train": ["train", {"deliver": None}],
                "online": ["train", {"deliver": None}],
            }
        }
@@ -272,7 +273,8 @@ class FastTokenizer(ISubProcessor):
         for offset, word_id, type_id in zip(one_line['offsets'], one_line['word_ids'], one_line['type_ids']):
             if offset == (0, 0):
                 fixed_offsets.append(offset)
-            fixed_offsets.append((offset[0]+word_offsets[type_id][word_id][0], offset[1]+word_offsets[type_id][word_id][0]))
+            else:
+                fixed_offsets.append((offset[0]+word_offsets[type_id][word_id][0], offset[1]+word_offsets[type_id][word_id][0]))
         return fixed_offsets
 
     def process(self, data: Dict)->Dict:

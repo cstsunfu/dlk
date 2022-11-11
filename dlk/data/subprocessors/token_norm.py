@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,30 +28,32 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token_norm')
 class TokenNormConfig(BaseConfig):
+    default_config = {
+        "_name": "token_norm",
+        "config": {
+            "train":{
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "zero_digits_replaced": True,
+                "lowercase": True,
+                "extend_vocab": "", #when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
+                "tokenizer": "whitespace_split",  #the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
+                "data_pair": {
+                    "sentence": "norm_sentence"
+                },
+            },
+            "predict": "train",
+            "extend_train": "train",
+            "online": "train",
+        }
+    }
     """Config for TokenNorm 
 
     Config Example:
-        >>> {
-        >>>     "_name": "token_norm",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test', 'predict'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "zero_digits_replaced": true,
-        >>>             "lowercase": true,
-        >>>             "extend_vocab": "", //when lowercase is true, this upper_case_vocab will collection all tokens the token is not in vocab but it's lowercase is in vocab. this is only for token gather process
-        >>>             "tokenizer": "whitespace_split",  //the path to vocab(if the token in vocab skip norm it), the file is setted to one token per line
-        >>>             "data_pair": {
-        >>>                 "sentence": "norm_sentence"
-        >>>             },
-        >>>         },
-        >>>         "predict": "train",
-        >>>         "online": "train",
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, stage, config: Dict):
 

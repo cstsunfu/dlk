@@ -49,11 +49,15 @@ class SpanClsRelabelConfig(BaseConfig):
                 "entity_priority": [],
                 "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy, otherwise use the drop rule
                 "mask_fill": -100,
-            }
+                "mask_first_sent": False,  # when we use this module to resolve the MRC like SQuAD we should mask the first sentence(quesiotn) for anwering
+                "null_to_zero_index": False,  # if cannot find the entity, set to point to the first(zero) index token
+            },
+            "extend_train": "train"
         }
     }
     """Config for SpanClsRelabel
-    Config Example: default_config
+    Config Example: 
+        default_config
     """
     def __init__(self, stage, config: Dict):
 
@@ -73,14 +77,19 @@ class SpanClsRelabelConfig(BaseConfig):
         self.output_labels = self.config['output_map']['label_ids']
         self.entity_priority = {entity: priority for priority, entity in enumerate(self.config['entity_priority'])}
         self.priority_trigger = self.config['priority_trigger']
+        self.mask_first_sent = self.config['mask_first_sent']
+        self.null_to_zero_index = self.config['null_to_zero_index']
         self.post_check(self.config, used=[
             "drop",
             "vocab",
+            "mask_first_sent",
             "input_map",
             "data_set",
             "output_map",
             "entity_priority",
             "priority_trigger",
+            "null_to_zero_index",
+            "mask_first_sent",
             "mask_fill"
         ])
 
@@ -187,6 +196,13 @@ class SpanClsRelabel(ISubProcessor):
         if not sub_word_ids:
             logger.warning(f"entity_info: {pre_clean_entities_info}, offsets: {offsets} ")
 
+        if self.config.mask_first_sent:
+            first_start = sub_word_ids.index(0)
+            second_start = sub_word_ids[first_start+1:].index(0)
+            mask_first_index = first_start + second_start + 2
+        else:
+            mask_first_index = 0 # if there is only one sentence, set to 0
+
         entities_info = []
         pre_end = -1
         pre_length = 0
@@ -220,14 +236,13 @@ class SpanClsRelabel(ISubProcessor):
             pre_end = entity_info['end']
             pre_length = entity_info['end'] - entity_info['start']
             
-        cur_token_index = 0
         offset_length = len(offsets)
 
         unknown_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full((offset_length, offset_length), self.config.mask_fill)
+        mask_matrices = np.full((offset_length, offset_length), self.config.mask_fill, dtype=np.int8)
         mask_matrices = np.tril(mask_matrices, k=-1)
 
-        unknown_matrices = np.full((offset_length, offset_length), unknown_id)
+        unknown_matrices = np.full((offset_length, offset_length), unknown_id, dtype=np.int8)
         unknown_matrices = np.triu(unknown_matrices, k=0)
 
         label_matrices = unknown_matrices + mask_matrices
@@ -235,13 +250,26 @@ class SpanClsRelabel(ISubProcessor):
             label_matrices[0, :] = self.config.mask_fill
         if sub_word_ids[-1] is None:
             label_matrices[:, -1] = self.config.mask_fill
+
+        if mask_first_index > 0:
+            label_matrices[:mask_first_index, :] = self.config.mask_fill
+            label_matrices[:, :mask_first_index] = self.config.mask_fill
         processed_entities_info = []
         for entity_info in entities_info:
-            start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, cur_token_index, offset_length, is_start=True)
-            if start_token_index == -1:
-                logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
-                continue
-            end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
+            if entity_info['start']==0 and entity_info['end']==0:
+                start_token_index, end_token_index = 0, 0
+            else:
+                start_token_index = self.find_position_in_offsets(entity_info['start'], offsets, sub_word_ids, mask_first_index, offset_length, is_start=True)
+                if start_token_index == -1:
+                    if self.config.null_to_zero_index:
+                        start_token_index, end_token_index = 0, 0
+                    else:
+                        logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
+                        continue
+                else:
+                    end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)
+                    if self.config.null_to_zero_index and end_token_index == -1:
+                        start_token_index, end_token_index = 0, 0
             assert end_token_index != -1, f"entity_info: {entity_info}, offsets: {offsets}"
             label_id = self.vocab.get_index(entity_info['labels'][0])
             label_matrices[start_token_index, end_token_index] = label_id

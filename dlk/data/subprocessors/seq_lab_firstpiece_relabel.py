@@ -26,41 +26,41 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('seq_lab_firstpiece_relabel')
 class SeqLabFirstPieceRelabelConfig(BaseConfig):
+    default_config = {
+        "_name": "seq_lab_firstpiece_relabel",
+        "config": {
+            "train":{
+                "input_map": {  # without necessery, don't change this
+                    "word_ids": "word_ids",
+                    "offsets": "offsets",
+                    "entities_info": "entities_info",
+                },
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test', 'predict'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "output_map": {
+                    "labels": "labels",
+                    "gather_index": "gather_index",
+                    "word_word_ids": "word_ids",
+                    "word_offsets": "offsets",
+                },
+                "drop": "shorter", # longer'/'shorter'/'none', if entities is overlap, will remove by rule
+                "start_label": "S",
+                "end_label": "E",
+                "clean_droped_entity": True, # after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
+                "entity_priority": [],
+                # entity_priority": ['Product'],
+                "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
+            },
+            "extend_train": "train",
+        }
+    }
     """Config for SeqLabFirstPieceRelabel
 
     Config Example:
-        >>> {
-        >>>     "_name": "seq_lab_firstpiece_relabel",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "input_map": {  // without necessery, don't change this
-        >>>                 "word_ids": "word_ids",
-        >>>                 "offsets": "offsets",
-        >>>                 "entities_info": "entities_info",
-        >>>             },
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test', 'predict'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "output_map": {
-        >>>                 "labels": "labels",
-        >>>                 "gather_index": "gather_index",
-        >>>                 "word_word_ids": "word_ids",
-        >>>                 "word_offsets": "offsets",
-        >>>             },
-        >>>             "drop": "shorter", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
-        >>>             "start_label": "S",
-        >>>             "end_label": "E",
-        >>>             "clean_droped_entity": true, // after drop entity for training, whether drop the entity for calc metrics, default is true, this only works when the drop != 'none'
-        >>>             "entity_priority": [],
-        >>>             //"entity_priority": ['Product'],
-        >>>             "priority_trigger": 1, // if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
-        >>>         },
-        >>>         "predict": "train",
-        >>>         "online": "train",
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, stage, config: Dict):
 

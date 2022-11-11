@@ -49,9 +49,12 @@ class SpanRelationRelabelConfig(BaseConfig):
                 "label_seperate": False, # seperate differences types of relations to different label matrix or use universal matrix(universal matrix may have conflict issue, like the 2 entities of the head of 2 different relations is same)
                 "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
             },
+            "extend_train": "train"
         }
     }
     f"""Config for SpanRelationRelabel
+    Config Example:
+        default_config
     """
     # {json.dumps(default_config, indent=4, ensure_ascii=False)}
     def __init__(self, stage, config: Dict):

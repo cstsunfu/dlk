@@ -26,24 +26,25 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('save')
 class SaveConfig(BaseConfig):
+    default_config = {
+        "_name": "save",
+        "config":{
+            "base_dir": "",
+            "train":{
+                "processed": "processed_data.pkl", # all data without meta
+                "meta": "*@*"
+            },
+            "predict": {
+                "processed": "processed_data.pkl",
+            },
+            "extend_train": {
+                "processed": "processed_data_extend.pkl",
+            },
+        }
+    }
     """Config for Save
-
     Config Example:
-        >>> {
-        >>>     "_name": "save",
-        >>>     "config":{
-        >>>         "base_dir": ""
-        >>>         "train":{
-        >>>             "processed": "processed_data.pkl", // all data without meta
-        >>>             "meta": {
-        >>>                 "meta.pkl": ['label_ids', 'embedding'] //only for next time use
-        >>>             }
-        >>>         },
-        >>>         "predict": {
-        >>>             "processed": "processed_data.pkl",
-        >>>         }
-        >>>     }
-        >>> },
+        default_config
     """
     def __init__(self, stage, config):
         super(SaveConfig, self).__init__(config)

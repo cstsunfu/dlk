@@ -26,31 +26,33 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('word_mask')
 class WordMaskConfig(BaseConfig):
+    default_config = {
+        "_name": "word_mask",
+        "config": {
+            "train":{
+                "input_map": {  # without necessery, don't change this
+                    "word_ids": "word_ids",
+                    "offsets": "offsets",
+                    "entities_info": "entities_info",
+                },
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ['train', 'valid', 'test'],
+                    "predict": ['predict'],
+                    "online": ['online']
+                },
+                "output_map": {
+                    "labels": "labels",
+                },
+            },
+            "predict": "train",
+            "extend_train": "train",
+            "online": "train",
+        }
+    }
     """Config for WordMask
 
     Config Example:
-        >>> {
-        >>>     "_name": "word_mask",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "input_map": {  // without necessery, don't change this
-        >>>                 "word_ids": "word_ids",
-        >>>                 "offsets": "offsets",
-        >>>                 "entities_info": "entities_info",
-        >>>             },
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "output_map": {
-        >>>                 "labels": "labels",
-        >>>             },
-        >>>         },
-        >>>         "predict": "train",
-        >>>         "online": "train",
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, stage, config: Dict):
 

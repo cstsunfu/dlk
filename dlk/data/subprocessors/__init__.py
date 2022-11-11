@@ -24,7 +24,7 @@ import abc
 from pandarallel import pandarallel
 pandarallel.initialize(verbose=1)
 # TODO: tokenizer parall and other parall is anti
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 subprocessor_config_register = Register("SubProcessor config register")
 subprocessor_register = Register("SubProcessor register")
