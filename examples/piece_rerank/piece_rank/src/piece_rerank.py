@@ -28,6 +28,7 @@ from dlk.utils.io import open
 from tokenizers import Tokenizer
 logger = Logger.get_logger()
 
+# TODO: add metrix and optimizer the method of decode to string
 
 class BeamNode():
     """docstring for Beam"""
