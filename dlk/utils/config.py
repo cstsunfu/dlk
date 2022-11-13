@@ -165,7 +165,7 @@ class ConfigTool(object):
 
         Config Example:
             >>> config = {
-            >>>     "train":{ //train、predict、online stage config,  using '&' split all stages
+            >>>     "train":{ //train、predict、online stage config
             >>>         "data_pair": {
             >>>             "label": "label_id"
             >>>         },
