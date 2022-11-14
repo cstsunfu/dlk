@@ -38,13 +38,15 @@ from dlk.core import (
     model_config_register,
     model_register,
     scheduler_config_register,
+    scheduler_register,
     loss_config_register,
     loss_register,
     module_config_register,
     module_register,
     optimizer_config_register,
     optimizer_register,
-    scheduler_register
+    adv_method_config_register,
+    adv_method_register
 )
 from dlk.data import (
     datamodule_config_register,
@@ -702,6 +704,7 @@ module_dir_map = {
     "processor": "dlk/configures/data/processors",
     "subprocessor": "dlk/configures/data/subprocessors",
     "postprocessor": "dlk/configures/data/postprocessors",
+    "adv_method": "dlk/configures/core/adv_method",
 }
 
 
@@ -771,6 +774,13 @@ class InitMethodConfigParser(BaseConfigParser):
     """docstring for InitMethodConfigParser"""
     def __init__(self, config_file):
         super(InitMethodConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['initmethod'], register=initmethod_config_register)
+
+
+@config_parser_register('adv_method')
+class AdvMethodConfigParser(BaseConfigParser):
+    """docstring for AdvMethodConfigParser"""
+    def __init__(self, config_file):
+        super(AdvMethodConfigParser, self).__init__(config_file, config_base_dir=module_dir_map['adv_method'], register=adv_method_config_register)
 
 
 @config_parser_register('loss')

@@ -1,4 +1,3 @@
-
 # A Deep Learning ToolKit
 
 This project is WIP.
@@ -12,12 +11,12 @@ This project is WIP.
 pip install dlk
 
 or 
-git clong this repo and do
+git clone this repo and do
 
 python setup.py install
 
 ```
-## What is this project do?
+## What's this?
 
 * Provide a templete for deep learning (especially for nlp) training and deploy.
 * Provide parameters search.
@@ -28,20 +27,37 @@ python setup.py install
 ## More Feature is Comming
 
 
+* [ ] Tasks support
+    * [ ] NLP
+        * [X] Classification 
+        * [X] Pair Classification 
+        * [X] Regression 
+        * [X] Pair Regression 
+        * [X] Sequence Labeling
+        * [X] Span Classification
+        * [X] Relation Extraction
+        * [X] Token Rerank
+        * [ ] MRC SQuAD
+        * [ ] Translation
+        * [ ] Summary
+    * [ ] CV
+        * [ ] Classification 
+
 - [ ] Generate models.
 
 - [ ] Distill structure.
 
-- [ ] Computer vision support.
+- [ ] Ensemble models for NLU(and check how to do this in NLG)
 
-- [ ] Online service
-    - [ ] Provide a web server for online predict.
+- [ ] Adversarial Training
 
-- [ ] One `optimizer` different para groups use different `scheduler`s. [diff_schedule](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CyclicLR.html#torch.optim.lr_scheduler.CyclicLR)
+- [ ] Online service by triton.
 
-- [ ] ~~Support LightGBM, it's maybe not necessary? Will split to another package.~~
+- [ ] Data Augment.
 
-* [ ] Make most modules like CRF to be scriptable
+- [ ] ~~Support LightGBM. Will split to another package.~~
+
+* [ ] Make most complexity modules like Beam Search, CRF to be scriptable.
 
 * [X] Add UnitTest
     * [X] Parser

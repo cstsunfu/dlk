@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,25 @@ import pytorch_lightning as pl
 
 @imodel_config_register('basic')
 class BasicIModelConfig(BaseConfig):
+    default_config = {
+        "_name": "basic",
+        "model": "*@*",
+        "loss": "*@*",
+        "optimizer": {
+            "_base": "adamw@bias_nodecay",
+        },
+        "schedule": {
+            "_base": "linear_warmup"
+        },
+        "postprocessor": {
+            "_base": "identity"
+        },
+        "adv_method": {
+            "_base": "identity"
+        },
+        "config": {
+        },
+    }
     """ basic imodel config will provide all the config for model/optimizer/loss/scheduler/postprocess
     """
     def __init__(self, config: Dict):
@@ -39,11 +58,15 @@ class BasicIModelConfig(BaseConfig):
         self.model, self.model_config = self.get_model(config.pop("model"))
         self.loss, self.loss_config = self.get_loss(config.pop("loss"))
 
-        self.optimizer, self.optimizer_config = self.get_optimizer(config.pop("optimizer", 'adamw'))
+        self.optimizer, self.optimizer_config = self.get_optimizer(config.pop("optimizer"))
+        if config['adv_method']['_name'] == 'identity':
+            self.adv_method = None
+        else:
+            self.adv_method, self.adv_method_config = self.get_adv_method(config.pop("adv_method"))
 
-        self.scheduler, self.scheduler_config = self.get_scheduler(config.pop("scheduler", "basic"))
+        self.scheduler, self.scheduler_config = self.get_scheduler(config.pop("scheduler"))
         self.scheduler_config: BaseSchedulerConfig
-        self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor", 'identity'))
+        self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor"))
 
         self.config = config.pop('config', {})
 
@@ -82,6 +105,18 @@ class BasicIModelConfig(BaseConfig):
 
         """
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
+
+    def get_adv_method(self, config: Dict):
+        """Use config to init the optimizer
+
+        Args:
+            config: optimizer config
+
+        Returns: 
+            Optimizer, OptimizerConfig
+
+        """
+        return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
 
     def get_optimizer(self, config: Dict):
         """Use config to init the optimizer
@@ -123,6 +158,11 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         self.calc_loss = config.loss(config.loss_config)
         self.get_optimizer = config.optimizer(model=self.model, config=config.optimizer_config)
+        if self.config.adv_method:
+            self.adv_method = self.config.adv_method(model=self.model, config=self.config.adv_method_config)
+            self.automatic_optimization = False
+        else:
+            self.adv_method = None
 
         self._origin_valid_data = None
         self._origin_test_data = None
@@ -164,13 +204,16 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             the outputs
 
         """
-        result = self.model.training_step(batch)
-        loss, loss_log = self.calc_loss(result, batch, rt_config={
-            "current_step": self.global_step,
-            "current_epoch": self.current_epoch,
-            "total_steps": self.num_training_steps,
-            "total_epochs": self.num_training_epochs
-        })
+        if self.adv_method:
+            loss, loss_log = self.adv_method.traning_step(batch, batch_idx)
+        else:
+            result = self.model.training_step(batch)
+            loss, loss_log = self.calc_loss(result, batch, rt_config={
+                "current_step": self.global_step,
+                "current_epoch": self.current_epoch,
+                "total_steps": self.num_training_steps,
+                "total_epochs": self.num_training_epochs
+            })
         log_info = {}
         for key in loss_log:
             log_info[f"train_{key}"] = loss_log[key].unsqueeze(0)
@@ -219,8 +262,8 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             all node outputs
 
         """
-        # BUG: the gather method is not implement well, so if you use ddp, the postprocessor will seperately run in deferent processores
-        # outputs = self.gather_outputs(outputs)
+        # WARNING: the gather method is not implemented very well, so we will run all data on each node(set `repeat_for_valid` on datamodule)
+        # TODO: outputs = self.gather_outputs(outputs)
 
         self.log_dict(
             self.postprocessor(stage='valid', list_batch_outputs=outputs, origin_data=self._origin_valid_data,
