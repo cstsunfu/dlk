@@ -49,7 +49,11 @@ python setup.py install
 
 - [ ] Ensemble models for NLU(and check how to do this in NLG)
 
-- [ ] Adversarial Training
+- [ ] Training Strategy
+    - [X] Adversarial Training(FGM/PGD/FreeLB)
+    - [X] Schedule Loss(you can control the loss schedule)
+    - [X] Schedule MultiTask Loss(you can control the loss schedule for each task)
+    - [X] Focal Loss
 
 - [ ] Online service by triton.
 
