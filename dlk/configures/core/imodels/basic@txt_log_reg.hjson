@@ -1,5 +1,5 @@
 {
-    "_name": "basic"
+    "_base": "basic"
     "model": "*@*",
     "loss": {
         "_base": "bce",

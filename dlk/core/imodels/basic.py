@@ -20,6 +20,7 @@ from dlk.core.models import model_register, model_config_register
 from dlk.core.optimizers import optimizer_register, optimizer_config_register
 from dlk.core.schedulers import scheduler_register, scheduler_config_register, BaseSchedulerConfig
 from dlk.core.losses import loss_register, loss_config_register
+from dlk.core.adv_methods import adv_method_register, adv_method_config_register
 from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlk.utils.config import BaseConfig, ConfigTool
 from . import imodel_config_register, imodel_register, GatherOutputMixin
@@ -39,7 +40,7 @@ class BasicIModelConfig(BaseConfig):
         "optimizer": {
             "_base": "adamw@bias_nodecay",
         },
-        "schedule": {
+        "scheduler": {
             "_base": "linear_warmup"
         },
         "postprocessor": {
@@ -107,16 +108,16 @@ class BasicIModelConfig(BaseConfig):
         return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
 
     def get_adv_method(self, config: Dict):
-        """Use config to init the optimizer
+        """Use config to init the adv method
 
         Args:
-            config: optimizer config
+            config: adv method config
 
         Returns: 
-            Optimizer, OptimizerConfig
+            AdvMethod, AdvMethodConfig
 
         """
-        return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
+        return ConfigTool.get_leaf_module(adv_method_register, adv_method_config_register, "adv_method", config)
 
     def get_optimizer(self, config: Dict):
         """Use config to init the optimizer
@@ -205,7 +206,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         """
         if self.adv_method:
-            loss, loss_log = self.adv_method.traning_step(batch, batch_idx)
+            loss, loss_log = self.adv_method.training_step(self, batch, batch_idx)
         else:
             result = self.model.training_step(batch)
             loss, loss_log = self.calc_loss(result, batch, rt_config={

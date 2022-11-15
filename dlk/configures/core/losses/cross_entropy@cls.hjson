@@ -14,5 +14,5 @@
             "loss": "loss"
         },
     },
-    "_name": "cross_entropy",
+    "_base": "cross_entropy",
 }

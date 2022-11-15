@@ -22,6 +22,7 @@ import torch.nn as nn
 @loss_config_register("identity")
 class IdentityLossConfig(BaseModuleConfig):
     default_config = {
+        "_name": "identity",
         "config": {
             "schedule": [1],
             "scale": [1], # scale the loss for every schedule
@@ -32,7 +33,6 @@ class IdentityLossConfig(BaseModuleConfig):
                 "loss": "loss"
             },
         },
-        "_name": "identity",
     }
     """Config for IdentityLoss
 

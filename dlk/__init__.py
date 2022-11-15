@@ -13,7 +13,7 @@
 # limitations under the License.
 from typing import Callable, Dict, Any
 
-__version__ = '0.0.15'
+__version__ = '0.0.16'
 
 
 class AdditionalRegister(object):

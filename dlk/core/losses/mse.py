@@ -26,6 +26,7 @@ logger = Logger.get_logger()
 @loss_config_register("mse")
 class MSELossConfig(BaseModuleConfig):
     default_config = {
+        "_name": "mse",
         "config": {
             "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
             "schedule": [1],
@@ -37,7 +38,6 @@ class MSELossConfig(BaseModuleConfig):
                 "loss": "loss"
             },
         },
-        "_name": "mse",
     }
     """Config for MSELoss
 

@@ -26,6 +26,7 @@ logger = Logger.get_logger()
 @loss_config_register("bce")
 class BCEWithLogitsLossConfig(BaseModuleConfig):
     default_config ={
+        "_name": "bce",
         "config": {
             "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
             "masked_select": None, # if provide, only select the masked(=1) data
@@ -36,8 +37,7 @@ class BCEWithLogitsLossConfig(BaseModuleConfig):
             }
             # "schdeule": [0.3, 1.0], # can be a list or str
             # "scale": "[0.5, 1]",
-            },
-        "_name": "bce",
+        },
     }
     """Config for BCEWithLogitsLoss
 

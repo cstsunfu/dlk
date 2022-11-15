@@ -23,36 +23,41 @@ from dlk.utils.logger import Logger
 
 logger = Logger.get_logger()
 
-@adv_method_config_register('fgm')
-class FGMAdvMethodConfig(object):
+@adv_method_config_register('free_lb')
+class FreeLBAdvMethodConfig(object):
     default_config = {
-        "_name": "fgm",
+        "_name": "free_lb",
         "config": {
             "embedding_pattern": "model.*embedding.*embedding",
-            "epsilon": 1.0
+            "epsilon": 1.0,
+            "alpha": 0.3,
+            "adv_k": 3,
         }
     }
-    """Config for FGMAdvMethod
+    """Config for FreeLBAdvMethod
 
     Config Example:
         default_config
     """
     def __init__(self, config: Dict):
-        super(FGMAdvMethodConfig, self).__init__()
+        super(FreeLBAdvMethodConfig, self).__init__()
         config = config['config']
         self.embedding_pattern = config['embedding_pattern']
         self.epsilon = config['epsilon']
+        self.alpha = config['alpha']
+        self.adv_k = config['adv_k']
 
-@adv_method_register('fgm')
-class FGMAdvMethod(AdvMethod):
-    """Save fgm decided by config
+@adv_method_register('free_lb')
+class FreeLBAdvMethod(AdvMethod):
+    """Save free_lb decided by config
     """
 
-    def __init__(self, model: nn.Module, config: FGMAdvMethodConfig):
+    def __init__(self, model: nn.Module, config: FreeLBAdvMethodConfig):
         super().__init__(model, config)
         self.model = model
         self.config = config
-        self.backup = {}
+        self.emb_backup = {}
+        self.grad_backup = {}
         self.adv_para_name = set()
         for name, param in self.model.named_parameters():
             if param.requires_grad and re.findall(self.config.embedding_pattern, name):
@@ -60,21 +65,39 @@ class FGMAdvMethod(AdvMethod):
         logger.info(f"There are {len(self.adv_para_name)} paras will be adversarial training.")
         logger.info(f"They are {self.adv_para_name}.")
 
-    def attack(self):
+    def attack(self, is_first_attack=False):
         for name, param in self.model.named_parameters():
             if param.requires_grad and name in self.adv_para_name:
-                self.backup[name] = param.data.clone()
+                if is_first_attack:
+                    self.emb_backup[name] = param.data.clone()
                 norm = torch.norm(param.grad)
-                if norm != 0:
-                    r_at = self.config.epsilon * param.grad / norm
+                if norm != 0 and not torch.isnan(norm):
+                    r_at = self.config.alpha * param.grad / norm
                     param.data.add_(r_at)
+                    param.data = self.project(name, param.data, self.config.epsilon)
+
+    def project(self, param_name, param_data, epsilon):
+        r = param_data - self.emb_backup[param_name]
+        if torch.norm(r) > epsilon:
+            r = epsilon * r / torch.norm(r)
+        return self.emb_backup[param_name] + r
 
     def restore(self):
         for name, param in self.model.named_parameters():
             if param.requires_grad and name in self.adv_para_name:
-                assert name in self.backup
-                param.data = self.backup[name]
-        self.backup = {}
+                assert name in self.emb_backup
+                param.data = self.emb_backup[name]
+        self.emb_backup = {}
+
+    def backup_grad(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                self.grad_backup[name] = param.grad.clone()
+
+    def restore_grad(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                param.grad = self.grad_backup[name]
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
         """do training_step on a mini batch
@@ -100,12 +123,20 @@ class FGMAdvMethod(AdvMethod):
         torch.manual_seed(seed) # NOTE: should fix manual seed for every forward
         np.random.seed(seed)
         result = imodel.model.training_step(batch)
-        loss, _ = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss)
-        self.attack()
-        result = imodel.model.training_step(batch)
         loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
         imodel.manual_backward(loss)
+
+        self.backup_grad()
+        for t in range(self.config.adv_k):
+            self.attack(is_first_attack=(t==0))
+            if t == 0:
+                optimizer.zero_grad()
+
+            result = imodel.model.training_step(batch)
+            loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
+            loss = loss / self.config.adv_k
+            imodel.manual_backward(loss)
+        self.restore_grad()
         self.restore()
         optimizer.step()
 

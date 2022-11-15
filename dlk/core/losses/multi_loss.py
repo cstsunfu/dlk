@@ -36,6 +36,7 @@ def loss_sum(losses: Dict[str, torch.Tensor], **args:Dict):
 @loss_config_register("multi_loss")
 class MultiLossConfig(object):
     default_config = {
+        "_name": "multi_loss",
         "config": {
             "loss_collect": "sum",
             "args": {},
@@ -43,7 +44,6 @@ class MultiLossConfig(object):
                 "loss": "loss"
             },
         },
-        "_name": "multi_loss",
     }
     """Config for MultiLoss
 

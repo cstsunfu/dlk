@@ -25,6 +25,7 @@ logger = Logger.get_logger()
 @loss_config_register("cross_entropy")
 class CrossEntropyLossConfig(BaseModuleConfig):
     default_config = {
+        "_name": "cross_entropy",
         "config": {
             "ignore_index": -100,
             "weight": None, # or a list of value for every class
@@ -33,12 +34,12 @@ class CrossEntropyLossConfig(BaseModuleConfig):
             "log_map": {
                 "loss": "loss"
             },
+            "reduction": "mean",
             "schedule": [1],
             "scale": [1], # scale the loss for every schedule stage
             # "schdeule": [0.3, 1.0], # can be a list or str
             # "scale": "[0.5, 1]",
         },
-        "_name": "cross_entropy",
     }
     """Config for CrossEntropyLoss
 
@@ -50,6 +51,7 @@ class CrossEntropyLossConfig(BaseModuleConfig):
 
         self.scale = config['scale']
         self.schedule = config['schedule']
+        self.reduction = config['reduction']
 
         if isinstance(self.scale, str):
             self.scale = eval(self.scale)
@@ -99,6 +101,7 @@ class CrossEntropyLoss(nn.Module):
             self.cross_entropy = nn.CrossEntropyLoss(
                 weight=weight,
                 ignore_index=config.ignore_index,
+                reduction=self.config.reduction,
                 label_smoothing=config.label_smoothing
             )
         else:
@@ -107,6 +110,7 @@ class CrossEntropyLoss(nn.Module):
             self.cross_entropy = nn.CrossEntropyLoss(
                 weight=weight,
                 ignore_index=config.ignore_index,
+                reduction=self.config.reduction
             )
 
     def update_config(self, rt_config):
