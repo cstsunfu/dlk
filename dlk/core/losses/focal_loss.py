@@ -35,6 +35,7 @@ class FocalLossLossConfig(BaseModuleConfig):
                 "loss": "loss"
             },
             "schedule": [1],
+            "gamma": 1.0, # focal loss gamma
             "reduction": "mean",
             "scale": [1], # scale the loss for every schedule stage
             # "schdeule": [0.3, 1.0], # can be a list or str
@@ -52,6 +53,7 @@ class FocalLossLossConfig(BaseModuleConfig):
         self.scale = config['scale']
         self.schedule = config['schedule']
         self.reduction = config['reduction']
+        self.gamma = config['gamma']
 
         if isinstance(self.scale, str):
             self.scale = eval(self.scale)
@@ -141,10 +143,10 @@ class FocalLossLoss(nn.Module):
             at = self.weight.gather(0, target.squeeze(-1))
             logpt = logpt * at
 
-        loss = -1 * (1 - pt) ** self.gamma * logpt
-        if self.reduction == "none":
+        loss = -1 * (1 - pt) ** self.config.gamma * logpt
+        if self.config.reduction == "none":
             return loss
-        if self.reduction == "mean":
+        if self.config.reduction == "mean":
             return loss.mean()
         return loss.sum()
 

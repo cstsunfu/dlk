@@ -1,4 +1,5 @@
 {
+    "_base": "cross_entropy",
     "config": {
         "ignore_index": -100,
         "weight": null, # or a list of value for every class
@@ -14,5 +15,4 @@
             "loss": "loss"
         },
     },
-    "_base": "cross_entropy",
 }

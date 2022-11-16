@@ -91,13 +91,13 @@ class FreeLBAdvMethod(AdvMethod):
 
     def backup_grad(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
+            if param.requires_grad and param.grad is not None:
                 self.grad_backup[name] = param.grad.clone()
 
     def restore_grad(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                param.grad = self.grad_backup[name]
+            if param.requires_grad and name in self.grad_backup:
+                param.grad = param.grad + self.grad_backup[name]
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
         """do training_step on a mini batch
