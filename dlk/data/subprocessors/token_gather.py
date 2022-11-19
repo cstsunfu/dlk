@@ -37,8 +37,8 @@ class TokenGatherConfig(BaseConfig):
                 "deliver": "*@*", # output Vocabulary object (the Vocabulary of labels) name.
                 "ignore": "", # ignore the token, the id of this token will be -1
                 "update": None, # null or another Vocabulary object to update
-                "unk": "[UNK]",
-                "pad": "[PAD]",
+                "unk": "",
+                "pad": "",
                 "min_freq": 1,
                 "most_common": -1, # 1 for all
             }
