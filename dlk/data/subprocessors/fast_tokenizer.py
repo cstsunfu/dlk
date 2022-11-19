@@ -214,7 +214,7 @@ class FastTokenizer(ISubProcessor):
 
         """
         if self.config.data_type=='single':
-            batch_encodes = self.tokenizer.encode_batch(data[self.config.input_map['pretokenized_words']] if self.config.is_pretokenized else self.config.input_map['sentence'], **self.config.process_data)
+            batch_encodes = self.tokenizer.encode_batch(data[self.config.input_map['pretokenized_words']] if self.config.is_pretokenized else data[self.config.input_map['sentence']], **self.config.process_data)
         else: # pair
             sentence_as = data[self.config.input_map['pretokenized_words_a']] if self.config.is_pretokenized else data[self.config.input_map['sentence_a']]
             sentence_bs = data[self.config.input_map['pretokenized_words_b']] if self.config.is_pretokenized else data[self.config.input_map['sentence_b']]
