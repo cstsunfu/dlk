@@ -1,6 +1,0 @@
-{
-    "_name": "range_norm",
-    "config": {
-        "range": 0.1,
-    }
-}

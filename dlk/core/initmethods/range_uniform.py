@@ -21,15 +21,16 @@ import torch
 
 @initmethod_config_register('range_uniform')
 class RangeUniformInitConfig(BaseConfig):
+    default_config = {
+            "_name": "range_uniform",
+            "config": {
+                "range": 0.1,
+                }
+            }
     """Config for RangeNormInit
 
     Config Example:
-        >>> {
-        >>>     "_name": "range_uniform",
-        >>>     "config": {
-        >>>         "range": 0.1,
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, config):
         super(RangeUniformInitConfig, self).__init__(config)

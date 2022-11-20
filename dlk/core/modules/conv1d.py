@@ -20,18 +20,19 @@ from . import module_register, module_config_register, Module
 
 @module_config_register("conv1d")
 class Conv1dConfig(BaseConfig):
+    default_config = {
+            "_name": "conv1d",
+            "config": {
+                "in_channels": "*@*",
+                "out_channels": "*@*",
+                "dropout": 0.0, # the module output no need dropout
+                "kernel_sizes": [3],
+                },
+            }
     """Config for Conv1d
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "in_channels": "*@*",
-        >>>         "out_channels": "*@*",
-        >>>         "dropout": 0.0,
-        >>>         "kernel_sizes": [3],
-        >>>     },
-        >>>     "_name": "conv1d",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(Conv1dConfig, self).__init__(config)

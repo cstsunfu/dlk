@@ -23,28 +23,29 @@ logger = Logger.get_logger()
 
 @encoder_config_register("lstm")
 class LSTMConfig(BaseModuleConfig):
+    default_config = {
+        "_name": "lstm",
+        "config": {
+            "output_map": {},
+            "input_map": {},
+            "input_size": "*@*",
+            "output_size": "*@*",
+            "num_layers": 1,
+            "dropout": "*@*", # dropout between layers
+            },
+        "_link": {
+            "config.input_size": ["module.config.input_size"],
+            "config.output_size": ["module.config.output_size"],
+            "config.dropout": ["module.config.dropout"],
+            },
+        "module": {
+            "_base": "lstm",
+            },
+        }
     """Config for LSTM
 
     Config Example:
-        >>> {
-        >>>     module: {
-        >>>         _base: "lstm",
-        >>>     },
-        >>>     config: {
-        >>>         input_map: {},
-        >>>         output_map: {},
-        >>>         input_size: *@*,
-        >>>         output_size: "*@*",
-        >>>         num_layers: 1,
-        >>>         dropout: "*@*", // dropout between layers
-        >>>     },
-        >>>     _link: {
-        >>>         config.input_size: [module.config.input_size],
-        >>>         config.output_size: [module.config.output_size],
-        >>>         config.dropout: [module.config.dropout],
-        >>>     },
-        >>>     _name: "lstm",
-        >>> }
+        default_config
     """
 
     def __init__(self, config: Dict):

@@ -21,14 +21,17 @@ import torch
 
 @decoder_config_register('identity')
 class IdentityDecoderConfig(BaseModuleConfig):
+    default_config = {
+            "_name": "identity",
+            "config": {
+                "output_map": {},
+                "input_map": {}, # required_key: provide_key
+                },
+            }
     """Config for IdentityDecoder
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>     },
-        >>>     "_name": "identity",
-        >>> }
+        default_config
     """
     def __init__(self, config):
         super(IdentityDecoderConfig, self).__init__(config)

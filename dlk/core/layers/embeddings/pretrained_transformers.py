@@ -22,57 +22,33 @@ from dlk.core.modules import module_config_register, module_register
 
 @embedding_config_register("pretrained_transformers")
 class PretrainedTransformersConfig(BaseModuleConfig):
+    default_config = {
+        "_name": "pretrained_transformers",
+        "config": {
+            "pretrained_model_path": "*@*",
+            "input_map": {
+                "input_ids": "input_ids",
+                "attention_mask": "attention_mask",
+                "type_ids": "type_ids",
+                },
+            "output_map": {
+                "embedding": "embedding",
+                },
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
+        },
+        "_link": {
+            "config.pretrained_model_path": ["module.config.pretrained_model_path"],
+            "config.dropout": ["module.config.dropout"],
+        },
+        "module": {
+            "_base": "roberta",
+        },
+    }
     """Config for PretrainedTransformers
 
-    Config Example1:
-        >>> {
-        >>>     "module": {
-        >>>         "_base": "roberta",
-        >>>     },
-        >>>     "config": {
-        >>>         "pretrained_model_path": "*@*",
-        >>>         "input_map": {
-        >>>             "input_ids": "input_ids",
-        >>>             "attention_mask": "attention_mask",
-        >>>             "type_ids": "type_ids",
-        >>>         },
-        >>>         "output_map": {
-        >>>             "embedding": "embedding",
-        >>>         },
-        >>>         "dropout": 0, //dropout rate
-        >>>         "embedding_dim": "*@*",
-        >>>     },
-        >>>     "_link": {
-        >>>         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
-        >>>     },
-        >>>     "_name": "pretrained_transformers",
-        >>> }
-
-    Config Example2:
-        >>> for gather embedding
-        >>> {
-        >>>     "module": {
-        >>>         "_base": "roberta",
-        >>>     },
-        >>>     "config": {
-        >>>         "pretrained_model_path": "*@*",
-        >>>         "input_map": {
-        >>>             "input_ids": "input_ids",
-        >>>             "attention_mask": "subword_mask",
-        >>>             "type_ids": "type_ids",
-        >>>             "gather_index": "gather_index",
-        >>>         },
-        >>>         "output_map": {
-        >>>             "embedding": "embedding",
-        >>>         },
-        >>>         "embedding_dim": "*@*",
-        >>>         "dropout": 0, //dropout rate
-        >>>     },
-        >>>     "_link": {
-        >>>         "config.pretrained_model_path": ["module.config.pretrained_model_path"],
-        >>>     },
-        >>>     "_name": "pretrained_transformers",
-        >>> }
+    Config Example:
+        default_config
     """
 
     def __init__(self, config: Dict):

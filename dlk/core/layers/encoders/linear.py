@@ -20,28 +20,29 @@ from dlk.core.modules import module_config_register, module_register
 
 @encoder_config_register("linear")
 class LinearConfig(BaseModuleConfig):
+    default_config = {
+            "_name": "linear",
+            "config": {
+                "input_size": "*@*",
+                "dropout": 0.0,
+                "output_size": "*@*",
+                "pool": None,
+                "output_map": {},
+                "input_map": {},
+                },
+            "_link":{
+                "config.input_size": ["module.config.input_size"],
+                "config.output_size": ["module.config.output_size"],
+                "config.pool": ["module.config.pool"],
+                },
+            "module": {
+                "_base": "linear",
+                },
+            }
     """Config for Linear 
 
     Config Example:
-        >>> {
-        >>>     "module": {
-        >>>         "_base": "linear",
-        >>>     },
-        >>>     "config": {
-        >>>         "input_size": "*@*",
-        >>>         "output_size": "*@*",
-        >>>         "pool": null,
-        >>>         "dropout": 0.0,
-        >>>         "output_map": {},
-        >>>         "input_map": {}, // required_key: provide_key
-        >>>     },
-        >>>     "_link":{
-        >>>         "config.input_size": ["module.config.input_size"],
-        >>>         "config.output_size": ["module.config.output_size"],
-        >>>         "config.pool": ["module.config.pool"],
-        >>>     },
-        >>>     "_name": "linear",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(LinearConfig, self).__init__(config)

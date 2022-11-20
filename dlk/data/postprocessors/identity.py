@@ -30,6 +30,9 @@ class IdentityPostProcessorConfig(IPostProcessorConfig):
 
 @postprocessor_register('identity')
 class IdentityPostProcessor(IPostProcessor):
+    default_config = {
+            "_name": "identity"
+            }
     """docstring for DataSet"""
     def __init__(self, config: IdentityPostProcessorConfig):
         super(IdentityPostProcessor, self).__init__(config)

@@ -22,15 +22,16 @@ logger = Logger.get_logger()
 
 @scheduler_config_register("rec_decay")
 class RecDecayScheduleConfig(BaseSchedulerConfig):
+    default_config = {
+            "config": {
+                "decay": 0.05, # epoch dacay
+                },
+            "_name": "rec_decay",
+            }
     """Config for RecDecaySchedule
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "decay": 0.05, # epoch decay
-        >>>     },
-        >>>     "_name": "rec_decay",
-        >>> }
+        default_config
 
     the lr=lr*1/(1+decay)
     """

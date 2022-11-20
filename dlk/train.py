@@ -21,6 +21,7 @@ from dlk.data.datamodules import datamodule_register, datamodule_config_register
 from dlk.managers import manager_register, manager_config_register
 from dlk.core.imodels import imodel_register, imodel_config_register
 import pickle as pkl
+import torch
 from dlk.utils.io import open
 import json
 from dlk.utils.logger import Logger

@@ -20,17 +20,18 @@ from dlk.utils.config import BaseConfig
 
 @module_config_register("crf")
 class CRFConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "output_size": 2,
+                "batch_first": True,
+                "reduction": "mean", # none|sum|mean|token_mean
+                },
+            "_name": "crf",
+            }
     """Config for ConditionalRandomField
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "output_size": 2,
-        >>>         "batch_first": true,
-        >>>         "reduction": "mean", //none|sum|mean|token_mean
-        >>>     },
-        >>>     "_name": "crf",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(CRFConfig, self).__init__(config)

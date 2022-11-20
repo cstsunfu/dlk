@@ -1,6 +1,0 @@
-{
-    "config": {
-        "decay": 0.05, # epoch dacay
-    },
-    "_name": "rec_decay",
-}

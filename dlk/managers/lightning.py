@@ -30,6 +30,63 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 @manager_config_register('lightning')
 class LightningManagerConfig(BaseConfig):
+    default_config = {
+        "_name": "lightning",
+        "config":{
+            "callbacks": ["checkpoint@val_loss"],
+            "logger": True,
+            "enable_checkpointing": True,
+            "accelerator": None,
+            "default_root_dir": None,
+            "gradient_clip_val": 5.0,   # gradient clip > 5.0
+            "gradient_clip_algorithm": None,
+            "num_nodes": 1,
+            "devices": None,
+            "auto_select_gpus": False,
+            "ipus": None,
+            "log_gpu_memory": None,
+            "enable_progress_bar": True,
+            "overfit_batches": "0.0", # eval it to check it is float or int
+            "track_grad_norm": -1,
+            "check_val_every_n_epoch": 1,
+            "fast_dev_run": False,
+            "accumulate_grad_batches": 1,
+            "max_epochs": 100,
+            "min_epochs": None,
+            "max_steps": -1,
+            "min_steps": None,
+            "max_time": None,
+            "limit_train_batches": "1.0", # eval it to check it is float or int
+            "limit_val_batches": "1.0", # eval it to check it is float or int
+            "limit_test_batches": "1.0", # eval it to check it is float or int
+            "limit_predict_batches": "1.0", # eval it to check it is float or int
+            "val_check_interval": "1.0", # eval it to check it is float or int
+            "log_every_n_steps": 50,
+            "strategy": 'ddp',
+            "sync_batchnorm": False,
+            "precision": 32,
+            "enable_model_summary": True,
+            "weights_summary": 'top',
+            "weights_save_path": None,
+            "num_sanity_val_steps": 2,
+            "resume_from_checkpoint": None,
+            "profiler": None,
+            "benchmark": False,
+            "deterministic": False,
+            "reload_dataloaders_every_n_epochs": 0,
+            "auto_lr_find": False,
+            "replace_sampler_ddp": True,
+            "detect_anomaly": False,
+            "auto_scale_batch_size": False,
+            "plugins": None,
+            "amp_backend": 'native',
+            "amp_level": None,
+            "move_metrics_to_cpu": False,
+            "multiple_trainloader_mode": 'max_size_cycle',
+            "stochastic_weight_avg": False,
+            "terminate_on_nan": None,
+        },
+    }
     """docstring for LightningManagerConfig
     check https://pytorch-lightning.readthedocs.io trainer for paramaters detail
     """

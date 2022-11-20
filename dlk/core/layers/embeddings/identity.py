@@ -21,14 +21,17 @@ import torch
 
 @embedding_config_register('identity')
 class IdentityEmbeddingConfig(BaseModuleConfig):
+    default_config = {
+        "_name": "identity",
+        "config": {
+            "output_map": {},
+            "input_map": {},
+            },
+    }
     """Config for IdentityEmbedding
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>     },
-        >>>     "_name": "identity",
-        >>> }
+        default_config
     """
     def __init__(self, config):
         super(IdentityEmbeddingConfig, self).__init__(config)

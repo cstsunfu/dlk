@@ -25,25 +25,25 @@ logger = Logger.get_logger()
 
 @embedding_config_register('static')
 class StaticEmbeddingConfig(BaseModuleConfig):
+    default_config = {
+            "_name": "static",
+            "config": {
+                "embedding_file": "*@*", # the embedding file, must be saved as numpy array by pickle
+
+                "embedding_dim": "*@*",
+                # if the embedding_file is a dict, you should provide the dict trace to embedding
+                "embedding_trace": ".", # default the file itself is the embedding
+                "freeze": False, # is freeze
+                "padding_idx": 0, # dropout rate
+                "dropout": 0, # dropout rate
+                "output_map": {},
+                "input_map": {}, # required_key: provide_key
+            },
+    }
     """Config for StaticEmbedding
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
-        >>>         "embedding_dim": "*@*",
-        >>>         //if the embedding_file is a dict, you should provide the dict trace to embedding
-        >>>         "embedding_trace": ".", //default the file itself is the embedding
-        >>>         /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
-        >>>         /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
-        >>>         "freeze": false, // is freeze
-        >>>         "padding_idx": 0, //dropout rate
-        >>>         "dropout": 0, //dropout rate
-        >>>         "output_map": {},
-        >>>         "input_map": {}, // required_key: provide_key
-        >>>     },
-        >>>     "_name": "static",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(StaticEmbeddingConfig, self).__init__(config)

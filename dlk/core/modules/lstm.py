@@ -24,20 +24,21 @@ logger = Logger.get_logger()
 
 @module_config_register("lstm")
 class LSTMConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "bidirectional": True,
+                "output_size": "*@*", # the output is 2*hidden_size if use
+                "input_size": "*@*",
+                "num_layers": 1,
+                "dropout": 0.1, # dropout between layers
+                "dropout_last": True, # dropout the last layer output or not
+                },
+            "_name": "lstm",
+            }
     """Config for def 
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "bidirectional": true,
-        >>>         "output_size": 200, //the output is 2*hidden_size if use
-        >>>         "input_size": 200,
-        >>>         "num_layers": 1,
-        >>>         "dropout": 0.1, // dropout between layers
-        >>>         "dropout_last": true, //dropout the last layer output or not
-        >>>     },
-        >>>     "_name": "lstm",
-        >>> }
+        default_config
     """
 
     def __init__(self, config: Dict):

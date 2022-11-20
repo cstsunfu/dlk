@@ -21,19 +21,20 @@ from dlk.utils.config import BaseConfig
 
 @module_config_register("linear")
 class LinearConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "input_size": "*@*",
+                "output_size": "*@*",
+                "dropout": 0.0,
+                "pool": None,
+                "bias": True,
+                },
+            "_name": "linear",
+            }
     """Config for Linear
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "input_size": 256,
-        >>>         "output_size": 2,
-        >>>         "dropout": 0.0, //the module output no need dropout
-        >>>         "bias": true, // use bias or not in linear , if set to false, all the bias will be set to 0
-        >>>         "pool": null, // pooling output or not
-        >>>     },
-        >>>     "_name": "linear",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(LinearConfig, self).__init__(config)

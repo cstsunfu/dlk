@@ -21,35 +21,36 @@ from . import optimizer_register, optimizer_config_register, BaseOptimizer
 
 @optimizer_config_register("sgd")
 class SGDOptimizerConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "lr": 1e-3,
+                "momentum": 0.9,
+                "dampening": 0,
+                "weight_decay": 0,
+                "nesterov": False,
+                "optimizer_special_groups": {
+                    # "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
+                    # "bias": {
+                        # "config": {
+                            # "weight_decay": 0
+                            # },
+                        # "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
+                        # },
+                    # "decoder": {
+                        # "config": {
+                            # "lr": 1e-3
+                            # },
+                        # "pattern": ["decoder"]
+                        # },
+                    },
+                "name": "default" # default group name
+                },
+            "_name": "sgd",
+            }
     """Config for SGDOptimizer
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "lr": 1e-3,
-        >>>         "momentum": 0.9,
-        >>>         "dampening": 0,
-        >>>         "weight_decay": 0,
-        >>>         "nesterov":false,
-        >>>         "optimizer_special_groups": {
-        >>>             // "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
-        >>>             // "bias": {
-        >>>             //     "config": {
-        >>>             //         "weight_decay": 0
-        >>>             //     },
-        >>>             //     "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
-        >>>             // },
-        >>>             // "decoder": {
-        >>>             //     "config": {
-        >>>             //         "lr": 1e-3
-        >>>             //     },
-        >>>             //     "pattern": ["decoder"]
-        >>>             // },
-        >>>         }
-        >>>         "name": "default" // default group name
-        >>>     },
-        >>>     "_name": "sgd",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(SGDOptimizerConfig, self).__init__(config)

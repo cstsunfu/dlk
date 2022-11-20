@@ -21,16 +21,17 @@ import torch.optim as optim
 
 @scheduler_config_register("cosine_warmup")
 class CosineWarmupScheduleConfig(BaseSchedulerConfig):
+    default_config = {
+            "config": {
+                "num_warmup_steps": 0,
+                "num_cycles": 0.5,
+                },
+            "_name": "cosine_warmup",
+            }
     """Config for CosineWarmupSchedule
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "num_warmup_steps": 0,
-        >>>         "num_cycles": 0.5,
-        >>>     },
-        >>>     "_name": "cosine_warmup",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(CosineWarmupScheduleConfig, self).__init__(config)

@@ -23,20 +23,21 @@ import numpy as np
 
 @embedding_config_register('random')
 class RandomEmbeddingConfig(BaseModuleConfig):
+    default_config = {
+        "_name": "random",
+        "config": {
+            "vocab_size": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": 0, # dropout rate
+            "padding_idx": 0, # dropout rate
+            "output_map": {},
+            "input_map": {},
+            },
+    }
     """Config for RandomEmbedding
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "vocab_size": "*@*",
-        >>>         "embedding_dim": "*@*",
-        >>>         "dropout": 0, //dropout rate
-        >>>         "padding_idx": 0, //dropout rate
-        >>>         "output_map": {},
-        >>>         "input_map": {},
-        >>>     },
-        >>>     "_name": "random",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(RandomEmbeddingConfig, self).__init__(config)

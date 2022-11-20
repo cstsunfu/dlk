@@ -22,14 +22,15 @@ logger = Logger.get_logger()
 
 @scheduler_config_register("linear_warmup")
 class LinearWarmupScheduleConfig(BaseSchedulerConfig):
+    default_config = {
+            "config": {
+                "num_warmup_steps": 0.1,
+                },
+            "_name": "linear_warmup",
+            }
     """
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "num_warmup_steps": 0,
-        >>>     },
-        >>>     "_name": "linear_warmup",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(LinearWarmupScheduleConfig, self).__init__(config)

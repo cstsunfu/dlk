@@ -1,22 +1,10 @@
 {
-    "_name": "pretrained_transformers",
+    "_base": "pretrained_transformers",
     "config": {
-        "pretrained_model_path": "*@*",
         "input_map": {
-            "input_ids": "input_ids",
             "attention_mask": "subword_mask",
-            "type_ids": "type_ids",
             "gather_index": "gather_index",
         },
-        "output_map": {
-            "embedding": "embedding",
-        },
-        "embedding_dim": "*@*",
-        "dropout": "*@*",
-    },
-    "_link": {
-        "config.pretrained_model_path": ["module.config.pretrained_model_path"],
-        "config.dropout": ["module.config.dropout"],
     },
     "module": {
         "_base": "roberta",

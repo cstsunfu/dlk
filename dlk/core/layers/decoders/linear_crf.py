@@ -21,30 +21,31 @@ import copy
 
 @decoder_config_register("linear_crf")
 class LinearCRFConfig(BaseModuleConfig):
+    default_config = {
+            "_name": "linear_crf",
+            "config": {
+                "input_size": "*@*",  # the linear input_size
+                "output_size": "*@*", # the linear output_size
+                "reduction": "mean", # crf reduction method
+                "output_map": {}, # provide_key: output_key
+                "input_map": {} # required_key: provide_key
+                },
+            "_link":{
+                "config.input_size": ["module@linear.config.input_size"],
+                "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
+                "config.reduction": ["module@crf.config.reduction"],
+                },
+            "module@linear": {
+                "_base": "linear",
+                },
+            "module@crf": {
+                "_base": "crf",
+                },
+            }
     """Config for LinearCRF 
 
     Config Example:
-        >>> {
-        >>>     "module@linear": {
-        >>>         "_base": "linear",
-        >>>     },
-        >>>     "module@crf": {
-        >>>         "_base": "crf",
-        >>>     },
-        >>>     "config": {
-        >>>         "input_size": "*@*",  // the linear input_size
-        >>>         "output_size": "*@*", // the linear output_size
-        >>>         "reduction": "mean", // crf reduction method
-        >>>         "output_map": {}, //provide_key: output_key
-        >>>         "input_map": {} // required_key: provide_key
-        >>>     },
-        >>>     "_link":{
-        >>>         "config.input_size": ["module@linear.config.input_size"],
-        >>>         "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
-        >>>         "config.reduction": ["module@crf.config.reduction"],
-        >>>     }
-        >>>     "_name": "linear_crf",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(LinearCRFConfig, self).__init__(config)

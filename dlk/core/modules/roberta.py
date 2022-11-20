@@ -26,18 +26,19 @@ from dlk.utils.io import open
 
 @module_config_register("roberta")
 class RobertaWrapConfig(BaseConfig):
+    default_config = {
+            "config": {
+                "pretrained_model_path": "*@*",
+                "from_pretrain": True,
+                "freeze": False,
+                "dropout": 0.0,
+                },
+            "_name": "roberta",
+            }
     """Config for RobertaWrap
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "pretrained_model_path": "*@*",
-        >>>         "from_pretrain": true
-        >>>         "freeze": false,
-        >>>         "dropout": 0.0,
-        >>>     },
-        >>>     "_name": "roberta",
-        >>> }
+        default_config
     """
 
     def __init__(self, config: Dict):

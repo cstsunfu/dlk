@@ -21,23 +21,24 @@ from pytorch_lightning.callbacks import EarlyStopping
 
 @callback_config_register('early_stop')
 class EarlyStoppingCallbackConfig(object):
+    default_config = {
+            "_name": "early_stop",
+            "config":{
+                "monitor": "val_loss",
+                "mode": "min", # min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
+                "patience": 3,
+                "min_delta": 0.0,
+                "check_on_train_epoch_end": None,
+                "strict": True, # if the monitor is not right, raise error
+                "stopping_threshold": None, # float, if the value is good enough, stop
+                "divergence_threshold": None, # float,  if the value is so bad, stop
+                "verbose": True, #verbose mode print more info
+                }
+            }
     """Config for EarlyStoppingCallback
 
     Config Example:
-        >>> {
-        >>>     "_name": "early_stop",
-        >>>     "config":{
-        >>>         "monitor": "val_loss",
-        >>>         "mode": "*@*", // min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
-        >>>         "patience": 3,
-        >>>         "min_delta": 0.0,
-        >>>         "check_on_train_epoch_end": null,
-        >>>         "strict": true, // if the monitor is not right, raise error
-        >>>         "stopping_threshold": null, // float, if the value is good enough, stop
-        >>>         "divergence_threshold": null, // float,  if the value is so bad, stop
-        >>>         "verbose": true, //verbose mode print more info
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(EarlyStoppingCallbackConfig, self).__init__()

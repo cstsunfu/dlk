@@ -29,19 +29,19 @@ logger = Logger.get_logger()
 
 @module_config_register("distil_bert")
 class DistilBertWrapConfig(BaseConfig):
+    default_config = {
+        "config": {
+            "pretrained_model_path": "*@*",
+            "from_pretrain": True,
+            "freeze": False,
+            "dropout": 0.0,
+            },
+        "_name": "distil_bert",
+        }
     """Config for DistilBertWrap
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "pretrained_model_path": "*@*",
-        >>>         "from_pretrain": true,
-        >>>         "freeze": false,
-        >>>         "dropout": 0.0,
-        >>>     },
-
-        >>>     "_name": "distil_bert",
-        >>> }
+        default_config
     """
 
     def __init__(self, config: Dict):

@@ -20,15 +20,16 @@ import torch.optim as optim
 
 @scheduler_config_register("constant_warmup")
 class ConstantWarmupScheduleConfig(BaseSchedulerConfig):
+    default_config = {
+            "config": {
+                "num_warmup_steps": 0,
+                },
+            "_name": "constant_warmup",
+            }
     """Config for ConstantWarmupSchedule
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "num_warmup_steps": 0,
-        >>>     },
-        >>>     "_name": "constant_warmup",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(ConstantWarmupScheduleConfig, self).__init__(config)

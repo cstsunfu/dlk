@@ -21,14 +21,15 @@ import torch.optim as optim
 
 @scheduler_config_register("constant")
 class ConstantScheduleConfig(BaseSchedulerConfig):
+    default_config = {
+            "config": {
+                },
+            "_name": "constant",
+            }
     """Config for ConstantSchedule
 
     Config Example:
-        >>> {
-        >>>     "config": {
-        >>>     },
-        >>>     "_name": "constant",
-        >>> }
+        default_config
     """
     def __init__(self, config: Dict):
         super(ConstantScheduleConfig, self).__init__(config)
