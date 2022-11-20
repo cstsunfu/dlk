@@ -169,8 +169,8 @@ def get_data():
 with open('./test.json', 'r') as f:
     data = json.load(f)
 
-# train = data[:len(data)//2]
-valid = data[:1]
+train = data[:len(data)//2]
+valid = data[len(data)//2:]
 input = {"data": {"train": valid, "valid": valid}}
 
 processor = Processor('./bert/prepro.hjson')

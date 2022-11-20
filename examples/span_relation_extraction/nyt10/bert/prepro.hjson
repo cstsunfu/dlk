@@ -14,10 +14,6 @@
             ],
             "tokenizer_config_path": "./model/tokenizer.json", # the tokenizer config path (the tokenizer.json path)
             "data_dir": "./bert/output", # save load data base dir
-            "truncation": { # if this is set to None or empty, will not do trunc
-                "max_length": 512,
-                "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
-            },
         },
         "_link": {
             "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@span_cls_relabel.config.train.input_map.word_ids",
@@ -27,9 +23,6 @@
             "config.data_dir": [
                 "subprocessor@load.config.base_dir",
             "subprocessor@save.config.base_dir"
-            ],
-            "config.truncation": [
-                "subprocessor@tokenizer.config.train.truncation"
             ],
             "subprocessor@label_gather#relation.config.train.deliver": "subprocessor@span_relation_relabel.config.train.vocab",
             "subprocessor@label_gather#entity.config.train.deliver": "subprocessor@span_cls_relabel.config.train.vocab",
@@ -62,6 +55,13 @@
         },
         "subprocessor@tokenizer": {
             "_base": "fast_tokenizer",
+            "config": {
+                "train": {
+                    "truncation": { # if this is set to None or empty, will not do trunc
+                        "max_length": 512,
+                    },
+                }
+            }
         },
         "subprocessor@label_gather#entity": {
             "_base": "token_gather",
