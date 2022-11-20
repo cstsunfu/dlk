@@ -81,6 +81,18 @@ class RandomEmbedding(SimpleModule):
         """
         self.embedding.apply(method)
 
+    def share_embedding(self, embedding):
+        """link the embedding.embedding to self.embedding
+
+        Args:
+            embedding: source embedding
+
+        Returns: 
+            None
+
+        """
+        self.embedding = embedding.embedding
+
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """get the random embedding
 
@@ -96,3 +108,4 @@ class RandomEmbedding(SimpleModule):
             inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
 
         return inputs
+
