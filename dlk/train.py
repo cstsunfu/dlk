@@ -47,13 +47,14 @@ class Train(object):
         >>>     }
         >>> }
     """
-    def __init__(self, config: Union[str, Dict], ckpt: str = ""):
+    def __init__(self, config: Union[str, Dict], ckpt: str = "", state_dict_only=False):
         super(Train, self).__init__()
         if not isinstance(config, dict):
             with open(config, 'r') as f:
                 config = hjson.load(f, object_pairs_hook=dict)
 
         self.ckpt = ckpt
+        self.state_dict_only = state_dict_only
         self.focus = config.pop('_focus', {})
         self.configs = BaseConfigParser(config).parser_with_check()
         if self.ckpt:
@@ -225,7 +226,10 @@ class Train(object):
         imodel = IModel(imodel_config)
         if self.ckpt:
             logger.info(f"reuse the checkpoint at {self.ckpt}")
-            imodel.load_from_checkpoint(self.ckpt)
+            if self.state_dict_only:
+                imodel.model.load_state_dict(torch.load(self.ckpt), strict=False)
+            else:
+                imodel.load_from_checkpoint(self.ckpt)
         if 'valid' in data:
             imodel._origin_valid_data = data['valid']
 
@@ -233,3 +237,4 @@ class Train(object):
             imodel._origin_test_data = data['test']
 
         return imodel
+
