@@ -1,8 +1,6 @@
 {
     "config": {
-        "last_epoch": -1,
         "num_warmup_steps": 0.1,
-        "num_training_steps": -1,
     },
     "_name": "linear_warmup",
 }

@@ -27,41 +27,39 @@ logger = Logger.get_logger()
 
 @datamodule_config_register('basic')
 class BasicDatamoduleConfig(BaseConfig):
+    default_config = {
+        "_name": "basic",
+        "config": {
+            "pin_memory": None, # set to null will check the gpu is available
+            "collate_fn": "default",
+            "num_workers": None,
+            "shuffle": {
+                "train": True,
+                "predict": False,
+                "valid": False,
+                "test": False,
+                "online": False
+                },
+            "key_type_pairs": {
+                'input_ids': 'int',
+                'label_ids': 'long',
+                'type_ids': 'long',
+                },
+            "gen_mask": {
+                'input_ids': 'attention_mask',
+                },
+            "key_padding_pairs": { 'input_ids': 0, 'label_ids': -100},
+            "key_padding_pairs_2d": { 'label_ids': -100 },
+            "key_padding_pairs_3d": { 'relation_label_ids': -100 },
+            "train_batch_size": 32,
+            "predict_batch_size": 32,
+            "online_batch_size": 1,
+            "repeat_for_valid": True,
+        }
+    }
     """Config for BasicDatamodule
 
-    Config Example:
-        >>> {
-        >>>     "_name": "basic",
-        >>>     "config": {
-        >>>         "pin_memory": None,
-        >>>         "collate_fn": "default",
-        >>>         "num_workers": null,
-        >>>         "shuffle": {
-        >>>             "train": true,
-        >>>             "predict": false,
-        >>>             "valid": false,
-        >>>             "test": false,
-        >>>             "online": false
-        >>>         },
-        >>>         "key_type_pairs": {
-        >>>              'input_ids': 'int',
-        >>>              'label_ids': 'long',
-        >>>              'type_ids': 'long',
-        >>>          },
-        >>>         "gen_mask": {
-        >>>              'input_ids': 'attention_mask',
-        >>>          },
-        >>>         "key_padding_pairs": { //default all 0
-        >>>              'input_ids': 0,
-        >>>          },
-        >>>         "key_padding_pairs_2d": { //default all 0, for 2 dimension data
-        >>>              'input_ids': 0,
-        >>>          },
-        >>>         "train_batch_size": 32,
-        >>>         "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
-        >>>         "online_batch_size": 1,
-        >>>     }
-        >>> },
+    Config Example: default_config
     """
     def __init__(self, config):
         super(BasicDatamoduleConfig, self).__init__(config)
@@ -72,7 +70,9 @@ class BasicDatamoduleConfig(BaseConfig):
             logger.warning(f"'_index' is a preserved key, we will use this to indicate the index of item, if you ignore this warning, we will ignore the origin '_index' data.")
         self.key_padding_pairs = config.get('key_padding_pairs', {})
         self.key_padding_pairs_2d = config.get('key_padding_pairs_2d', {})
+        self.key_padding_pairs_3d = config.get('key_padding_pairs_3d', {})
         self.gen_mask = config.get("gen_mask", {})
+        self.repeat_for_valid = config.get("repeat_for_valid", True)
         self.collate_fn = config.get('collate_fn', 'default')
         self.pin_memory = config.get('pin_memory', False)
         self.num_workers = config.get('num_workers', 0) if config.get('num_workers', 0) else os.cpu_count()
@@ -85,6 +85,7 @@ class BasicDatamoduleConfig(BaseConfig):
             "test": False,
             "online": False
         })
+        self.world_size = -100 # NOTE: should register in train.py
         self.train_batch_size = config.get('train_batch_size', 32)
         self.test_batch_size = config.get('predict_batch_size', 32)
         self.valid_batch_size = config.get('predict_batch_size', 32)
@@ -99,15 +100,21 @@ class BasicDatamoduleConfig(BaseConfig):
                "gen_mask",
                "key_padding_pairs",
                "key_padding_pairs_2d",
+               "key_padding_pairs_3d",
                "train_batch_size",
                "predict_batch_size",
                "online_batch_size",
+               "repeat_for_valid",
         ])
 
 
 class BasicDataset(Dataset):
     """Basic and General Dataset"""
-    def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame):
+    def __init__(self, key_type_pairs: Dict[str, str], data:pd.DataFrame, repeat_valid: int=1):
+        """
+        if repeat_valid >1 we will repeat each item in this dataset
+        """
+        self.repeat_valid = repeat_valid
         self.data = data
         self.type_map = {"float": torch.float, "int": torch.int, 'bool': torch.bool, "long": torch.long}
 
@@ -116,7 +123,7 @@ class BasicDataset(Dataset):
     def __len__(self):
         """return teh dataset size
         """
-        return len(self.data)
+        return len(self.data) * self.repeat_valid
 
     def __getitem__(self, idx: int):
         """return one instance by index
@@ -128,6 +135,7 @@ class BasicDataset(Dataset):
             the data[idx] and convert to tensor the result will add 'idx' to '_index'
 
         """
+        idx = idx // self.repeat_valid
         one_ins = {}
         for key, key_type in self.key_type_pairs.items():
             one_ins[key] = torch.tensor(self.data.iloc[idx][key], dtype=self.type_map[key_type])
@@ -143,6 +151,10 @@ class BasicDatamodule(IBaseDataModule):
         super().__init__()
 
         self.config = config
+
+        repeat_valid = 1
+        if self.config.repeat_for_valid and self.config.world_size >1:
+            repeat_valid = self.config.world_size
         self.train_data = None
         self.valid_data = None
         self.test_data = None
@@ -150,12 +162,12 @@ class BasicDatamodule(IBaseDataModule):
         if 'train' in data:
             self.train_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'train'), data['train'])
         if "test" in data:
-            self.test_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'test'), data['test'])
+            self.test_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'test'), data['test'], repeat_valid=repeat_valid)
         if "valid" in data:
-            self.valid_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'valid'), data['valid'])
+            self.valid_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'valid'), data['valid'], repeat_valid=repeat_valid)
         if "predict" in data:
             self.predict_data = BasicDataset(self.real_key_type_pairs(config.key_type_pairs, data, 'predict'), data['predict'])
-        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask, key_padding_pairs_2d=config.key_padding_pairs_2d)
+        self.collate_fn = collate_register.get(config.collate_fn)(key_padding_pairs=config.key_padding_pairs, gen_mask=config.gen_mask, key_padding_pairs_2d=config.key_padding_pairs_2d, key_padding_pairs_3d=config.key_padding_pairs_3d)
 
     def real_key_type_pairs(self, key_type_pairs: Dict, data: Dict, field: str):
         """return the keys = key_type_pairs.keys() ∩ data.columns
@@ -175,8 +187,8 @@ class BasicDatamodule(IBaseDataModule):
         for key in copy_key_type_pairs:
             if key not in has_key:
                 remove.add(key)
-        if remove:
-            logger.warning(f"There are not '{', '.join(remove)}' in data field {field}.")
+        # if remove:
+        #     logger.warning(f"There are not '{', '.join(remove)}' in data field {field}.")
         for key in remove:
             copy_key_type_pairs.pop(key)
         return copy_key_type_pairs

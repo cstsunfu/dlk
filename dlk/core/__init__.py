@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +21,4 @@ from dlk.core.schedulers import scheduler_config_register, scheduler_register
 from dlk.core.losses import loss_config_register, loss_register
 from dlk.core.modules import module_config_register, module_register
 from dlk.core.search_methods import search_method_config_register, search_method_register
+from dlk.core.adv_methods import adv_method_config_register, adv_method_register

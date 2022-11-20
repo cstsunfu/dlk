@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,50 +31,61 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('fast_tokenizer')
 class FastTokenizerConfig(BaseConfig):
+    default_config = {
+           "_name": "fast_tokenizer",
+           "config": {
+               "train": {
+                   "data_set": {                   # for different stage, this processor will process different part of data
+                       "train": ["train", "valid", 'test'],
+                       "predict": ["predict"],
+                       "online": ["online"]
+                   },
+                   "config_path": "*@*",
+                   "truncation": {     # if this is set to None or empty, will not do trunc
+                       "direction": "right", # default `right`, if set `left`, will reserve the rightest chars.
+                       "stride": 0, # if the sequence is very long, will split to multiple span, stride is the window slide
+                       "max_length": 512,
+                       "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
+                   },
+                   "normalizer": "default", # ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], # if don't set this, will use the default normalizer from config
+                   "pre_tokenizer": "default",# [{"whitespace": {}}], # if don't set this, will use the default normalizer from config
+                   "post_processor": "default", # "bert", # if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
+                   "output_map": { # this is the default value, you can provide other name
+                       "tokens": "tokens",
+                       "ids": "input_ids",
+                       "attention_mask": "attention_mask",
+                       "type_ids": "type_ids",
+                       "special_tokens_mask": "special_tokens_mask",
+                       "offsets": "offsets",
+                       "word_ids": "word_ids",
+                       "sequence_ids": "sequence_ids",
+                   }, # the tokenizer output(the key) map to the value
+                   "input_map": {
+                       "sentence": "sentence", # for sigle input, tokenizer the "sentence"
+                       "sentence_a": "sentence_a", # for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                       "sentence_b": "sentence_b", # for pair inputs
+                       "pretokenized_words": "pretokenized_words", # pretokenized word related to sentence
+                       "pretokenized_words_a": "pretokenized_words_a", # pretokenized word b related to sentence_a
+                       "pretokenized_words_b": "pretokenized_words_b", # pretokenized word b related to sentence_b
+                       "pretokenized_word_offsets": "pretokenized_word_offsets", # pretokenized word offsets for fix offset
+                       "pretokenized_word_offsets_a": "pretokenized_word_offsets_a", # pretokenized word offsets for fix offset
+                       "pretokenized_word_offsets_b": "pretokenized_word_offsets_b", # pretokenized word offsets for fix offset
+                   },
+                   "deliver": "tokenizer",
+                   "process_data": { "is_pretokenized": False, "add_special_tokens": True},
+                   "expand_examples": True, # if the sequence is very long, will split to multiple span, whether expand the examples
+                   "data_type": "single", # single or pair, if not provide, will calc by len(process_data)
+                   "fix_offset": False, # whether fix the offset for pretokenizerd word
+               },
+               "predict": ["train", {"deliver": None}],
+               "extend_train": ["train", {"deliver": None}],
+               "online": ["train", {"deliver": None}],
+           }
+       }
     """Config for FastTokenizer
 
     Config Example:
-        >>> {
-        >>>     "_name": "fast_tokenizer",
-        >>>     "config": {
-        >>>         "train": {
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ["train", "valid", 'test'],
-        >>>                 "predict": ["predict"],
-        >>>                 "online": ["online"]
-        >>>             },
-        >>>             "config_path": "*@*",
-        >>>             "truncation": {     // if this is set to None or empty, will not do trunc
-        >>>                 "max_length": 512,
-        >>>                 "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
-        >>>             },
-        >>>             "normalizer": ["nfd", "lowercase", "strip_accents", "some_processor_need_config": {config}], // if don't set this, will use the default normalizer from config
-        >>>             "pre_tokenizer": [{"whitespace": {}}], // if don't set this, will use the default normalizer from config
-        >>>             "post_processor": "bert", // if don't set this, will use the default normalizer from config, WARNING: not support disable  the default setting( so the default tokenizer.post_tokenizer should be null and only setting in this configure)
-        >>>             "output_map": { // this is the default value, you can provide other name
-        >>>                 "tokens": "tokens",
-        >>>                 "ids": "input_ids",
-        >>>                 "attention_mask": "attention_mask",
-        >>>                 "type_ids": "type_ids",
-        >>>                 "special_tokens_mask": "special_tokens_mask",
-        >>>                 "offsets": "offsets",
-        >>>                 "word_ids": "word_ids",
-        >>>                 "overflowing": "overflowing",
-        >>>                 "sequence_ids": "sequence_ids",
-        >>>             }, // the tokenizer output(the key) map to the value
-        >>>             "input_map": {
-        >>>                 "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-        >>>                 "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-        >>>                 "sentence_b": "sentence_b", //for pair inputs
-        >>>             },
-        >>>             "deliver": "tokenizer",
-        >>>             "process_data": { "is_pretokenized": false},
-        >>>             "data_type": "single", // single or pair
-        >>>         },
-        >>>         "predict": ["train", {"deliver": null}],
-        >>>         "online": ["train", {"deliver": null}],
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, stage, config):
         super(FastTokenizerConfig, self).__init__(config)
@@ -86,6 +97,7 @@ class FastTokenizerConfig(BaseConfig):
         self.normalizer = self.config.get('normalizer', "default")
         self.pre_tokenizer = self.config.get('pre_tokenizer', "default")
         self.post_processor = self.config.get('post_processor', "default")
+        self.expand_examples = self.config.get('expand_examples', False)
         self.truncation = self.config["truncation"]
         self.deliver = self.config['deliver']
         self.load = self.config.get('load', None)
@@ -98,11 +110,12 @@ class FastTokenizerConfig(BaseConfig):
             "special_tokens_mask": "special_tokens_mask",
             "offsets": "offsets",
             "word_ids": "word_ids",
-            "overflowing": "overflowing",
             "sequence_ids": "sequence_ids",
         })
         self.process_data = self.config['process_data']
+        self.is_pretokenized = self.process_data['is_pretokenized']
         self.data_type = self.config["data_type"]
+        self.fix_offset = self.config['fix_offset']
         assert self.data_type in ['single', 'pair']
         self.post_check(self.config, used=[
             "data_set",
@@ -113,8 +126,10 @@ class FastTokenizerConfig(BaseConfig):
             "post_processor",
             "output_map",
             "input_map",
+            "fix_offset",
             "deliver",
             "process_data",
+            "expand_examples",
             "data_type",
         ])
 
@@ -140,13 +155,6 @@ class FastTokenizer(ISubProcessor):
         tokenizer_postprocessor_factory = TokenizerPostprocessorFactory(self.tokenizer)
         tokenizer_normalizer_factory = TokenizerNormalizerFactory(self.tokenizer)
 
-        if self.config.data_type=='single':
-            self._tokenize = self._single_tokenize
-        elif self.config.data_type == 'pair':
-            self._tokenize = self._pair_tokenize
-        else:
-            raise KeyError('We only support single or pair data now.')
-
         if not self.config.pre_tokenizer:
             self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
         elif self.config.pre_tokenizer != "default":
@@ -171,7 +179,10 @@ class FastTokenizer(ISubProcessor):
             self.tokenizer.normalizer = normalizers.Sequence(normalizers_list)
 
         if self.config.truncation:
-            self.tokenizer.enable_truncation(max_length=self.config.truncation.get('max_length'), stride=0, strategy=self.config.truncation.get('strategy', 'longest_first'))
+            self.tokenizer.enable_truncation(max_length=self.config.truncation['max_length'], 
+                                             stride=self.config.truncation["stride"], 
+                                             strategy=self.config.truncation['strategy'],
+                                             direction=self.config.truncation["direction"])
 
     def _get_processor(self, factory: Union[PreTokenizerFactory, TokenizerNormalizerFactory, TokenizerPostprocessorFactory], one_processor: Union[Dict, str]):
         """return the processor in factory by the processor name and update the config of the processor if provide
@@ -192,36 +203,6 @@ class FastTokenizer(ISubProcessor):
             assert isinstance(one_processor, str)
             return factory.get(one_processor)()
 
-    def _single_tokenize(self, one_line: pd.Series):
-        """Tokenize the one sentence
-
-        Args:
-            one_line: a Series which contains the config.input_map['sentence']
-
-        Returns: 
-            encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
-
-        """
-        
-        sentence = one_line[self.config.input_map['sentence']]
-        encode = self.tokenizer.encode(sentence, **self.config.process_data)
-        return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
-
-    def _pair_tokenize(self, one_line: pd.Series):
-        """Tokenize the two sentences
-
-        Args:
-            one_line: a Series which contains the config.input_map['sentence_a'] and config.input_map['sentence_b']
-
-        Returns: 
-            encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
-
-        """
-        sentence_a = one_line[self.config.input_map['sentence_a']]
-        sentence_b = one_line[self.config.input_map['sentence_b']]
-        encode = self.tokenizer.encode(sentence_a, sentence_b, **self.config.process_data)
-        return encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids
-
     def _process(self, data: pd.DataFrame)->pd.DataFrame:
         """use self._tokenize tokenize the data
 
@@ -232,18 +213,69 @@ class FastTokenizer(ISubProcessor):
             updated dataframe
 
         """
+        if self.config.data_type=='single':
+            batch_encodes = self.tokenizer.encode_batch(data[self.config.input_map['pretokenized_words']] if self.config.is_pretokenized else data[self.config.input_map['sentence']], **self.config.process_data)
+        else: # pair
+            sentence_as = data[self.config.input_map['pretokenized_words_a']] if self.config.is_pretokenized else data[self.config.input_map['sentence_a']]
+            sentence_bs = data[self.config.input_map['pretokenized_words_b']] if self.config.is_pretokenized else data[self.config.input_map['sentence_b']]
+            batch_encodes = self.tokenizer.encode_batch([(sentence_a, sentence_b) for sentence_a, sentence_b in zip(sentence_as, sentence_bs)], **self.config.process_data)
+        if self.config.expand_examples:
+            encodes_list = []
+            for encode in batch_encodes:
+                encodes_list.append([encode]+encode.overflowing)
+            data['_tokenizer_encoders'] = encodes_list
+            data = data.explode('_tokenizer_encoders', ignore_index=True)
+        else:
+            data['_tokenizer_encoders'] = batch_encodes
+        tokens_list, ids_list, attention_mask_list, type_ids_list, special_tokens_mask_list, offsets_list, word_ids_list, overflowing_list, sequence_ids_list = [], [], [], [], [], [], [], [], []
+        for encode in data['_tokenizer_encoders']:
+            tokens_list.append(encode.tokens)
+            ids_list.append(encode.ids)
+            attention_mask_list.append(encode.attention_mask)
+            type_ids_list.append(encode.type_ids)
+            special_tokens_mask_list.append(encode.special_tokens_mask)
+            offsets_list.append(encode.offsets)
+            word_ids_list.append(encode.word_ids)
+            # overflowing_list.append(encode.overflowing)
+            sequence_ids_list.append(encode.sequence_ids)
         output_map = self.config.output_map
-        data[[output_map['tokens'],
-            output_map['ids'],
-            output_map['attention_mask'],
-            output_map['type_ids'],
-            output_map['special_tokens_mask'],
-            output_map['offsets'],
-            output_map['word_ids'],
-            output_map['overflowing'],
-            output_map['sequence_ids']]] = data.apply(self._tokenize, axis=1, result_type='expand')
-            # WARNING: Using parallel_apply in tokenizers==0.10.3 is not fast than apply
+        data[output_map['tokens']] = tokens_list
+        data[output_map['ids']] = ids_list
+        data[output_map['attention_mask']] = attention_mask_list
+        data[output_map['type_ids']] = type_ids_list
+        data[output_map['special_tokens_mask']] = special_tokens_mask_list
+        data[output_map['offsets']] = offsets_list
+        data[output_map['word_ids']] = word_ids_list
+        # data[output_map['overflowing']] = overflowing_list
+        data[output_map['sequence_ids']] = sequence_ids_list
+        data.drop("_tokenizer_encoders", axis=1, inplace=True)
+
+        if self.config.is_pretokenized and self.config.fix_offset:
+            data[output_map['offsets']] = data.apply(self._fix_offset, axis=1)
         return data
+
+    def _fix_offset(self, one_line: pd.Series):
+        """fix the pretokenizerd offset
+
+        Args:
+            one_line: a Series which contains the config.input_map['pretokenized_word_offsets'], config.output_map['offsets'], config.output_map['word_ids'], configs.output_map['type_ids']
+
+        Returns: 
+            encode.tokens, encode.ids, encode.attention_mask, encode.type_ids, encode.special_tokens_mask, encode.offsets, encode.word_ids, encode.overflowing, encode.sequence_ids 
+
+        """
+        fixed_offsets = []
+        word_offsets = []
+        if self.config.data_type == 'single':
+            word_offsets = [one_line[self.config.input_map['pretokenized_word_offsets']]]
+        else: # pair
+            word_offsets = [one_line[self.config.input_map['pretokenized_word_offsets_a']], one_line[self.config.input_map['pretokenized_word_offsets_b']]]
+        for offset, word_id, type_id in zip(one_line['offsets'], one_line['word_ids'], one_line['type_ids']):
+            if offset == (0, 0):
+                fixed_offsets.append(offset)
+            else:
+                fixed_offsets.append((offset[0]+word_offsets[type_id][word_id][0], offset[1]+word_offsets[type_id][word_id][0]))
+        return fixed_offsets
 
     def process(self, data: Dict)->Dict:
         """Tokenizer entry

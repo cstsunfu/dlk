@@ -14,20 +14,18 @@
 
 from typing import Dict
 import torch.nn as nn
-from dlk.utils.config import BaseConfig
-from . import scheduler_register, scheduler_config_register, BaseScheduler
+from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
 
 
 @scheduler_config_register("constant")
-class ConstantScheduleConfig(BaseConfig):
+class ConstantScheduleConfig(BaseSchedulerConfig):
     """Config for ConstantSchedule
 
     Config Example:
         >>> {
         >>>     "config": {
-        >>>         "last_epoch": -1
         >>>     },
         >>>     "_name": "constant",
         >>> }
@@ -35,9 +33,7 @@ class ConstantScheduleConfig(BaseConfig):
     def __init__(self, config: Dict):
         super(ConstantScheduleConfig, self).__init__(config)
         config = config['config']
-        self.last_epoch = config["last_epoch"]
         self.post_check(config, used=[
-            "last_epoch",
         ])
 
 
@@ -57,4 +53,4 @@ class ConstantSchedule(BaseScheduler):
             Schedule
 
         """
-        return LambdaLR(self.optimizer, lambda _: 1, last_epoch=self.config.last_epoch)
+        return LambdaLR(self.optimizer, lambda _: 1, last_epoch=-1)

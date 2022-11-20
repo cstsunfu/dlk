@@ -25,20 +25,23 @@ logger = Logger.get_logger()
 
 @loss_config_register("bce")
 class BCEWithLogitsLossConfig(BaseModuleConfig):
+    default_config ={
+        "_name": "bce",
+        "config": {
+            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
+            "masked_select": None, # if provide, only select the masked(=1) data
+            "schedule": [1],
+            "scale": [1], # scale the loss for every schedule stage
+            "log_map": {
+                "loss": "loss"
+            }
+            # "schdeule": [0.3, 1.0], # can be a list or str
+            # "scale": "[0.5, 1]",
+        },
+    }
     """Config for BCEWithLogitsLoss
 
-    Config Example:
-        >>> {
-        >>>     "config": {
-        >>>         "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-        >>>         "schedule": [1],
-        >>>         "masked_select": null, // if provide, only select the masked(=1) data
-        >>>         "scale": [1], # scale the loss for every schedule stage
-        >>>         // "schdeule": [0.3, 1.0], # can be a list or str
-        >>>         // "scale": "[0.5, 1]",
-        >>>     },
-        >>>     "_name": "bce",
-        >>> }
+    Config Example: default_config
     """
     def __init__(self, config: Dict):
         super(BCEWithLogitsLossConfig, self).__init__(config)
@@ -62,6 +65,9 @@ class BCEWithLogitsLossConfig(BaseModuleConfig):
         assert self.schedule[-1] - 1 < 0.00001
 
         self.pred_truth_pair = config['pred_truth_pair']
+        self.log_map = config['log_map']
+        if isinstance(self.log_map, str):
+            self.log_map = {"loss": self.log_map}
         if not self.pred_truth_pair:
             raise PermissionError(f"You must provide the pred_truth_pair for loss.")
         self.masked_select = config['masked_select']
@@ -70,11 +76,12 @@ class BCEWithLogitsLossConfig(BaseModuleConfig):
             "masked_select",
             "schedule",
             "scale",
+            "log_map",
         ])
 
 
 @loss_register("bce")
-class BCEWithLogitsLoss(object):
+class BCEWithLogitsLoss(nn.Module):
     """binary crossentropy for bi-class classification
     """
     def __init__(self, config: BCEWithLogitsLossConfig):
@@ -126,7 +133,7 @@ class BCEWithLogitsLoss(object):
             pred = torch.masked_select(pred, inputs[self.config.masked_select])
             target = torch.masked_select(target, inputs[self.config.masked_select])
         loss = self.bce(torch.sigmoid(pred), target) * scale
-        return loss
+        return loss, {self.config.log_map['loss']: loss}
 
     def __call__(self, result, inputs, rt_config):
         """same as self.calc

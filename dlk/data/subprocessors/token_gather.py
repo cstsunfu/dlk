@@ -23,30 +23,31 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('token_gather')
 class TokenGatherConfig(BaseConfig):
+    default_config = {
+        "_name": "token_gather",
+        "config": {
+            "train": {
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ["train", "valid", 'test']
+                },
+                "gather_columns": "*@*", # List of columns, if one element of the list is dict, you can set more. Every cell must be sigle token or list of tokens or set of tokens
+                # gather_columns": ['tokens']
+                # gather_columns": ['tokens', {"column": "entities_info", "trace": 'labels'}] 
+                # the trace only trace the dict, if list is in trace path, will add the trace to every elements in the list. for example: {"entities_info": [{'start': 1， 'end': 2, labels: ['Label1']}, ..]}, the trace to labels is 'entities_info.labels'
+                "deliver": "*@*", # output Vocabulary object (the Vocabulary of labels) name.
+                "ignore": "", # ignore the token, the id of this token will be -1
+                "update": None, # null or another Vocabulary object to update
+                "unk": "",
+                "pad": "",
+                "min_freq": 1,
+                "most_common": -1, # 1 for all
+            }
+        }
+    }
     """Config for TokenGather
 
     Config Example:
-        >>> {
-        >>>     "_name": "token_gather",
-        >>>     "config": {
-        >>>         "train": {
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ["train", "valid", 'test']
-        >>>             },
-        >>>             "gather_columns": "*@*", //List of columns, if one element of the list is dict, you can set more. Every cell must be sigle token or list of tokens or set of tokens
-        >>>             //"gather_columns": ['tokens']
-        >>>             //"gather_columns": ['tokens', {"column": "entities_info", "trace": 'labels'}] 
-        >>>             // the trace only trace the dict, if list is in trace path, will add the trace to every elements in the list. for example: {"entities_info": [{'start': 1， 'end': 2, labels: ['Label1']}, ..]}, the trace to labels is 'entities_info.labels'
-        >>>             "deliver": "*@*", // output Vocabulary object (the Vocabulary of labels) name.
-        >>>             "ignore": "", // ignore the token, the id of this token will be -1
-        >>>             "update": null, // null or another Vocabulary object to update
-        >>>             "unk": "[UNK]",
-        >>>             "pad": "[PAD]",
-        >>>             "min_freq": 1,
-        >>>             "most_common": -1, //-1 for all
-        >>>         }
-        >>>     }
-        >>> }
+        default_config
     """
 
     def __init__(self, stage: str, config: Dict):

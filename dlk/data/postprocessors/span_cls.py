@@ -1,10 +1,10 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     http:// www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,51 +31,48 @@ logger = Logger.get_logger()
 
 @postprocessor_config_register('span_cls')
 class SpanClsPostProcessorConfig(IPostProcessorConfig):
+    default_config = {
+            "_name": "span_cls",
+            "config": {
+                "meta": "*@*",
+                "ignore_position": False, # calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
+                "ignore_char": " ", # if the entity begin or end with this char, will ignore these char
+                # "ignore_char": " ()[]-.,:", # if the entity begin or end with this char, will ignore these char
+                "meta_data": {
+                    "label_vocab": 'label_vocab',
+                    "tokenizer": "tokenizer",
+                },
+                "input_map": {
+                    "logits": "logits",
+                    "_index": "_index",
+                },
+                "origin_input_map": {
+                    "uuid": "uuid",
+                    "sentence": "sentence",
+                    "input_ids": "input_ids",
+                    "entities_info": "entities_info",
+                    "offsets": "offsets",
+                    "special_tokens_mask": "special_tokens_mask",
+                    "word_ids": "word_ids",
+                    "label_ids": "label_ids",
+                },
+                "save_root_path": ".",  # save data root dir
+                "save_path": {
+                    "valid": "valid",  # relative dir for valid stage
+                    "test": "test",    # relative dir for test stage
+                },
+                "start_save_step": 0,  # -1 means the last
+                "start_save_epoch": -1,
+                "ignore_labels": ['O', 'X', 'S', "E"], # Out, Out, Start, End
+            }
+        }
     """Config for SpanClsPostProcessor
 
     Config Example:
-        >>> {
-        >>>     "_name": "span_cls",
-        >>>     "config": {
-        >>>         "meta": "*@*",
-        >>>         "ignore_position": false, // calc the metrics, whether ignore the ground_truth and predict position info.( if set to true, only focus on the entity content not position.)
-        >>>         "ignore_char": " ", // if the entity begin or end with this char, will ignore these char
-        >>>         //"ignore_char": " ()[]-.,:", // if the entity begin or end with this char, will ignore these char
-        >>>         "meta_data": {
-        >>>             "label_vocab": 'label_vocab',
-        >>>             "tokenizer": "tokenizer",
-        >>>         },
-        >>>         "input_map": {
-        >>>             "logits": "logits",
-        >>>             "_index": "_index",
-        >>>         },
-        >>>         "origin_input_map": {
-        >>>             "uuid": "uuid",
-        >>>             "sentence": "sentence",
-        >>>             "input_ids": "input_ids",
-        >>>             "entities_info": "entities_info",
-        >>>             "offsets": "offsets",
-        >>>             "special_tokens_mask": "special_tokens_mask",
-        >>>             "word_ids": "word_ids",
-        >>>             "label_ids": "label_ids",
-        >>>         },
-        >>>         "save_root_path": ".",  //save data root dir
-        >>>         "save_path": {
-        >>>             "valid": "valid",  // relative dir for valid stage
-        >>>             "test": "test",    // relative dir for test stage
-        >>>         },
-        >>>         "start_save_step": 0,  // -1 means the last
-        >>>         "start_save_epoch": -1,
-        >>>         "aggregation_strategy": "max", // AggregationStrategy item
-        >>>         "ignore_labels": ['O', 'X', 'S', "E"], // Out, Out, Start, End
-        >>>     }
-        >>> }
     """
 
     def __init__(self, config: Dict):
         super(SpanClsPostProcessorConfig, self).__init__(config)
-
-        self.aggregation_strategy = self.config['aggregation_strategy']
         self.ignore_labels = set(self.config['ignore_labels'])
         self.ignore_char = set(self.config['ignore_char'])
         self.ignore_position = self.config['ignore_position']
@@ -133,7 +130,6 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
             "save_path",
             "start_save_step",
             "start_save_epoch",
-            "aggregation_strategy",
             "ignore_labels",
         ])
 
@@ -141,9 +137,8 @@ class SpanClsPostProcessorConfig(IPostProcessorConfig):
 @postprocessor_register('span_cls')
 class SpanClsPostProcessor(IPostProcessor):
     """PostProcess for sequence labeling task"""
-    def __init__(self, config:    SpanClsPostProcessorConfig):
-        super(   SpanClsPostProcessor, self).__init__()
-        self.config = config
+    def __init__(self, config: SpanClsPostProcessorConfig):
+        super(SpanClsPostProcessor, self).__init__(config)
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
         self.metric = torchmetrics.Accuracy()
@@ -166,6 +161,29 @@ class SpanClsPostProcessor(IPostProcessor):
             >>> }
 
         """
+
+        def _get_entity_info(sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
+            """gather sub_tokens to get the start and end
+
+            Args:
+                sub_tokens_index: the entity tokens index list
+                offset_mapping: every token offset in text
+                word_ids: every token in the index of words
+                label: predict label
+
+            Returns: 
+                entity_info
+
+            """
+            if not sub_tokens_index or not label:
+                return {}
+            start = offset_mapping[sub_tokens_index[0]][0]
+            end = offset_mapping[sub_tokens_index[-1]][1]
+            return {
+                "start": start,
+                "end": end,
+                "labels": [label]
+            }
         one_ins = {}
         origin_ins = origin_data.iloc[int(index)]
         one_ins["sentence"] = origin_ins[self.config.sentence]
@@ -180,12 +198,14 @@ class SpanClsPostProcessor(IPostProcessor):
         predict_label_ids = predict_logits.argmax(-1).cpu().numpy()
         for i in range(rel_token_len):
             for j in range(i, rel_token_len):
+                if word_ids[i] is None or word_ids[j] is None:
+                    continue
                 predict_label_id = predict_label_ids[i][j]
                 predict_label = self.config.label_vocab[predict_label_id]
                 if predict_label == self.config.label_vocab.pad or predict_label == self.config.label_vocab.unknown:
                     continue
                 else:
-                    entity_info = self.get_entity_info([i, j], offset_mapping, word_ids, predict_label)
+                    entity_info = _get_entity_info([i, j], offset_mapping, word_ids, predict_label)
                     if entity_info:
                         predict_entities_info.append(entity_info)
         one_ins['predict_entities_info'] = predict_entities_info
@@ -254,7 +274,7 @@ class SpanClsPostProcessor(IPostProcessor):
 
         """
 
-        def _flat_entities_info(entities_info: List[Dict], text: str)->Dict:
+        def _group_entities_info(entities_info: List[Dict], text: str)->Dict:
             """gather the same labeled entity to the same list
 
             Args:
@@ -302,16 +322,81 @@ class SpanClsPostProcessor(IPostProcessor):
                     info[label].append((start_position, end_position))
             return info
 
+        def _calc_score(predict_list: List, ground_truth_list: List):
+            """use predict_list and ground_truth_list to calc scores
+
+            Args:
+                predict_list: list of predict
+                ground_truth_list: list of ground_truth
+
+            Returns: 
+                precision, recall, f1
+
+            """
+            category_tp = {}
+            category_fp = {}
+            category_fn = {}
+            def _care_div(a, b):
+                """return a/b or 0.0 if b == 0
+                """
+                if b==0:
+                    return 0.0
+                return a/b
+
+
+            def _calc_num(_pred: List, _ground_truth: List):
+                """calc tp, fn, fp
+
+                Args:
+                    pred: pred list
+                    ground_truth: groud truth list
+
+                Returns: 
+                    tp, fn, fp
+
+                """
+                num_p = len(_pred)
+                num_t = len(_ground_truth)
+                truth = 0
+                for p in _pred:
+                    if p in _ground_truth:
+                        truth += 1
+                return truth, num_t-truth, num_p-truth
+
+            for predict, ground_truth in zip(predict_list, ground_truth_list):
+                keys = set(list(predict.keys())+list(ground_truth.keys()))
+                for key in keys:
+                    tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
+                    # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
+                    category_tp[key] = category_tp.get(key, 0) + tp
+                    category_fn[key] = category_fn.get(key, 0) + fn
+                    category_fp[key] = category_fp.get(key, 0) + fp
+
+            all_tp, all_fn, all_fp = 0, 0, 0
+            for key in category_tp:
+                tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
+                all_tp += tp
+                all_fn += fn
+                all_fp += fp
+                precision = _care_div(tp, tp+fp)
+                recall = _care_div(tp, tp+fn)
+                f1 = _care_div(2*precision*recall, precision+recall)
+                logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
+            precision = _care_div(all_tp,all_tp+all_fp)
+            recall = _care_div(all_tp, all_tp+all_fn)
+            f1 = _care_div(2*precision*recall, precision+recall)
+            return precision, recall, f1
+
         all_predicts = []
         all_ground_truths = []
         for predict in predicts:
             text = predict['sentence']
-            predict_ins = _flat_entities_info(predict['predict_entities_info'], text)
-            ground_truth_ins = _flat_entities_info(predict['entities_info'], text)
+            predict_ins = _group_entities_info(predict['predict_entities_info'], text)
+            ground_truth_ins = _group_entities_info(predict['entities_info'], text)
             all_predicts.append(predict_ins)
             all_ground_truths.append(ground_truth_ins)
 
-        precision, recall, f1 = self.calc_score(all_predicts, all_ground_truths)
+        precision, recall, f1 = _calc_score(all_predicts, all_ground_truths)
         real_name = self.loss_name_map(stage)
         logger.info(f'{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}')
         return {f'{real_name}_precision': precision*100, f'{real_name}_recall': recall*100, f'{real_name}_f1': f1*100}
@@ -352,91 +437,3 @@ class SpanClsPostProcessor(IPostProcessor):
             logger.info(f"Save the {stage} predict data at {save_file}")
             with open(save_file, 'w') as f:
                 json.dump(predicts, f, indent=4, ensure_ascii=False)
-
-    def calc_score(self, predict_list: List, ground_truth_list: List):
-        """use predict_list and ground_truth_list to calc scores
-
-        Args:
-            predict_list: list of predict
-            ground_truth_list: list of ground_truth
-
-        Returns: 
-            precision, recall, f1
-
-        """
-        category_tp = {}
-        category_fp = {}
-        category_fn = {}
-        def _care_div(a, b):
-            """return a/b or 0.0 if b == 0
-            """
-            if b==0:
-                return 0.0
-            return a/b
-
-
-        def _calc_num(_pred: List, _ground_truth: List):
-            """calc tp, fn, fp
-
-            Args:
-                pred: pred list
-                ground_truth: groud truth list
-
-            Returns: 
-                tp, fn, fp
-
-            """
-            num_p = len(_pred)
-            num_t = len(_ground_truth)
-            truth = 0
-            for p in _pred:
-                if p in _ground_truth:
-                    truth += 1
-            return truth, num_t-truth, num_p-truth
-
-        for predict, ground_truth in zip(predict_list, ground_truth_list):
-            keys = set(list(predict.keys())+list(ground_truth.keys()))
-            for key in keys:
-                tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
-                # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
-                category_tp[key] = category_tp.get(key, 0) + tp
-                category_fn[key] = category_fn.get(key, 0) + fn
-                category_fp[key] = category_fp.get(key, 0) + fp
-
-        all_tp, all_fn, all_fp = 0, 0, 0
-        for key in category_tp:
-            tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
-            all_tp += tp
-            all_fn += fn
-            all_fp += fp
-            precision = _care_div(tp, tp+fp)
-            recall = _care_div(tp, tp+fn)
-            f1 = _care_div(2*precision*recall, precision+recall)
-            logger.info(f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%")
-        precision = _care_div(all_tp,all_tp+all_fp)
-        recall = _care_div(all_tp, all_tp+all_fn)
-        f1 = _care_div(2*precision*recall, precision+recall)
-        return precision, recall, f1
-
-    def get_entity_info(self, sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str)->Dict:
-        """gather sub_tokens to get the start and end
-
-        Args:
-            sub_tokens_index: the entity tokens index list
-            offset_mapping: every token offset in text
-            word_ids: every token in the index of words
-            label: predict label
-
-        Returns: 
-            entity_info
-
-        """
-        if not sub_tokens_index or not label:
-            return {}
-        start = offset_mapping[sub_tokens_index[0]][0]
-        end = offset_mapping[sub_tokens_index[-1]][1]
-        return {
-            "start": start,
-            "end": end,
-            "labels": [label]
-        }

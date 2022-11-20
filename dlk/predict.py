@@ -84,7 +84,7 @@ class Predict(object):
             name_str = self.config['root']['_name']
         self.name_str = name_str
 
-    def trace(self):
+    def convert2script(self, data=None):
         """trace the model to torchscript
         Returns: 
             TODO
@@ -93,7 +93,8 @@ class Predict(object):
         config = self.config['root']
         name = self.name_str
         # get data
-        data = self.get_data(config)
+        if not data:
+            data = self.get_data(config)
 
         # set datamodule
         datamodule = self.get_datamodule(config, data)
@@ -104,10 +105,10 @@ class Predict(object):
         dataloader = datamodule.train_dataloader()
         for data in dataloader:
             # script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
-            script = torch.jit.trace(imodel.model,
-                                     example_inputs=data,
-                                     strict=False)
-            # script = torch.jit.script(imodel.model, example_inputs=data, strict=False)
+            # script = torch.jit.trace(imodel.model,
+            #                          example_inputs=data,
+            #                          strict=False)
+            script = torch.jit.script(imodel.model, example_inputs=data)
             print(script)
             print(script(data))
             # imodel.model(data)

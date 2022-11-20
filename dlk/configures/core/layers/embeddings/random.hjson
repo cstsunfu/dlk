@@ -3,9 +3,8 @@
     "config": {
         "vocab_size": "*@*",
         "embedding_dim": "*@*",
-        "dropout": 0, //dropout rate
-        "padding_idx": 0, //dropout rate
-        "output_map": {},
+        "dropout": 0, # dropout rate
+        "padding_idx": 0, # dropout rate
         "input_map": {},
     },
 }

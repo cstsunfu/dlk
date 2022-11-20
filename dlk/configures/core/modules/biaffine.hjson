@@ -1,9 +1,13 @@
 {
+    "_name": "biaffine",
     "config": {
         "input_size": "*@*",
+        "hidden_size": 0, # default == input_size
         "output_size": "*@*",
-        "dropout": 0.0, //generally no need dropout
-        "bias": true, // use bias or not in biaffine
+        "dropout": 0.0, # generally no need dropout
+        "multi_matrix": 1, # like relation need head pair and tail pair calc togather, so the multi_matrix should set to >1
+        "relation_position": false, # whether add relation_position before align
+        "max_seq_len": 1024, # for relation_position
+        "bias": true, # use bias or not in biaffine
     },
-    "_name": "biaffine"
 }

@@ -25,23 +25,21 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('load')
 class LoadConfig(BaseConfig):
+    default_config = {
+        "_name": "load",
+        "config": {
+            "base_dir": "",
+            "predict": {
+                "meta": "meta.pkl",
+            },
+            "online": "predict",
+            "extend_train": "predict"
+        }
+    }
     """Config for Load
 
     Config Example:
-        >>> {
-        >>>     "_name": "load",
-        >>>     "config":{
-        >>>         "base_dir": ""
-        >>>         "predict":{
-        >>>             "meta": "./meta.pkl",
-        >>>         },
-        >>>         "online": [
-        >>>             "predict", //base predict
-        >>>             {   // special config, update predict, is this case, the config is null, means use all config from "predict", when this is empty dict, you can only set the value to a str "predict", they will get the same result
-        >>>             }
-        >>>         ]
-        >>>     }
-        >>> },
+        default_config
     """
     def __init__(self, stage, config):
         super(LoadConfig, self).__init__(config)

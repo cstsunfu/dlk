@@ -1,16 +1,6 @@
 {
-    "_name": "basic",
+    "_base": "basic",
     "config": {
-        "pin_memory": null,
-        "collate_fn": "default",
-        "num_workers": 0,
-        "shuffle": {
-            "train": true,
-            "predict": false,
-            "valid": false,
-            "test": false,
-            "online": false
-        },
         "key_type_pairs": {
              'input_ids': 'int',
              'label_ids': 'long',
@@ -22,13 +12,13 @@
              'label_ids': 'attention_mask',
              'input_ids': 'subword_mask',
          },
-        "key_padding_pairs": { //default all 0
+        "key_padding_pairs": { #default all 0
              'input_ids': 0,
              'label_ids': -100,
              "special_tokens_mask": 0,
          },
         "train_batch_size": 32,
-        "predict_batch_size": 32, //predict、test batch_size is equals to valid_batch_size
+        "predict_batch_size": 32, #predict、test batch_size is equals to valid_batch_size
         "online_batch_size": 1,
     }
 }

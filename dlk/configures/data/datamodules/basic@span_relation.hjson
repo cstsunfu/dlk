@@ -1,0 +1,31 @@
+{
+    "_base": "basic",
+    "config": {
+        "key_type_pairs": {
+            'input_ids': 'int',
+            'entity_label_ids': 'long',
+            'relation_label_ids': 'long',
+            'type_ids': 'long',
+            "special_tokens_mask": "int",
+            "attention_mask": "int",
+         },
+        "gen_mask": {
+            'input_ids': 'attention_mask',
+         },
+        "key_padding_pairs": { #default all 0
+            'input_ids': 0,
+            'attention_mask': 0,
+            "special_tokens_mask": 0,
+            "type_ids": 0,
+        },
+        "key_padding_pairs_2d": { # default all -100, for 2 dimension data
+            'entity_label_ids': -100,
+        },
+        "key_padding_pairs_3d": { #default all -100, for 2 dimension data
+            'relation_label_ids': -100,
+        },
+        "train_batch_size": 32,
+        "predict_batch_size": 32, #predict、test batch_size is equals to valid_batch_size
+        "online_batch_size": 1,
+    }
+}

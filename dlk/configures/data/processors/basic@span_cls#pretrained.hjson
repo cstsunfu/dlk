@@ -9,12 +9,8 @@
             "span_cls_relabel",
             "save"
         ],
-        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*", // save load data base dir
-        "truncation": { // if this is set to None or empty, will not do trunc
-            "max_length": 512,
-            "strategy": "longest_first", // Can be one of longest_first, only_first or only_second.
-        },
+        "tokenizer_config_path": "*@*", # the tokenizer config path (the tokenizer.json path)
+        "data_dir": "*@*", # save load data base dir
     },
     "_link": {
         "subprocessor@tokenizer.config.train.output_map.word_ids": "subprocessor@span_cls_relabel.config.train.input_map.word_ids",
@@ -25,9 +21,6 @@
             "subprocessor@load.config.base_dir",
             "subprocessor@save.config.base_dir"
         ],
-        "config.truncation": [
-            "subprocessor@tokenizer.config.train.truncation"
-        ],
     },
     "subprocessor@load": {
         "_base": "load",
@@ -37,11 +30,11 @@
         "config": {
             "base_dir": "",
             "train": {
-                "processed": "processed_data.pkl", // all data
+                "processed": "processed_data.pkl", # all data
                 "meta": {
                     "meta.pkl": ['label_vocab',
                         "tokenizer"
-                    ] //only for next time use
+                    ] #only for next time use
                 }
             },
             "predict": {
@@ -49,7 +42,7 @@
             }
         }
     },
-    "subprocessor@seq_lab_loader": { // the span_cls dataloader is the same as seq_lab
+    "subprocessor@seq_lab_loader": { # the span_cls dataloader is the same as seq_lab
         "_base": "basic_data_loader@seq_lab",
     },
     "subprocessor@tokenizer": {
@@ -58,14 +51,14 @@
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "data_type": "single", # single or pair, if not provide, will calc by len(process_data)
                 "process_data": {
                     "is_pretokenized": false
                 },
                 "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
+                    "sentence": "sentence", #for sigle input, tokenizer the "sentence"
+                    "sentence_a": "sentence_a", #for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                    "sentence_b": "sentence_b", #for pair inputs
                 },
             },
             "predict": "train",
@@ -75,14 +68,14 @@
     "subprocessor@label_gather": {
         "_base": "token_gather",
         "config": {
-            "train": { // only train stage using
-                "data_set": { // for different stage, this processor will process different part of data
+            "train": { # only train stage using
+                "data_set": { # for different stage, this processor will process different part of data
                     "train": [
                         "train",
                         "valid"
                     ]
                 },
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                "deliver": "label_vocab", # output Vocabulary object (the Vocabulary of labels) name.
                 "gather_columns": [
                     {
                         "column": "entities_info",
@@ -98,10 +91,8 @@
         "_base": "span_cls_relabel",
         "config": {
             "train": {
-                "drop": "none", //'longer'/'shorter'/'none', if entities is overlap, will remove by rule
+                "drop": "none", #'longer'/'shorter'/'none', if entities is overlap, will remove by rule
             },
-            "predict": "train",
-            "online": "train",
         }
     },
 }

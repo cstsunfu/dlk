@@ -24,33 +24,19 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('basic_data_loader')
 class BasicDataLoaderConfig(BaseConfig):
+    default_config = {
+        "_name": "basic_data_loader@seq_lab",
+        "config": {
+            "train": "*@*",
+            "extend_train": "train",
+            "predict": "*@*",
+            "online": "*@*",
+        }
+    }
     """Config for BasicDataLoader
 
     Config Example:
-        >>> {
-        >>>     "_name": "basic_data_loader@seq_lab",
-        >>>     "config": {
-        >>>         "train":{
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ['train', 'valid', 'test', 'predict'],
-        >>>                 "predict": ['predict'],
-        >>>                 "online": ['online']
-        >>>             },
-        >>>             "input_map": {   // without necessery don't change this
-        >>>                 "sentence": "sentence",
-        >>>                 "uuid": "uuid",
-        >>>                 "entities_info": "entities_info",
-        >>>             },
-        >>>             "output_map": {   // without necessery don't change this
-        >>>                 "sentence": "sentence",
-        >>>                 "uuid": "uuid",
-        >>>                 "entities_info": "entities_info",
-        >>>             },
-        >>>         },
-        >>>         "predict": "train",
-        >>>         "online": "train",
-        >>>     }
-        >>> }
+        default_config
     """
     def __init__(self, stage, config: Dict):
 

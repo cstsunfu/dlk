@@ -23,27 +23,28 @@ logger = Logger.get_logger()
 
 @subprocessor_config_register('char_gather')
 class CharGatherConfig(BaseConfig):
+    default_config = {
+        "_name": "char_gather",
+        "config": {
+            "train": {
+                "data_set": {                   # for different stage, this processor will process different part of data
+                    "train": ["train", "valid", 'test']
+                },
+                "gather_columns": "*@*", #List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "deliver": "char_vocab", # output Vocabulary object (the Vocabulary of labels) name.
+                "ignore": "", # ignore the token, the id of this token will be -1
+                "update": None, # null or another Vocabulary object to update
+                "unk": "[UNK]",
+                "pad": "[PAD]",
+                "min_freq": 1,
+                "most_common": -1, # 1 for all
+            }
+        }
+    }
     """Config for CharGather
 
     Config Example:
-        >>> {
-        >>>     "_name": "char_gather",
-        >>>     "config": {
-        >>>         "train": {
-        >>>             "data_set": {                   // for different stage, this processor will process different part of data
-        >>>                 "train": ["train", "valid", 'test']
-        >>>             },
-        >>>             "gather_columns": "*@*", //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-        >>>             "deliver": "char_vocab", // output Vocabulary object (the Vocabulary of labels) name.
-        >>>             "ignore": "", // ignore the token, the id of this token will be -1
-        >>>             "update": null, // null or another Vocabulary object to update
-        >>>             "unk": "[UNK]",
-        >>>             "pad": "[PAD]",
-        >>>             "min_freq": 1,
-        >>>             "most_common": -1, //-1 for all
-        >>>         }
-        >>>     }
-        >>> }
+        default_config
     """
 
     def __init__(self, stage: str, config: Dict):

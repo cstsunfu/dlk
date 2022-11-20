@@ -24,14 +24,14 @@
     "embedding": {
         "_base": "static",
         "config": {
-            "embedding_file": "*@*", //the embedding file, must be saved as numpy array by pickle
+            "embedding_file": "*@*", # the embedding file, must be saved as numpy array by pickle
             "embedding_dim": "*@*",
-            //if the embedding_file is a dict, you should provide the dict trace to embedding
-            "embedding_trace": "*@*", //default the file itself is the embedding
-            /*embedding_trace: "embedding", //this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
-            /*embedding_trace: "meta.embedding", //this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
-            "freeze": false, // is freeze
-            "dropout": 0, //dropout rate
+            # if the embedding_file is a dict, you should provide the dict trace to embedding
+            "embedding_trace": "*@*", # default the file itself is the embedding
+            /*embedding_trace: "embedding", # this means the <embedding = pickle.load(embedding_file)["embedding"]>*/
+            /*embedding_trace: "meta.embedding", # this means the <embedding = pickle.load(embedding_file)['meta']["embedding"]>*/
+            "freeze": false, # is freeze
+            "dropout": 0, # dropout rate
             "output_map": {},
         },
     },
@@ -49,7 +49,7 @@
             "input_size": "*@*",
             "output_size": "*@*",
             "num_layers": 1,
-            "dropout": "*@*", // dropout between layers
+            "dropout": "*@*", # dropout between layers
         },
     },
     "initmethod": {

@@ -1,0 +1,38 @@
+{
+    "_base": "basic"
+    "model": "*@*",
+    "loss": {
+        "_base": "multi_loss",
+        "loss@entity":{
+            "_base": "cross_entropy",
+            "config": {
+                "pred_truth_pair": ["entity_logits", "entity_label_ids"],
+                "label_smoothing": 0.0, # torch>=1.10
+                "log_map": {
+                    "loss": "entity_loss"
+                }
+            }
+        },
+        "loss@relation":{
+            "_base": "cross_entropy",
+            "config": {
+                "pred_truth_pair": ["relation_logits", "relation_label_ids"],
+                "label_smoothing": 0.0, # torch>=1.10
+                "log_map": {
+                    "loss": "relation_loss"
+                }
+            }
+        }
+    },
+    "optimizer": {
+        "_base": "adamw@bias_nodecay",
+    },
+    "scheduler": {
+        "_base": "linear_warmup"
+    },
+    "postprocessor": {
+        "_base": "span_relation"
+    },
+    "config": {
+    },
+}

@@ -1,6 +1,5 @@
 {
     "config": {
-        "last_epoch": -1
     },
     "_name": "constant",
 }

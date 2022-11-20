@@ -1,4 +1,5 @@
 {
+    "_base": "basic"
     "model": "*@*",
     "loss": {
         "_base": "mse",
@@ -20,5 +21,4 @@
     },
     "config": {
     },
-    "_name": "basic"
 }

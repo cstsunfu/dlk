@@ -1,0 +1,72 @@
+{
+    "_name": "basic",
+    "config": {
+        "embedding_dim": "*@*",
+        "pretrained_model_path": "*@*",
+        "dropout": "*@*",
+        "entity_label_num": "*@*",
+        "relation_label_num": "*@*", # each group
+        "relation_position": true,
+        "decoder_hidden": 0, # default as embedding size
+        "multi_matrix": "*@*",
+    },
+    "_link": {
+        "config.embedding_dim": ["embedding.config.embedding_dim",
+                                 "decoder.decoder@entity.config.input_size",
+                                 "decoder.decoder@relation.config.input_size",
+                                ],
+        "config.dropout": ["embedding.config.dropout"],
+        "config.entity_label_num": "decoder.decoder@entity.config.output_size",
+        "config.relation_label_num": "decoder.decoder@relation.config.output_size",
+        "config.relation_position": ["decoder.decoder@relation.config.relation_position","decoder.decoder@entity.config.relation_position"]
+        "config.decoder_hidden": ["decoder.decoder@relation.config.hidden_size","decoder.decoder@entity.config.hidden_size"]
+        "config.multi_matrix": "decoder.decoder@relation.config.multi_matrix",
+        "config.pretrained_model_path": "embedding.config.pretrained_model_path",
+    },
+    "embedding": {
+        "_base": "pretrained_transformers",
+        "module": {
+        },
+        "config": {
+            "pretrained_model_path": "*@*",
+            "embedding_dim": "*@*",
+            "dropout": "*@*",
+        },
+    },
+    "decoder": {
+        "_base": "multi_decoder",
+        "decoder@entity": {
+            "_base": "biaffine",
+            "config": {
+                "input_size": "*@*",
+                "hidden_size": 0, # default equals to input_size
+                "output_size": "*@*",
+                "dropout": 0.0,
+                "output_map": {
+                    "logits": "entity_logits"
+                },
+                "input_map": {}, # required_key: provide_key
+            },
+        },
+        "decoder@relation": {
+            "_base": "biaffine",
+            "config": {
+                "input_size": "*@*",
+                "hidden_size": 0, # default equals to input_size
+                "output_size": "*@*",
+                "dropout": 0.0,
+                "multi_matrix": "*@*",
+                "output_map": {
+                    "logits": "relation_logits"
+                },
+                "input_map": {}, # required_key: provide_key
+            },
+        },
+    },
+    "encoder": {
+        "_base": "identity",
+    },
+    "initmethod": {
+        "_base": "default",
+    },
+}

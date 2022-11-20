@@ -2,16 +2,23 @@
     "_name": "biaffine",
     "config": {
         "input_size": "*@*",
-        "hidden_size": 0, //default equals to input_size
+        "hidden_size": 0, # default equals to input_size
         "output_size": "*@*",
         "dropout": 0.0,
+        "max_seq_len": 1024,
+        "relation_position": true,
+        "multi_matrix": 1,
         "output_map": {},
-        "input_map": {}, // required_key: provide_key
+        "input_map": {}, # required_key: provide_key
     },
     "_link":{
-        "config.hidden_size": ["module.config.hidden_size"],
         "config.input_size": ["module.config.input_size"],
+        "config.hidden_size": ["module.config.hidden_size"],
         "config.output_size": ["module.config.output_size"],
+        "config.max_seq_len": ["module.config.max_seq_len"],
+        "config.relation_position": ["module.config.relation_position"],
+        "config.multi_matrix": ["module.config.multi_matrix"],
+        "config.dropout": ["module.config.dropout"],
     },
     "module": {
         "_base": "biaffine",

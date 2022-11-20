@@ -13,6 +13,12 @@ tools/**/*.txt
 *.sc
 *.bin
 **/logs/**
+**/test.log
+**/*.log
+**/test.json
+**/train.json
+**/dev.json
+**/valid.json
 *tokenizer.json
 valid/**
 data/**

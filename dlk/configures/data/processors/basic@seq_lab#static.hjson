@@ -1,5 +1,5 @@
 {
-    // input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
+    # input should be {"train": train, "valid": valid, ...}, train/valid/test/predict/online etc, should be dataframe and must have a column named "sentence"
     "_name": "basic@seq_lab#static",
     "config": {
         /*"feed_order": ["load", "seq_lab_loader", "tokenizer", "seq_lab_relabel", "token_gather", "save"]*/
@@ -12,9 +12,9 @@
             "token_embedding",
             "save"
         ],
-        "tokenizer_config_path": "*@*", // the tokenizer config path (the tokenizer.json path)
-        "data_dir": "*@*", // save load data base dir
-        "embedding_size": "*@*", //the embedding size
+        "tokenizer_config_path": "*@*", # the tokenizer config path (the tokenizer.json path)
+        "data_dir": "*@*", # save load data base dir
+        "embedding_size": "*@*", #the embedding size
         "embedding_file": "*@*",
     },
     "_link": {
@@ -38,12 +38,12 @@
         "config": {
             "base_dir": "",
             "train": {
-                "processed": "processed_data.pkl", // all data
+                "processed": "processed_data.pkl", # all data
                 "meta": {
                     "meta.pkl": ['label_vocab',
                         "tokenizer", 'token_embedding'
-                    ] //only for next time use
-                    /*"meta.pkl": ['token_vocab'] //only for next time use*/
+                    ] #only for next time use
+                    /*"meta.pkl": ['token_vocab'] #only for next time use*/
                 }
             },
             "predict": {
@@ -60,14 +60,14 @@
             "train": {
                 "config_path": "*@*",
                 "deliver": "tokenizer",
-                "data_type": "single", // single or pair, if not provide, will calc by len(process_data)
+                "data_type": "single", # single or pair, if not provide, will calc by len(process_data)
                 "process_data": {
                     "is_pretokenized": false
                 },
                 "input_map": {
-                    "sentence": "sentence", //for sigle input, tokenizer the "sentence"
-                    "sentence_a": "sentence_a", //for pair inputs, tokenize the "sentence_a" && "sentence_b"
-                    "sentence_b": "sentence_b", //for pair inputs
+                    "sentence": "sentence", #for sigle input, tokenizer the "sentence"
+                    "sentence_a": "sentence_a", #for pair inputs, tokenize the "sentence_a" && "sentence_b"
+                    "sentence_b": "sentence_b", #for pair inputs
                 },
             },
             "predict": "train",
@@ -89,8 +89,8 @@
     "subprocessor@token_gather": {
         "_base": "token_gather",
         "config": {
-            "train": { // only train stage using
-                "data_set": { // for different stage, this processor will process different part of data
+            "train": { # only train stage using
+                "data_set": { # for different stage, this processor will process different part of data
                     "train": [
                         "train",
                         "valid", 'test'
@@ -98,16 +98,16 @@
                 },
                 "gather_columns": [
                     "tokens"
-                ], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "token_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                ], #List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "deliver": "token_vocab", # output Vocabulary object (the Vocabulary of labels) name.
             }
         }
     },
     "subprocessor@label_gather": {
         "_base": "token_gather",
         "config": {
-            "train": { // only train stage using
-                "data_set": { // for different stage, this processor will process different part of data
+            "train": { # only train stage using
+                "data_set": { # for different stage, this processor will process different part of data
                     "train": [
                         "train",
                         "valid"
@@ -115,8 +115,8 @@
                 },
                 "gather_columns": [
                     "labels"
-                ], //List of columns. Every cell must be sigle token or list of tokens or set of tokens
-                "deliver": "label_vocab", // output Vocabulary object (the Vocabulary of labels) name.
+                ], #List of columns. Every cell must be sigle token or list of tokens or set of tokens
+                "deliver": "label_vocab", # output Vocabulary object (the Vocabulary of labels) name.
                 "unk": "",
                 "pad": "",
             }
@@ -129,7 +129,7 @@
                 "data_pair": {
                     "labels": "label_ids",
                 },
-                "vocab": "label_vocab", // usually provided by the "token_gather" module
+                "vocab": "label_vocab", # usually provided by the "token_gather" module
             },
             "predict": "train",
             "online": "train",
@@ -138,7 +138,7 @@
     "subprocessor@token_embedding": {
         "_base": "token_embedding",
         "config": {
-            "train": { // only train stage using
+            "train": { # only train stage using
                 "embedding_file": "*@*",
                 "tokenizer": "*@*",
                 "deliver": "token_embedding",
