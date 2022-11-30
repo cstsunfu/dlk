@@ -48,6 +48,7 @@ class SpanRelationRelabelConfig(BaseConfig):
                 "mask_fill": -100,
                 "label_seperate": False, # seperate differences types of relations to different label matrix or use universal matrix(universal matrix may have conflict issue, like the 2 entities of the head of 2 different relations is same)
                 "sym": True, # whther the from entity and end entity can swap in relations( if sym==True, we can just calc the upper trim and set down trim as -100 to ignore)
+                "strict": True, # if strict == True, will drop the unvalid sample
             },
             "extend_train": "train"
         }
@@ -68,6 +69,7 @@ class SpanRelationRelabelConfig(BaseConfig):
         self.word_ids = self.config['input_map']['word_ids']
         self.mask_fill = self.config['mask_fill']
         self.sym = self.config['sym']
+        self.strict = self.config['strict']
         self.label_seperate = self.config['label_seperate']
         self.relations_info = self.config['input_map']['relations_info']
         self.processed_entities_info = self.config['input_map']['processed_entities_info']
@@ -130,6 +132,9 @@ class SpanRelationRelabel(ISubProcessor):
                 data_set[self.config.output_labels] = data_set.parallel_apply(self.relabel, axis=1)
             else:
                 data_set[self.config.output_labels] = data_set.apply(self.relabel, axis=1)
+            if self.config.strict:
+                data_set.dropna(axis=0, inplace=True)
+                data_set.reset_index(inplace=True)
 
         return data
 
@@ -177,6 +182,8 @@ class SpanRelationRelabel(ISubProcessor):
         """
         from_index = relation_info['from']
         to_index = relation_info['to']
+        if from_index not in entities_id_info_map or to_index not in entities_id_info_map:
+            return None, None, None, None
         from_entity = entities_id_info_map[from_index]
         from_start_index = from_entity['sub_token_start']
         from_end_index = from_entity['sub_token_end']
@@ -218,6 +225,11 @@ class SpanRelationRelabel(ISubProcessor):
         for relation_info in relations_info:
             label_id = self.vocab.word2idx[relation_info['labels'][0]]
             from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_id_info_map)
+            if from_start_index is None:
+                if self.config.strict:
+                    logger.warning(f"Cannot get the relation of {json.dumps(relation_info)}, we will drop this instance")
+                    return None
+                continue
             # NOTE: label_id ==0 is unknown
             label_matrix[(label_id-1)*2][from_start_index][to_start_index] = 1
             label_matrix[(label_id-1)*2+1][from_end_index][to_end_index] = 1
@@ -247,6 +259,11 @@ class SpanRelationRelabel(ISubProcessor):
         for relation_info in relations_info:
             label_id = self.vocab.word2idx[relation_info['labels'][0]]
             from_start_index, to_start_index, from_end_index, to_end_index = self._get_entities_index(relation_info, entities_id_info_map)
+            if from_start_index is None:
+                if self.config.strict:
+                    logger.warning(f"Cannot get the relation of {json.dumps(relation_info)}, we will drop this instance")
+                    return None
+                continue
             label_matrix[0][from_start_index][to_start_index] = label_id
             label_matrix[1][from_end_index][to_end_index] = label_id
         return label_matrix

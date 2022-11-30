@@ -73,7 +73,7 @@ class FastTokenizerConfig(BaseConfig):
                    },
                    "deliver": "tokenizer",
                    "process_data": { "is_pretokenized": False, "add_special_tokens": True},
-                   "expand_examples": True, # if the sequence is very long, will split to multiple span, whether expand the examples
+                   "expand_examples": False, # if the sequence is very long, will split to multiple span, whether expand the examples
                    "data_type": "single", # single or pair, if not provide, will calc by len(process_data)
                    "fix_offset": False, # whether fix the offset for pretokenizerd word
                },

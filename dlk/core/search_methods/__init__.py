@@ -14,8 +14,6 @@
 
 # There are many code copy from fairseq.
 # Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code copied from fairseq is licensed under the MIT license.
 
 """search_method"""
 import importlib

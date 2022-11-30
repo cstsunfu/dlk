@@ -1,3 +1,20 @@
+# Copyright cstsunfu. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# There are many code copy from fairseq.
+# Copyright (c) Facebook, Inc. and its affiliates.
+
 from dlk.core.search_methods import Search, search_method_config_register, search_method_register
 import torch
 from torch import Tensor
@@ -14,7 +31,7 @@ class BeamSearchConfig(BaseConfig):
 
 @search_method_register("beam_search")
 class BeamSearch(Search):
-    def __init__(self, tgt_dict, config: BeamSearchConfig):
+    def __init__(self, tgt_dict, config: BeamSearchConfig=None):
         super().__init__(tgt_dict)
         self.constraint_states = None
 

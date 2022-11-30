@@ -21,6 +21,13 @@ import torch
 
 @postprocessor_config_register('identity')
 class IdentityPostProcessorConfig(IPostProcessorConfig):
+    default_config = {
+            "_name": "identity",
+            "config": {
+                "output_map": {},
+                "input_map": {}, # required_key: provide_key
+                },
+            }
     """docstring for IdentityPostProcessorConfig
     """
 

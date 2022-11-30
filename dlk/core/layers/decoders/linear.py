@@ -22,6 +22,22 @@ from dlk.core.modules import module_config_register, module_register
 class LinearConfig(BaseModuleConfig):
     default_config = {
             "_name": "linear",
+            "config": {
+                "input_size": "*@*",
+                "output_size": "*@*",
+                "pool": None,
+                "dropout": 0.0, # the decoder output no need dropout
+                "output_map": {
+                    "logits": "logits"
+                    }
+                },
+            "_link": {
+                "config.input_size": "module.config.input_size",
+                "config.output_size": "module.config.output_size",
+                "config.pool": "module.config.pool",
+                "config.dropout": "module.config.dropout"
+
+                },
             "module": {
                 "_base": "linear",
                 },

@@ -51,6 +51,7 @@ class SpanClsRelabelConfig(BaseConfig):
                 "mask_fill": -100,
                 "mask_first_sent": False,  # when we use this module to resolve the MRC like SQuAD we should mask the first sentence(quesiotn) for anwering
                 "null_to_zero_index": False,  # if cannot find the entity, set to point to the first(zero) index token
+                "strict": True, # if strict == True, will drop the unvalid sample
             },
             "extend_train": "train"
         }
@@ -72,6 +73,7 @@ class SpanClsRelabelConfig(BaseConfig):
         self.entities_info = self.config['input_map']['entities_info']
         self.drop = self.config['drop']
         assert self.drop in {'none', 'longer', 'shorter'}
+        self.strict = self.config['strict']
         self.vocab = self.config['vocab']
         self.processed_entities_info = self.config['output_map']['processed_entities_info']
         self.output_labels = self.config['output_map']['label_ids']
@@ -143,6 +145,9 @@ class SpanClsRelabel(ISubProcessor):
                 data_set[[self.config.output_labels,
                     self.config.processed_entities_info,
                 ]] = data_set.apply(self.relabel, axis=1, result_type='expand')
+            if self.config.strict:
+                data_set.dropna(axis=0, inplace=True)
+                data_set.reset_index(inplace=True)
 
         return data
 
@@ -193,8 +198,6 @@ class SpanClsRelabel(ISubProcessor):
             pre_clean_entities_info.sort(key=lambda x: x['start'])
         offsets = one_ins[self.config.offsets]
         sub_word_ids = one_ins[self.config.word_ids]
-        if not sub_word_ids:
-            logger.warning(f"entity_info: {pre_clean_entities_info}, offsets: {offsets} ")
 
         if self.config.mask_first_sent:
             first_start = sub_word_ids.index(0)
@@ -264,7 +267,10 @@ class SpanClsRelabel(ISubProcessor):
                     if self.config.null_to_zero_index:
                         start_token_index, end_token_index = 0, 0
                     else:
-                        logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets} ")
+                        if self.config.strict:
+                            logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets}, we will drop this instance")
+                            return None, None
+                        logger.warning(f"cannot find the entity_info : {entity_info}, offsets: {offsets}")
                         continue
                 else:
                     end_token_index = self.find_position_in_offsets(entity_info['end']-1, offsets, sub_word_ids, start_token_index, offset_length)

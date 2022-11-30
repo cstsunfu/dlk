@@ -29,7 +29,6 @@ class Token2IDConfig(BaseConfig):
         "config": {
             "train":{
                 "data_pair": {
-                    "labels": "label_ids"
                 },
                 "data_set": {                   # for different stage, this processor will process different part of data
                     "train": ['train', 'valid', 'test', 'predict'],
