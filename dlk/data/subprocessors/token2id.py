@@ -37,9 +37,7 @@ class Token2IDConfig(BaseConfig):
                 },
                 "vocab": "label_vocab", # usually provided by the "token_gather" module
             },
-            "predict": "train",
             "extend_train": "train",
-            "online": "train",
         }
     }
     """Config for Token2ID

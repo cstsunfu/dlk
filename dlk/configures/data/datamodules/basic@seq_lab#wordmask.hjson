@@ -9,7 +9,7 @@
              "special_tokens_mask": "int",
          },
         "gen_mask": {
-             'label_ids': 'attention_mask',
+             'gather_index': 'attention_mask',
              'input_ids': 'subword_mask',
          },
         "key_padding_pairs": { #default all 0

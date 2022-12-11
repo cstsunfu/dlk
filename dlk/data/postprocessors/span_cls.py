@@ -141,7 +141,6 @@ class SpanClsPostProcessor(IPostProcessor):
         super(SpanClsPostProcessor, self).__init__(config)
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
-        self.metric = torchmetrics.Accuracy()
 
     def _process4predict(self, predict_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame)->Dict:
         """gather the predict and origin text and ground_truth_entities_info for predict

@@ -174,8 +174,6 @@
                 },
                 "vocab": "label_vocab", # usually provided by the "token_gather" module
             },
-            "predict": "train",
-            "online": "train",
         }
     },
     "subprocessor@token_embedding": {

@@ -12,10 +12,6 @@
         ],
         "tokenizer_config_path": "*@*", # the tokenizer config path (the tokenizer.json path)
         "data_dir": "*@*", # save load data base dir
-        "truncation": { # if this is set to None or empty, will not do trunc
-            "max_length": 512,
-            "strategy": "longest_first", # Can be one of longest_first, only_first or only_second.
-        },
     },
     "_link": {
         "config.tokenizer_config_path": [
@@ -24,9 +20,6 @@
         "config.data_dir": [
             "subprocessor@load.config.base_dir",
             "subprocessor@save.config.base_dir"
-        ],
-        "config.truncation": [
-            "subprocessor@tokenizer.config.train.truncation"
         ],
     },
     "subprocessor@load": {
@@ -83,8 +76,6 @@
                 },
                 "vocab": "label_vocab", # usually provided by the "token_gather" module
             },
-            "predict": "train",
-            "online": "train",
         }
     },
 }

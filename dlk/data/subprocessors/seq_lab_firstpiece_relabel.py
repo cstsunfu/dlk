@@ -54,6 +54,8 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
                 # entity_priority": ['Product'],
                 "priority_trigger": 1, # if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy
             },
+            "predict": "train",
+            "online": "train",
             "extend_train": "train",
         }
     }
@@ -69,6 +71,9 @@ class SeqLabFirstPieceRelabelConfig(BaseConfig):
         self.data_set = self.config.get('data_set', {}).get(stage, [])
         if not self.data_set:
             return
+        if stage in {"predict", "online"}:
+            logger.warning(f"For predict or online stage, the 'seq_lab_firstpiece_relabel' subprocessor will only generate the 'gather_index', 'word_ids', 'word_offsets' but no 'labels', 'entities_info'")
+
         self.word_ids = self.config['input_map']['word_ids']
         self.word_word_ids = self.config['output_map']['word_word_ids']
         self.word_offsets = self.config['output_map']['word_offsets']
@@ -130,20 +135,34 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                 logger.info(f'The {data_set_name} not in data. We will skip do seq_lab_firstpiece_relabel on it.')
                 continue
             data_set = data['data'][data_set_name]
-            if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
-                data_set[[self.config.output_labels,
-                    self.config.gather_index,
-                    self.config.word_word_ids,
-                    self.config.word_offsets,
-                    self.config.entities_info
-                ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+            if self.stage in {"predict", "online"}:
+                if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
+                    data_set[[
+                        self.config.gather_index,
+                        self.config.word_word_ids,
+                        self.config.word_offsets,
+                    ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+                else:
+                    data_set[[
+                        self.config.gather_index,
+                        self.config.word_word_ids,
+                        self.config.word_offsets,
+                    ]] = data_set.apply(self.relabel, axis=1, result_type="expand")
             else:
-                data_set[[self.config.output_labels,
-                    self.config.gather_index,
-                    self.config.word_word_ids,
-                    self.config.word_offsets,
-                    self.config.entities_info
-                ]] = data_set.apply(self.relabel, axis=1, result_type="expand")
+                if os.environ.get('DISABLE_PANDAS_PARALLEL', 'false') != 'false':
+                    data_set[[self.config.output_labels,
+                        self.config.gather_index,
+                        self.config.word_word_ids,
+                        self.config.word_offsets,
+                        self.config.entities_info
+                    ]] = data_set.parallel_apply(self.relabel, axis=1, result_type="expand")
+                else:
+                    data_set[[self.config.output_labels,
+                        self.config.gather_index,
+                        self.config.word_word_ids,
+                        self.config.word_offsets,
+                        self.config.entities_info
+                    ]] = data_set.apply(self.relabel, axis=1, result_type="expand")
         return data
 
     def find_position_in_offsets(self, position: int, offset_list: List, sub_word_ids: List, start: int, end: int, is_start: bool=False):
@@ -184,8 +203,10 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
             one_ins: include sentence, entity_info, offsets
 
         Returns: 
-            labels(labels for each word not subtoken), gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word)
-
+            For train stage:
+                labels(labels for each word not subtoken), gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word), entities_info
+            For predict / online stage:
+                gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word)
         """
         pre_clean_entities_info = one_ins[self.config.entities_info]
         pre_clean_entities_info.sort(key=lambda x: x['start'])
@@ -212,6 +233,8 @@ class SeqLabFirstPieceRelabel(ISubProcessor):
                 word_offset[1] = token_offset[1]
         if word_offset:
             word_offsets.append(word_offset)
+        if self.stage in {"predict", "online"}:
+            return gather_index, word_ids, word_offsets
 
         entities_info = []
         pre_end = -1

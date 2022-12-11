@@ -165,7 +165,6 @@ class SeqLabPostProcessor(IPostProcessor):
         self.config = config
         self.label_vocab = self.config.label_vocab
         self.tokenizer = self.config.tokenizer
-        self.metric = torchmetrics.Accuracy()
 
     def do_predict(self, stage: str, list_batch_outputs: List[Dict], origin_data: pd.DataFrame, rt_config: Dict)->List:
         """Process the model predict to human readable format

@@ -217,7 +217,8 @@ class BasicDatamodule(IBaseDataModule):
             return None
         return DataLoader(self.test_data, batch_size=self.config.test_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('test', False), num_workers=self.config.num_workers)
 
-    def online_dataloader(self):
+    def online_dataloader(self, data):
         """get the data collate_fn"""
         # return DataLoader(self.mnist_test, batch_size=self.batch_size)
-        return self.collate_fn
+        dataset = BasicDataset(self.real_key_type_pairs(self.config.key_type_pairs, data, 'predict'), data)
+        return DataLoader(dataset, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False), num_workers=self.config.num_workers)

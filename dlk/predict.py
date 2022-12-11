@@ -1,4 +1,4 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright cstsunfu. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,6 +83,8 @@ class Predict(object):
         else:
             name_str = self.config['root']['_name']
         self.name_str = name_str
+        self.config = copy.deepcopy(self.config['root'])
+        self._init_model(self.config)
 
     def convert2script(self, data=None):
         """trace the model to torchscript
@@ -116,6 +118,21 @@ class Predict(object):
         logger.error('The trace method is not implement yet.')
         raise NotImplementedError
 
+
+    def _init_model(self, config):
+        """init the model and manager
+        Args:
+            config: the config
+
+        Returns: None
+        """
+        name = self.name_str
+        # set training manager
+        self.manager = self.get_manager(config, name)
+
+        # init imodel and inject the origin test and valid data
+        self.imodel = self.get_imodel(config)
+
     def predict(self, data=None, save_condition=False):
         """init the model, datamodule, manager then predict the predict_dataloader
 
@@ -126,24 +143,17 @@ class Predict(object):
             None
 
         """
-        config = copy.deepcopy(self.config['root'])
-        name = self.name_str
         # get data
         if not data:
-            data = self.get_data(config)
+            data = self.get_data(self.config)
 
         # set datamodule
-        datamodule = self.get_datamodule(config, data)
-
-        # set training manager
-        manager = self.get_manager(config, name)
-
-        # init imodel and inject the origin test and valid data
-        imodel = self.get_imodel(config, data)
+        datamodule = self.get_datamodule(self.config, data)
 
         # start predict
-        predict_result = manager.predict(model=imodel, datamodule=datamodule)
-        return imodel.postprocessor(stage='predict',
+        with torch.no_grad():
+            predict_result = self.manager.predict(model=self.imodel, datamodule=datamodule)
+        return self.imodel.postprocessor(stage='predict',
                                     list_batch_outputs=predict_result,
                                     origin_data=data['predict'],
                                     rt_config={},
@@ -202,12 +212,11 @@ class Predict(object):
                           })
         return manager
 
-    def get_imodel(self, config, data):
+    def get_imodel(self, config):
         """get the imodel decided by config
 
         Args:
             config: {"task": {"imodel": '..'}}
-            data: {"train": '..', 'valid': '..', ..}
 
         Returns: 
             imodel
