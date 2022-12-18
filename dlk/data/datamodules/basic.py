@@ -91,6 +91,8 @@ class BasicDatamoduleConfig(BaseConfig):
         self.valid_batch_size = config.get('predict_batch_size', 32)
         self.predict_batch_size = config.get('predict_batch_size', 32)
         self.online_batch_size = config.get('online_batch_size', 1)
+
+        self._online_key_type_pairs = None
         self.post_check(config, used=[
                "pin_memory",
                "collate_fn",
@@ -220,5 +222,7 @@ class BasicDatamodule(IBaseDataModule):
     def online_dataloader(self, data):
         """get the data collate_fn"""
         # return DataLoader(self.mnist_test, batch_size=self.batch_size)
-        dataset = BasicDataset(self.real_key_type_pairs(self.config.key_type_pairs, data, 'predict'), data)
-        return DataLoader(dataset, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=self.config.shuffle.get('predict', False), num_workers=self.config.num_workers)
+        if not self._online_key_type_pairs:
+            self._online_key_type_pairs = self.real_key_type_pairs(self.config.key_type_pairs, {"predict": data}, 'predict')
+        dataset = BasicDataset(self._online_key_type_pairs, data)
+        return DataLoader(dataset, batch_size=self.config.predict_batch_size, collate_fn=self.collate_fn, pin_memory=self.config.pin_memory, shuffle=False, num_workers=1)

@@ -42,7 +42,8 @@ class Logger(object):
             os.mkdir(self.base_dir)
 
         self.init_global_logger(log_level=log_level, log_name=Logger.log_name, reinit=True)
-        self.init_file_logger(log_file, base_dir, log_level=log_level)
+        if self.log_file:
+            self.init_file_logger(log_file, base_dir, log_level=log_level)
 
     @staticmethod
     def get_logger()->LoggerClass:

@@ -226,6 +226,6 @@ class Predict(object):
             imodel_register, imodel_config_register, 'imodel',
             config.get('task').get('imodel'))
         imodel = IModel(IModelConfig, checkpoint=True)
-        imodel.load_state_dict(self.ckpt['state_dict'])
+        imodel.load_state_dict(self.ckpt['state_dict'], strict=False)
         imodel.eval()
         return imodel
