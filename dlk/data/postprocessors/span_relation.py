@@ -449,6 +449,34 @@ class SpanRelationPostProcessor(IPostProcessor):
                     9 ==> to_entity.sub_token_end
             belong_to ==> the relation type
             """
+            def _norm_entity(entity):
+                """norm the entity start and end by the ignore_char
+
+                Args:
+                    entity: one entity is like:
+                        {
+                            "start": .,
+                            "end": .,
+                            "sub_token_start": .,
+                            "sub_token_end": .,
+                        }
+                Returns: norm entity
+                """
+                start_position, end_position = entity['start'], entity['end']
+                while start_position < end_position:
+                    if text[start_position] in self.config.ignore_char:
+                        start_position += 1
+                    else:
+                        break
+                while start_position < end_position:
+                    if text[end_position-1] in self.config.ignore_char:
+                        end_position -= 1
+                    else:
+                        break
+                if start_position == end_position: # if the entity after remove ignore char be null, we set it to origin
+                    return entity['start'], entity['end']
+                return start_position, end_position
+
             entities_id_info_map = {}
             for entity_info in entities_info:
                 entities_id_info_map[entity_info['entity_id']] = entity_info
@@ -460,8 +488,11 @@ class SpanRelationPostProcessor(IPostProcessor):
                 relation_type = relation_info['labels'][0] # NOTE: you can also change the relation type format for different label format
                 if relation_type not in flat_relations:
                     flat_relations[relation_type] = set()
+                from_start, from_end = _norm_entity(from_entity)
+                to_start, to_end = _norm_entity(to_entity)
 
-                flat_relations[relation_type].add((from_entity['sub_token_start'], from_entity['sub_token_end'], to_entity['sub_token_start'], to_entity['sub_token_end']))
+                # flat_relations[relation_type].add((from_entity['sub_token_start'], from_entity['sub_token_end'], to_entity['sub_token_start'], to_entity['sub_token_end']))
+                flat_relations[relation_type].add((from_start, from_end, to_start, to_end))
             return flat_relations
 
         relation_match_info = {}

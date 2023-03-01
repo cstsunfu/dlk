@@ -92,7 +92,6 @@ class BasicDatamoduleConfig(BaseConfig):
         self.predict_batch_size = config.get('predict_batch_size', 32)
         self.online_batch_size = config.get('online_batch_size', 1)
 
-        self._online_key_type_pairs = None
         self.post_check(config, used=[
                "pin_memory",
                "collate_fn",
@@ -155,6 +154,7 @@ class BasicDatamodule(IBaseDataModule):
         self.config = config
 
         repeat_valid = 1
+        self._online_key_type_pairs = None
         if self.config.repeat_for_valid and self.config.world_size >1:
             repeat_valid = self.config.world_size
         self.train_data = None

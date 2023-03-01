@@ -41,8 +41,8 @@ class OnlinePredict(Predict):
         dataloader = self.datamodule.online_dataloader(data)
         result = []
         with torch.no_grad():
-            for batch in dataloader:
-                result.append(self.imodel.predict_step(batch))
+            for i, batch in enumerate(dataloader):
+                result.append(self.imodel.predict_step(batch, i))
         # start predict
         return self.imodel.postprocessor(stage='predict',
                                     list_batch_outputs=result,
