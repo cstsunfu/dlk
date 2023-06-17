@@ -44,7 +44,7 @@ class OnlinePredict(Predict):
             for i, batch in enumerate(dataloader):
                 result.append(self.imodel.predict_step(batch, i))
         # start predict
-        return self.imodel.postprocessor(stage='predict',
+        return self.imodel.postprocessor(stage='online',
                                     list_batch_outputs=result,
                                     origin_data=data,
                                     rt_config={},
