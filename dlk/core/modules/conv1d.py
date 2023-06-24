@@ -16,54 +16,43 @@ import torch.nn as nn
 from dlk.utils.config import BaseConfig
 import torch
 from typing import Dict, List, Collection
-from . import module_register, module_config_register, Module
+from . import Module
+from dlk.utils.io import open
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-@module_config_register("conv1d")
+@config_register("module", 'conv1d')
+@define
 class Conv1dConfig(BaseConfig):
-    default_config = {
-            "_name": "conv1d",
-            "config": {
-                "in_channels": "*@*",
-                "out_channels": "*@*",
-                "dropout": 0.0, # the module output no need dropout
-                "kernel_sizes": [3],
-                },
-            }
-    """Config for Conv1d
+    name = NameField(value="conv1d", file=__file__, help="the conv1d config")
+    @define
+    class Config:
+        in_channels = IntField(value="*@*", checker=int_check(lower=0), help="the input channels")
+        out_channels = IntField(value="*@*", checker=int_check(lower=0), help="the output channels")
+        dropout = FloatField(value=0.0, checker=float_check(lower=0.0), help="the dropout rate")
+        kernel_sizes = ListField(value=[3], help="the kernel sizes")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(Conv1dConfig, self).__init__(config)
-        config = config['config']
-        self.kernel_sizes = config['kernel_sizes']
-        out_channels = config['out_channels']
-        assert all(k % 2 == 1 for k in self.kernel_sizes), 'the kernel sizes must be odd'
-        assert out_channels % len(self.kernel_sizes) == 0, 'out channels must be dividable by kernels'
-        self.in_channels = config['in_channels']
-        self.out_channels = out_channels // len(self.kernel_sizes)
-        self.dropout = config['dropout']
-        self.post_check(config, used=[
-            "in_channels",
-            "out_channels",
-            "dropout",
-            "kernel_sizes",
-        ])
 
-@module_register("conv1d")
+@register("module", "conv1d")
 class Conv1d(Module):
     """Conv for 1d input
     """
     def __init__(self, config: Conv1dConfig):
         super().__init__()
+        self.config = config.config
+        assert all(k % 2 == 1 for k in self.config.kernel_sizes), 'the kernel sizes must be odd'
+        assert self.config.out_channels % len(self.config.kernel_sizes) == 0, 'out channels must be dividable by kernels'
+        self.config.out_channels = self.config.out_channels // len(self.config.kernel_sizes)
+
         convs = []
-        for kernel_size in config.kernel_sizes:
-            conv = nn.Conv1d(config.in_channels, config.out_channels, kernel_size,
+        for kernel_size in self.config.kernel_sizes:
+            conv = nn.Conv1d(self.config.in_channels, self.config.out_channels, kernel_size,
                              padding=(kernel_size - 1) // 2)
             convs.append(nn.Sequential(conv, nn.GELU()))
         self.convs = nn.ModuleList(convs)
-        self.dropout = nn.Dropout(p=float(config.dropout))
+        self.dropout = nn.Dropout(p=float(self.config.dropout))
 
     def forward(self, x: torch.Tensor):
         """do forward on a mini batch

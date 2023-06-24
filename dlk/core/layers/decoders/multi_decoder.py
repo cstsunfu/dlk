@@ -14,46 +14,41 @@
 
 import torch
 from typing import Dict, List, Set, Callable
-from dlk.core.base_module import SimpleModule, BaseModuleConfig
-from dlk.utils.config import BaseConfig, ConfigTool
-from . import decoder_register, decoder_config_register
+from dlk.core.base_module import SimpleModule
 import torch.nn as nn
-
-@decoder_config_register("multi_decoder")
-class MultiDecoderConfig(BaseModuleConfig):
-    default_config = {
-        "config": {
-        },
-        "_name": "multi_decoder",
-    }
-    """Config for MultiDecoder 
-    """
-    def __init__(self, config: Dict):
-        super(MultiDecoderConfig, self).__init__(config)
-        self.decode_configs = {}
-        for decode in config:
-            if decode in {"config", "_name", "_base"}:
-                continue
-            module_class, module_config = ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config[decode])
-            self.decode_configs[decode] = {
-                "decode_class": module_class,
-                "decode_config": module_config,
-            }
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter, ConfigTool
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@decoder_register("multi_decoder")
+@config_register("decoder", 'multi_decoder')
+@define
+class MultiDecoderConfig(BaseConfig):
+    name = NameField(value="multi_decoder", file=__file__, help="the multi_decoder module")
+    config = DictField(value={}, help='the config of the multi_decoder module')
+    submods = SubModules({
+    }, help="the modules config")
+
+
+@register("decoder", "multi_decoder")
 class MultiDecoder(SimpleModule):
     """multi_decoder a x A x b
     """
     def __init__(self, config: MultiDecoderConfig):
         super(MultiDecoder, self).__init__(config)
-        self._provide_keys = {'logits'}
-        self._required_keys = {'embedding'}
-        self._provided_keys = set()
-        decode_configs = config.decode_configs
+        config_dict = config.to_dict()
+        self.decode_configs = {}
+        for decode in config_dict:
+            if decode in {"config", "name", "base"}:
+                continue
+            module_class, module_config = ConfigTool.get_leaf_module(register, config_register, "decoder", config_dict[decode])
+            self.decode_configs[decode] = {
+                "decode_class": module_class,
+                "decode_config": module_config,
+            }
         self.decoders = nn.ModuleDict({
-            decode_name: decode_configs[decode_name]['decode_class'](decode_configs[decode_name]['decode_config'])
-            for decode_name in decode_configs
+            decode_name: self.decode_configs[decode_name]['decode_class'](self.decode_configs[decode_name]['decode_config'])
+            for decode_name in self.decode_configs
         })
 
         self.config = config
@@ -81,6 +76,6 @@ class MultiDecoder(SimpleModule):
             one mini-batch outputs
 
         """
-        for decode_name in self.config.decode_configs:
+        for decode_name in self.decode_configs:
             inputs = self.decoders[decode_name](inputs)
         return inputs

@@ -15,21 +15,14 @@
 import torch
 import torch.nn as nn
 from typing import Dict, List, Callable, Any, Set
-from dlk.core.modules import module_register, module_config_register
 from dlk.utils.logger import Logger
-from dlk.utils.config import BaseConfig
 import abc
+from attrs import define, field, fields, asdict, fields_dict
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 logger = Logger.get_logger()
-
-
-class BaseModuleConfig(BaseConfig):
-    """docstring for BaseLayerConfig"""
-    def __init__(self, config: Dict):
-        super(BaseModuleConfig, self).__init__(config)
-        self._output_map = config['config'].pop("output_map", {})
-        self._input_map = config['config'].pop('input_map', {})
-        self._logits_gather_config = module_config_register.get("logits_gather")(config.pop("module@logits_gather", {}))
 
 
 class ModuleOutputRenameMixin:
@@ -80,7 +73,7 @@ class ModuleOutputRenameMixin:
             real_name
 
         """
-        return self.get_real_name(name, self.config._input_map)
+        return self.get_real_name(name, self.__input_map)
 
     def get_output_name(self, name:str)->str:
         """use config._output_map map the name to real name
@@ -92,7 +85,7 @@ class ModuleOutputRenameMixin:
             real_name
 
         """
-        return self.get_real_name(name, self.config._output_map)
+        return self.get_real_name(name, self.__output_map)
 
     def set_rename(self, input: Set, output_map: Dict[str, str])->Set:
         """rename all the name in input by output_map
@@ -118,7 +111,8 @@ class ModuleOutputRenameMixin:
 
 
 class IModuleIO(metaclass=abc.ABCMeta):
-    """interface for check the modules input and output"""
+    """Currentlly Deprecated:
+        interface for check the modules input and output"""
 
     @abc.abstractmethod
     def provide_keys(self)->List[str]:
@@ -216,7 +210,7 @@ class IModuleStep(metaclass=abc.ABCMeta):
         """
         return self.validation_step(inputs)
 
-class BaseModel(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
+class BaseModel(nn.Module, ModuleOutputRenameMixin, IModuleStep):
     """All pytorch models should inheritance this class
     """
 
@@ -232,37 +226,16 @@ class BaseModel(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         """
         raise NotImplementedError
 
-class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
+class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleStep):
     """All pytorch modules should inheritance this class
     """
 
-    def __init__(self, config: BaseModuleConfig):
+    def __init__(self, config: BaseConfig):
         super(BaseModule, self).__init__()
-        self._logits_gather = module_register.get("logits_gather")(config._logits_gather_config)
-        self._provided_keys = set()
-        self._required_keys = set()
-        self._provide_keys = set()
-        self.config = config # for better complete, you can rewrite this in child module
-
-    def provide_keys(self)->Set:
-        """return all keys of the dict of the module returned
-
-        Returns: 
-            all keys
-        """
-        return self.set_rename(self._provide_keys, self.config._output_map).union(self._provided_keys)
-
-    def check_keys_are_provided(self, provide: Set[str])->None:
-        """check this module required key are provided
-
-        Returns: 
-            pass or not
-        """
-        self._provided_keys = provide
-        provide = self.set_rename(provide, self.config._input_map)
-        for required_key in self._required_keys:
-            if required_key not in provide:
-                raise PermissionError(f"The {self.__class__.__name__} Module required '{required_key}' as input.")
+        dict_config = config.to_dict()
+        self.__logits_gather = register.get("module", "logits_gather")(config_register.get('module', 'logits_gather')(dict_config.pop('module@logits_gather', {})))
+        self.__input_map = dict_config.get('config', {}).get("input_map", {})
+        self.__output_map = dict_config.get('config', {}).get("output_map", {})
 
     def init_weight(self, method):
         """init the weight of submodules by 'method'
@@ -277,8 +250,23 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
         for module in self.children():
             module.apply(method)
 
-    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+    def forward_wrap(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """all module should apply this method
+
+        Args:
+            inputs: one mini-batch inputs
+
+        Returns: 
+            one mini-batch outputs
+
+        """
+        inputs = self.forward(inputs)
+        if self.__logits_gather.layer_map:
+            inputs.update(self.__logits_gather([inputs[self.get_output_name('logits')]]))
+        return inputs
+
+    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
+        """in simple module, all step fit to this method
 
         Args:
             inputs: one mini-batch inputs
@@ -292,18 +280,6 @@ class BaseModule(nn.Module, ModuleOutputRenameMixin, IModuleIO, IModuleStep):
 
 class SimpleModule(BaseModule):
     """docstring for SimpleModule, SimpleModule, all train/predict/test/validation step call the forward"""
-
-    def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
-        """in simple module, all step fit to this method
-
-        Args:
-            inputs: one mini-batch inputs
-
-        Returns: 
-            one mini-batch outputs
-
-        """
-        raise NotImplementedError
 
     def predict_step(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do predict for one batch
@@ -352,3 +328,23 @@ class SimpleModule(BaseModule):
 
         """
         return self(inputs)
+
+
+@define
+class BaseIdentityModuleConfig(BaseConfig):
+    name = NameField(value="identity", file=__file__, help="the identity module")
+
+
+class BaseIdentityModule(SimpleModule):
+    """docstring for IdentityModule"""
+    def __init__(self, config):
+        super(BaseIdentityModule, self).__init__(config)
+
+    def init_weight(self, method):
+        pass
+
+    def forward(self, inputs):
+        return inputs
+
+    def forward_wrap(self, inputs):
+        return inputs

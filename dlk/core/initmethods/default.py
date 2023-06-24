@@ -13,33 +13,24 @@
 # limitations under the License.
 
 import torch.nn as nn
-from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
 from dlk.utils.logger import Logger
-from dlk.utils.config import BaseConfig
 import numpy as np
 import torch
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 logger = Logger.get_logger()
 
-
-@initmethod_config_register('default')
+@config_register("initmethod", 'default')
+@define
 class DefaultInitConfig(BaseConfig):
-    default_config = {
-            "_name": "default",
-            "config": {
-                }
-            }
-    """Config for RangeNormInit
+    name = NameField(value="default", file=__file__, help="the default init method for the modules")
+    config = DictField(value={}, help='the config of the default init method')
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config):
-        super(DefaultInitConfig, self).__init__(config)
-        self.post_check(config['config'])
 
-@initmethod_register('default')
+@register("initmethod", 'default')
 class DefaultInit(object):
     """default method for init the modules
     """

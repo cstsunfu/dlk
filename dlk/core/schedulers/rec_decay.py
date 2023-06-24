@@ -13,62 +13,38 @@
 # limitations under the License.
 
 from typing import Dict
-from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
-from dlk.utils.logger import Logger
 import torch.optim as optim
-logger = Logger.get_logger()
+from . import BaseScheduler, BaseSchedulerConfig
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@scheduler_config_register("rec_decay")
-class RecDecayScheduleConfig(BaseSchedulerConfig):
-    default_config = {
-            "config": {
-                "decay": 0.05, # epoch dacay
-                },
-            "_name": "rec_decay",
-            }
-    """Config for RecDecaySchedule
+@config_register("scheduler", "warmup_rec_decay")
+@define
+class WarmupRecDecayScheduleConfig(BaseSchedulerConfig):
+    name = NameField(value="warmup_rec_decay", file=__file__, help="the warmup_rec_decay scheduler, lr=lr*1/(1+decay)")
+    @define
+    class Config(BaseSchedulerConfig.Config):
+        decay = FloatField(value=0.05, help="the decay rate, lr=lr*1/(1+decay)")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-
-    the lr=lr*1/(1+decay)
-    """
-    def __init__(self, config: Dict):
-        super(RecDecayScheduleConfig, self).__init__(config)
-        config = config['config']
-        self.decay = config["decay"]
-        self.post_check(config, used=[
-            "decay",
-        ])
-
-
-@scheduler_register("rec_decay")
-class RecDecaySchedule(BaseScheduler):
+@register("scheduler", "rec_decay")
+class WarmupRecDecaySchedule(BaseScheduler):
     """lr=lr*1/(1+decay)
     """
-    def __init__(self, optimizer: optim.Optimizer, config: RecDecayScheduleConfig):
-        super(RecDecaySchedule, self).__init__()
-        self.config = config
-        self.optimizer = optimizer
+    def __init__(self, optimizer: optim.Optimizer, config: WarmupRecDecayScheduleConfig, rt_config: Dict):
+        super(WarmupRecDecaySchedule, self).__init__(optimizer, config, rt_config)
+        self.config: WarmupRecDecayScheduleConfig.Config
 
-    def get_scheduler(self):
-        """return the initialized rec_decay scheduler
+    def step_update(self, current_step: int):
+        if current_step < self.config.num_warmup_steps:
+            return float(current_step) / float(max(1, self.config.num_warmup_steps))
+        current_epoch = ((current_step+1)//self.config.epoch_training_steps) if self.config.epoch_training_steps!=0 else 0
+        return 1/((1+self.config.decay)**current_epoch)
 
-        lr=lr*1/(1+decay)
-
-        Returns: 
-            Schedule
-
-        """
-        num_training_steps = self.config.num_training_steps
-        epoch_training_steps = self.config.epoch_training_steps
-        decay = self.config.decay
-        logger.warning(f"The calculated Total Traning Num is {num_training_steps}, the Epoch training Steps is {epoch_training_steps}. Please check it carefully.")
-
-        def lr_lambda(current_step: int):
-            cur_epoch = (current_step+1)//epoch_training_steps if epoch_training_steps!=0 else 0
-            # return 1/(1+decay*cur_epoch)
-            return 1/((1+decay)**cur_epoch)
-        return LambdaLR(self.optimizer, lr_lambda, last_epoch=1)
+    def epoch_update(self, current_epoch: int):
+        if current_epoch < self.config.num_warmup_steps:
+            return float(current_epoch) / float(max(1, self.config.num_warmup_steps))
+        return 1/((1+self.config.decay)**current_epoch)

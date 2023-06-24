@@ -16,10 +16,6 @@
 import importlib
 import os
 from typing import Callable, Dict, Tuple, Any
-from dlk.utils.register import Register
-
-initmethod_config_register = Register("InitMethod config register.")
-initmethod_register = Register("InitMethod register.")
 
 
 def import_initmethods(initmethods_dir, namespace):

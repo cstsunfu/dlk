@@ -14,97 +14,29 @@
 
 from typing import Dict
 import torch.nn as nn
-from . import loss_register, loss_config_register
 from packaging import version
 import torch.nn as nn
-from dlk.utils.logger import Logger
-from dlk.core.base_module import BaseModuleConfig
 import torch
-
-logger = Logger.get_logger()
-
-@loss_config_register("bce")
-class BCEWithLogitsLossConfig(BaseModuleConfig):
-    default_config ={
-        "_name": "bce",
-        "config": {
-            "pred_truth_pair": [], # len(.) == 2, the 1st is the pred_name, 2nd is truth_name in __call__ inputs
-            "masked_select": None, # if provide, only select the masked(=1) data
-            "schedule": [1],
-            "scale": [1], # scale the loss for every schedule stage
-            "log_map": {
-                "loss": "loss"
-            }
-            # "schdeule": [0.3, 1.0], # can be a list or str
-            # "scale": "[0.5, 1]",
-        },
-    }
-    """Config for BCEWithLogitsLoss
-
-    Config Example: default_config
-    """
-    def __init__(self, config: Dict):
-        super(BCEWithLogitsLossConfig, self).__init__(config)
-        config = config['config']
-
-        self.scale = config['scale']
-        self.schedule = config['schedule']
-
-        if isinstance(self.scale, str):
-            self.scale = eval(self.scale)
-        if isinstance(self.schedule, str):
-            self.schedule = eval(self.schedule)
-
-        if not isinstance(self.scale, list):
-            assert isinstance(float(self.scale), float)
-            self.scale = [self.scale]
-        if not isinstance(self.schedule, list):
-            assert isinstance(float(self.schedule), float)
-            self.schedule = [self.schedule]
-        assert len(self.schedule) == len(self.scale)
-        assert self.schedule[-1] - 1 < 0.00001
-
-        self.pred_truth_pair = config['pred_truth_pair']
-        self.log_map = config['log_map']
-        if isinstance(self.log_map, str):
-            self.log_map = {"loss": self.log_map}
-        if not self.pred_truth_pair:
-            raise PermissionError(f"You must provide the pred_truth_pair for loss.")
-        self.masked_select = config['masked_select']
-        self.post_check(config, used=[
-            "pred_truth_pair",
-            "masked_select",
-            "schedule",
-            "scale",
-            "log_map",
-        ])
+from . import BaseLoss, BaseLossConfig
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@loss_register("bce")
-class BCEWithLogitsLoss(nn.Module):
+@config_register("loss", "bce")
+@define
+class BCEWithLogitsLossConfig(BaseLossConfig):
+    name = NameField(value="bce", file=__file__, help="the bce loss")
+
+@register("loss", "bce")
+class BCEWithLogitsLoss(BaseLoss):
     """binary crossentropy for bi-class classification
     """
     def __init__(self, config: BCEWithLogitsLossConfig):
-        super(BCEWithLogitsLoss, self).__init__()
-        self.config = config
-        self.bce = nn.BCEWithLogitsLoss(reduction='mean')
+        super(BCEWithLogitsLoss, self).__init__(config)
+        self.bce = nn.BCEWithLogitsLoss(reduction=self.config.reduction)
 
-    def update_config(self, rt_config: Dict):
-        """callback for imodel to update the total steps and epochs
-
-        when init the loss module, the total step and epoch is not known, when all data ready, the imodel update the value for loss module
-
-        Args:
-            rt_config: { "total_steps": self.num_training_steps, "total_epochs": self.num_training_epochs}
-
-        Returns: 
-            None
-
-        """
-        self.current_stage = 0
-        self.config.schedule = [rt_config['total_steps']*i for i in self.config.schedule]
-
-    def calc(self, result, inputs, rt_config):
+    def _calc(self, result, inputs, rt_config, scale):
         """calc the loss the predict is from result, the ground truth is from inputs
 
         Args:
@@ -117,25 +49,13 @@ class BCEWithLogitsLoss(nn.Module):
                 >>>     "total_steps": self.num_training_steps,
                 >>>     "total_epochs": self.num_training_epochs
                 >>> }
+            scale: the scale rate for the loss
 
         Returns: 
             loss
 
         """
-        if rt_config['current_step']>self.config.schedule[self.current_stage]:
-            self.current_stage += 1
-        scale = self.config.scale[self.current_stage]
-        pred_name, truth_name = self.config.pred_truth_pair
-        pred = result[pred_name]
-        target = inputs[truth_name]
-        batch_size = target.shape[0]
-        if self.config.masked_select is not None:
-            pred = torch.masked_select(pred, inputs[self.config.masked_select])
-            target = torch.masked_select(target, inputs[self.config.masked_select])
+        pred = result[self.pred_name]
+        target = inputs[self.truth_name]
         loss = self.bce(torch.sigmoid(pred), target) * scale
         return loss, {self.config.log_map['loss']: loss}
-
-    def __call__(self, result, inputs, rt_config):
-        """same as self.calc
-        """
-        return self.calc(result, inputs, rt_config)

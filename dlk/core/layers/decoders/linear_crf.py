@@ -14,62 +14,54 @@
 
 import torch
 from typing import Dict, List, Set, Callable
-from dlk.core.base_module import BaseModule, BaseModuleConfig
-from . import decoder_register, decoder_config_register
-from dlk.core.modules import module_config_register, module_register
-import copy
+from dlk.core.base_module import BaseModule
 
-@decoder_config_register("linear_crf")
-class LinearCRFConfig(BaseModuleConfig):
-    default_config = {
-            "_name": "linear_crf",
-            "config": {
-                "input_size": "*@*",  # the linear input_size
-                "output_size": "*@*", # the linear output_size
-                "reduction": "mean", # crf reduction method
-                "output_map": {}, # provide_key: output_key
-                "input_map": {} # required_key: provide_key
-                },
-            "_link":{
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter, ConfigTool
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
+
+
+@config_register("decoder", 'linear_crf')
+@define
+class DecoderLinearCRFConfig(BaseConfig):
+    name = NameField(value="linear_crf", file=__file__, help="the linear_crf decoder module")
+    @define
+    class Config:
+        input_size = IntField(value="*@*", checker=int_check(lower=0), help="the input size")
+        output_size = IntField(value="*@*", checker=int_check(lower=0), help="the output size")
+        reduction = StrField(value="mean", checker=str_check(options=["none", "sum", "mean", "token_mean"]), help="the reduction method")
+
+        output_map = DictField(value={
+            "predict_seq_label": "predict_seq_label",
+            "loss": "loss"
+            }, help="the output map of the biaffine module")
+        input_map = DictField(value={
+            "embedding": "embedding",
+            "label_ids": "label_ids",
+            "attention_mask": "attention_mask"
+            }, help="the input map of the biaffine module")
+
+    config = NestField(value=Config, converter=nest_converter)
+    submods = SubModules({ 
+                          "module@linear": "linear",
+                          "module@crf": "crf",
+                          })
+    link = DictField(value={
                 "config.input_size": ["module@linear.config.input_size"],
                 "config.output_size": ["module@linear.config.output_size", "module@crf.config.output_size"],
                 "config.reduction": ["module@crf.config.reduction"],
-                },
-            "module@linear": {
-                "_base": "linear",
-                },
-            "module@crf": {
-                "_base": "crf",
-                },
-            }
-    """Config for LinearCRF 
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(LinearCRFConfig, self).__init__(config)
-        self.linear_config = config["module@linear"]
-        self.crf_config = config["module@crf"]
-        self.post_check(config['config'], used=[
-                            'input_size',
-                            'output_size',
-                            'reduction',
-                            "return_logits",
-                        ])
+                })
 
 
-@decoder_register("linear_crf")
-class LinearCRF(BaseModule):
+@register("decoder", "linear_crf")
+class DecoderLinearCRF(BaseModule):
     """use torch.nn.Linear get the emission probability and fit to CRF"""
-    def __init__(self, config: LinearCRFConfig):
-        super(LinearCRF, self).__init__(config)
-        self._provide_keys = {'logits', "predict_seq_label"}
-        self._required_keys = {'embedding', 'label_ids', 'attention_mask'}
+    def __init__(self, config: DecoderLinearCRFConfig):
+        super(DecoderLinearCRF, self).__init__(config)
 
-        self.config = config
-        self.linear = module_register.get('linear')(module_config_register.get('linear')(config.linear_config))
-        self.crf = module_register.get('crf')(module_config_register.get('crf')(config.crf_config))
+        config_dict = config.to_dict()
+        self.linear = register.get("module", 'linear')(config_register.get("module", 'linear')(config_dict['module@linear']))
+        self.crf = register.get("module", 'crf')(config_register.get("module", 'crf')(config_dict['module@crf']))
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -107,8 +99,6 @@ class LinearCRF(BaseModule):
 
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name("predict_seq_label")] = self.crf(logits, inputs[self.get_input_name('attention_mask')])
         return inputs
 
@@ -124,8 +114,6 @@ class LinearCRF(BaseModule):
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
         loss = self.crf.training_step(logits, inputs[self.get_input_name('label_ids')], inputs[self.get_input_name('attention_mask')])
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name('loss')] = loss
         return inputs
 
@@ -141,8 +129,6 @@ class LinearCRF(BaseModule):
         """
         logits = self.linear(inputs[self.get_input_name('embedding')])
         loss = self.crf.training_step(logits, inputs[self.get_input_name('label_ids')], inputs[self.get_input_name('attention_mask')])
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([logits]))
         inputs[self.get_output_name('loss')] = loss
         inputs[self.get_output_name("predict_seq_label")] = self.crf(logits, inputs[self.get_input_name('attention_mask')])
         return inputs

@@ -16,11 +16,8 @@
 import importlib
 import os
 from typing import Callable, Dict, List, Tuple, Any
-from dlk.utils.register import Register
 import torch
 
-imodel_config_register = Register("IModel config register.")
-imodel_register = Register("IModel register.")
 
 class GatherOutputMixin(object):
     """gather all the small batches output to a big batch"""

@@ -17,45 +17,36 @@ import torch
 import numpy as np
 import random
 import re
-from . import adv_method_register, adv_method_config_register, AdvMethod
+from . import AdvMethod
 from typing import Dict, List
 from dlk.utils.logger import Logger
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
 
 logger = Logger.get_logger()
 
-@adv_method_config_register('pgd')
-class PGDAdvMethodConfig(object):
-    default_config = {
-        "_name": "pgd",
-        "config": {
-            "embedding_pattern": "model.*embedding.*embedding",
-            "epsilon": 1.0,
-            "alpha": 0.3,
-            "adv_k": 3,
-        }
-    }
-    """Config for PGDAdvMethod
+@config_register("adv_method", 'pgd')
+@define
+class PGDAdvMethodConfig(BaseConfig):
+    name = NameField(value="pgd", file=__file__, help="the adversarial training method")
+    @define
+    class Config:
+        embedding_pattern = StrField(value="model.*embedding.*embedding", help="PGD effect on embedding pattern")
+        epsilon = FloatField(value=1.0, help="PGD epsilon")
+        alpha = FloatField(value=0.3, checker=float_check(lower=0.0), help="FreeLB epsilon")
+        adv_k = IntField(value=3, checker=int_check(lower=1), help="FreeLB adversarial training times")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(PGDAdvMethodConfig, self).__init__()
-        config = config['config']
-        self.embedding_pattern = config['embedding_pattern']
-        self.epsilon = config['epsilon']
-        self.alpha = config['alpha']
-        self.adv_k = config['adv_k']
 
-@adv_method_register('pgd')
+@register("adv_method", 'pgd')
 class PGDAdvMethod(AdvMethod):
-    """Save pgd decided by config
+    """PGD adversarial training method
     """
-
     def __init__(self, model: nn.Module, config: PGDAdvMethodConfig):
         super().__init__(model, config)
         self.model = model
-        self.config = config
+        self.config = config.config
         self.emb_backup = {}
         self.grad_backup = {}
         self.adv_para_name = set()
@@ -119,7 +110,7 @@ class PGDAdvMethod(AdvMethod):
             "total_epochs": imodel.num_training_epochs
         }
         optimizer.zero_grad()
-        seed = random.randint(0, 4e9) # 4e9 < 2e32 - 1
+        seed = random.randint(0, int(4e9)) # 4e9 < 2e32 - 1
         torch.manual_seed(seed) # NOTE: should fix manual seed for every forward
         np.random.seed(seed)
         result = imodel.model.training_step(batch)

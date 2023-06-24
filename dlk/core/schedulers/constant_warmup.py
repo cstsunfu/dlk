@@ -13,53 +13,32 @@
 # limitations under the License.
 
 from typing import Dict
-from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
+from . import BaseScheduler, BaseSchedulerConfig
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@scheduler_config_register("constant_warmup")
+@config_register("scheduler", "constant_warmup")
+@define
 class ConstantWarmupScheduleConfig(BaseSchedulerConfig):
-    default_config = {
-            "config": {
-                "num_warmup_steps": 0,
-                },
-            "_name": "constant_warmup",
-            }
-    """Config for ConstantWarmupSchedule
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(ConstantWarmupScheduleConfig, self).__init__(config)
-        config = config['config']
-        self.num_warmup_steps = config["num_warmup_steps"]
-        self.post_check(config, used=[
-            "num_warmup_steps",
-        ])
+    name = NameField(value="constant_warmup", file=__file__, help="the constant_warmup scheduler")
 
 
-@scheduler_register("constant_warmup")
+@register("scheduler", "constant_warmup")
 class ConstantWarmupSchedule(BaseScheduler):
     """ConstantWarmupSchedule"""
-    def __init__(self, optimizer: optim.Optimizer, config: ConstantWarmupScheduleConfig):
-        super(ConstantWarmupSchedule, self).__init__()
-        self.config = config
-        self.optimizer = optimizer
+    def __init__(self, optimizer: optim.Optimizer, config: ConstantWarmupScheduleConfig, rt_config: Dict):
+        super(ConstantWarmupSchedule, self).__init__(optimizer, config, rt_config)
 
-    def get_scheduler(self)->LambdaLR:
-        """return the initialized linear wramup then constant scheduler
+    def step_update(self, current_step: int):
+        if current_step < self.config.num_warmup_steps:
+            return float(current_step) / float(max(1.0, self.config.num_warmup_steps))
+        return 1.0
 
-        Returns: 
-            Schedule
-
-        """
-        num_warmup_steps = self.config.num_warmup_steps
-
-        def lr_lambda(current_step: int):
-            if current_step < num_warmup_steps:
-                return float(current_step) / float(max(1.0, num_warmup_steps))
-            return 1.0
-
-        return LambdaLR(self.optimizer, lr_lambda, last_epoch=-1)
+    def epoch_update(self, current_epoch: int):
+        if current_epoch < self.config.num_warmup_steps:
+            return float(current_epoch) / float(max(1.0, self.config.num_warmup_steps))
+        return 1.0

@@ -14,14 +14,25 @@
 
 from typing import Callable, Dict, Any
 
+
+class Single(object):
+    def __init__(self, cls):
+        self._instance = {}
+        self.cls = cls
+    def __call__(self, type_name, force_from_dict=False):
+        if type_name not in self._instance:
+            self._instance[type_name] = self.cls(type_name, force_from_dict) 
+        return self._instance[type_name]
+
+@Single
 class Register(object):
     """Register"""
-    def __init__(self, register_name:str):
-        super(Register, self).__init__()
-        self.register_name = register_name
-        self.registry:Dict[str, Any] = {}
+    def __init__(self, register_type_name, force_from_dict):
+        self.registry:Dict[str, Dict[str, Any]] = {}
+        self.register_type_name = register_type_name
+        self.force_from_dict = force_from_dict
 
-    def register(self, name: str='')->Callable:
+    def register(self, type_name: str, name: str)->Callable:
         """register the name: module to self.registry
 
         Args:
@@ -32,21 +43,26 @@ class Register(object):
 
         """
         def decorator(module):
+            if type_name not in self.registry:
+                self.registry[type_name] = {}
             if name.strip() == "":
                 raise ValueError(f'You must set a name for {module.__name__}')
 
-            if name in self.registry:
-                raise ValueError(f'The {name} is already registed in {self.register_name}.')
-            self.registry[name] = module
-            return module
+            if name in self.registry[type_name]:
+                raise ValueError(f'The {name} is already registed in {type_name}.')
+            self.registry[type_name][name] = module
+            if self.force_from_dict:
+                return lambda config: module.from_dict(config)
+            else:
+                return module
         return decorator
 
-    def __call__(self, name:str="")->Callable:
+    def __call__(self, type_name: str, name:str)->Callable:
         """you can directly call the object, the behavior is the same as object.register(name)
         """
-        return self.register(name)
+        return self.register(type_name, name)
 
-    def get(self, name: str='')->Any:
+    def get(self, type_name: str, name: str)->Any:
         """get the module by name
 
         Args:
@@ -57,11 +73,17 @@ class Register(object):
 
         """
         sp_name = name.split('@')[0]
-        if sp_name not in self.registry:
-            raise KeyError(f"In '{self.register_name}' register, there is not a entry named '{sp_name}'")
+        if type_name not in self.registry:
+            raise KeyError(f"There is not a registerd type named '{type_name}'")
+        if sp_name not in self.registry[type_name]:
+            raise KeyError(f"In '{type_name}' register, there is not a entry named '{sp_name}'")
         return self.registry[sp_name]
 
-    def __getitem__(self, name: str='')->Any:
+    def __getitem__(self, type_and_name: tuple)->Any:
         """wrap for object.get(name)
         """
-        return self.get(name)
+        type_name, name = type_and_name
+        return self.get(type_name, name)
+
+config_register = Register("config", force_from_dict=True)
+register = Register("module")

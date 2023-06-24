@@ -15,70 +15,28 @@
 from typing import Dict
 import torch.nn as nn
 import torch.optim as optim
-from dlk.utils.config import BaseConfig
-from . import optimizer_register, optimizer_config_register, BaseOptimizer
+from . import BaseOptimizer, BaseOptimizerConfig
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@optimizer_config_register("sgd")
-class SGDOptimizerConfig(BaseConfig):
-    default_config = {
-            "config": {
-                "lr": 1e-3,
-                "momentum": 0.9,
-                "dampening": 0,
-                "weight_decay": 0,
-                "nesterov": False,
-                "optimizer_special_groups": {
-                    # "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
-                    # "bias": {
-                        # "config": {
-                            # "weight_decay": 0
-                            # },
-                        # "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
-                        # },
-                    # "decoder": {
-                        # "config": {
-                            # "lr": 1e-3
-                            # },
-                        # "pattern": ["decoder"]
-                        # },
-                    },
-                "name": "default" # default group name
-                },
-            "_name": "sgd",
-            }
-    """Config for SGDOptimizer
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(SGDOptimizerConfig, self).__init__(config)
-        self.config = config['config']
-        self.post_check(self.config, used=[
-            "lr",
-            "momentum",
-            "dampening",
-            "weight_decay",
-            "nesterov",
-            "optimizer_special_groups",
-        ])
+@config_register("optimizer", 'sgd')
+@define
+class SGDOptimizerConfig(BaseOptimizerConfig):
+    name = NameField(value="sgd", file=__file__, help="the sgd optimizer")
+    @define
+    class Config(BaseOptimizerConfig.Config):
+        lr = FloatField(value=1e-3, checker=float_check(lower=0), help="the learning rate of optimizer")
+        momentum = FloatField(value=0.9, checker=float_check(lower=0), help="the momentum of sgd")
+        dampening = FloatField(value=0, checker=float_check(lower=0), help="the dampening of sgd")
+        nesterov = BoolField(value=False, help="use nesterov of sgd or not")
+        weight_decay = FloatField(value=0.0, checker=float_check(lower=0), help="the weight decay of the optimizer")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@optimizer_register("sgd")
+@register("optimizer", "sgd")
 class SGDOptimizer(BaseOptimizer):
     """wrap for optim.SGD"""
     def __init__(self, model: nn.Module, config: SGDOptimizerConfig):
-        super(SGDOptimizer, self).__init__()
-        self.config = config.config
-        self.model = model
-        self.optimizer = optim.SGD
-
-    def get_optimizer(self)->optim.SGD:
-        """return the initialized SGD optimizer
-
-        Returns: 
-            SGD Optimizer
-
-        """
-        return self.init_optimizer(optim.SGD, self.model, self.config)
+        super(SGDOptimizer, self).__init__(model, config, optim.SGD)

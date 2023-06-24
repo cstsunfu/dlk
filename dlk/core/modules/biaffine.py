@@ -16,11 +16,10 @@ import torch.nn as nn
 import numpy as np
 import torch
 from typing import Dict, List, Optional
-from . import module_register, module_config_register, Module
-from dlk.utils.config import BaseConfig
-from dlk.utils.logger import Logger
-
-logger = Logger.get_logger()
+from . import Module
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
     """This module produces sinusoidal positional embeddings of any length."""
@@ -82,72 +81,43 @@ class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
             return query_layer, key_layer, value_layer
         return query_layer, key_layer
 
-@module_config_register("biaffine")
+@config_register("module", 'biaffine')
+@define
 class BiAffineConfig(BaseConfig):
-    default_config = {
-        "_name": "biaffine",
-        "config": {
-            "input_size": "*@*",
-            "hidden_size": 0, # default == input_size
-            "output_size": "*@*",
-            "dropout": 0.0, # generally no need dropout
-            "multi_matrix": 1, # like relation need head pair and tail pair calc togather, so the multi_matrix should set to >1
-            "relation_position": False, # whether add relation_position before align
-            "max_seq_len": 1024, # for relation_position
-            "bias": True, # use bias or not in biaffine
-        },
-    }
-    """Config for BiAffine
-    Config Example:
-    """
-    def __init__(self, config: Dict):
-        super(BiAffineConfig, self).__init__(config)
-        config = config['config']
-        self.input_size = config['input_size']
-        self.multi_matrix = config['multi_matrix']
-        self.relation_position = config['relation_position']
-        self.target_size = config['output_size']
-        self.max_seq_len = config['max_seq_len']
-        self.output_size = config['output_size'] * self.multi_matrix
-        self.hidden_size = config['hidden_size']
-        if not self.hidden_size:
-            self.hidden_size = self.input_size
-        self.dropout = config['dropout']
-        self.dropout = float(config['dropout'])
-        self.bias = config['bias']
-        self.post_check(config, used=[
-            "input_size",
-            "hidden_size",
-            "output_size",
-            "dropout",
-            "multi_matrix",
-            "relation_position",
-            "max_seq_len",
-            "bias",
-        ])
+    name = NameField(value="biaffine", file=__file__, help="the biaffine module config")
+    @define
+    class Config:
+        input_size = IntField(value="*@*", checker=int_check(lower=0), help="the input size of the biaffine module")
+        hidden_size = IntField(value=0, checker=int_check(lower=0), help="the hidden size of the biaffine module, if set to 0, will set the hidden size to the input size")
+        output_size = IntField(value="*@*", checker=int_check(lower=0), help="the output size of the biaffine module")
+        dropout = FloatField(value=0.0, checker=float_check(lower=0.0, upper=1.0), help="the dropout rate of the biaffine module")
+        multi_matrix = IntField(value=1, checker=int_check(lower=1), help="the number of the matrix")
+        max_seq_len = IntField(value=1024, checker=int_check(lower=0), help="the max sequence length of the biaffine module")
+        relation_position = BoolField(value=False, help="whether to use the relative position")
+        bias = BoolField(value=True, help="whether to use the bias in the biaffine module")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@module_register("biaffine")
+@register("module", "biaffine")
 class BiAffine(Module):
     """wrap for nn.BiAffine"""
     def __init__(self, config: BiAffineConfig):
         super(BiAffine, self).__init__()
-        self.linear_a = nn.Linear(config.input_size, config.hidden_size)
-        self.linear_b = nn.Linear(config.input_size, config.hidden_size)
-        self.config = config
-        if config.relation_position:
+        self.config = config.config
+        if self.config.hidden_size == 0:
+            self.config.hidden_size = self.config.input_size
+        self.linear_a = nn.Linear(self.config.input_size, self.config.hidden_size)
+        self.linear_b = nn.Linear(self.config.input_size, self.config.hidden_size)
+        if self.config.relation_position:
             self.embed_positions = RoFormerSinusoidalPositionalEmbedding(
-                config.max_seq_len, config.hidden_size
+                self.config.max_seq_len, self.config.hidden_size
             )
-        self.dropout = nn.Dropout(p=config.dropout)
+        self.dropout = nn.Dropout(p=self.config.dropout)
         self.active = nn.LeakyReLU() # TODO: why GELU get loss nan?
-        if config.bias:
-            self.biaffine = nn.Parameter(torch.randn(config.hidden_size+1, config.output_size, config.hidden_size+1))
+        if self.config.bias:
+            self.biaffine = nn.Parameter(torch.randn(self.config.hidden_size+1, self.config.output_size, self.config.hidden_size+1))
         else:
-            self.biaffine = nn.Parameter(torch.randn(config.hidden_size, config.output_size, config.hidden_size))
-
-        self.dropout = nn.Dropout(p=float(config.dropout))
-        self.config = config
+            self.biaffine = nn.Parameter(torch.randn(self.config.hidden_size, self.config.output_size, self.config.hidden_size))
 
     def init_weight(self, method):
         """init the weight of submodules by 'method'
@@ -197,6 +167,6 @@ class BiAffine(Module):
                     )
         if self.config.multi_matrix>1:
             bs, seq_len, _, output_size = output.shape
-            output = output.reshape(bs, seq_len, seq_len, self.config.multi_matrix, self.config.target_size)
-            output = output.permute(0, 3, 1, 2, 4) # bs, group, seq_len, seq_len, target_size)
+            output = output.reshape(bs, seq_len, seq_len, self.config.multi_matrix, self.config.output_size)
+            output = output.permute(0, 3, 1, 2, 4) # bs, group, seq_len, seq_len, output_size)
         return output

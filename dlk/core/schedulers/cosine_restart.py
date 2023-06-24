@@ -14,49 +14,35 @@
 
 from typing import Dict
 import math
-from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 import torch.optim as optim
 from dlk.utils.logger import Logger
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
+from . import BaseScheduler, BaseSchedulerConfig
 logger = Logger.get_logger()
 
 
-@scheduler_config_register("cosine_restart")
+@config_register("scheduler", "cosine_restart")
+@define
 class CosineRestartScheduleConfig(BaseSchedulerConfig):
-    default_config = {
-        "config": {
-            "first_restart_step": -1, # you can just set first_restart_step or first_restart_epoch
-            "first_restart_epoch": -1,
-            "mult_fact": 1,
-            },
-        "_name": "cosine_restart",
-    }
-    """Config for CosineRestartSchedule
+    name = NameField(value="cosine_restart", file=__file__, help="the consine restart scheduler, it")
+    @define
+    class Config(BaseSchedulerConfig.Config):
+        first_restart_step = IntField(value=-1, help="if the interval is `step`, the first restart step, if the interval is `epoch`, it means the first restart epoch")
+        mult_fact = IntField(value=1, checker=int_check(lower=0), help="the multiplier for the next restart interval, A factor increases after a restart. Default: 1.")
+        eta_min = FloatField(value=0.0, checker=float_check(lower=0.0), help="Minimum learning rate. Default: 0.")
 
-    Config Example: see default_config
-    """
-    def __init__(self, config: Dict):
-        super(CosineRestartScheduleConfig, self).__init__(config)
-        config = config['config']
-        self.first_restart_epoch = config["first_restart_epoch"]
-        self.first_restart_step = config["first_restart_step"]
-        assert self.first_restart_epoch != -1 or self.first_restart_step != -1, "You must provide one of them"
-        assert self.first_restart_epoch == -1 or self.first_restart_step == -1, "You must provide one of them"
-        self.mult_fact = config['mult_fact']
-        self.post_check(config, used=[
-            "mult_fact",
-            "first_restart_epoch",
-            "first_restart_step",
-        ])
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@scheduler_register("cosine_restart")
+@register("scheduler", "cosine_restart")
 class CosineRestartSchedule(BaseScheduler):
     """CosineRestartSchedule"""
-    def __init__(self, optimizer: optim.Optimizer, config: CosineRestartScheduleConfig):
-        super(CosineRestartSchedule, self).__init__()
-        self.config = config
-        self.optimizer = optimizer
+    def __init__(self, optimizer: optim.Optimizer, config: CosineRestartScheduleConfig, rt_config):
+        super(CosineRestartSchedule, self).__init__(optimizer, config, rt_config)
+        self.config: config.config
 
     def get_scheduler(self)->CosineAnnealingWarmRestarts:
         """return the initialized linear wramup then cos decay scheduler
@@ -65,10 +51,4 @@ class CosineRestartSchedule(BaseScheduler):
             Schedule
 
         """
-        epoch_training_steps = self.config.epoch_training_steps
-        num_training_steps = self.config.num_training_steps
-        if self.config.first_restart_step == -1:
-            self.config.first_restart_step = self.config.first_restart_epoch * epoch_training_steps
-        logger.warning(f"The calculated Total Traning Num is {num_training_steps}, the Restart Steps is {self.config.first_restart_step}. Please check it carefully.")
-
-        return CosineAnnealingWarmRestarts(self.optimizer, self.config.first_restart_step, self.config.mult_fact, last_epoch=-1)
+        return CosineAnnealingWarmRestarts(self.optimizer, T_0=self.config.first_restart_step, T_mult=self.config.mult_fact, eta_min=self.config.eta_min, last_epoch=-1)

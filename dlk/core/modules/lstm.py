@@ -17,65 +17,46 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from dlk.utils.config import BaseConfig
-from . import module_register, module_config_register, Module
-from dlk.utils.logger import Logger
+from . import Module
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-logger = Logger.get_logger()
-
-@module_config_register("lstm")
+@config_register("module", 'lstm')
+@define
 class LSTMConfig(BaseConfig):
-    default_config = {
-            "config": {
-                "bidirectional": True,
-                "output_size": "*@*", # the output is 2*hidden_size if use
-                "input_size": "*@*",
-                "num_layers": 1,
-                "dropout": 0.1, # dropout between layers
-                "dropout_last": True, # dropout the last layer output or not
-                },
-            "_name": "lstm",
-            }
-    """Config for def 
+    name = NameField(value="lstm", file=__file__, help="the lstm config")
+    @define
+    class Config:
+        bidirectional = BoolField(value=True, help="whether to use bidirectional lstm")
+        input_size = IntField(value="*@*", checker=int_check(lower=0), help="the input size")
+        output_size = IntField(value="*@*", checker=int_check(lower=0), help="the output size")
+        num_layers = IntField(value=1, checker=int_check(lower=1), help="the number of layers")
+        dropout = FloatField(value=0.0, checker=float_check(lower=0.0), help="the dropout rate")
+        dropout_last = BoolField(value=True, help="whether to dropout the last layer output")
 
-    Config Example:
-        default_config
-    """
-
-    def __init__(self, config: Dict):
-        super(LSTMConfig, self).__init__(config)
-        config = config['config']
-        self.num_layers = config['num_layers']
-        self.bidirectional= config['bidirectional']
-        self.input_size = config['input_size']
-        self.output_size = config['output_size']
-        self.hidden_size = self.output_size
-        if self.bidirectional:
-            assert self.output_size % 2 == 0
-            self.hidden_size = self.output_size // 2
-        self.dropout = config['dropout']
-        self.dropout_last = config['dropout_last']
-        self.post_check(config, used=[
-            "bidirectional",
-            "output_size",
-            "input_size",
-            "num_layers",
-            "dropout",
-            "dropout_last",
-        ])
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@module_register("lstm")
+@register("module", "lstm")
 class LSTM(Module):
     "A wrap for nn.LSTM"
     def __init__(self, config: LSTMConfig):
         super(LSTM, self).__init__()
+        self.config = config.config
 
-        if config.num_layers <= 1:
+        if self.config.num_layers <= 1:
             inlstm_dropout = 0
         else:
-            inlstm_dropout = config.dropout
-        self.lstm = nn.LSTM(input_size=config.input_size, hidden_size=config.hidden_size, num_layers=config.num_layers, batch_first=True, bidirectional=config.bidirectional, dropout=inlstm_dropout)
-        self.dropout_last = nn.Dropout(p=float(config.dropout) if config.dropout_last else 0)
+            inlstm_dropout = self.config.dropout
+
+        hidden_size = self.config.output_size
+        if self.config.bidirectional:
+            assert self.config.output_size % 2 == 0
+            hidden_size = self.config.output_size // 2
+
+        self.lstm = nn.LSTM(input_size=self.config.input_size, hidden_size=hidden_size, num_layers=self.config.num_layers, batch_first=True, bidirectional=self.config.bidirectional, dropout=inlstm_dropout)
+        self.dropout_last = nn.Dropout(p=float(self.config.dropout) if self.config.dropout_last else 0)
 
     def forward(self, input: torch.Tensor, mask: torch.Tensor)->torch.Tensor:
         """do forward on a mini batch

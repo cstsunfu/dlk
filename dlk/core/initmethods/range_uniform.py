@@ -13,46 +13,32 @@
 # limitations under the License.
 
 import torch.nn as nn
-from dlk.utils.config import BaseConfig
-from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
 import torch
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@initmethod_config_register('range_uniform')
+@config_register("initmethod", 'range_uniform')
+@define
 class RangeUniformInitConfig(BaseConfig):
-    default_config = {
-            "_name": "range_uniform",
-            "config": {
-                "range": 0.1,
-                }
-            }
-    """Config for RangeNormInit
+    name = NameField(value="default", file=__file__, help="the default init method for the modules")
+    @define
+    class Config:
+        range_from = FloatField(value=-0.1, checker=float_check(), help="the lower bound of the init value")
+        range_to = FloatField(value=0.1, checker=float_check(), help="the upper bound of the init value")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config):
-        super(RangeUniformInitConfig, self).__init__(config)
-        range = config.get("range", 0.1)
-        if isinstance(range, list):
-            assert len(range) == 2
-            self.range_from = range[0]
-            self.range_to = range[1]
-        else:
-            assert isinstance(range, float)
-            self.range_from = -abs(range)
-            self.range_to = abs(range)
-        self.post_check(config['config'], used='range')
 
-@initmethod_register('range_uniform')
+@register("initmethod", 'range_uniform')
 class RangeUniformInit(object):
     """for transformers
     """
 
     def __init__(self, config: RangeUniformInitConfig):
         super().__init__()
-        self.config = config
+        self.config = config.config
 
     def __call__(self, module):
         """Initialize the weights"""

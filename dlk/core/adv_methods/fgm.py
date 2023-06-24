@@ -17,41 +17,33 @@ import torch
 import numpy as np
 import random
 import re
-from . import adv_method_register, adv_method_config_register, AdvMethod
+from . import AdvMethod
 from typing import Dict, List
 from dlk.utils.logger import Logger
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
 
 logger = Logger.get_logger()
 
-@adv_method_config_register('fgm')
-class FGMAdvMethodConfig(object):
-    default_config = {
-        "_name": "fgm",
-        "config": {
-            "embedding_pattern": "model.*embedding.*embedding",
-            "epsilon": 1.0
-        }
-    }
-    """Config for FGMAdvMethod
+@config_register("adv_method", 'fgm')
+@define
+class FGMAdvMethodConfig(BaseConfig):
+    name = NameField(value="fgm", file=__file__, help="the adversarial training method")
+    @define
+    class Config:
+        embedding_pattern = StrField(value="model.*embedding.*embedding", help="FGM effect on embedding pattern")
+        epsilon = FloatField(value=1.0, checker=float_check(lower=0.0), help="FGM epsilon")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(FGMAdvMethodConfig, self).__init__()
-        config = config['config']
-        self.embedding_pattern = config['embedding_pattern']
-        self.epsilon = config['epsilon']
-
-@adv_method_register('fgm')
+@register("adv_method", 'fgm')
 class FGMAdvMethod(AdvMethod):
-    """Save fgm decided by config
+    """FGM adversarial training method
     """
-
     def __init__(self, model: nn.Module, config: FGMAdvMethodConfig):
         super().__init__(model, config)
         self.model = model
-        self.config = config
+        self.config = config.config
         self.backup = {}
         self.adv_para_name = set()
         for name, param in self.model.named_parameters():
@@ -96,7 +88,7 @@ class FGMAdvMethod(AdvMethod):
             "total_epochs": imodel.num_training_epochs
         }
         optimizer.zero_grad()
-        seed = random.randint(0, 4e9) # 4e9 < 2e32 - 1
+        seed = random.randint(0, int(4e9)) # 4e9 < 2e32 - 1
         torch.manual_seed(seed) # NOTE: should fix manual seed for every forward
         np.random.seed(seed)
         result = imodel.model.training_step(batch)

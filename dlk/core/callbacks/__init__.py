@@ -17,10 +17,6 @@
 import importlib
 import os
 from typing import Dict, Any
-from dlk.utils.register import Register
-
-callback_config_register = Register("Callback config register")
-callback_register = Register("Callback register")
 
 
 def import_callbacks(callbacks_dir, namespace):

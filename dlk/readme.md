@@ -1,3 +1,11 @@
+
+# TODO
+
+- [ ] all_gather_object
+- [ ] pre-trained model init without weight
+
+
+
 # Appointments
 
 ## Data format

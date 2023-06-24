@@ -12,19 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import model_register, model_config_register
 from typing import Dict, List
-from dlk.utils.config import BaseConfig, ConfigTool
 from dlk.core.base_module import BaseModel
 import torch
-from dlk.core.layers.embeddings import embedding_config_register, embedding_register
-from dlk.core.initmethods import initmethod_config_register, initmethod_register
-from dlk.core.layers.encoders import encoder_config_register, encoder_register
-from dlk.core.layers.decoders import decoder_config_register, decoder_register
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules, ConfigTool
 
 
-@model_config_register('basic')
+@config_register("model", "basic")
+@define
 class BasicModelConfig(BaseConfig):
+    name = NameField(value="basic", file=__file__, help="the basic model")
+    config = DictField(value={}, help="default null config for basic model")
+    submods = SubModules(value={
+        "embedding": "identity",
+        "encoder": "identity",
+        "decoder": "identity",
+        "initmethod": "default",
+        }, help="submodules for basic model")
+
+@register("model", 'basic')
+class BasicModeConfig(BaseConfig):
     """Config for BasicModel
 
     Config Example:
@@ -146,48 +155,22 @@ class BasicModelConfig(BaseConfig):
         return ConfigTool.get_leaf_module(decoder_register, decoder_config_register, "decoder", config)
 
 
-@model_register('basic')
+@register("model", 'basic')
 class BasicModel(BaseModel):
     """Basic & General Model
     """
-
     def __init__(self, config: BasicModelConfig, checkpoint):
         super().__init__()
-
-        self.embedding = config.embedding(config.embedding_config)
-        self.encoder = config.encoder(config.encoder_config)
-        self.decoder = config.decoder(config.decoder_config)
+        dict_config = config.to_dict()
+        self.embedding = ConfigTool.get_leaf_module(register, config_register, "embedding", dict_config['embedding'], init=True)
+        self.encoder = ConfigTool.get_leaf_module(register, config_register, "encoder", dict_config['encoder'], init=True)
+        self.decoder = ConfigTool.get_leaf_module(register, config_register, "decoder", dict_config['decoder'], init=True)
 
         if not checkpoint:
-            init_method = config.init_method(config.init_method_config)
+            init_method = ConfigTool.get_leaf_module(register, config_register, "initmethod", dict_config['initmethod'], init=True)
             self.embedding.init_weight(init_method)
             self.encoder.init_weight(init_method)
             self.decoder.init_weight(init_method)
-
-        self.config = config.config
-        self._provided_keys = self.config.get("provided_keys", [])
-
-    def provide_keys(self)->List[str]:
-        """return all keys of the dict of the model returned
-
-        This method may no use, so we will remove this.
-
-        Returns: all keys
-        """
-        return self.decoder.provided_keys()
-
-    def check_keys_are_provided(self, provide: List[str]=[])->None:
-        """check this all the submodules required key are provided
-
-        Returns: None
-
-        Raises: PermissionError
-
-        """
-        self._provided_keys = self._provided_keys + provide
-        self.embedding.check_keys_are_provided(self._provided_keys)
-        self.encoder.check_keys_are_provided(self.embedding.provide_keys())
-        self.decoder.check_keys_are_provided(self.encoder.provide_keys())
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do forward on a mini batch

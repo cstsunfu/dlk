@@ -16,11 +16,20 @@
 
 import importlib
 import os
-from dlk.utils.register import Register
+from dlk.core.base_module import BaseIdentityModuleConfig, BaseIdentityModule
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
 
+@config_register("module", 'identity')
+@define
+class IdentityModuleConfig(BaseIdentityModuleConfig):
+    pass
 
-encoder_config_register = Register("Encoder config register.")
-encoder_register = Register("Encoder register.")
+@config_register("module", 'identity')
+@define
+class IdentityModule(BaseIdentityModule):
+    pass
+
 
 def import_encoders(encoders_dir, namespace):
     for file in os.listdir(encoders_dir):

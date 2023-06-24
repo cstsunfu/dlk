@@ -13,99 +13,71 @@
 # limitations under the License.
 
 import torch.nn as nn
-from . import embedding_register, embedding_config_register
-from dlk.core.modules import module_register, module_config_register
 from typing import Dict, List, Set
-from dlk.core.base_module import SimpleModule, BaseModuleConfig
+from dlk.core.base_module import SimpleModule
 import pickle as pkl
 from dlk.utils.io import open
 from dlk.utils.logger import Logger
 import torch
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules, ConfigTool
+
 
 logger = Logger.get_logger()
 
-@embedding_config_register('static_char_cnn')
-class StaticCharCNNEmbeddingConfig(BaseModuleConfig):
-    default_config = {
-        "_name": "static_char_cnn",
-        "config": {
-            "embedding_file": "*@*", # the embedding file, must be saved as numpy array by pickle
 
-            # if the embedding_file is a dict, you should provide the dict trace to embedding
-            "embedding_trace": ".", # default the file itself is the embedding
-            # embedding_trace: "char_embedding", # this means the <embedding = pickle.load(embedding_file)["char_embedding"]
-            # embedding_trace: "meta.char_embedding", # this means the <embedding = pickle.load(embedding_file)['meta']["char_embedding"]
-            "freeze": False, # is freeze
-            "dropout": 0, # dropout rate
-            "embedding_dim": 35, # dropout rate
-            "kernel_sizes": [3], # dropout rate
-            "padding_idx": 0,
-            "output_map": {"char_embedding": "char_embedding"},
-            "input_map": {"char_ids": "char_ids"},
-            },
-        "_link":{
-            "config.embedding_dim": ["module@cnn.config.in_channels", "module@cnn.config.out_channels"],
-            "config.kernel_sizes": ["module@cnn.config.kernel_sizes"],
-            },
-        "module@cnn": {
-            "_base": "conv1d",
-            "config": {
-                "in_channels": -1,
-                "out_channels": -1,  # will update while load embedding
-                "kernel_sizes": [3],
-                },
-            },
-    }
-    """Config for StaticCharCNNEmbedding
+@config_register("embedding", 'static_char_cnn')
+@define
+class StaticCharCNNEmbeddingConfig(BaseConfig):
+    name = NameField(value="static_char_cnn", file=__file__, help="the static_char_cnn embedding module")
+    @define
+    class Config:
+        embedding_file = StrField(value="*@*", help="the embedding file, must be saved as numpy array by pickle")
+        embedding_trace = StrField(value=".", help="default the file itself, the trace of the embedding, `meta.char_embedding`,  this means the embedding = pickle.load(embedding_file)['meta']['char_embedding']")
+        embedding_dim = IntField(value="*@*", checker=int_check(lower=0), help="the embedding dim")
+        freeze = BoolField(value=False, help="whether to freeze the embedding")
+        dropout = FloatField(value=0, checker=float_check(lower=0, upper=1), help="dropout rate")
+        padding_idx = IntField(value=0, checker=int_check(lower=0), help="padding index")
+        kernel_sizes = ListField(value=[3], checker=int_check(lower=0), help="the kernel sizes of the cnn")
+        output_map = DictField(value={
+            "char_embedding": "char_embedding",
+            }, help="the output map of the char embedding module")
+        input_map = DictField(value={
+            "char_ids": "char_ids",
+            }, help="the input map of the char embedding module")
 
-    Config Example:
-        default_config
+    config = NestField(value=Config, converter=nest_converter)
+    submods = SubModules(value={
+        "module@cnn": "conv1d"
+        }, help="the cnn module of the char embedding")
+    links = DictField(value={
+        "config.embedding_dim": ["module@cnn.config.in_channels", "module@cnn.config.out_channels"],
+        "config.kernel_sizes": ["module@cnn.config.kernel_sizes"],
+        }, help="the link of the char embedding module")
+
+
+@register("embedding", 'static_char_cnn')
+class StaticCharCNNEmbedding(SimpleModule):
+    """ from 'char_ids' generate 'embedding'
     """
-    def __init__(self, config: Dict):
-        super(StaticCharCNNEmbeddingConfig, self).__init__(config)
-        self.cnn_module_name: str = config['module@cnn']['_name']
-        self.cnn_config = module_config_register.get(self.cnn_module_name)(config['module@cnn'])
-
-        config = config['config']
-        embedding_file = config['embedding_file']
+    def __init__(self, config: StaticCharCNNEmbeddingConfig):
+        super().__init__(config)
+        self.config = config.config
+        embedding_file = self.config.embedding_file
         with open(embedding_file, 'rb') as f:
             embedding_file = pkl.load(f)
-        embedding_trace = config["embedding_trace"]
+        embedding_trace = self.config.embedding_trace
         if embedding_trace != '.':
             traces = embedding_trace.split('.')
             for trace in traces:
                 embedding_file = embedding_file[trace]
-        self.embedding = embedding_file
-        self.embedding_dim = config['embedding_dim']
-        self.freeze = config['freeze']
-        self.dropout = config['dropout']
-        self.post_check(config, used=[
-            "embedding_file",
-            "embedding_trace",
-            "freeze",
-            "dropout",
-            "embedding_dim",
-            "kernel_sizes",
-            "padding_idx",
-            "return_logits",
-        ])
-
-
-@embedding_register('static_char_cnn')
-class StaticCharCNNEmbedding(SimpleModule):
-    """ from 'char_ids' generate 'embedding'
-    """
-
-    def __init__(self, config: StaticCharCNNEmbeddingConfig):
-        super().__init__(config)
-        self._provided_keys = set() # provided by privous module, will update by the check_keys_are_provided
-        self._provide_keys = {'char_embedding'} # provide by this module
-        self._required_keys = {'char_ids'} # required by this module
-        self.config = config
+        config_dict = config.to_dict()
+        cnn, cnn_config = ConfigTool.get_leaf_module(register, config_register, 'module', config_dict['module@cnn'])
+        self.cnn = cnn(cnn_config)
         self.dropout = nn.Dropout(float(self.config.dropout))
-        self.embedding = nn.Embedding.from_pretrained(torch.tensor(self.config.embedding, dtype=torch.float), freeze=self.config.freeze, padding_idx=0)
+        self.embedding = nn.Embedding.from_pretrained(torch.tensor(embedding_file, dtype=torch.float), freeze=self.config.freeze, padding_idx=0)
         assert self.embedding.weight.shape[-1] == self.config.embedding_dim
-        self.cnn = module_register.get(self.config.cnn_module_name)(self.config.cnn_config)
 
     def init_weight(self, method):
         """init the weight of submodules by 'method'
@@ -140,6 +112,4 @@ class StaticCharCNNEmbedding(SimpleModule):
         word_embedding = char_embedding.masked_fill_(char_mask.view(bs*seq_len, 1, token_len), -1000).max(-1)[0].view(bs, seq_len, emb_dim).contiguous()
 
         inputs[self.get_output_name('char_embedding')] = self.dropout(word_embedding)
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('char_embedding')]]))
         return inputs

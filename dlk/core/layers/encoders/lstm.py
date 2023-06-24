@@ -16,62 +16,36 @@ import torch.nn as nn
 import torch
 from typing import Dict, List, Set, Callable
 from dlk.core.base_module import SimpleModule, BaseModuleConfig
-from . import encoder_register, encoder_config_register
-from dlk.core.modules import module_config_register, module_register
-from dlk.utils.logger import Logger
-logger = Logger.get_logger()
+from dlk import register, config_register
+from dlk.core.modules.lstm import LSTMConfig, LSTM
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter, ConfigTool
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-@encoder_config_register("lstm")
-class LSTMConfig(BaseModuleConfig):
-    default_config = {
-        "_name": "lstm",
-        "config": {
-            "output_map": {},
-            "input_map": {},
-            "input_size": "*@*",
-            "output_size": "*@*",
-            "num_layers": 1,
-            "dropout": "*@*", # dropout between layers
-            },
-        "_link": {
-            "config.input_size": ["module.config.input_size"],
-            "config.output_size": ["module.config.output_size"],
-            "config.dropout": ["module.config.dropout"],
-            },
-        "module": {
-            "_base": "lstm",
-            },
-        }
-    """Config for LSTM
+@config_register("encoder", 'lstm')
+@define
+class EncoderLSTMConfig(LSTMConfig):
+    name = NameField(value="linear", file=__file__, help="the linear encoder module")
+    @define
+    class Config(LSTMConfig.Config):
+        output_map = DictField(value={
+            "embedding": "embedding"
+            }, help="the output map of the biaffine module")
+        input_map = DictField(value={
+            "embedding": "embedding",
+            "attention_mask": "attention_mask"
+            }, help="the input map of the biaffine module")
 
-    Config Example:
-        default_config
-    """
-
-    def __init__(self, config: Dict):
-        super(LSTMConfig, self).__init__(config)
-        self.lstm_config = config["module"]
-        assert self.lstm_config['_name'] == "lstm"
-        self.post_check(config['config'], used=[
-            "input_size",
-            "output_size",
-            "num_layers",
-            "return_logits",
-            "dropout",
-        ])
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@encoder_register("lstm")
-class LSTM(SimpleModule):
+@register("encoder", "lstm")
+class EncoderLSTM(SimpleModule):
     """Wrap for torch.nn.LSTM
     """
-    def __init__(self, config: LSTMConfig):
-        super(LSTM, self).__init__(config)
-        self._provide_keys = {'embedding'}
-        self._required_keys = {'embedding', 'attention_mask'}
-        self._provided_keys = set()
+    def __init__(self, config: EncoderLSTMConfig):
+        super(EncoderLSTM, self).__init__(config)
         self.config = config
-        self.lstm = module_register.get('lstm')(module_config_register.get('lstm')(config.lstm_config))
+        self.lstm = LSTM(config)
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -96,6 +70,4 @@ class LSTM(SimpleModule):
 
         """
         inputs[self.get_output_name('embedding')] = self.lstm(inputs[self.get_input_name('embedding')], inputs[self.get_input_name('attention_mask')])
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs

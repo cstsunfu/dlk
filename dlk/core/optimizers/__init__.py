@@ -15,20 +15,53 @@
 """optimizers"""
 import importlib
 import os
-from typing import Callable, Dict, Tuple, Any
+from typing import Callable, Dict, Tuple, Any, Type
 from dlk.utils.register import Register
 import torch.optim as optim
 from dlk.utils.logger import Logger
 import torch
 import re
-
-
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 logger = Logger.get_logger()
-optimizer_config_register = Register("Optimizer config register.")
-optimizer_register = Register("Optimizer register.")
+
+
+@define
+class BaseOptimizerConfig(BaseConfig):
+    name = NameField(value="*@*", file=__file__, help="the base optimizer")
+    @define
+    class Config:
+        name = StrField(value="default", help="the name of default group parameters")
+        optimizer_special_groups = DictField(value={}, checker=suggestions([
+            {
+                "order": ['decoder', 'bias'], 
+                "bias": {
+                    "config": { "weight_decay": 0 },
+                    "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
+                },
+                "decoder": {
+                    "config": { "lr": 1e-3 },
+                    "pattern": ["decoder"]
+                }
+                }]), help="""the special groups of optimizer, like
+                                             "order": ['decoder', 'bias'], // the group order, if the para is in decoder & is in bias, set to decoder. The order name is set to the group name
+                                             "bias": {
+                                                 "config": { "weight_decay": 0 },
+                                                 "pattern": ["bias",  "LayerNorm.bias", "LayerNorm.weight"]
+                                                 },
+                                             "decoder": {
+                                                 "config": { "lr": 1e-3 },
+                                                 "pattern": ["decoder"]
+                                                 }""")
+    config = NestField(value=Config, converter=nest_converter)
 
 
 class BaseOptimizer(object):
+    def __init__(self, model: torch.nn.Module, config: BaseOptimizerConfig, optimizer: Type[optim.Optimizer]):
+        super(BaseOptimizer, self).__init__()
+        self.config = config.to_dict()['config']
+        self.model = model
+        self.optimizer = optimizer
 
     def get_optimizer(self)->optim.Optimizer:
         """return the initialized optimizer
@@ -37,9 +70,9 @@ class BaseOptimizer(object):
             Optimizer
 
         """
-        raise NotADirectoryError
+        return self.init_optimizer(self.optimizer, self.model, self.config)
 
-    def init_optimizer(self, optimizer: optim.Optimizer, model: torch.nn.Module, config: Dict):
+    def init_optimizer(self, optimizer: Type[optim.Optimizer], model: torch.nn.Module, config: Dict)->optim.Optimizer:
         """init the optimizer for paras in model, and the group is decided by config
 
         Args:

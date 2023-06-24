@@ -17,16 +17,9 @@
 import importlib
 import os
 from typing import Dict, Any
-import re
 import torch
 import torch.nn as nn
-from dlk.utils.register import Register
-from dlk.utils.logger import Logger
 
-logger = Logger.get_logger()
-
-adv_method_config_register = Register("AdvMethod config register")
-adv_method_register = Register("AdvMethod register")
 
 class AdvMethod(object):
     """Save fgm decided by config
@@ -48,6 +41,7 @@ class AdvMethod(object):
 
         """
         raise NotImplementedError
+
 
 def import_adv_methods(adv_methods_dir, namespace):
     for file in os.listdir(adv_methods_dir):

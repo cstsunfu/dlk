@@ -15,11 +15,7 @@
 """models"""
 import importlib
 import os
-from typing import Callable, Dict, Tuple, Any
-from dlk.utils.register import Register
 
-model_config_register = Register("Model config register.")
-model_register = Register("Model register.")
 
 def import_models(models_dir, namespace):
     for file in os.listdir(models_dir):

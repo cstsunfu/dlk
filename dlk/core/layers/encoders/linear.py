@@ -11,64 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import torch
 from typing import Dict, List, Set, Callable
-from dlk.core.base_module import SimpleModule, BaseModuleConfig
-from . import encoder_register, encoder_config_register
-from dlk.core.modules import module_config_register, module_register
-
-@encoder_config_register("linear")
-class LinearConfig(BaseModuleConfig):
-    default_config = {
-            "_name": "linear",
-            "config": {
-                "input_size": "*@*",
-                "dropout": 0.0,
-                "output_size": "*@*",
-                "pool": None,
-                "output_map": {},
-                "input_map": {},
-                },
-            "_link":{
-                "config.input_size": ["module.config.input_size"],
-                "config.output_size": ["module.config.output_size"],
-                "config.pool": ["module.config.pool"],
-                },
-            "module": {
-                "_base": "linear",
-                },
-            }
-    """Config for Linear 
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(LinearConfig, self).__init__(config)
-        self.linear_config = config["module"]
-        self.post_check(config['config'], used=[
-            "input_size",
-            "output_size",
-            "return_logits",
-            "pool",
-            "dropout",
-        ])
+from dlk.core.base_module import SimpleModule
+from dlk import register, config_register
+from dlk.core.modules.linear import LinearConfig, Linear
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter, ConfigTool
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@encoder_register("linear")
-class Linear(SimpleModule):
+@config_register("encoder", 'linear')
+@define
+class EncoderLinearConfig(LinearConfig):
+    name = NameField(value="linear", file=__file__, help="the linear encoder module")
+    @define
+    class Config(LinearConfig.Config):
+        output_map = DictField(value={
+            "embedding": "embedding"
+            }, help="the output map of the biaffine module")
+        input_map = DictField(value={
+            "embedding": "embedding"
+            }, help="the input map of the biaffine module")
+
+    config = NestField(value=Config, converter=nest_converter)
+
+
+@register("encoder", "linear")
+class EncoderLinear(SimpleModule):
     """wrap for torch.nn.Linear
     """
-    def __init__(self, config: LinearConfig):
-        super(Linear, self).__init__(config)
-        self._provide_keys = {'embedding'}
-        self._required_keys = {'embedding'}
-        self._provided_keys = set()
-
-        self.config = config
-
-        self.linear = module_register.get('linear')(module_config_register.get('linear')(config.linear_config))
+    def __init__(self, config: EncoderLinearConfig):
+        super(EncoderLinear, self).__init__(config)
+        self.linear = register.get("module", 'linear')(config)
 
     def init_weight(self, method: Callable):
         """init the weight of submodules by 'method'
@@ -93,6 +67,5 @@ class Linear(SimpleModule):
 
         """
         inputs[self.get_output_name("embedding")] = self.linear(inputs[self.get_input_name('embedding')])
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
         return inputs
+

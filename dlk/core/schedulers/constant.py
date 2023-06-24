@@ -14,44 +14,29 @@
 
 from typing import Dict
 import torch.nn as nn
-from . import scheduler_register, scheduler_config_register, BaseScheduler, BaseSchedulerConfig
 from torch.optim.lr_scheduler import LambdaLR
 import torch.optim as optim
+from . import BaseScheduler, BaseSchedulerConfig
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@scheduler_config_register("constant")
+@config_register("scheduler", "constant")
+@define
 class ConstantScheduleConfig(BaseSchedulerConfig):
-    default_config = {
-            "config": {
-                },
-            "_name": "constant",
-            }
-    """Config for ConstantSchedule
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(ConstantScheduleConfig, self).__init__(config)
-        config = config['config']
-        self.post_check(config, used=[
-        ])
+    name = NameField(value="constant", file=__file__, help="the constant scheduler")
 
 
-@scheduler_register("constant")
+@register("scheduler", "constant")
 class ConstantSchedule(BaseScheduler):
     """no schedule
     """
-    def __init__(self, optimizer: optim.Optimizer, config: ConstantScheduleConfig):
-        super(ConstantSchedule, self).__init__()
-        self.config = config
-        self.optimizer = optimizer
+    def __init__(self, optimizer: optim.Optimizer, config: ConstantScheduleConfig, rt_config):
+        super(ConstantSchedule, self).__init__(optimizer, config, rt_config)
 
-    def get_scheduler(self):
-        """return the initialized constant scheduler
+    def step_update(self, current_step: int):
+        return 1
 
-        Returns: 
-            Schedule
-
-        """
-        return LambdaLR(self.optimizer, lambda _: 1, last_epoch=-1)
+    def epoch_update(self, current_epoch: int):
+        return 1

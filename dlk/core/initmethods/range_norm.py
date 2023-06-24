@@ -13,39 +13,29 @@
 # limitations under the License.
 
 import torch.nn as nn
-from dlk.utils.config import BaseConfig
-from . import initmethod_register, initmethod_config_register
 from typing import Dict, List
-import torch
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@initmethod_config_register('range_norm')
+@config_register("initmethod", 'range_norm')
+@define
 class RangeNormInitConfig(BaseConfig):
-    default_config = {
-            "_name": "range_norm",
-            "config": {
-                "range": 0.1,
-                }
-            }
-    """Config for RangeNormInit
+    name = NameField(value="default", file=__file__, help="the default init method for the modules")
+    @define
+    class Config:
+        range = FloatField(value=0.1, checker=float_check(lower=0.0), help="the range of the init method")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config):
-        super(RangeNormInitConfig, self).__init__(config)
-        self.range = config.get("range", 0.1)
-        self.post_check(config['config'], used=['range'])
-
-@initmethod_register('range_norm')
+@register("initmethod", 'range_norm')
 class RangeNormInit(object):
     """default for transformers init method
     """
 
     def __init__(self, config: RangeNormInitConfig):
         super().__init__()
-        self.range = config.range
-
+        self.range = config.config.range
 
     def __call__(self, module):
         """Initialize the weights"""

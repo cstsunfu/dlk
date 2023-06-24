@@ -15,46 +15,33 @@
 import torch
 import torch.nn as nn
 from typing import Callable, Dict, List
-from . import module_register, module_config_register, Module
-from dlk.utils.config import BaseConfig
+from . import Module
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-@module_config_register("crf")
+@config_register("module", 'crf')
+@define
 class CRFConfig(BaseConfig):
-    default_config = {
-            "config": {
-                "output_size": 2,
-                "batch_first": True,
-                "reduction": "mean", # none|sum|mean|token_mean
-                },
-            "_name": "crf",
-            }
-    """Config for ConditionalRandomField
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(CRFConfig, self).__init__(config)
-        config = config['config']
-        self.output_size = config['output_size']
-        if self.output_size <= 0:
-            raise ValueError(f'invalid number of tags: {self.output_size}')
-        self.post_check(config, used=[
-            "output_size",
-            "batch_first",
-            "reduction",
-        ])
+    name = NameField(value="crf", file=__file__, help="the crf config")
+    @define
+    class Config:
+        output_size = IntField(value="*@*", checker=int_check(lower=0), help="the output size")
+        batch_first = BoolField(value=True, help="whether the input is batch first")
+        reduction = StrField(value="mean", checker=str_check(options=["none", "sum", "mean", "token_mean"]), help="the reduction method")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@module_register("crf")
+@register("module", "crf")
 class ConditionalRandomField(Module):
     """ CRF, training_step for training, forward for decode。
     """
 
     def __init__(self, config: CRFConfig):
         super(ConditionalRandomField, self).__init__()
+        self.config = config.config
 
-        self.num_tags = config.output_size
+        self.num_tags = self.config.output_size
 
         self.transitions = nn.parameter.Parameter(torch.randn(self.num_tags, self.num_tags))
         self.start_transitions = nn.parameter.Parameter(torch.randn(self.num_tags))

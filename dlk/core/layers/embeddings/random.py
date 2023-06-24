@@ -12,60 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import embedding_register, embedding_config_register
 from typing import Dict, List, Set, Callable
-from dlk.core.base_module import SimpleModule, BaseModuleConfig
+from dlk.core.base_module import SimpleModule
 import pickle as pkl
 import torch.nn as nn
 import torch
 import numpy as np
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@embedding_config_register('random')
-class RandomEmbeddingConfig(BaseModuleConfig):
-    default_config = {
-        "_name": "random",
-        "config": {
-            "vocab_size": "*@*",
-            "embedding_dim": "*@*",
-            "dropout": 0, # dropout rate
-            "padding_idx": 0, # dropout rate
-            "output_map": {},
-            "input_map": {},
-            },
-    }
-    """Config for RandomEmbedding
+@config_register("embedding", 'random')
+@define
+class RandomEmbeddingConfig(BaseConfig):
+    name = NameField(value="random", file=__file__, help="the random embedding module")
+    @define
+    class Config:
+        vocab_size = IntField(value="*@*", checker=int_check(lower=0), help="the vocab size")
+        embedding_dim = IntField(value="*@*", checker=int_check(lower=0), help="the embedding dim")
+        dropout = FloatField(value=0, checker=float_check(lower=0, upper=1), help="dropout rate")
+        padding_idx = IntField(value=0, checker=int_check(lower=0), help="padding index")
+        output_map = DictField(value={
+            "embedding": "embedding",
+            }, help="the output map of the random embedding module")
+        input_map = DictField(value={
+            "input_ids": "input_ids",
+            }, help="the input map of the random embedding module")
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(RandomEmbeddingConfig, self).__init__(config)
-        config = config['config']
-        self.vocab_size = config['vocab_size']
-        self.embedding_dim = config['embedding_dim']
-        self.dropout = config['dropout']
-        self.padding_idx = config['padding_idx']
-        self.post_check(config, used=[
-            "vocab_size",
-            "embedding_dim",
-            "padding_idx",
-            "dropout",
-            "return_logits",
-        ])
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@embedding_register('random')
+@register("embedding", 'random')
 class RandomEmbedding(SimpleModule):
     """ from 'input_ids' generate 'embedding'
     """
 
     def __init__(self, config: RandomEmbeddingConfig):
         super().__init__(config)
-        self._provided_keys = set() # provided by privous module, will update by the check_keys_are_provided
-        self._provide_keys = {'embedding'} # provide by this module
-        self._required_keys = {'input_ids'} # required by this module
-        self.config = config
+        self.config = config.config
         self.dropout = nn.Dropout(float(self.config.dropout))
         normal = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([2.0/self.config.embedding_dim]))
         self.embedding = nn.Embedding.from_pretrained(normal.sample((self.config.vocab_size, self.config.embedding_dim)).squeeze_(-1), padding_idx=self.config.padding_idx)
@@ -105,8 +90,4 @@ class RandomEmbedding(SimpleModule):
 
         """
         inputs[self.get_output_name('embedding')] = self.dropout(self.embedding(inputs[self.get_input_name('input_ids')]))
-        if self._logits_gather.layer_map:
-            inputs.update(self._logits_gather([inputs[self.get_output_name('embedding')]]))
-
         return inputs
-

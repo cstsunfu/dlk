@@ -13,54 +13,41 @@
 # limitations under the License.
 
 import torch.nn as nn
-from . import callback_register, callback_config_register
 from typing import Dict, List
 import os
-from pytorch_lightning.callbacks import EarlyStopping
+from lightning.pytorch.callbacks import EarlyStopping
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
 
 
-@callback_config_register('early_stop')
-class EarlyStoppingCallbackConfig(object):
-    default_config = {
-            "_name": "early_stop",
-            "config":{
-                "monitor": "val_loss",
-                "mode": "min", # min or max, min for the monitor is loss, max for the monitor is acc, f1, etc.
-                "patience": 3,
-                "min_delta": 0.0,
-                "check_on_train_epoch_end": None,
-                "strict": True, # if the monitor is not right, raise error
-                "stopping_threshold": None, # float, if the value is good enough, stop
-                "divergence_threshold": None, # float,  if the value is so bad, stop
-                "verbose": True, #verbose mode print more info
-                }
-            }
-    """Config for EarlyStoppingCallback
+@config_register("callback", 'early_stop')
+@define
+class EarlyStoppingCallbackConfig(BaseConfig):
+    name = NameField(value="early_stop", file=__file__, help="the early stop callback for lightning")
+    @define
+    class Config:
+        monitor = StrField(value="*@*", help="the monitor metrics for checkpoint")
+        mode = StrField(value='max', checker=str_check(options=['min', 'max']), help="max or min for monitor metrics")
+        patience = IntField(value=3, checker=int_check(lower=0), help="patience times for early stop")
+        min_delta = FloatField(value=0.0, checker=float_check(), help="trigger early stop when the monitor metrics change less than min_delta")
+        check_on_train_epoch_end = BoolField(value=False, help="whether to run early stopping at the end of the training epoch.If this is ``False``, then the check runs at the end of the validation.")
+        strict = BoolField(value=True, help="whether to crash the training if `monitor` is not found in the validation metrics.")
+        stopping_threshold = FloatField(value=None, checker=float_check(additions=None), help="Stop training immediately once the monitored quantity reaches this threshold.")
+        divergence_threshold = FloatField(value=None, checker=float_check(additions=None), help="Stop training as soon as the monitored quantity becomes worse than this threshold.")
+        verbose = BoolField(value=True, help="verbosity mode.")
+        log_rank_zero_only = BoolField(value=True, help="When set ``True``, logs the status of the early stopping callback only for rank 0 process.")
+    config = NestField(value=Config, converter=nest_converter)
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        super(EarlyStoppingCallbackConfig, self).__init__()
-        config = config['config']
-        self.monitor = config['monitor']
-        self.mode = config['mode']
-        self.patience = config["patience"]
-        self.min_delta = config['min_delta']
-        self.strict = config['strict']
-        self.verbose = config['verbose']
-        self.stopping_threshold = config['stopping_threshold']
-        self.divergence_threshold = config['divergence_threshold']
-        self.check_on_train_epoch_end = config["check_on_train_epoch_end"]
 
-@callback_register('early_stop')
+@register("callback", 'early_stop')
 class EarlyStoppingCallback(object):
     """Early stop decided by config
     """
 
     def __init__(self, config: EarlyStoppingCallbackConfig):
         super().__init__()
-        self.config = config
+        self.config = config.to_dict()['config']
 
     def __call__(self, rt_config: Dict)->EarlyStopping:
         """return EarlyStopping object
@@ -72,4 +59,4 @@ class EarlyStoppingCallback(object):
             EarlyStopping object
 
         """
-        return EarlyStopping(**self.config.__dict__)
+        return EarlyStopping(**self.config)

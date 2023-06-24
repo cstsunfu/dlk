@@ -13,38 +13,31 @@
 # limitations under the License.
 
 from typing import Dict
-from . import callback_register, callback_config_register
-from pytorch_lightning.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import LearningRateMonitor
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
 
 
-@callback_config_register('lr_monitor')
-class LearningRateMonitorCallbackConfig(object):
-    default_config = {
-            "_name": "lr_monitor",
-            "config": {
-                "logging_interval": None, # set to None to log at individual interval according to the interval key of each scheduler. other value : step, epoch
-                "log_momentum": True, # log momentum or not
-                }
-            }
-    """Config for LearningRateMonitorCallback
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        config = config['config']
-        self.logging_interval = config["logging_interval"]
-        self.log_momentum = config["log_momentum"]
+@config_register("callback", 'lr_monitor')
+@define
+class LearningRateMonitorCallbackConfig(BaseConfig):
+    name = NameField(value="lr_monitor", file=__file__, help="the learning rate monitor callback for lightning")
+    @define
+    class Config:
+        logging_interval = StrField(value=None, checker=str_check(options=['step', 'epoch'], additions=None), help="""set to ``'epoch'`` or ``'step'`` to log ``lr`` of all optimizers at the same interval, set to ``None`` to log at individual interval according to the ``interval`` key of each scheduler. Defaults to ``None``.""")
+        log_momentum = BoolField(value=False, help="option to also log the momentum values of the optimizer, if the optimizer has the ``momentum`` or ``betas`` attribute. Defaults to ``False``.")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@callback_register('lr_monitor')
+@register("callback", 'lr_monitor')
 class LearningRateMonitorCallback(object):
     """Monitor the learning rate
     """
 
     def __init__(self, config: LearningRateMonitorCallbackConfig):
         super().__init__()
-        self.config = config
+        self.config = config.to_dict()['config']
 
     def __call__(self, rt_config: Dict)->LearningRateMonitor:
         """return LearningRateMonitor object
@@ -56,4 +49,4 @@ class LearningRateMonitorCallback(object):
             LearningRateMonitor object
 
         """
-        return LearningRateMonitor(**self.config.__dict__)
+        return LearningRateMonitor(**self.config)

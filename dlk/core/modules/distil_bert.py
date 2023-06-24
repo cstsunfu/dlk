@@ -21,59 +21,49 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from typing import Dict
 from dlk.utils.logger import Logger
-from . import module_register, module_config_register, Module
-from dlk.utils.config import BaseConfig
+from . import Module
 from dlk.utils.io import open
-
+from dlk.utils.io import open
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 logger = Logger.get_logger()
 
-@module_config_register("distil_bert")
+@config_register("module", 'distil_bert')
+@define
 class DistilBertWrapConfig(BaseConfig):
-    default_config = {
-        "config": {
-            "pretrained_model_path": "*@*",
-            "from_pretrain": True,
-            "freeze": False,
-            "dropout": 0.0,
-            },
-        "_name": "distil_bert",
-        }
-    """Config for DistilBertWrap
-
-    Config Example:
-        default_config
-    """
-
-    def __init__(self, config: Dict):
-        super(DistilBertWrapConfig, self).__init__(config)
-        self.pretrained_model_path = config['config']['pretrained_model_path']
-        self.from_pretrain = config['config']['from_pretrain']
-        self.freeze = config['config']['freeze']
-        self.dropout = config['config']['dropout']
-        if os.path.isdir(self.pretrained_model_path):
-            if os.path.exists(os.path.join(self.pretrained_model_path, 'config.json')):
-                with open(os.path.join(self.pretrained_model_path, 'config.json'), 'r') as f:
-                    self.distil_bert_config = DistilBertConfig(**json.load(f))
-            else:
-                raise PermissionError(f"config.json must in the dir {self.pretrained_model_path}")
-        else:
-            if os.path.isfile(self.pretrained_model_path):
-                try:
-                    with open(self.pretrained_model_path, 'r') as f:
-                        self.distil_bert_config = DistilBertConfig(**json.load(f))
-                except:
-                    raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
-        self.post_check(config['config'], used=['pretrained_model_path', 'from_pretrain', 'freeze', 'dropout'])
+    name = NameField(value="distil_bert", file=__file__, help="the distil_bert config")
+    @define
+    class Config:
+        pretrained_model_path = StrField(value="*@*", help="the pretrained model path")
+        from_pretrain = BoolField(value=True, help="whether to load the pretrained model")
+        freeze = BoolField(value=False, help="whether to freeze the model")
+        dropout = FloatField(value=0.0, checker=float_check(lower=0.0), help="the dropout rate")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@module_register("distil_bert")
+
+@register("module", "distil_bert")
 class DistilBertWrap(Module):
     """DistillBertWrap"""
     def __init__(self, config: DistilBertWrapConfig):
         super(DistilBertWrap, self).__init__()
-        self.config = config
+        self.config = config.config
+        if os.path.isdir(self.config.pretrained_model_path):
+            if os.path.exists(os.path.join(self.config.pretrained_model_path, 'config.json')):
+                with open(os.path.join(self.config.pretrained_model_path, 'config.json'), 'r') as f:
+                    self.bert_config = DistilBertConfig(**json.load(f))
+            else:
+                raise PermissionError(f"config.json must in the dir {self.pretrained_model_path}")
+        else:
+            if os.path.isfile(self.config.pretrained_model_path):
+                try:
+                    with open(self.config.pretrained_model_path, 'r') as f:
+                        self.bert_config = DistilBertConfig(**json.load(f))
+                except:
+                    raise PermissionError(f"You must provide the pretrained model dir or the config file path.")
 
-        self.distil_bert = DistilBertModel(config.distil_bert_config)
+        self.distil_bert = DistilBertModel(self.bert_config)
         self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):

@@ -12,50 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch.nn as nn
-from . import callback_register, callback_config_register
 from typing import Dict, List
-import os
-from pytorch_lightning.callbacks import StochasticWeightAveraging
+from lightning.pytorch.callbacks import StochasticWeightAveraging
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
+
+@config_register("callback", 'weight_average')
+@define
+class StochasticWeightAveragingCallbackConfig(BaseConfig):
+    name = NameField(value="weight_average", file=__file__, help="Implements the Stochastic Weight Averaging (SWA) Callback to average a model.")
+    @define
+    class Config:
+        swa_lrs = AnyField(value=None, help="The SWA learning rate to use: float. Use this value for all parameter groups of the optimizer. List[float]. A list values for each parameter group of the optimizer.")
+        swa_epoch_start = FloatField(value=0.8, checker=float_check(lower=0.0, upper=1.0), help="If provided as int, the procedure will start from the ``swa_epoch_start``-th epoch. If provided as float between 0 and 1, the procedure will start from ``int(swa_epoch_start * max_epochs)`` epoch")
+        annealing_epochs = IntField(value=10, checker=int_check(lower=0), help="""number of epochs in the annealing phase (default: 10)""")
+        annealing_strategy = StrField(value='cos', checker=str_check(options=['cos', 'linear'], additions=None), help="""Specifies the annealing strategy (default: "cos"): ``"cos"``. For cosine annealing. ``"linear"`` For linear annealing""")
+        device = StrField(value=None, checker=str_check(options=['cpu', 'cuda'], additions=None), help="""if provided, the averaged model will be stored on the ``device``. When None is provided, it will infer the `device` from ``pl_module``. (default: ``"cpu"``)""")
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@callback_config_register('weight_average')
-class StochasticWeightAveragingCallbackConfig(object):
-    default_config = {   # weight_average default
-          "_name": "weight_average",
-          "config": {
-              "swa_epoch_start": 0.8, # swa start epoch
-              "swa_lrs": None,
-              # None. Use the current learning rate of the optimizer at the time the SWA procedure starts.
-              # float. Use this value for all parameter groups of the optimizer.
-              # List[float]. A list values for each parameter group of the optimizer.
-              "annealing_epochs": 10,
-              "annealing_strategy": 'cos',
-              "device": None, # save device, null for auto detach, if the gpu is oom, you should change this to 'cpu'
-              }
-          }
-    """Config for StochasticWeightAveragingCallback
 
-    Config Example:
-        default_config
-    """
-    def __init__(self, config):
-        super(StochasticWeightAveragingCallbackConfig, self).__init__()
-        config = config['config']
-        self.swa_epoch_start = config['swa_epoch_start']
-        self.swa_lrs = config["swa_lrs"]
-        self.annealing_epochs = config["annealing_epochs"]
-        self.annealing_strategy = config["annealing_strategy"]
-        self.device = config["device"]
-
-@callback_register('weight_average')
+@register("callback", 'weight_average')
 class StochasticWeightAveragingCallback(object):
     """Average weight by config
     """
 
     def __init__(self, config: StochasticWeightAveragingCallbackConfig):
         super().__init__()
-        self.config = config
+        self.config = config.to_dict()['config']
 
     def __call__(self, rt_config: Dict)->StochasticWeightAveraging:
         """return StochasticWeightAveraging object
@@ -67,4 +52,4 @@ class StochasticWeightAveragingCallback(object):
             StochasticWeightAveraging object
 
         """
-        return StochasticWeightAveraging(**self.config.__dict__)
+        return StochasticWeightAveraging(**self.config)

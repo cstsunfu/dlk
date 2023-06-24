@@ -57,15 +57,6 @@ class MultiPostPostProcessorConfig(IPostProcessorConfig):
         ])
 
 
-class AggregationStrategy(object):
-    """docstring for AggregationStrategy"""
-    NONE = "none"
-    SIMPLE = "simple"
-    FIRST = "first"
-    AVERAGE = "average"
-    MAX = "max"
-
-
 @postprocessor_register('multi_post')
 class MultiPostPostProcessor(IPostProcessor):
     """PostProcess for sequence labeling task"""

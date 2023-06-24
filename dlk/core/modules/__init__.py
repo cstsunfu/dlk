@@ -15,13 +15,22 @@
 """basic modules"""
 import importlib
 import os
-from dlk.utils.register import Register
 import torch.nn as nn
 from typing import Dict
 import torch
+from dlk.core.base_module import BaseIdentityModuleConfig, BaseIdentityModule
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
 
-module_config_register = Register("Module config register.")
-module_register = Register("Module register.")
+@config_register("module", 'identity')
+@define
+class IdentityModuleConfig(BaseIdentityModuleConfig):
+    pass
+
+@config_register("module", 'identity')
+@define
+class IdentityModule(BaseIdentityModule):
+    pass
 
 
 class Module(nn.Module):

@@ -13,138 +13,80 @@
 # limitations under the License.
 
 from logging import PercentStyle
-import hjson
 from typing import Dict, Union, Callable, List
 import torch
-from dlk.core.models import model_register, model_config_register
-from dlk.core.optimizers import optimizer_register, optimizer_config_register
-from dlk.core.schedulers import scheduler_register, scheduler_config_register, BaseSchedulerConfig
-from dlk.core.losses import loss_register, loss_config_register
-from dlk.core.adv_methods import adv_method_register, adv_method_config_register
-from dlk.data.postprocessors import postprocessor_register, postprocessor_config_register
 from dlk.utils.config import BaseConfig, ConfigTool
-from . import imodel_config_register, imodel_register, GatherOutputMixin
+from . import GatherOutputMixin
 from dlk.utils.logger import Logger
 from functools import lru_cache
 import copy
+from dlk import register, config_register
+from dlk.core.schedulers import BaseSchedulerConfig
+from dlk.utils.config import define, float_check, int_check, str_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, DictField, SubModules
 logger = Logger.get_logger()
 
-import pytorch_lightning as pl
+import lightning as pl
 
-@imodel_config_register('basic')
+
+@config_register("imodel", 'basic')
+@define
 class BasicIModelConfig(BaseConfig):
-    default_config = {
-        "_name": "basic",
-        "model": "*@*",
-        "loss": "*@*",
-        "optimizer": {
-            "_base": "adamw@bias_nodecay",
-        },
-        "scheduler": {
-            "_base": "linear_warmup"
-        },
-        "postprocessor": {
-            "_base": "identity"
-        },
-        "adv_method": {
-            "_base": "identity"
-        },
-        "config": {
-        },
-    }
+    name = NameField(value="basic", file=__file__, help="register module name")
+    @define
+    class Config:
+        pass
+    config = NestField(value=Config, converter=nest_converter)
+    submods = SubModules({ 
+                          "model": "*@*",
+                          "loss": "*@*",
+                          "optimizer": {
+                              "base": "adamw@bias_nodecay",
+                              },
+                          "scheduler": {
+                              "base": "linear_warmup"
+                              },
+                          "postprocessor": {
+                              "base": "identity"
+                              },
+                          "adv_method": {
+                              "base": "identity"
+                              },
+                          })
+class BasicIModelHelper(object):
     """ basic imodel config will provide all the config for model/optimizer/loss/scheduler/postprocess
     """
-    def __init__(self, config: Dict):
-        super(BasicIModelConfig, self).__init__(config)
-        self.model, self.model_config = self.get_model(config.pop("model"))
-        self.loss, self.loss_config = self.get_loss(config.pop("loss"))
+    def __init__(self, _config: BasicIModelConfig):
+        super(BasicIModelHelper, self).__init__()
+        config = _config.to_dict()
+        self.model, self.model_config = self.get_leaf_module(config.pop("model"), "model")
+        self.loss, self.loss_config = self.get_leaf_module(config.pop("loss"), "loss")
 
-        self.optimizer, self.optimizer_config = self.get_optimizer(config.pop("optimizer"))
-        if config['adv_method']['_name'] == 'identity':
+        self.optimizer, self.optimizer_config = self.get_leaf_module(config.pop("optimizer"), "optimizer")
+        if config['adv_method']['name'] == 'identity':
             self.adv_method = None
         else:
-            self.adv_method, self.adv_method_config = self.get_adv_method(config.pop("adv_method"))
+            self.adv_method, self.adv_method_config = self.get_leaf_module(config.pop("adv_method"), "adv_method")
 
-        self.scheduler, self.scheduler_config = self.get_scheduler(config.pop("scheduler"))
+        self.scheduler, self.scheduler_config = self.get_leaf_module(config.pop("scheduler"), "scheduler")
         self.scheduler_config: BaseSchedulerConfig
-        self.postprocess, self.postprocess_config = self.get_postprocessor(config.pop("postprocessor"))
-
+        self.postprocess, self.postprocess_config = self.get_leaf_module(config.pop("postprocessor"), "postprocessor")
         self.config = config.pop('config', {})
 
-    def get_postprocessor(self, config: Dict):
-        """Use config to init the postprocessor
+    def get_leaf_module(self, config: Dict, module_type_name: str):
+        """Use config to init the module
 
         Args:
-            config: postprocess config
+            config: module config
 
         Returns: 
-            PostProcess, PostProcessConfig
+            Moule, ModuleConfig
 
         """
-        return  ConfigTool.get_leaf_module(postprocessor_register, postprocessor_config_register, 'postprocessor', config)
-
-    def get_model(self, config: Dict):
-        """Use config to init the model
-
-        Args:
-            config: model config
-
-        Returns: 
-            Model, ModelConfig
-
-        """
-        return ConfigTool.get_leaf_module(model_register, model_config_register, "model", config)
-
-    def get_loss(self, config: Dict):
-        """Use config to init the loss
-
-        Args:
-            config: loss config
-
-        Returns: 
-            Loss, LossConfig
-
-        """
-        return ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config)
-
-    def get_adv_method(self, config: Dict):
-        """Use config to init the adv method
-
-        Args:
-            config: adv method config
-
-        Returns: 
-            AdvMethod, AdvMethodConfig
-
-        """
-        return ConfigTool.get_leaf_module(adv_method_register, adv_method_config_register, "adv_method", config)
-
-    def get_optimizer(self, config: Dict):
-        """Use config to init the optimizer
-
-        Args:
-            config: optimizer config
-
-        Returns: 
-            Optimizer, OptimizerConfig
-
-        """
-        return ConfigTool.get_leaf_module(optimizer_register, optimizer_config_register, "optimizer", config)
-
-    def get_scheduler(self, config: Dict):
-        """Use config to init the scheduler
-
-        Args:
-            config: scheduler config
-
-        Returns: 
-            Scheduler, SchedulerConfig
-
-        """
-        return ConfigTool.get_leaf_module(scheduler_register, scheduler_config_register, "scheduler", config)
+        return  ConfigTool.get_leaf_module(register, config_register, module_type_name, config)
 
 
-@imodel_register("basic")
+@register("imodel", "basic")
 class BasicIModel(pl.LightningModule, GatherOutputMixin):
     """
     """
@@ -152,13 +94,13 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         """ init all modules except scheduler which requires the information from datamodule(training steps and every epoch steps)
         """
         super().__init__()
-        self.config = config  # scheduler will init in configure_optimizers, because it will use the datamodule info
+        self.config = BasicIModelHelper(config)  # scheduler will init in configure_optimizers, because it will use the datamodule info
 
-        self.model = config.model(config.model_config, checkpoint)
+        self.model = self.config.model(self.config.model_config, checkpoint)
 
 
-        self.calc_loss = config.loss(config.loss_config)
-        self.get_optimizer = config.optimizer(model=self.model, config=config.optimizer_config)
+        self.calc_loss = self.config.loss(self.config.loss_config)
+        self.get_optimizer = self.config.optimizer(model=self.model, config=self.config.optimizer_config)
         if self.config.adv_method:
             self.adv_method = self.config.adv_method(model=self.model, config=self.config.adv_method_config)
             self.automatic_optimization = False
@@ -167,20 +109,9 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
 
         self._origin_valid_data = None
         self._origin_test_data = None
-        self.postprocessor = config.postprocess(config.postprocess_config)
-        self.gather_data: Dict = copy.deepcopy(config.postprocess_config.input_map)
-        self.gather_data.update(config.postprocess_config.predict_extend_return)
-
-    def get_progress_bar_dict(self):
-        """rewrite the prograss_bar_dict, remove the 'v_num' which we don't need
-
-        Returns: 
-            progress_bar dict
-
-        """
-        tqdm_dict = super().get_progress_bar_dict()
-        tqdm_dict.pop("v_num", None)
-        return tqdm_dict
+        self.postprocessor = self.config.postprocess(self.config.postprocess_config)
+        self.gather_data: Dict = copy.deepcopy(self.config.postprocess_config.input_map)
+        self.gather_data.update(self.config.postprocess_config.predict_extend_return)
 
     def forward(self, inputs: Dict[str, torch.Tensor])->Dict[str, torch.Tensor]:
         """do forward on a mini batch
@@ -379,23 +310,7 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
             return self.trainer.max_steps
         # FIXED: https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
         # NEED TEST
-        return self.trainer.estimated_stepping_batches
-        # legacy version pl<=1.5.8
-        # FIXIT: https://github.com/PyTorchLightning/pytorch-lightning/issues/5449 should check update
-        #        
-        # limit_batches = self.trainer.limit_train_batches
-        # if self.trainer.datamodule.train_dataloader() is None:
-        #     batches = 0
-        # else:
-        #     batches = len(self.trainer.datamodule.train_dataloader())
-        # batches = min(batches, limit_batches) if isinstance(limit_batches, int) else int(limit_batches * batches)
-
-        # num_devices = max(1, self.trainer.devices)
-        # if self.trainer.num_devices:
-        #     num_devices = max(num_devices, self.trainer.num_devices)
-
-        # effective_accum = self.trainer.accumulate_grad_batches * num_devices
-        # return (batches // effective_accum + (1 if batches%effective_accum else 0)) * self.trainer.max_epochs
+        return int(self.trainer.estimated_stepping_batches)
 
     def configure_optimizers(self):
         """Configure the optimizer and scheduler
@@ -407,11 +322,11 @@ class BasicIModel(pl.LightningModule, GatherOutputMixin):
         })
 
         optimizer = self.get_optimizer()
-        self.config.scheduler_config.num_training_steps = self.num_training_steps
-        self.config.scheduler_config.epoch_training_steps = self.epoch_training_steps
-        self.config.scheduler_config.num_training_epochs = self.num_training_epochs
-        self.config.scheduler_config.last_epoch = self.num_training_epochs
-        scheduler = self.config.scheduler(optimizer, self.config.scheduler_config)()
+        scheduler = self.config.scheduler(optimizer, self.config.scheduler_config, rt_config={
+            "num_training_steps": self.num_training_steps,
+            "epoch_training_steps": self.epoch_training_steps,
+            "num_training_epochs": self.num_training_epochs
+            })()
 
         return {
             "optimizer": optimizer,

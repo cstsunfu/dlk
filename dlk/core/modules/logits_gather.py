@@ -16,56 +16,46 @@ import torch.nn as nn
 import torch
 from typing import Dict, List
 from dlk.utils.config import BaseConfig
-from . import module_register, module_config_register, Module
+from . import Module
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-
-@module_config_register("logits_gather")
+@config_register("module", 'logits_gather')
+@define
 class LogitsGatherConfig(BaseConfig):
-    default_config = {
-            "config": {
-                "gather_layer": {
-                    # "0": {
-                    #     "map": "3", # the 0th layer not do scale output to "gather_logits_3", "gather_logits_" is the output name prefix, the "3" is map name
-                    #     "scale": {} # don't scale
-                    # },
-                    # "1": {
-                    #     "map": "4",  # the 1th layer scale output dim from 1024 to 200 and the output named "gather_logits_3"
-                    #     "scale": {"1024":"200"},
-                    # }
-                },
-                "prefix": "gather_logits_",
-            },
-            "_name": "logits_gather",
-        }
-    """Config for LogitsGather
-
-    Config Example:
-        default_config
-    """
-    def __init__(self, config: Dict):
-        if '_name' not in config:
-            config['_name'] = 'logits_gather'
-        super(LogitsGatherConfig, self).__init__(config)
-        config = config.get('config', {})
-        self.gather_layer = config.get('gather_layer', {})
-        self.prefix = config.get("prefix", '')
-        self.post_check(config, used=[
-            "gather_layer",
-            "prefix"
-        ])
+    name = NameField(value="logits_gather", file=__file__, help="the logits_gather config")
+    @define
+    class Config:
+        prefix = StrField(value="gather_logits_", help="the prefix of the output name")
+        gather_layer = DictField(value={}, help="""
+                                 the gather layer config, like
+                                 "gather_layer": {
+                                     "0": {
+                                         "map": "3", # the 0th layer not do scale output to "gather_logits_3", "gather_logits_" is the output name prefix, the "3" is map name
+                                         "scale": {} # don't scale
+                                         },
+                                     "1": {
+                                         "map": "4",  # the 1th layer scale output dim from 1024 to 200 and the output named "gather_logits_3"
+                                         "scale": {"1024":"200"},
+                                         }
+                                     },
+                                 default is empty dict
+                                 """)
+    config = NestField(value=Config, converter=nest_converter)
 
 
-@module_register("logits_gather")
+@register("module", "logits_gather")
 class LogitsGather(Module):
     """Gather the output logits decided by config
     """
     def __init__(self, config: LogitsGatherConfig):
         super(LogitsGather, self).__init__()
-        gather_layer_num = len(config.gather_layer)
+        self.config = config.config
         self.layers_scale = nn.ModuleDict()
         self.layer_map: Dict[str, str] = {}
-        self.prefix = config.prefix
-        for layer, layer_config in config.gather_layer.items():
+        self.prefix = self.config.prefix
+        for layer, layer_config in self.config.gather_layer.items():
             self.layer_map[str(layer)] = str(layer_config['map'])
             if layer_config.get("scale", {}):
                 scale = layer_config['scale']

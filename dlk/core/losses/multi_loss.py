@@ -14,73 +14,55 @@
 
 from typing import Dict, List
 import torch.nn as nn
-from . import loss_register, loss_config_register
-from dlk import additional_function
 import torch.nn as nn
 import torch
 from dlk.utils.config import ConfigTool
+from dlk import register, config_register, PROTECTED
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
+from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
-@additional_function("multi_loss", "sum")
+
+@config_register("loss", "multi_loss")
+@define
+class MultiLossConfig(BaseConfig):
+    name = NameField(value="multi_loss", file=__file__, help="multiple loss")
+    @define
+    class Config:
+        loss_collect = StrField(value="sum", checker=options(suggestions=['sum']), help="the method to collect losses")
+        log_map = DictField(value={
+            "loss": "loss"
+            }, help="the output loss name")
+
+    config = NestField(value=Config, converter=nest_converter)
+
+
+@register("user_additional_loss_collect", "sum")
 def loss_sum(losses: Dict[str, torch.Tensor], **args:Dict):
     """sum all losses
-
     Args:
         losses (List): list of loss
-
     Returns: 
         sum of losses
     """
     loss = sum([losses[key] for key in losses])
     return loss
 
-@loss_config_register("multi_loss")
-class MultiLossConfig(object):
-    default_config = {
-        "_name": "multi_loss",
-        "config": {
-            "loss_collect": "sum",
-            "args": {},
-            "log_map": {
-                "loss": "loss"
-            },
-        },
-    }
-    """Config for MultiLoss
 
-    Config Example:
-    """
-    def __init__(self, config: Dict):
-        super(MultiLossConfig, self).__init__()
-        self.loss_configs = {}
-        self.module_rank = []
-        self.loss_collect = additional_function.get("multi_loss", config['config']['loss_collect'])
-        self.loss_collect_name = config['config']['loss_collect']
-        self.log_map = config['config']['log_map']
-        if isinstance(self.log_map, str):
-            self.log_map = {"loss": self.log_map}
-        for loss in config:
-            if loss in {'config', "_name", "_base"}:
-                continue
-            self.module_rank.append(loss)
-            module_class, module_config = ConfigTool.get_leaf_module(loss_register, loss_config_register, "loss", config[loss])
-            self.loss_configs[loss] = {
-                "loss_class": module_class,
-                "loss_config": module_config,
-            }
-
-@loss_register("multi_loss")
+@register("loss", "multi_loss")
 class MultiLoss(nn.Module):
     """ This module is NotImplemented yet don't use it
     """
     def __init__(self, config: MultiLossConfig):
         super(MultiLoss, self).__init__()
-        self.config = config
-        self.loss_collect = config.loss_collect
-        self.module_rank = config.module_rank
-        self.losses = nn.ModuleDict({
-            loss_name: config.loss_configs[loss_name]['loss_class'](config.loss_configs[loss_name]['loss_config'])
-            for loss_name in config.module_rank
-        })
+        self.config = config.config
+        self.loss_collect = register.get("user_additional_loss_collect", self.config.loss_collect)
+        config_dict = config.to_dict()
+        module_dict = {}
+        for loss in config_dict:
+            if loss in PROTECTED:
+                continue
+            module_dict[loss] = ConfigTool.get_leaf_module(register, config_register, "loss", config_dict[loss], init=True)
+        self.losses = nn.ModuleDict(module_dict)
 
     def update_config(self, rt_config):
         """callback for imodel to update the total steps and epochs
@@ -97,7 +79,7 @@ class MultiLoss(nn.Module):
         for _, loss_module in self.losses.items():
             loss_module.update_config(rt_config)
 
-    def calc(self, result, inputs, rt_config):
+    def _calc(self, result, inputs, rt_config):
         """calc the loss the predict is from result, the ground truth is from inputs
 
         Args:
@@ -117,12 +99,12 @@ class MultiLoss(nn.Module):
         """
         losses = {}
         log_loss = {}
-        for loss_module in self.module_rank:
+        for loss_module in self.losses:
             loss, log = self.losses[loss_module](result, inputs, rt_config)
             losses[loss_module] = loss
             log_loss.update(log)
         loss = self.loss_collect(losses=losses, rt_config=rt_config)
-        if self.config.loss_collect_name != 'sum':
+        if self.config.loss_collect != 'sum':
             log_loss.update({self.config.log_map.get("sum_loss", "sum_loss"): sum([losses[key] for key in losses])})
         log_loss.update({self.config.log_map['loss']: loss})
         return loss, log_loss
@@ -130,4 +112,4 @@ class MultiLoss(nn.Module):
     def __call__(self, result, inputs, rt_config):
         """same as self.calc
         """
-        return self.calc(result, inputs, rt_config)
+        return self._calc(result, inputs, rt_config)

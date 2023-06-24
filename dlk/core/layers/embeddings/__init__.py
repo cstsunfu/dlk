@@ -15,11 +15,19 @@
 """embeddings"""
 import importlib
 import os
-from typing import Callable, Dict, Tuple, Any
-from dlk.utils.register import Register
+from dlk.core.base_module import BaseIdentityModuleConfig, BaseIdentityModule
+from dlk import register, config_register
+from dlk.utils.config import define, float_check, int_check, str_check, number_check, options, suggestions, nest_converter
 
-embedding_config_register = Register("Embedding config register.")
-embedding_register = Register("Embedding register.")
+@config_register("module", 'identity')
+@define
+class IdentityModuleConfig(BaseIdentityModuleConfig):
+    pass
+
+@config_register("module", 'identity')
+@define
+class IdentityModule(BaseIdentityModule):
+    pass
 
 
 def import_embeddings(embeddings_dir, namespace):

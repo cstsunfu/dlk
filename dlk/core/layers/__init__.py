@@ -11,7 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from dlk.core.layers.decoders import decoder_config_register, decoder_register
-from dlk.core.layers.encoders import encoder_config_register, encoder_register
-from dlk.core.layers.embeddings import embedding_config_register, embedding_register
