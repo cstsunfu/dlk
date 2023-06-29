@@ -28,7 +28,7 @@ from dlk.utils.config import define, float_check, int_check, str_check, number_c
 from dlk.utils.config import BaseConfig, IntField, BoolField, FloatField, StrField, NameField, AnyField, NestField, ListField, DictField, NumberField, SubModules
 
 
-@config_register("trainer", 'basic')
+@config_register("trainer", 'lightning_trainer')
 @define
 class LightningTrainerConfig(BaseConfig):
     name = NameField(value="basic", file=__file__, help="the basic trainer config. aka lightning trainer")
@@ -43,6 +43,7 @@ class LightningTrainerConfig(BaseConfig):
             "fsdp", "fsdp_cpu_offload"
             ]), help="""
                             Supports passing different training strategies with aliases as well custom strategies. 
+                            you can create a strategy by yourself and register it to the strategy registry`lightning.pytorch.strategies.StrategyRegistry`.
                             """)
         devices = IntField(value="auto", checker=int_check(additions='auto'), help="""
                            The devices to use. Can be set to a positive number (int or str), a sequence of device indices (list or str), the value ``-1`` to indicate all available devices should be used, or ``"auto"`` for automatic selection based on the chosen accelerator. Default: ``"auto"``.
@@ -163,9 +164,10 @@ class LightningManagerHelper(object):
     check https://pytorch-lightning.readthedocs.io trainer for paramaters detail
     """
 
-    def __init__(self, _config: LightningTrainerConfig):
-        self.config = _config.to_dict()['config']
-        self.config['callback'] = self.get_callbacks_config(self.config)
+    def __init__(self, config: LightningTrainerConfig):
+        config_dict = config.to_dict()
+        self.config = config_dict['config']
+        self.config['callback'] = self.get_callbacks_config(config_dict)
 
     def get_callbacks_config(self, config: Dict)->List[Dict]:
         """get the configs for callbacks
@@ -192,7 +194,7 @@ class LightningManagerHelper(object):
         return callback_configs_list
 
 
-@register("trainer", 'basic')
+@register("trainer", 'lightning_trainer')
 class LightningTrainer(object):
     """pytorch-lightning traning manager
     """
@@ -201,7 +203,7 @@ class LightningTrainer(object):
         super().__init__()
         config_helper = LightningManagerHelper(config).config
         if config_helper['logger']:
-            config_helper['logger'] = TensorBoardLogger(save_dir=os.path.join(rt_config["save_dir"], rt_config["name"]), version='')
+            config_helper['logger'] = TensorBoardLogger(save_dir=os.path.join(rt_config["save_dir"], rt_config["name"]), version='', default_hp_metric=False)
         if config_helper['callbacks']:
             config_helper['callbacks'] = self.get_callbacks(config_helper['callbacks'], rt_config)
         self.manager = pl.Trainer(**config_helper)

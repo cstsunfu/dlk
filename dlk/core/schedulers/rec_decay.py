@@ -28,6 +28,7 @@ class WarmupRecDecayScheduleConfig(BaseSchedulerConfig):
     @define
     class Config(BaseSchedulerConfig.Config):
         decay = FloatField(value=0.05, help="the decay rate, lr=lr*1/(1+decay)")
+        interval = StrField(value="epoch", checker=str_check(["epoch"]), help="the interval of scheduler")
     config = NestField(value=Config, converter=nest_converter)
 
 @register("scheduler", "rec_decay")
@@ -39,10 +40,7 @@ class WarmupRecDecaySchedule(BaseScheduler):
         self.config: WarmupRecDecayScheduleConfig.Config
 
     def step_update(self, current_step: int):
-        if current_step < self.config.num_warmup_steps:
-            return float(current_step) / float(max(1, self.config.num_warmup_steps))
-        current_epoch = ((current_step+1)//self.config.epoch_training_steps) if self.config.epoch_training_steps!=0 else 0
-        return 1/((1+self.config.decay)**current_epoch)
+        raise PermissionError("step_update is not supported in WarmupRecDecaySchedule")
 
     def epoch_update(self, current_epoch: int):
         if current_epoch < self.config.num_warmup_steps:
