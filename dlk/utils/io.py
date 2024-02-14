@@ -1,47 +1,75 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright the author(s) of DLK.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-import smart_open
-from dlk.utils.logger import Logger
+# This source code is licensed under the Apache license found in the
+# LICENSE file in the root directory of this source tree.
+
 from io import BytesIO
-import os
-logger = Logger.get_logger()
+
+import fsspec
+import pyarrow.parquet as pq
+
+open = fsspec.open
 
 
-def open(path: str, *args, **kwargs):
-    if len(args)>0 and 'w' in args[0] or 'w' in kwargs.get('mode', ''):
-        subdir = os.path.dirname(path)
-        if path.startswith("hdfs://"):
-            pass
-        else:
-            if ':/' in subdir:
-                logger.error(f"Currently dlk is only support `hdfs` and `local` file.")
-                raise PermissionError
-            if not os.path.exists(subdir):
-                try:
-                    os.makedirs(subdir, exist_ok=True)
-                except Exception as e:
-                    logger.error(f"Currently dlk is only support `hdfs` and `local` file.")
-                    raise e
-    # some binary data(hdfs) is not seekable
-    if len(args)>0 and 'rb' in args[0] or 'rb' in kwargs.get('mode', ''):
-        if len(args)>0:
-            mode = args[0]
-        else:
-            mode = kwargs['mode']
-        assert mode == 'rb', f"Currently dlk is only support 'rb' for reading binary data"
-        with smart_open.open(path, mode) as f:
-            b_data = f.read()
-        return BytesIO(b_data)
-        
-    return smart_open.open(path, *args, **kwargs)
+def ls(path: str):
+    fs_ins, prefix, path, fs_type = _get_fs_protocol(path)
+    if fs_type == "file":
+        return fs_ins.ls(path)
+    elif fs_type == "hdfs":
+        path_infos = fs_ins.ls(path)
+        paths = []
+        for path_info in path_infos:
+            path = prefix + path_info["name"]
+            if path_info.get("type") == "directory":
+                path += "/"
+            paths.append(path)
+        return paths
+    else:
+        raise NotImplementedError(f"Currently, only support hdfs and file protocol.")
+
+
+def mkdir(path: str, create_parents: bool = True, exist_ok: bool = False):
+    fs_ins, prefix, path, fs_type = _get_fs_protocol(path)
+    if fs_ins.exists(path) and not exist_ok:
+        raise FileExistsError(
+            f"{path} already exists. Set exist_ok to True to create it."
+        )
+    else:
+        fs_ins.mkdir(path, create_parents)
+
+
+def rm(path: str, recursive: bool = False):
+    fs_ins, prefix, path, fs_type = _get_fs_protocol(path)
+    if path.endswith("/") and not recursive:
+        raise PermissionError(
+            f"rm: cannot remove '{path}': Is a directory. Set recursive to True to remove it."
+        )
+    else:
+        fs_ins.rm(path, recursive=recursive)
+
+
+def read_parquet_meta(path: str):
+    with open(path, "rb") as f:
+        return pq.read_metadata(f)
+
+
+def read_byte_buffer(path: str):
+    with open(path, "rb") as f:
+        return BytesIO(f.read())
+
+
+def _get_fs_protocol(path: str):
+    fs_ins, path = fsspec.core.url_to_fs(path)
+    fs_ins: fsspec.AbstractFileSystem
+    prefix = ""
+    fs_type = "file"
+    if (
+        isinstance(fs_ins.protocol, tuple) and "hdfs" in fs_ins.protocol
+    ) or fs_ins.protocol == "hdfs":
+        prefix = "hdfs://" + fs_ins.host
+        fs_type = "hdfs"
+    else:
+        assert (
+            isinstance(fs_ins.protocol, str) and fs_ins.protocol == "file"
+        ), "Currently, only support hdfs and file protocol."
+    return fs_ins, prefix, path, fs_type

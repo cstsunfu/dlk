@@ -1,33 +1,30 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright the author(s) of DLK.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This source code is licensed under the Apache license found in the
+# LICENSE file in the root directory of this source tree.
 
+import json
 from collections import Counter
 from typing import Dict, Iterable, List, Union
+
 import pandas as pd
+
+from dlk.utils.io import open
 
 
 class Vocabulary(object):
     """generate vocab from tokens(token or Iterable tokens)
-       you can dumps the object to dict and load from dict
+    you can dumps the object to dict and load from dict
     """
 
-    def __init__(self, do_strip: bool=False, unknown: str='', ignore: str="", pad: str=''):
+    def __init__(
+        self, do_strip: bool = False, unknown: str = "", ignore: str = "", pad: str = ""
+    ):
         self.word2idx = {}
         self.idx2word = {}
         self.do_strip = do_strip
         self.word_num = 0
-        self.word_count = Counter() # reserved
+        self.word_count = Counter()  # reserved
         self.unknown = unknown
         self.ignore = ignore
         self.pad = pad
@@ -47,14 +44,24 @@ class Vocabulary(object):
             self.idx2word[self.word_num] = unknown
             self.word_num += 1
 
-    def dumps(self)->Dict:
+    def dumps(self) -> Dict:
         """dumps the object to dict
 
-        Returns: 
+        Returns:
             self.__dict__
 
         """
         return self.__dict__
+
+    def dump(self, path: str):
+        """dump the object to path
+
+        Returns:
+            self.__dict__
+
+        """
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.__dict__, f)
 
     @classmethod
     def load(cls, attr: Dict):
@@ -63,12 +70,31 @@ class Vocabulary(object):
         Args:
             attr: self.__dict__
 
-        Returns: 
+        Returns:
             initialized Vocabulary
 
         """
         vocab = cls()
         vocab.__dict__ = attr
+        return vocab
+
+    @classmethod
+    def load_from_file(cls, path: str):
+        """load the object from path
+
+        Args:
+            path: a json file
+
+        Returns:
+            initialized Vocabulary
+
+        """
+        with open(path, "r", encoding="utf-8") as f:
+            attr = json.load(f)
+        vocab = cls()
+        vocab.__dict__ = attr
+        id2word = vocab.idx2word
+        vocab.idx2word = {int(i): id2word[i] for i in id2word}
         return vocab
 
     def __getitem__(self, index: int):
@@ -77,7 +103,7 @@ class Vocabulary(object):
         Args:
             index: token index
 
-        Returns: 
+        Returns:
             `word` which index is geven, if index is not out of range
 
         Raises:
@@ -92,7 +118,7 @@ class Vocabulary(object):
         Args:
             data: auto detection
 
-        Returns: 
+        Returns:
             type the same as data
 
         """
@@ -103,13 +129,13 @@ class Vocabulary(object):
         else:
             raise ValueError("Don't support the type of {}".format(data))
 
-    def get_index(self, word: str)->int:
+    def get_index(self, word: str) -> int:
         """get the index of word from this vocab
 
         Args:
             word: a single token
 
-        Returns: 
+        Returns:
             index
 
         """
@@ -121,7 +147,7 @@ class Vocabulary(object):
             if self.unknown:
                 return self.word2idx[self.unknown]
             else:
-                raise KeyError('Unkown word: {}'.format(word))
+                raise KeyError("Unkown word: {}".format(word))
 
     def filter_rare(self, min_freq=1, most_common=-1):
         """filter the words which count is to small.
@@ -132,13 +158,15 @@ class Vocabulary(object):
             min_freq: minist frequency
             most_common: most common number, -1 means all
 
-        Returns: 
+        Returns:
             None
 
         """
         self.word2idx = {}
         self.idx2word = {}
-        assert min_freq == 1 or most_common==-1, "You should set the min_freq=1 or most_common=-1."
+        assert (
+            min_freq == 1 or most_common == -1
+        ), "You should set the min_freq=1 or most_common=-1."
         if most_common != -1:
             for i, (token, freq) in enumerate(self.word_count.most_common(most_common)):
                 self.word2idx[token] = i
@@ -146,29 +174,29 @@ class Vocabulary(object):
         else:
             index = 0
             for token in self.word_count:
-                if self.word_count[token]>=min_freq:
+                if self.word_count[token] >= min_freq:
                     self.word2idx[token] = index
                     self.idx2word[index] = token
                     index += 1
         return self
 
-    def get_word(self, index: int)->str:
+    def get_word(self, index: int) -> str:
         """get the word by index
 
         Args:
             index: word index
 
-        Returns: 
+        Returns:
             word
 
         """
-        
+
         try:
             return self.idx2word[int(index)]
         except:
             if index == -1:
-                return '[unknown]'
-            raise KeyError('Undefined index: {}'.format(index))
+                return "[unknown]"
+            raise KeyError("Undefined index: {}".format(index))
 
     def add(self, word):
         """add one word to vocab
@@ -176,11 +204,11 @@ class Vocabulary(object):
         Args:
             word: single word
 
-        Returns: 
+        Returns:
             self
 
         """
-        
+
         if not self.word_count[word]:
             self.word2idx[word] = self.word_num
             self.idx2word[self.word_num] = word
@@ -194,13 +222,17 @@ class Vocabulary(object):
         Args:
             data:  str| List[str] | Set[str] | List[List[str]]
 
-        Returns: 
+        Returns:
             self
 
         """
         if isinstance(data, str):
             self.add(data)
-        elif isinstance(data, list) or isinstance(data, set) or isinstance(data, pd.Series):
+        elif (
+            isinstance(data, list)
+            or isinstance(data, set)
+            or isinstance(data, pd.Series)
+        ):
             self.add_from_iter(data)
         else:
             raise ValueError("Don't support the type of {}".format(data))
@@ -208,7 +240,7 @@ class Vocabulary(object):
 
     def __len__(self):
         """get the token num of vocab
-        Returns: 
+        Returns:
             len(self.word2idx)
 
         """
@@ -220,7 +252,7 @@ class Vocabulary(object):
         Args:
             iterator: List[str] | Set[str] | List[List[str]]
 
-        Returns: 
+        Returns:
             self
 
         """

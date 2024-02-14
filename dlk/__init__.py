@@ -1,18 +1,40 @@
-# Copyright cstsunfu. All rights reserved.
+# Copyright the author(s) of DLK.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This source code is licensed under the Apache license found in the
+# LICENSE file in the root directory of this source tree.
 
-__version__ = '0.0.19'
+import os
 
-from dlk.utils.register import register, config_register
-PROTECTED = ["name", "base", "link", "search", "focus", "config"]
+from dlk.utils.logger import logfile
+
+if os.environ.get("DISABLE_LOGFILE", "0") not in {
+    "1",
+    "True",
+    "true",
+    "TRUE",
+    "YES",
+    "yes",
+    "Yes",
+} and os.environ.get("IN_INTC", "0") not in {"1", "True", "true", "TRUE", 1}:
+    logfile()
+
+
+from intc import cregister
+
+import dlk.adv_method
+import dlk.callback
+import dlk.data
+import dlk.display
+import dlk.imodel
+import dlk.initmethod
+import dlk.nn
+import dlk.optimizer
+import dlk.scheduler
+import dlk.token_sample
+import dlk.trainer
+from dlk.online import OnlinePredict
+from dlk.predict import Predict
+
+# from dlk.preprocess import PreProcessor
+from dlk.train import DLKFitConfig, Train
+from dlk.utils.register import register

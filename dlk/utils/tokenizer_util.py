@@ -1,28 +1,26 @@
-# Copyright 2021 cstsunfu. All rights reserved.
+# Copyright the author(s) of DLK.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This source code is licensed under the Apache license found in the
+# LICENSE file in the root directory of this source tree.
 
-from tokenizers.processors import TemplateProcessing
-from tokenizers.normalizers import Lowercase, NFD, NFC, StripAccents, Strip
-from tokenizers.pre_tokenizers import WhitespaceSplit, ByteLevel, Whitespace, BertPreTokenizer
+import logging
+
 from tokenizers import Tokenizer
-from dlk.utils.logger import Logger
+from tokenizers.normalizers import NFC, NFD, Lowercase, Strip, StripAccents
+from tokenizers.pre_tokenizers import (
+    BertPreTokenizer,
+    ByteLevel,
+    Whitespace,
+    WhitespaceSplit,
+)
+from tokenizers.processors import TemplateProcessing
 
-logger = Logger.get_logger()
+logger = logging.getLogger(__name__)
 
 
 class TokenizerPostprocessorFactory(object):
     """docstring for TokenizerPostprocessorFactory"""
+
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
@@ -30,14 +28,14 @@ class TokenizerPostprocessorFactory(object):
     def bert(self):
         """bert postprocess
 
-        Returns: 
+        Returns:
             bert postprocess
 
         """
         vocab = self.tokenizer.get_vocab()
         try:
-            cls_id = vocab['[CLS]']
-            sep_id = vocab['[SEP]']
+            cls_id = vocab["[CLS]"]
+            sep_id = vocab["[SEP]"]
         except Exception as e:
             # logger.error(f"`[CLS]` or `[SEP]` is not a token in this tokenizer.", )
             logger.exception(f"`[CLS]` or `[SEP]` is not a token in this tokenizer.")
@@ -53,22 +51,22 @@ class TokenizerPostprocessorFactory(object):
                     ("[SEP]", sep_id),
                 ],
             )
+
         return _wrap
 
-
     def get(self, name):
-        """get postprocess by name 
+        """get postprocess by name
 
-        Returns: 
+        Returns:
             postprocess
 
         """
         return self.__getattribute__(name)
 
 
-
 class PreTokenizerFactory(object):
     """PreTokenizerFactory"""
+
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
@@ -76,7 +74,7 @@ class PreTokenizerFactory(object):
     def bytelevel(self):
         """byte level pre_tokenizer
 
-        Returns: 
+        Returns:
             ByteLevel
 
         """
@@ -86,7 +84,7 @@ class PreTokenizerFactory(object):
     def bert(self):
         """bert pre_tokenizer
 
-        Returns: 
+        Returns:
             BertPreTokenizer
 
         """
@@ -96,7 +94,7 @@ class PreTokenizerFactory(object):
     def whitespace(self):
         """whitespace pre_tokenizer
 
-        Returns: 
+        Returns:
             Whitespace
 
         """
@@ -106,16 +104,16 @@ class PreTokenizerFactory(object):
     def whitespacesplit(self):
         """whitespacesplit pre_tokenizer
 
-        Returns: 
+        Returns:
             WhitespaceSplit
 
         """
         return WhitespaceSplit
 
     def get(self, name):
-        """get pretokenizer by name 
+        """get pretokenizer by name
 
-        Returns: 
+        Returns:
             postprocess
 
         """
@@ -124,6 +122,7 @@ class PreTokenizerFactory(object):
 
 class TokenizerNormalizerFactory(object):
     """TokenizerNormalizerFactory"""
+
     def __init__(self, tokenizer: Tokenizer):
         self.tokenizer = tokenizer
 
@@ -131,7 +130,7 @@ class TokenizerNormalizerFactory(object):
     def lowercase(self):
         """do lowercase normalizers
 
-        Returns: 
+        Returns:
             Lowercase
 
         """
@@ -141,7 +140,7 @@ class TokenizerNormalizerFactory(object):
     def nfd(self):
         """do nfd normalizers
 
-        Returns: 
+        Returns:
             NFD
 
         """
@@ -151,7 +150,7 @@ class TokenizerNormalizerFactory(object):
     def nfc(self):
         """do nfc normalizers
 
-        Returns: 
+        Returns:
             NFC
 
         """
@@ -161,7 +160,7 @@ class TokenizerNormalizerFactory(object):
     def strip_accents(self):
         """do strip normalizers
 
-        Returns: 
+        Returns:
             StripAccents
 
         """
@@ -171,16 +170,16 @@ class TokenizerNormalizerFactory(object):
     def strip(self):
         """do strip normalizers
 
-        Returns: 
+        Returns:
             StripAccents
 
         """
         return Strip
 
     def get(self, name):
-        """get normalizers by name 
+        """get normalizers by name
 
-        Returns: 
+        Returns:
             Normalizer
 
         """

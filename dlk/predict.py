@@ -1,134 +1,93 @@
-# Copyright cstsunfu. All rights reserved.
+# Copyright the author(s) of DLK.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This source code is licensed under the Apache license found in the
+# LICENSE file in the root directory of this source tree.
+
+import copy
+import json
+import logging
+import os
+import pickle as pkl
+import uuid
+from typing import Any, Callable, Dict, List, Union
 
 import hjson
-import os
-from typing import Dict, Union, Callable, List, Any
-from dlk.utils.parser import BaseConfigParser
-from dlk.utils.config import ConfigTool
-from dlk.data.datamodules import datamodule_register, datamodule_config_register
-from dlk.managers import manager_register, manager_config_register
-from dlk.core.imodels import imodel_register, imodel_config_register
-import pickle as pkl
-from dlk.utils.io import open
 import torch
-import copy
-import uuid
-import json
-from dlk.utils.logger import Logger
+from intc import (
+    MISSING,
+    AnyField,
+    Base,
+    BoolField,
+    DictField,
+    FloatField,
+    IntField,
+    ListField,
+    NestField,
+    Parser,
+    StrField,
+    SubModule,
+    cregister,
+    init_config,
+)
 
-logger = Logger.get_logger()
+from dlk.train import DLKFitConfig
+from dlk.utils.io import open
+from dlk.utils.register import register, register_module_name
+
+logger = logging.getLogger(__name__)
 
 
 class Predict(object):
     """Predict
 
     Config Example:
-        >>> {
-        >>>     "_focus": {
-        >>>     },
-        >>>     "_link": {},
-        >>>     "_search": {},
-        >>>     "config": {
-        >>>         "save_dir": "*@*",  # must be provided
-        >>>         "data_path": "*@*",  # must be provided
-        >>>     },
-        >>>     "task": {
-        >>>         "_name": task_name
-        >>>         ...
-        >>>     }
-        >>> }
     """
+
     def __init__(self, config: Union[str, dict], checkpoint: str):
         super(Predict, self).__init__()
+        config_dict = {}
+        self.online = False
         if not isinstance(config, dict):
-            with open(config) as f:
-                config = hjson.load(f, object_pairs_hook=dict)
-
-        self.focus = config.pop('_focus', {})
-        configs = BaseConfigParser(config).parser_with_check()
-        assert len(
-            configs
-        ) == 1, f"For predict currently the config length must be 1(you cannot use _search in predict)."
-        self.config = configs[0]
-
-        # TODO: FIXME: use pytorch-lightning build in remote filesystem
-        # https://pytorch-lightning.readthedocs.io/en/latest/common/remote_fs.html
+            with open(config, "r") as f:
+                config_dict = hjson.load(f, object_pairs_hook=dict)
+        else:
+            config_dict = config
         if isinstance(checkpoint, str):
-            with open(checkpoint, 'rb') as f:
-                self.ckpt = torch.load(f, map_location=torch.device('cpu'))
+            with open(checkpoint, "rb") as f:
+                self.checkpoint = torch.load(f, map_location=torch.device("cpu"))
         else:
-            self.ckpt = torch.load(checkpoint,
-                                   map_location=torch.device('cpu'))
-        config_name = []
-        for source, to in self.focus.items():
-            config_point = self.config
-            trace = source.split('.')
-            for t in trace:
-                config_point = config_point[t]
-            config_name.append(to + str(config_point))
-        if config_name:
-            name_str = '_'.join(config_name)
-        else:
-            name_str = self.config['root']['_name']
-        self.name_str = name_str
-        self.config = copy.deepcopy(self.config['root'])
-        self._init_model(self.config)
+            self.checkpoint = torch.load(checkpoint, map_location=torch.device("cpu"))
+        dlk_config, name_str = self.get_config(config_dict)
+        self.dlk_config = dlk_config
+        self.init(dlk_config, name_str)
 
-    def convert2script(self, data=None):
-        """trace the model to torchscript
-        Returns: 
-            TODO
+    def get_config(self, config_dict):
+        """get the predict config
 
+        Args:
+            config: the init config
+
+        Returns:
+            DLKFitConfig, config_name_str
         """
-        config = self.config['root']
-        name = self.name_str
-        # get data
-        if not data:
-            data = self.get_data(config)
+        configs = Parser(config_dict).parser_init()
+        assert len(configs) == 1, f"You should not use '_search' for predict/online"
 
-        # set datamodule
-        datamodule = self.get_datamodule(config, data)
+        fit_config: DLKFitConfig = configs[0]["@fit"]
 
-        # init imodel and inject the origin test and valid data
-        imodel = self.get_imodel(config, data)
+        config_name_str = "predict"
+        return fit_config, config_name_str
 
-        dataloader = datamodule.train_dataloader()
-        for data in dataloader:
-            # script = torch.jit.trace(imodel.model, example_inputs=data, strict=False)
-            # script = torch.jit.trace(imodel.model,
-            #                          example_inputs=data,
-            #                          strict=False)
-            script = torch.jit.script(imodel.model, example_inputs=data)
-            print(script)
-            print(script(data))
-            # imodel.model(data)
-            break
-        logger.error('The trace method is not implement yet.')
-        raise NotImplementedError
-
-
-    def _init_model(self, config):
-        """init the model and manager
+    def init(self, config, name):
+        """init the model and trainer
         Args:
             config: the config
+            name: the name of the config
 
         Returns: None
         """
-        name = self.name_str
-        # set training manager
-        self.manager = self.get_manager(config, name)
+        # set trainer
+        self.trainer = self.get_trainer(config, name)
 
         # init imodel and inject the origin test and valid data
         self.imodel = self.get_imodel(config)
@@ -139,25 +98,27 @@ class Predict(object):
         Args:
             data: if provide will not load from data_path
 
-        Returns: 
+        Returns:
             None
 
         """
-        # get data
-        if not data:
-            data = self.get_data(self.config)
-
         # set datamodule
-        datamodule = self.get_datamodule(self.config, data)
+        datamodule, data = self.get_datamodule(
+            self.dlk_config, data, world_size=self.trainer.world_size
+        )
 
         # start predict
         with torch.no_grad():
-            predict_result = self.manager.predict(model=self.imodel, datamodule=datamodule)
-        return self.imodel.postprocessor(stage='predict',
-                                    list_batch_outputs=predict_result,
-                                    origin_data=data['predict'],
-                                    rt_config={},
-                                    save_condition=save_condition)
+            predict_result = self.trainer.predict(
+                model=self.imodel, datamodule=datamodule
+            )
+        return self.imodel.postprocessor(
+            stage="predict",
+            list_batch_outputs=predict_result,
+            origin_data=data["predict"],
+            rt_config={},
+            save_condition=save_condition,
+        )
 
     def get_data(self, config):
         """get the data decided by config
@@ -165,67 +126,77 @@ class Predict(object):
         Args:
             config: {"config": {"data_path": '..'}}
 
-        Returns: 
+        Returns:
             loaded data
 
         """
+        data = {}
+        for data_type in ["predict"]:
+            data_path = os.path.join(config.processed_data_dir, data_type, "0.pkl")
+            if os.path.exists(data_path):
+                with open(data_path, "rb") as f:
+                    data[data_type] = pkl.load(f)
+        return data
 
-        with open(config['config']['data_path'], 'rb') as f:
-            self.data = pkl.load(f).get('data', {})
-        return self.data
-
-    def get_datamodule(self, config, data):
+    def get_datamodule(self, config, data, world_size):
         """get the datamodule decided by config, and fit the data to datamodule
 
         Args:
             config: {"task": {"datamodule": '..'}}
             data: {"train": '..', 'valid': '..', ..}
 
-        Returns: 
+        Returns:
             datamodule
 
         """
-        DataModule, DataModuleConfig = ConfigTool.get_leaf_module(
-            datamodule_register, datamodule_config_register, 'datamodule',
-            config['task']['datamodule'])
-        datamodule = DataModule(DataModuleConfig, data)
-        return datamodule
+        if not data and not self.online:
+            data = self.get_data(config)
+        datamodule_configs = config._get_modules("datamodule")
+        assert len(datamodule_configs) == 1, "Currently only support one datamodule"
+        data_module_config = datamodule_configs[0]
+        data_module_name = register_module_name(data_module_config._module_name)
+        datamodule = register.get("datamodule", data_module_name)(
+            data_module_config, data, {"world_size": world_size}
+        )
+        return datamodule, data
 
-    def get_manager(self, config, name):
-        """get the tranin/predict manager decided by config
+    def get_trainer(self, config: DLKFitConfig, name):
+        """get the train/predict manager decided by config
 
         Args:
-            config: {"task": {"manager": '..'}, "config": {"save_dir"}}
+            config: DLKFitConfig
             name: the predict progress name
 
-        Returns: 
-            manager
+        Returns:
+            trainer
 
         """
-        Manager, ManagerConfig = ConfigTool.get_leaf_module(
-            manager_register, manager_config_register, 'manager',
-            config.get('task').get('manager'))
-        manager = Manager(ManagerConfig,
-                          rt_config={
-                              "save_dir": config.get('config').get("save_dir"),
-                              "name": name
-                          })
-        return manager
+        trainer_configs = config._get_modules("trainer")
+        assert len(trainer_configs) == 1, "Currently only support one trainer"
+        trainer_config = trainer_configs[0]
+        trainer_name = register_module_name(trainer_config._module_name)
+        trainer = register.get("trainer", trainer_name)(
+            trainer_config, rt_config={"log_dir": config.log_dir, "name": name}
+        )
+        return trainer
 
     def get_imodel(self, config):
         """get the imodel decided by config
 
         Args:
-            config: {"task": {"imodel": '..'}}
 
-        Returns: 
+        Returns:
             imodel
 
         """
-        IModel, IModelConfig = ConfigTool.get_leaf_module(
-            imodel_register, imodel_config_register, 'imodel',
-            config.get('task').get('imodel'))
-        imodel = IModel(IModelConfig, checkpoint=True)
-        imodel.load_state_dict(self.ckpt['state_dict'], strict=False)
+        imodel_configs = config._get_modules("imodel")
+        assert (
+            len(imodel_configs) == 1
+        ), f"Currently only support one imodel, {imodel_configs}"
+        imodel_config = imodel_configs[0]
+        imodel_name = register_module_name(imodel_config._module_name)
+        imodel = register.get("imodel", imodel_name)(imodel_config, checkpoint=True)
+        if self.checkpoint:
+            imodel.load_state_dict(self.checkpoint["state_dict"], strict=True)
         imodel.eval()
         return imodel
