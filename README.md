@@ -32,16 +32,28 @@
         * [Text Generation](#text-generation)
     * [More Documentation](#more-documentation)
 
+Although the general-purpose large models have attracted most people's attention in the past year or so, I believe many people have realized that task-oriented models still have their irreplaceable side at this stage, and these models are very effective when dealing with certain specific tasks. With better reliability and higher efficiency, especially these models can implement some agents to cooperate with LLM.
 
-In our work, we often need to conduct rapid experiments on deep neural network models, search for optimal structures and parameters, and deploy the optimal models. Sometimes, we also need to create demos for validation.
+In fact, task-oriented model development is not like LLM, which can be "one-size-fits-all". Instead, the model for each task requires targeted development, and at work we often need to conduct rapid experiments on deep neural network models. , search for the optimal structure and parameters, and deploy the optimal model. Sometimes it is necessary to make a demo for verification.
 
-The core code for training, prediction, deployment, and demo steps is the same, but implementations require certain modifications. This makes the development process very fragmented, and the resulting code redundancy is disastrous for long-term code maintenance.
+First of all, a large part of the development of different tasks is actually repeated, and the core codes of the training, prediction, deployment and demo steps of the same task are also the same, but they all require certain changes in implementation. If each step is developed independently, the entire process will be very fragmented, and the resulting code redundancy will be disastrous for long-term code maintenance.
 
-`DLK` is a toolkit that uses `lightning`'s `Trainer` and `intc` as the configuration management system, integrating model training, parameter (architecture) search, model prediction, model deployment, and demo functionalities into one. For implementing these functions for the same model, only one set of code is required, greatly reducing development and maintenance costs.
+`DLK` is a toolkit that uses `lightning`'s `Trainer` and `intc` as the configuration management system, integrating model training, parameter (architecture) search, model prediction, model deployment, and demo into one. For implementing these functions for the same model, only one set of code is required, greatly reducing development and maintenance costs.
 
 At the same time, as a universal training framework, `DLK`'s various training techniques and enhancement methods can also be conveniently used for different models. For this reason, `DLK` includes many useful components.
 
 In addition to the basic components, `DLK` also provides rich examples for major tasks, with more examples gradually being added.
+
+### You Can Edit Your DLK Config Like Python Code
+
+Based on the powerful Config management capabilities provided by [intc](https://github.com/cstsunfu/intc), you can write your config file just like writing python code
+
+<div style="text-align:center">
+<span style="width:80%;display:inline-block">
+
+![Config](./pics/vsc_main.png)
+
+</div>
 
 ### Install
 
