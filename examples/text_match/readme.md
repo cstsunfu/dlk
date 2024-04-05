@@ -1,6 +1,6 @@
 ### Text Match Classification Example
 
-![Text Match]("../../pics/txt_match.png")
+![Text Match](../../pics/txt_match.png)
 
 #### Dataset
 

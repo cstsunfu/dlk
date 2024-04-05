@@ -1,6 +1,6 @@
 ### Image Classification Example(NER)
 
-![Image Classification]("../../pics/img_cls.png")
+![Image Classification](../../pics/img_cls.png)
 
 #### Dataset
 

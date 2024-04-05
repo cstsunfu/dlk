@@ -1,6 +1,6 @@
 ### Text Summary Example
 
-![Summary]("../../pics/summary.png")
+![Summary](../../pics/summary.png)
 
 #### Dataset
 

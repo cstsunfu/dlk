@@ -65,6 +65,11 @@ NOTE: Since I currently only have a personal PC with one `AMD Radeon VII 16G` GP
 
 An example of searching for hyperparameters is provided in `./examples/grid_search_exp`.
 
+After training the model, run:
+```bash
+tensorboard --logdir ./logs
+```
+
 <div style="text-align:center">
 <span style="width:47%;display:inline-block">
 
@@ -79,6 +84,12 @@ An example of searching for hyperparameters is provided in `./examples/grid_sear
 </div>
 
 #### Task Demo
+
+Task demo is in the `examples` directory, after train the model and run:
+
+```bash
+streamlit run ./demo.py
+```
 
 <div style="text-align:center">
 <span style="width:47%;display:inline-block">

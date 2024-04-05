@@ -61,11 +61,18 @@ pip install .
 
 NOTE: 由于我目前只有一台拥有一张`AMD Radeon VII 16G`的GPU和32G内存的个人PC，算力十分有限，因此这里示例的参数很多都还没有优化至SOTA
 
+
 #### Grid Search
 
 `dlk`基于`intc`进行开发，因此同样提供了参数搜索的能力，而`intc`的`_search`并不仅限于数值类型的参数搜索，也可以对整个模块进行搜索，因此`dlk`实际上也具有模块级的架构搜索能力
 
 `./examples/grid_search_exp`里面提供了一个对超参数进行搜索的示例
+
+训练完模型之后执行：
+
+```bash
+tensorboard --logdir ./logs
+```
 
 <div style="text-align:center">
 <span style="width:47%;display:inline-block">
@@ -81,6 +88,12 @@ NOTE: 由于我目前只有一台拥有一张`AMD Radeon VII 16G`的GPU和32G内
 </div>
 
 #### Task Demo
+
+Demo 均位于`examples`目录下，训练完模型后执行：
+
+```bash
+streamlit run ./demo.py
+```
 
 <div style="text-align:center">
 <span style="width:47%;display:inline-block">

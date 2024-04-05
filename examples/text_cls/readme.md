@@ -1,5 +1,6 @@
 ### Text Classification Example
 
+![Text Regression](../../pics/txt_cls.png)
 
 #### Dataset
 

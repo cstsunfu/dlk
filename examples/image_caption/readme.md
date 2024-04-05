@@ -1,6 +1,6 @@
 ### Image Caption Example
 
-![Image Caption]("../../pics/img_cap.png")
+![Image Caption](../../pics/img_cap.png)
 
 #### Dataset
 

@@ -1,6 +1,6 @@
 ### Span Relation Extraction Example
 
-![Span Relation Extraction]("../../pics/span_rel.png")
+![Span Relation Extraction](../../pics/span_rel.png)
 
 
 #### Dataset

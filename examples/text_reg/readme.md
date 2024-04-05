@@ -1,6 +1,6 @@
 ### Text Regression Example
 
-![Text Regression]("../../pics/txt_reg.png")
+![Text Regression](../../pics/txt_reg.png)
 
 #### Dataset
 

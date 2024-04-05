@@ -1,6 +1,6 @@
 ### Sequence Labeling Example(NER)
 
-![Sequence Labeling]("../../pics/seq_lab.png")
+![Sequence Labeling](../../pics/seq_lab.png)
 
 #### Dataset
 

@@ -1,6 +1,6 @@
 ### Span Classification Example(NER)
 
-![Span Classification]("../../pics/seq_lab.png")
+![Span Classification](../../pics/seq_lab.png)
 
 #### Dataset
 
