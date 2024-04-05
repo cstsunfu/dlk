@@ -1,0 +1,94 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 30,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "precision": "bf16-mixed",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_bleu",
+                "mode": "max",
+                "save_top_k": 1
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 2,
+            "num_workers": -1,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "pixel_values": "float",
+                    "decoder_input_ids": "long"
+                }
+            },
+            "@data_collate@default": {
+                "key_padding_pairs": {
+                    "decoder_input_ids": -100
+                },
+                "key_no_padding": [
+                    "pixel_values"
+                ]
+            }
+        },
+        "@imodel@default": {
+            "@model@media_enc_token_dec": {
+                "@token_sample@beam_search": {},
+                "@initmethod@default": {},
+                "@encoder@vit": {
+                    "from_pretrain": false,
+                    "pretrained_model_path": "./pretrain/vit/",
+                    "encoder_dim": 768,
+                    "dropout": 0.0
+                },
+                "@token_gen_decoder@bart_like_decoder": {
+                    "from_pretrain": false,
+                    "bart_like_module_name": "gpt2_decoder",
+                    "pretrained_model_path": "./pretrain/gpt2/"
+                },
+                "add_bos_token": true,
+                "beam_size": 3,
+                "max_len": 30,
+                "min_len": 1,
+                "normalize_scores": true,
+                "lm_head_bias": false,
+                "len_penalty": 1.0,
+                "unk_penalty": 0.0,
+                "temperature": 1.0,
+                "no_repeat_ngram_size": 0,
+                "tgt_eos": "<|endoftext|>",
+                "tgt_bos": "<|endoftext|>",
+                "tgt_pad": "<|endoftext|>",
+                "tgt_unk": "<|endoftext|>",
+                "tgt_tokenizer": "./pretrain/gpt2/tokenizer.json",
+                "tgt_embedding_dim": 768
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 0.01
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "decoder_target_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 5e-5,
+                "eps": 1e-06
+            },
+            "@postprocessor@image_caption": {
+                "tokenizer": "./pretrain/gpt2/tokenizer.json",
+                "return_all_generations": true
+            }
+        }
+    }
+}

@@ -1,0 +1,92 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 10,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_bleu",
+                "mode": "max",
+                "save_top_k": 1
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 2,
+            "predict_batch_size": 2,
+            "num_workers": -1,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "encoder_input_ids": "long",
+                    "decoder_input_ids": "long"
+                }
+            },
+            "@data_collate@default": {
+                "gen_mask": {
+                    "encoder_input_ids": "encoder_attention_mask"
+                },
+                "key_padding_pairs": {
+                    "encoder_input_ids": 1,
+                    "decoder_input_ids": 1
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@token_enc_dec": {
+                "@token_sample@beam_search": {},
+                "@initmethod@default": {},
+                "@encoder@bart_like_encoder": {
+                    "from_pretrain": false,
+                    "pretrained_model_path": "./pretrain/"
+                },
+                "@token_gen_decoder@bart_like_decoder": {
+                    "from_pretrain": false,
+                    "pretrained_model_path": "@lambda @$$.@bart_like_encoder.pretrained_model_path"
+                },
+                "beam_size": 3,
+                "max_len_a_ratio": 0,
+                "max_len_b": 30,
+                "max_len": 30,
+                "min_len": 1,
+                "normalize_scores": true,
+                "len_penalty": 1.0,
+                "unk_penalty": 0.0,
+                "temperature": 1.0,
+                "match_source_len": false,
+                "no_repeat_ngram_size": 0,
+                "tgt_eos": "</s>",
+                "tgt_bos": "<s>",
+                "tgt_pad": "<pad>",
+                "tgt_unk": "<unk>",
+                "tgt_tokenizer": "./pretrain/tokenizer.json",
+                "tgt_embedding_dim": 1024
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 0.1
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "decoder_target_ids"
+                },
+                "ignore_index": 1
+            },
+            "@optimizer@adamw": {
+                "lr": 5e-5,
+                "eps": 1e-06
+            },
+            "@postprocessor@token_generate": {
+                "tokenizer": "./pretrain/tokenizer.json",
+                "return_all_generations": true
+            }
+        }
+    }
+}

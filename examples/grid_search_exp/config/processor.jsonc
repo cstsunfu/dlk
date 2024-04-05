@@ -1,0 +1,32 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "fast_tokenizer",
+            "token_gather",
+            "token2id-label"
+        ],
+        "do_save": true,
+        "@subprocessor@fast_tokenizer": {
+            "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json",
+            "input_type": "pair"
+        },
+        "@subprocessor@token_gather": {
+            "gather_columns": [
+                "labels"
+            ],
+            "token_vocab": "label_vocab.json",
+            "unk": null
+        },
+        "@subprocessor@token2id-label": {
+            "input_map": {
+                "tokens": "labels"
+            },
+            "output_map": {
+                "token_ids": "label_ids"
+            }
+        }
+    }
+}

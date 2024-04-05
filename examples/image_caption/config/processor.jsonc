@@ -1,0 +1,32 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "fast_tokenizer",
+            "image_process"
+        ],
+        "do_save": true,
+        "@subprocessor@image_process": {
+            "preprocess_config": "./pretrain/vit/preprocessor_config.json"
+        },
+        "@subprocessor@fast_tokenizer": {
+            "tokenizer_path": "./pretrain/gpt2/tokenizer.json",
+            "input_map": {
+                "sentence": "target"
+            },
+            "output_map": {
+                "tokens": "decoder_tokens",
+                "ids": "decoder_input_ids",
+                "attention_mask": "decoder_attention_mask",
+                "type_ids": "decoder_type_ids",
+                "special_tokens_mask": "decoder_special_tokens_mask",
+                "offsets": "decoder_offsets",
+                "word_ids": "decoder_word_ids",
+                "overflowing": "decoder_overflowing",
+                "sequence_ids": "decoder_sequence_ids"
+            }
+        }
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "fast_tokenizer",
+            "token_gather#entity",
+            "token_gather#relation",
+            "span_cls_relabel",
+            "span_relation_relabel"
+        ],
+        "do_save": true,
+        "@subprocessor@fast_tokenizer": {
+            "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json"
+        },
+        "@subprocessor@token_gather#entity": {
+            "token_vocab": "label_vocab#entity.json",
+            "gather_columns": [
+                {
+                    "column": "entities_info",
+                    "trace": "labels"
+                }
+            ],
+            "unk": "[UNK]"
+        },
+        "@subprocessor@token_gather#relation": {
+            "token_vocab": "label_vocab#relation.json",
+            "gather_columns": [
+                {
+                    "column": "relations_info",
+                    "trace": "labels"
+                }
+            ],
+            "unk": "[UNK]"
+        },
+        "@subprocessor@span_cls_relabel": {
+            "drop": "none",
+            "vocab": "label_vocab#entity.json",
+            "output_map": {
+                "label_ids": "entity_label_ids"
+            }
+        },
+        "@subprocessor@span_relation_relabel": {
+            "vocab": "label_vocab#relation.json",
+            "sym": false,
+            "output_map": {
+                "label_ids": "relation_label_ids"
+            }
+        }
+    }
+}

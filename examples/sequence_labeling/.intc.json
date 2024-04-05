@@ -1,0 +1,11 @@
+{
+    "entry": [
+        "./config/bert_firstpiece",
+        "./config/bert_firstpiece_crf",
+        "./config/bert_firstpiece_lstm",
+        "./config/bert_firstpiece_lstm_crf"
+    ],
+    "src": [
+        "dlk"
+    ]
+}

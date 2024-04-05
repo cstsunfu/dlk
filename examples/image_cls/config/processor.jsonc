@@ -1,0 +1,32 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "token_gather",
+            "token2id-label",
+            "image_process"
+        ],
+        "do_save": true,
+        "@subprocessor@token_gather": {
+            "gather_columns": [
+                "labels"
+            ],
+            "token_vocab": "label_vocab.json",
+            "unk": null
+        },
+        "@subprocessor@token2id-label": {
+            "input_map": {
+                "tokens": "labels"
+            },
+            "vocab": "label_vocab.json",
+            "output_map": {
+                "token_ids": "label_ids"
+            }
+        },
+        "@subprocessor@image_process": {
+            "preprocess_config": "./pretrain/preprocessor_config.json"
+        }
+    }
+}

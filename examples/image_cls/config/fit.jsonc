@@ -1,0 +1,75 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 3,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_acc",
+                "save_top_k": 1
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 64,
+            "num_workers": 4,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "pixel_values": "float",
+                    "label_ids": "long"
+                }
+            },
+            "@data_collate@default": {
+                "key_padding_pairs": {
+                    "label_ids": -100
+                },
+                "key_no_padding": [
+                    "pixel_values"
+                ]
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@vit": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "./pretrain/",
+                    "embedding_dim": 768,
+                    "dropout": 0.1
+                },
+                "@encoder@identity": {},
+                "@decoder@linear": {
+                    "input_size": "@lambda @$$.@embedding.embedding_dim",
+                    "output_size": 500,
+                    "pool": "first"
+                }
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 100
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 3e-5,
+                "eps": 1e-06
+            },
+            "@postprocessor@img_cls": {
+                "label_vocab": "label_vocab.json"
+            }
+        }
+    }
+}

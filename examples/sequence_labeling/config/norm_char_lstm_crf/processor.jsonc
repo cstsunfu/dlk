@@ -1,0 +1,75 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "token_norm",
+            "fast_tokenizer",
+            "char_gather",
+            "token2charid",
+            "seq_lab_relabel",
+            "token_gather",
+            "token2id-label",
+            "token_embedding#token",
+            "token_embedding#char"
+        ],
+        "do_save": true,
+        "@subprocessor@token_norm": {
+            "tokenizer_path": "@lambda @$$.@fast_tokenizer.tokenizer_path",
+            "input_map": {
+                "sentence": "sentence"
+            },
+            "output_map": {
+                "norm_sentence": "norm_sentence"
+            }
+        },
+        "@subprocessor@fast_tokenizer": {
+            "tokenizer_path": "./../../sequence_labeling/conll2003/data/bert/tokenizer.json",
+            "input_map": {
+                "sentence": "norm_sentence"
+            }
+        },
+        "@subprocessor@char_gather": {
+            "char_vocab": "char_vocab.json",
+            "gather_columns": [
+                "sentence"
+            ]
+        },
+        "@subprocessor@token2charid": {
+            "input_map": {
+                "sentence": "sentence",
+                "offsets": "offsets"
+            },
+            "vocab": "char_vocab.json"
+        },
+        "@subprocessor@seq_lab_relabel": {},
+        "@subprocessor@token_gather": {
+            "gather_columns": [
+                "labels"
+            ],
+            "token_vocab": "label_vocab.json",
+            "unk": null
+        },
+        "@subprocessor@token2id-label": {
+            "input_map": {
+                "tokens": "labels"
+            },
+            "output_map": {
+                "token_ids": "label_ids"
+            }
+        },
+        "@subprocessor@token_embedding#token": {
+            "embedding_file": "",
+            "tokenizer_path": "@lambda @$$.@fast_tokenizer.tokenizer_path",
+            "token_embedding": "token_embedding",
+            "embedding_size": 32
+        },
+        "@subprocessor@token_embedding#char": {
+            "vocab": "char_vocab.json",
+            "embedding_file": "",
+            "token_embedding": "char_embedding",
+            "embedding_size": 16
+        }
+    }
+}

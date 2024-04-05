@@ -1,0 +1,46 @@
+{
+    "@processor@default": {
+        "data_root": "data",
+        "train_data_type": "dataframe",
+        "valid_data_type": "dataframe",
+        "feed_order": [
+            "fast_tokenizer#encoder",
+            "fast_tokenizer#decoder"
+        ],
+        "do_save": true,
+        "@subprocessor@fast_tokenizer#encoder": {
+            "tokenizer_path": "./pretrain/tokenizer.json",
+            "input_map": {
+                "sentence": "input"
+            },
+            "output_map": {
+                "tokens": "encoder_tokens",
+                "ids": "encoder_input_ids",
+                "attention_mask": "encoder_attention_mask",
+                "type_ids": "encoder_type_ids",
+                "special_tokens_mask": "encoder_special_tokens_mask",
+                "offsets": "encoder_offsets",
+                "word_ids": "encoder_word_ids",
+                "overflowing": "encoder_overflowing",
+                "sequence_ids": "encoder_sequence_ids"
+            }
+        },
+        "@subprocessor@fast_tokenizer#decoder": {
+            "tokenizer_path": "./pretrain/tokenizer.json",
+            "input_map": {
+                "sentence": "target"
+            },
+            "output_map": {
+                "tokens": "decoder_tokens",
+                "ids": "decoder_input_ids",
+                "attention_mask": "decoder_attention_mask",
+                "type_ids": "decoder_type_ids",
+                "special_tokens_mask": "decoder_special_tokens_mask",
+                "offsets": "decoder_offsets",
+                "word_ids": "decoder_word_ids",
+                "overflowing": "decoder_overflowing",
+                "sequence_ids": "decoder_sequence_ids"
+            }
+        }
+    }
+}

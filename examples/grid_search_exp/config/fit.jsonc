@@ -1,0 +1,102 @@
+{
+    "@fit": {
+        "specific": {
+            "@imodel.@model.@embedding.dropout": "dropout",
+            "@imodel.@scheduler.num_warmup_steps": "warmup",
+            "@imodel.@optimizer.lr": "lr"
+        },
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "hp_metrics": "val_loss",
+        "@trainer@lightning": {
+            "max_epochs": 3,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "precision": "16-mixed",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_acc",
+                "save_top_k": 0,
+                "save_last": false
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 64,
+            "num_workers": 4,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "label_ids": "long",
+                    "type_ids": "long",
+                    "special_tokens_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "gen_mask": {
+                    "input_ids": "attention_mask"
+                },
+                "key_padding_pairs": {
+                    "input_ids": 0,
+                    "label_ids": -100
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@bert_like": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "embedding_dim": 768,
+                    "dropout": 0.1,
+                    "_search": {
+                        "dropout": [
+                            0.1,
+                            0.5
+                        ]
+                    }
+                },
+                "@encoder@identity": {},
+                "@decoder@linear": {
+                    "input_size": "@lambda @$$.@embedding.embedding_dim",
+                    "output_size": 3,
+                    "pool": "first"
+                }
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 0.1,
+                "_search": {
+                    "num_warmup_steps": [
+                        0.01
+                    ]
+                }
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 2e-5,
+                "eps": 1e-06,
+                "_search": {
+                    "lr": [
+                        1e-4
+                    ]
+                }
+            },
+            "@postprocessor@txt_cls": {
+                "label_vocab": "label_vocab.json",
+                "data_type": "pair"
+            }
+        }
+    }
+}

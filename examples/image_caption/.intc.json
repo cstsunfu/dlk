@@ -1,0 +1,9 @@
+{
+    "entry": [
+        "./config"
+    ],
+    "src": [
+        "dlk",
+        "src"
+    ]
+}

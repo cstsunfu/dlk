@@ -1,0 +1,77 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 8,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_mse",
+                "mode": "min",
+                "save_top_k": 1
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 64,
+            "num_workers": -1,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "values": "float",
+                    "type_ids": "long",
+                    "special_tokens_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "gen_mask": {
+                    "input_ids": "attention_mask"
+                },
+                "key_padding_pairs": {
+                    "input_ids": 0
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@bert_like": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "embedding_dim": 768,
+                    "dropout": 0.1
+                },
+                "@encoder@identity": {},
+                "@decoder@linear": {
+                    "input_size": "@lambda @$$.@embedding.embedding_dim",
+                    "output_size": 1,
+                    "pool": "first"
+                }
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 100
+            },
+            "@loss@mse": {
+                "pred_truth_pair": {
+                    "logits": "values"
+                }
+            },
+            "@optimizer@adamw": {
+                "lr": 5e-5,
+                "eps": 1e-06
+            },
+            "@postprocessor@txt_reg": {
+                "log_reg": true
+            }
+        }
+    }
+}

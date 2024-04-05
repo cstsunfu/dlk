@@ -1,0 +1,106 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 8,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "save_top_k": 1,
+                "monitor": "val_f1"
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 64,
+            "num_workers": -1,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "label_ids": "long",
+                    "gather_index": "long",
+                    "type_ids": "long",
+                    "special_tokens_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "gen_mask": {
+                    "input_ids": "attention_mask"
+                },
+                "key_padding_pairs": {
+                    "input_ids": 0,
+                    "special_tokens_mask": 0
+                },
+                "key_padding_pairs_2d": {
+                    "label_ids": -100
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@bert_like": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "embedding_dim": 768,
+                    "dropout": 0.1
+                },
+                "@encoder@identity": {},
+                "@decoder@biaffine": {
+                    "input_size": "@lambda @$$.@embedding.embedding_dim",
+                    "output_size": 5
+                }
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 0.1
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 3e-5,
+                "eps": 1e-08,
+                "optimizer_special_groups": {
+                    "order": [
+                        "decoder",
+                        "bias"
+                    ], // the group order, if the para is in decoder & is in bias, set to decoder
+                    "bias": {
+                        "config": {
+                            "weight_decay": 0
+                        },
+                        "pattern": [
+                            "bias",
+                            "LayerNorm\\.bias",
+                            "LayerNorm\\.weight"
+                        ]
+                    },
+                    "decoder": {
+                        "config": {
+                            "lr": 1e-3
+                        },
+                        "pattern": [
+                            "decoder"
+                        ]
+                    }
+                }
+            },
+            "@postprocessor@span_cls": {
+                "label_vocab": "label_vocab.json",
+                "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json"
+            }
+        }
+    }
+}

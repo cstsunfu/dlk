@@ -1,0 +1,101 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 1000,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "cpu",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 32,
+            "predict_batch_size": 64,
+            "num_workers": -1,
+            "pin_memory": true,
+            "shuffle": true,
+            "@dataset@default": {
+                "repeat_for_valid": false,
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "label_ids": "long",
+                    "char_ids": "long",
+                    "gather_index": "long",
+                    "type_ids": "long",
+                    "special_tokens_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "gen_mask": {
+                    "input_ids": "attention_mask"
+                },
+                "key_padding_pairs": {
+                    "input_ids": 0,
+                    "label_ids": 3, // pad to "E"
+                    "special_tokens_mask": 0
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@combine_word_char_cnn": {
+                    "char_embedding_dim": 16,
+                    "word_embedding_dim": 32,
+                    "word_embedding_file": "./data/meta_data/token_embedding",
+                    "char_embedding_file": "./data/meta_data/char_embedding"
+                },
+                "@encoder@lstm": {
+                    "input_size": "@$$.@embedding.char_embedding_dim, @$$.@embedding.word_embedding_dim @lambda a, b: a+b",
+                    "output_size": "@lambda @$.input_size"
+                },
+                "@decoder@linear_crf": {
+                    "input_size": "@lambda @$$.@encoder.output_size",
+                    "output_size": 11
+                }
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 0.1
+            },
+            "@loss@identity": {},
+            "@optimizer@adamw": {
+                "lr": 3e-5,
+                "eps": 1e-08,
+                "optimizer_special_groups": {
+                    "order": [
+                        "decoder",
+                        "bias"
+                    ], // the group order, if the para is in decoder & is in bias, set to decoder
+                    "bias": {
+                        "config": {
+                            "weight_decay": 0
+                        },
+                        "pattern": [
+                            "bias",
+                            "LayerNorm\\.bias",
+                            "LayerNorm\\.weight"
+                        ]
+                    },
+                    "decoder": {
+                        "config": {
+                            "lr": 1e-3
+                        },
+                        "pattern": [
+                            "crf",
+                            "lstm"
+                        ]
+                    }
+                }
+            },
+            "@postprocessor@seq_lab": {
+                "label_vocab": "label_vocab.json",
+                "use_crf": true,
+                "tokenizer_path": "./data/bert/tokenizer.json"
+            }
+        }
+    }
+}
