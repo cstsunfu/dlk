@@ -1,0 +1,5 @@
+{
+    "@processor@my": {
+        "tokenizer_path": "./pretrain/tokenizer.json"
+    }
+}

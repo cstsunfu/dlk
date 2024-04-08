@@ -156,8 +156,7 @@ class BasicDatamodule(IBaseDataModule):
         )
 
     def online_dataloader(self, data):
-        """get the data collate_fn"""
-        # return DataLoader(self.mnist_test, batch_size=self.batch_size)
+        """get the online dataloader"""
         if not self._online_key_type_pairs:
             self._online_key_type_pairs = self.dataset_creator.real_key_type_pairs(
                 self.dataset_config.key_type_pairs, data

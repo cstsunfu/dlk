@@ -1,0 +1,46 @@
+{
+    "@fit": {
+        "specific": {},
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 6,
+            "devices": "auto",
+            "strategy": "auto",
+            "accelerator": "auto",
+            "@callback@lr_monitor": {
+                "logging_interval": "step"
+            },
+            "@callback@checkpoint": {
+                "monitor": "val_acc",
+                "save_top_k": 0
+            }
+        },
+        "@datamodule@my_datamodule": {
+            "train_batch_size": 32
+        },
+        "@imodel@default": {
+            "@model@my_model": {
+                "bert_model_path": "./pretrain/",
+                "bert_dim": 768,
+                "label_num": 2
+            },
+            "@scheduler@linear_warmup": {
+                "num_warmup_steps": 100
+            },
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 2e-5,
+                "eps": 1e-08
+            },
+            "@postprocessor@txt_cls": {
+                "label_vocab": "label_vocab.json"
+            }
+        }
+    }
+}

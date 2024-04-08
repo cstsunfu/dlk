@@ -2,6 +2,10 @@
   <h2 align="center"> Deep Learning toolKit (dlk)</h2>
 </p>
 
+<h3 align="center">
+    <p>Don't Repeat Yourself</p>
+</h3>
+
 
 <div style="text-align:center">
 <span style="width:80%;display:inline-block">
@@ -30,6 +34,7 @@
         * [Adversarial Training](#adversarial-training)
         * [Complex Training Control](#complex-training-control)
         * [Text Generation](#text-generation)
+    * [Your Own Model](#your-own-model)
     * [More Documentation](#more-documentation)
 
 Although the general-purpose large models have attracted most people's attention in the past year or so, I believe many people have realized that task-oriented models still have their irreplaceable side at this stage, and these models are very effective when dealing with certain specific tasks. With better reliability and higher efficiency, especially these models can implement some agents to cooperate with LLM.
@@ -195,6 +200,18 @@ The advantage of using registries is that we don't need to be concerned about wh
 ##### Text Generation
 
 DLK also implements various `token_sample` methods, inspired by `fairseq`, providing powerful control capabilities for text generation.
+
+
+#### Your Own Model
+
+Ref `./examples/001_first_example` implement yours
+
+As you can see, a simple model is completed. But you may have questions, this doesn't seem to be simpler than me directly implementing a model, and there are even many concepts that make me think this seems more complicated.
+Yes, if you just want to train a simple model and do not need to consider prediction, demo, etc., that is true, but dlk provides a very unified framework, so that you can only follow the steps to implement the corresponding components, and all the work They are all reusable, including the components you just implemented.
+
+Moreover, `dlk` also provides many optimization tools, so that you are not limited to simple models.
+
+The principle of this package is donot repeat yourself
 
 #### More Documentation
 
