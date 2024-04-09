@@ -21,6 +21,44 @@
     </p>
 </h4>
 
+```
+dlk                                  --
+├── adv_method                       -- adversarial training method like free_lb, fgm, etc.
+├── callback                         -- callbacks, like checkpoint, early_stop, etc.
+├── data                             -- data processor part
+│   ├── data_collate                 -- data collate for collate a batch of data from dataset to dataloader
+│   ├── datamodule                   -- the datamodule a.k.a lightning.LightningDataModule
+│   ├── dataset                      -- the dataset inherit the torch.Dataset
+│   ├── postprocessor                -- the tasks postprocessor
+│   ├── processor                    -- the default processor, which scheduler the subprocessors
+│   └── subprocessor                 -- the subprocessors like tokenizer, token2id, etc.
+├── display                          -- the tasks display setting
+├── imodel                           -- the integrated model, which a.k.a the lightning.LightningModule
+├── initmethod                       -- the initmethod, some classic parameter init methods
+├── nn                               -- builtin nn modules
+│   ├── base_module.py               --
+│   ├── layer                        --
+│   │   ├── decoder                  --
+│   │   ├── embedding                --
+│   │   ├── encoder                  --
+│   │   └── token_gen_decoder        --
+│   ├── loss                         --
+│   ├── model                        --
+│   ├── module                       --
+│   └── utils                        --
+├── token_sample                     -- for text generate, different sample strategies
+├── optimizer                        -- optimizers
+├── scheduler                        -- learning rate schedulers
+├── trainer                          -- the trainer, a.k.a lightning.Trainer
+├── utils                            --
+├── preprocess.py                    -- preprocess datas for train|predict|demo|etc.
+├── train.py                         -- train entry
+├── online.py                        --
+├── predict.py                       -- just predict a bunch of data using the pretrained model
+├── server.py                        -- deploy this to server your pretrained model
+├── demo.py                          -- demo main
+└── version.txt                      --
+```
 
 
 * [Install](#install)
