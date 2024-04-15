@@ -82,7 +82,7 @@ In fact, task-oriented model development is not like LLM, which can be "one-size
 
 First of all, a large part of the development of different tasks is actually repeated, and the core codes of the training, prediction, deployment and demo steps of the same task are also the same, but they all require certain changes in implementation. If each step is developed independently, the entire process will be very fragmented, and the resulting code redundancy will be disastrous for long-term code maintenance.
 
-`DLK` is a toolkit that uses `lightning`'s `Trainer` and `intc` as the configuration management system, integrating model training, parameter (architecture) search, model prediction, model deployment, and demo into one. For implementing these functions for the same model, only one set of code is required, greatly reducing development and maintenance costs.
+DLK is a toolkit that based lightning.Trainer and use intc as the configuration management, one-stop model training, parameter/architecture search, prediction, deployment and demo.
 
 At the same time, as a universal training framework, `DLK`'s various training techniques and enhancement methods can also be conveniently used for different models. For this reason, `DLK` includes many useful components.
 
