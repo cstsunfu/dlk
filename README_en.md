@@ -92,15 +92,12 @@ In addition to the basic components, `DLK` also provides rich examples for major
 
 Based on the powerful Config management capabilities provided by [intc](https://github.com/cstsunfu/intc), you can write your config file just like writing python code
 
-<div style="text-align:center">
-<span style="width:80%;display:inline-block">
-
-![Config](./pics/vsc_main.png)
-
+<div style="display:inline-block">
+  <img src="./pics/vscode_intc.gif" alt="vscode" width="412px">
+  <img src="./pics/nvim_intc.gif" alt="nvim" width="412px">
 </div>
 
 ### Install
-
 
 ```bash
 pip install dlk == 0.1.0
@@ -125,18 +122,9 @@ After training the model, run:
 ```bash
 tensorboard --logdir ./logs
 ```
-
-<div style="text-align:center">
-<span style="width:47%;display:inline-block">
-
-![Grid Search HP](pics/grid_search_hp.png)
-
-</span>
-<span style="width:47%;display:inline-block">
-
-![Grid Search](./pics/grid_search_scalar.png)
-
-</span>
+<div style="display:inline-block">
+  <img src="./pics/grid_search_hp.png" alt="grid search hyperparameters" width="412px">
+  <img src="./pics/grid_search_scalar.png" alt="grid search scalar" width="412px">
 </div>
 
 #### Task Demo
@@ -147,57 +135,25 @@ Task demo is in the `examples` directory, after train the model and run:
 streamlit run ./demo.py
 ```
 
-<div style="text-align:center">
-<span style="width:47%;display:inline-block">
-
-![Span Relation](./pics/span_rel.png)
-
-</span>
-<span style="width:47%;display:inline-block">
-
-![Seq Lab](./pics/seq_lab.png)
-
-</span>
+<div style="display:inline-block">
+  <img src="./pics/span_rel.png" alt="span_rel" width="412px">
+  <img src="./pics/seq_lab.png" alt="seq_lab" width="412px">
 </div>
 
-<div style="text-align:center">
-<span style="width:47%;display:inline-block">
-
-![Image Classification](./pics/img_cls.png)
-
-</span>
-<span style="width:47%;display:inline-block">
-
-![Image Caption](./pics/img_cap.png)
-
-</span>
+<div style="display:inline-block">
+  <img src="./pics/img_cls.png" alt="img_cls" width="412px">
+  <img src="./pics/img_cap.png" alt="image caption" width="412px">
 </div>
 
-<div style="text-align:center">
-<span style="width:47%;display:inline-block">
 
-![Summary](./pics/summary.png)
-
-</span>
-<span style="width:47%;display:inline-block">
-
-![Text Match](./pics/txt_match.png)
-
-</span>
+<div style="display:inline-block">
+  <img src="./pics/summary.png" alt="summary" width="412px">
+  <img src="./pics/txt_match.png" alt="text match" width="412px">
 </div>
 
-<div style="text-align:center">
-<span style="width:47%;display:inline-block">
-
-![Text Regression](./pics/txt_reg.png)
-
-</span>
-
-<span style="width:47%;display:inline-block">
-
-![Text Classification](./pics/txt_cls.png)
-
-</span>
+<div style="display:inline-block">
+  <img src="./pics/txt_reg.png" alt="txt_reg" width="412px">
+  <img src="./pics/txt_cls.png" alt="text classification" width="412px">
 </div>
 
 ### Usage and Features

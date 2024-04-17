@@ -92,7 +92,7 @@ class TextRegDisplay(Display):
         predict = result["predict_values"][0] * 100
         return (
             Gauge(init_opts=self.init_options)
-            .add(series_name="Regression", data_pair=[["", 55.5]])
+            .add(series_name="Regression", data_pair=[["", predict]])
             .render_embed()
         )
 
