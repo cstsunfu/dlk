@@ -1,0 +1,26 @@
+[build-system]
+requires = [
+    "setuptools",
+    "setuptools>=18.0",
+    "wheel",
+    "cython",
+    "numpy>=1.21.3",
+    "torch>=2.1"
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name="dlk"
+authors = [
+    {name = "cstsunfu", email = "cstsunfu@gmail.com"},
+]
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.8"
+keywords = ["dlk", "pytorch", "lightning"]
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "License :: OSI Approved :: Apache Software License"
+]
