@@ -1,0 +1,3 @@
+include dlk/utils/display/fonts/Lucida_Console.ttf
+include dlk/utils/display/label_colors/ner.json
+include dlk/utils/display/label_colors/relations.json

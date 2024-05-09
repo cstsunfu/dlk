@@ -70,14 +70,18 @@ def logfile(
     Returns:
         None
     """
-    if os.path.dirname(file_name) and not os.path.isdir(os.path.dirname(file_name)):
-        os.mkdir(os.path.dirname(file_name))
-    file_handler = RotatingFileHandler(
-        file_name, maxBytes=max_bytes, backupCount=backup_count
-    )
-    file_handler.setLevel(log_level_map.get(log_level, "INFO"))
-    formatter = logging.Formatter(
-        "%(asctime)s - dlk - %(levelname)8s - %(filename)8s:%(lineno)4d - %(message)s"
-    )
-    file_handler.setFormatter(formatter)
-    global_logger.addHandler(file_handler)
+    try:
+        if os.path.dirname(file_name) and not os.path.isdir(os.path.dirname(file_name)):
+            os.mkdir(os.path.dirname(file_name))
+        file_handler = RotatingFileHandler(
+            file_name, maxBytes=max_bytes, backupCount=backup_count
+        )
+        file_handler.setLevel(log_level_map.get(log_level, "INFO"))
+        formatter = logging.Formatter(
+            "%(asctime)s - dlk - %(levelname)8s - %(filename)8s:%(lineno)4d - %(message)s"
+        )
+        file_handler.setFormatter(formatter)
+        global_logger.addHandler(file_handler)
+    except Exception as e:
+        global_logger.error(f"Failed to add file handler to logger: {e}")
+        return

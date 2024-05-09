@@ -1,4 +1,4 @@
-# Copyright cstsunfu.
+# Copyright the author(s) of DLK.
 #
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
@@ -23,19 +23,22 @@ version = write_version_py()
 
 cmdclass = {}
 extensions = []
-if "CUDA_HOME" in os.environ or "CUDA_PATH" in os.environ:
-    from torch.utils import cpp_extension
+if ("CUDA_HOME" in os.environ) and int(os.environ.get("BUILD_CUDA", "0")) == 1:
+    try:
+        from torch.utils import cpp_extension
 
-    extensions = [
-        cpp_extension.CppExtension(
-            "dlk.ngram_repeat_block_cuda",
-            sources=[
-                "dlk/cuda/ngram_repeat_block_cuda.cpp",
-                "dlk/cuda/ngram_repeat_block_cuda_kernel.cu",
-            ],
-        ),
-    ]
-    cmdclass = {"build_ext": cpp_extension.BuildExtension}
+        extensions = [
+            cpp_extension.CppExtension(
+                "dlk.ngram_repeat_block_cuda",
+                sources=[
+                    "dlk/cuda/ngram_repeat_block_cuda.cpp",
+                    "dlk/cuda/ngram_repeat_block_cuda_kernel.cu",
+                ],
+            ),
+        ]
+        cmdclass = {"build_ext": cpp_extension.BuildExtension}
+    except:
+        pass
 
 if "READTHEDOCS" in os.environ:
     # don't build extensions when generating docs
