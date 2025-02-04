@@ -12,7 +12,7 @@ authors = [
 ]
 readme = "README.md"
 dependencies = [
-    "intc>=0.1.0,<0.2",
+    "intc>=0.1.1,<0.2",
     "hjson>=3.0.2",
     "pandas>=1.4",
     "fsspec>=2023.5,<2024.2",

@@ -81,7 +81,7 @@ setup(
     include_package_data=True,
     packages=pkgs,
     install_requires=[
-        "intc>=0.1.0,<0.2",
+        "intc>=0.1.1,<0.2",
         "hjson>=3.0.2",
         "pandas>=1.4",
         "pyarrow>=10.0.1",
