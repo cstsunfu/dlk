@@ -21,20 +21,4 @@ if os.environ.get("DISABLE_LOGFILE", "0") not in {
 
 from intc import cregister
 
-import dlk.adv_method
-import dlk.callback
-import dlk.data
-import dlk.display
-import dlk.imodel
-import dlk.initmethod
-import dlk.nn
-import dlk.optimizer
-import dlk.scheduler
-import dlk.token_sample
-import dlk.trainer
-from dlk.online import OnlinePredict
-from dlk.predict import Predict
-
-# from dlk.preprocess import PreProcessor
-from dlk.train import DLKFitConfig, Train
 from dlk.utils.register import register

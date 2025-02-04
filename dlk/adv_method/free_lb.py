@@ -28,13 +28,13 @@ from intc import (
 
 from dlk.utils.register import register
 
-from . import AdvMethod
+from . import AdvMethod, AdvMethodConfig
 
 logger = logging.getLogger(__name__)
 
 
 @cregister("adv_method", "free_lb")
-class FreeLBAdvMethodConfig(Base):
+class FreeLBAdvMethodConfig(AdvMethodConfig):
     """
     ENHANCED ADVERSARIAL TRAINING FOR NATURAL LANGUAGE UNDERSTANDING
     https://arxiv.org/pdf/1909.11764.pdf

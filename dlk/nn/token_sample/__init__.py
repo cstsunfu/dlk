@@ -103,4 +103,4 @@ class Sample(nn.Module):
 
 
 sample_dir = os.path.dirname(__file__)
-import_module_dir(sample_dir, "dlk.token_sample")
+import_module_dir(sample_dir, "dlk.nn.token_sample")

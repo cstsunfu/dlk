@@ -3,12 +3,10 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 from typing import Any, Dict, Union
 
 import hjson
 import pandas as pd
-import torch
 from intc import (
     MISSING,
     AnyField,
@@ -26,6 +24,8 @@ from intc import (
     init_config,
 )
 
+import dlk.data.processor
+import dlk.data.subprocessor
 from dlk.utils.io import open
 from dlk.utils.register import register, register_module_name
 
@@ -33,7 +33,12 @@ from dlk.utils.register import register, register_module_name
 class PreProcessor(object):
     """Processor"""
 
-    def __init__(self, config: Union[str, dict], stage: str = "train"):
+    def __init__(
+        self,
+        config: Union[str, dict],
+        stage: str = "train",
+        update_config: Union[Dict, None] = None,
+    ):
         super(PreProcessor, self).__init__()
         config_dict = {}
         if not isinstance(config, dict):
@@ -41,7 +46,7 @@ class PreProcessor(object):
                 config_dict = hjson.load(f, object_pairs_hook=dict)
         else:
             config_dict = config
-        prepro_config = self.get_config(config_dict)
+        prepro_config = self.get_config(config_dict, update_config)
         self.init(prepro_config, stage)
 
     def init(self, config: Base, stage: str):
@@ -63,7 +68,7 @@ class PreProcessor(object):
             assert stage == "online", f"stage {stage} is not supported"
             self.processor = processor_ins.online_process
 
-    def get_config(self, config_dict):
+    def get_config(self, config_dict, update_config=None):
         """get the predict config
 
         Args:
@@ -72,7 +77,7 @@ class PreProcessor(object):
         Returns:
             DLKPreProConfig, config_name_str
         """
-        configs = Parser(config_dict).parser_init()
+        configs = Parser(config_dict, update_config=update_config).parser_init()
         assert len(configs) == 1, f"You should not use '_search' for preprocess"
 
         prepro_config = configs[0]["@processor"]

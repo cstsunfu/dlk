@@ -265,58 +265,6 @@ class SeqLabPostProcessor(BasePostProcessor):
             f"{real_name}_f1": f1 * 100,
         }
 
-    def do_save(
-        self,
-        predicts: List,
-        stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
-        rt_config: Dict,
-        save_condition: bool = False,
-    ):
-        """save the predict when save_condition==True
-
-        Args:
-            predicts: list of predicts
-            stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-            save_condition: True for save, False for depend on rt_config
-
-        Returns:
-            None
-
-        """
-        if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
-            self.config.start_save_step = rt_config.get("total_steps", 0) - 1
-            self.config.start_save_epoch = rt_config.get("total_epochs", 0) - 1
-        if not save_condition and (
-            rt_config["current_step"] >= self.config.start_save_step
-            or rt_config["current_epoch"] >= self.config.start_save_epoch
-        ):
-            save_condition = True
-        if save_condition:
-            save_dir = os.path.join(
-                self.config.save_root_path, self.config.save_dir.get(stage, "")
-            )
-            if "current_step" in rt_config:
-                save_file = os.path.join(
-                    save_dir, f"step_{str(rt_config['current_step'])}_predict.json"
-                )
-            else:
-                save_file = os.path.join(save_dir, "predict.json")
-            logger.info(f"Save the {stage} predict data at {save_file}")
-            with open(save_file, "w") as f:
-                json.dump(predicts, f, indent=4, ensure_ascii=False)
-
     def calc_score(self, predict_list: List, ground_truth_list: List):
         """use predict_list and ground_truth_list to calc scores
 

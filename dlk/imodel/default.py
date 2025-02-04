@@ -127,7 +127,7 @@ class DefaultIModel(pl.LightningModule):
 
         adv_method_configs = config._get_modules("adv_method")
 
-        if len(adv_method_configs) == 1:
+        if len(adv_method_configs) == 1 and adv_method_configs[0].use_adv:
             self.adv_method = register.get(
                 "adv_method", register_module_name(adv_method_configs[0]._module_name)
             )(self.model, adv_method_configs[0])
@@ -274,6 +274,8 @@ class DefaultIModel(pl.LightningModule):
                     "total_steps": self.num_training_steps,
                     "total_epochs": self.num_training_epochs,
                     "log_name": validation_output["name"],
+                    "log_dir": self.train_rt_config["log_dir"],
+                    "name": self.train_rt_config["name"],
                 },
             )
             self.log_dict(
@@ -359,6 +361,8 @@ class DefaultIModel(pl.LightningModule):
                     "total_steps": self.num_training_steps,
                     "total_epochs": self.num_training_epochs,
                     "log_name": test_output["name"],
+                    "log_dir": self.train_rt_config["log_dir"],
+                    "name": self.train_rt_config["name"],
                 },
             )
             self.log_dict(
@@ -410,7 +414,10 @@ class DefaultIModel(pl.LightningModule):
             return self.trainer.max_steps
         # FIXED: https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
         # NEED TEST
-        return int(self.trainer.estimated_stepping_batches)
+        return (
+            int(self.trainer.estimated_stepping_batches)
+            // self.trainer.accumulate_grad_batches
+        )
 
     def configure_optimizers(self):
         """Configure the optimizer and scheduler"""

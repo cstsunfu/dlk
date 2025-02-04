@@ -8,8 +8,33 @@ from typing import Any, Dict
 
 import torch
 import torch.nn as nn
+from intc import (
+    MISSING,
+    AnyField,
+    Base,
+    BoolField,
+    DictField,
+    FloatField,
+    IntField,
+    ListField,
+    NestField,
+    StrField,
+    SubModule,
+    cregister,
+    dataclass,
+)
 
 from dlk.utils.import_module import import_module_dir
+
+
+@dataclass
+class AdvMethodConfig(Base):
+    """the base Adv method"""
+
+    use_adv = BoolField(
+        value=True,
+        help="whether use adv method, effective on the imodel, if the config include advmethod and not set use_adv to False, default is True",
+    )
 
 
 class AdvMethod(object):

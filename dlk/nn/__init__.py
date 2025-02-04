@@ -4,6 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import dlk.nn.layer
-import dlk.nn.loss
 import dlk.nn.model
 import dlk.nn.module
+import dlk.nn.token_sample

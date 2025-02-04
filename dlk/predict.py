@@ -43,7 +43,12 @@ class Predict(object):
     Config Example:
     """
 
-    def __init__(self, config: Union[str, dict], checkpoint: str):
+    def __init__(
+        self,
+        config: Union[str, dict],
+        checkpoint: str,
+        update_config: Union[Dict, None] = None,
+    ):
         super(Predict, self).__init__()
         config_dict = {}
         self.online = False
@@ -57,11 +62,11 @@ class Predict(object):
                 self.checkpoint = torch.load(f, map_location=torch.device("cpu"))
         else:
             self.checkpoint = torch.load(checkpoint, map_location=torch.device("cpu"))
-        dlk_config, name_str = self.get_config(config_dict)
+        dlk_config, name_str = self.get_config(config_dict, update_config)
         self.dlk_config = dlk_config
         self.init(dlk_config, name_str)
 
-    def get_config(self, config_dict):
+    def get_config(self, config_dict, update_config):
         """get the predict config
 
         Args:
@@ -70,7 +75,7 @@ class Predict(object):
         Returns:
             DLKFitConfig, config_name_str
         """
-        configs = Parser(config_dict).parser_init()
+        configs = Parser(config_dict, update_config=update_config).parser_init()
         assert len(configs) == 1, f"You should not use '_search' for predict/online"
 
         fit_config: DLKFitConfig = configs[0]["@fit"]

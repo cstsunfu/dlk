@@ -66,9 +66,6 @@ with open("README.md", encoding="utf-8") as f:
 with open("LICENSE", encoding="utf-8") as f:
     license = f.read()
 
-with open("requirements.txt", encoding="utf-8") as f:
-    requirements = f.read()
-
 pkgs = [p for p in find_packages() if p.startswith("dlk")]
 
 setup(
@@ -80,7 +77,38 @@ setup(
     cmdclass=cmdclass,
     package_data={"": added_files},
     license=license,
+    python_requires=">=3.7",
     include_package_data=True,
     packages=pkgs,
-    install_requires=requirements.strip().split("\n"),
+    install_requires=[
+        "intc>=0.1.0,<0.2",
+        "hjson>=3.0.2",
+        "pandas>=1.4",
+        "pyarrow>=10.0.1",
+        "fsspec>=2023.5,<2024.2",
+        "torchmetrics>=1.2.1",
+        "transformers>=4.24.0,<4.45",
+    ],
+    extras_require={
+        "train": [
+            "lightning>=2.1.0,<=2.2",
+            "torch>=2.1,<=2.6",
+            "tensorboard>=2.7.0,<3.0",
+            "datasets>=2.17.0,<2.20",
+            "torchmetrics>=1.2.1",
+        ],
+        "export": ["torch>=1.8.1,<2.5"],
+        "process": [
+            "datasets>=2.17.0,<2.20",
+        ],
+        "all": [
+            "lightning>=2.1.0,<=2.2",
+            "torch>=2.1,<=2.6",
+            "tensorboard>=2.7.0,<3.0",
+            "datasets>=2.17.0,<2.20",
+            "streamlit>=1.32",
+            "svgwrite>=1.4",
+            "pyecharts>=2.0",
+        ],
+    },
 )

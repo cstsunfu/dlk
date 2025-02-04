@@ -28,13 +28,13 @@ from intc import (
 
 from dlk.utils.register import register
 
-from . import AdvMethod
+from . import AdvMethod, AdvMethodConfig
 
 logger = logging.getLogger(__name__)
 
 
 @cregister("adv_method", "pgd")
-class PGDAdvMethodConfig(Base):
+class PGDAdvMethodConfig(AdvMethodConfig):
     """
     PGD adversarial training method
     """

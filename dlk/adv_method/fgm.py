@@ -28,13 +28,13 @@ from intc import (
 
 from dlk.utils.register import register
 
-from . import AdvMethod
+from . import AdvMethod, AdvMethodConfig
 
 logger = logging.getLogger(__name__)
 
 
 @cregister("adv_method", "fgm")
-class FGMAdvMethodConfig(Base):
+class FGMAdvMethodConfig(AdvMethodConfig):
     """
     FGM adversarial training method config
     https://arxiv.org/pdf/1706.06083.pdf

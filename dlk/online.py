@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 class OnlinePredict(Predict):
     """OnlinePredict"""
 
-    def __init__(self, config: Union[str, dict], checkpoint: str):
-        super(OnlinePredict, self).__init__(config, checkpoint)
+    def __init__(self, config: Union[str, dict], checkpoint: str, update_config=None):
+        super(OnlinePredict, self).__init__(config, checkpoint, update_config)
         datamodule, _ = self.get_datamodule(
             self.dlk_config, {}, world_size=self.trainer.world_size
         )

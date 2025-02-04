@@ -3,7 +3,6 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import importlib
 import os
 from typing import Dict
 
@@ -110,4 +109,4 @@ class BaseLoss(nn.Module):
 
 
 loss_dir = os.path.dirname(__file__)
-import_module_dir(loss_dir, "dlk.nn.loss")
+import_module_dir(loss_dir, "dlk.loss")

@@ -6,6 +6,7 @@
 import abc
 import importlib
 import json
+import logging
 import os
 from typing import Callable, Dict, List, Type, TypeVar, Union
 
@@ -29,6 +30,8 @@ from intc import (
 
 from dlk.utils.import_module import import_module_dir
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class BasePostProcessorConfig(Base):
@@ -39,11 +42,16 @@ class BasePostProcessorConfig(Base):
         help="the save dir of the meta info",
     )
     save_root_path = StrField(
-        value="data",
-        help="the root path of the save data, default relative to the current path",
+        value=None,
+        additions=[None],
+        help="the root path of the save data, default save to the log dir",
     )
     save_dir = DictField(
-        value={"valid": "valid_output", "test": "test_output"},
+        value={
+            "valid": "valid_output",
+            "test": "test_output",
+            "predict": "predict_output",
+        },
         help="the save path of the data, relative to the save_root_path",
     )
     start_save_step = IntField(
@@ -58,8 +66,9 @@ class BasePostProcessorConfig(Base):
 class BasePostProcessor(object):
     """the base postprocessor"""
 
-    def __init__(self, config):
+    def __init__(self, config: BasePostProcessorConfig):
         super(BasePostProcessor, self).__init__()
+        self.config = config
 
     def loss_name_map(self, stage) -> str:
         """get the stage loss name
@@ -188,7 +197,6 @@ class BasePostProcessor(object):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def do_save(
         self,
         predicts: List,
@@ -219,7 +227,34 @@ class BasePostProcessor(object):
             None
 
         """
-        raise NotImplementedError
+        if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
+            self.config.start_save_step = rt_config.get("total_steps", 0) - 1
+            self.config.start_save_epoch = rt_config.get("total_epochs", 0) - 1
+        if not save_condition and (
+            rt_config["current_step"] >= self.config.start_save_step
+            or rt_config["current_epoch"] >= self.config.start_save_epoch
+        ):
+            save_condition = True
+        if save_condition:
+            if self.config.save_root_path:
+                save_path = os.path.join(
+                    self.config.save_root_path, self.config.save_dir.get(stage, "")
+                )
+            else:
+                save_path = os.path.join(
+                    rt_config["log_dir"],
+                    rt_config["name"],
+                    self.config.save_dir.get(stage, ""),
+                )
+            if "current_step" in rt_config:
+                save_file = os.path.join(
+                    save_path, f"step_{str(rt_config['current_step'])}_predict.json"
+                )
+            else:
+                save_file = os.path.join(save_path, "predict.json")
+            logger.info(f"Save the {stage} predict data at {save_file}")
+            with open(save_file, "w") as f:
+                json.dump(predicts, f, indent=4, ensure_ascii=False)
 
     @property
     def without_ground_truth_stage(self) -> set:

@@ -19,7 +19,7 @@ from intc import (
     SubModule,
     cregister,
 )
-from lightning.pytorch.callbacks import StochasticWeightAveraging
+from lightning.pytorch.callbacks import Callback, StochasticWeightAveraging
 
 from dlk.utils.register import register
 
@@ -27,6 +27,11 @@ from dlk.utils.register import register
 @cregister("callback", "weight_average")
 class StochasticWeightAveragingCallbackConfig(Base):
     """callback for the Stochastic Weight Averaging to average a model weight on the training process"""
+
+    use_swa = BoolField(
+        value=True,
+        help="whether use swa, effective on the imodel, if the config include swa and not set use_swa to False, default is True",
+    )
 
     swa_lrs = AnyField(
         value=None,
@@ -62,8 +67,9 @@ class StochasticWeightAveragingCallback(object):
     def __init__(self, config: StochasticWeightAveragingCallbackConfig):
         super().__init__()
         self.config = config._to_dict(only_para=True)
+        self.use_swa = self.config.pop("use_swa")
 
-    def __call__(self, rt_config: Dict) -> StochasticWeightAveraging:
+    def __call__(self, rt_config: Dict) -> Union[StochasticWeightAveraging, Callback]:
         """return StochasticWeightAveraging object
 
         Args:
@@ -73,4 +79,7 @@ class StochasticWeightAveragingCallback(object):
             StochasticWeightAveraging object
 
         """
+        if not self.use_swa:
+            return Callback()
+
         return StochasticWeightAveraging(**self.config)

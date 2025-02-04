@@ -29,6 +29,19 @@ from intc import (
 )
 from intc.utils import fix_trace
 
+import dlk.adv_method
+import dlk.callback
+import dlk.data.data_collate
+import dlk.data.datamodule
+import dlk.data.dataset
+import dlk.data.postprocessor
+import dlk.imodel
+import dlk.initmethod
+import dlk.loss
+import dlk.nn
+import dlk.optimizer
+import dlk.scheduler
+import dlk.trainer
 from dlk.utils.io import open
 from dlk.utils.register import register, register_module_name
 
@@ -66,6 +79,7 @@ class Train(object):
         checkpoint: str = "",
         state_dict_only=True,
         strict=False,
+        update_config: Union[Dict, None] = None,
     ):
         super(Train, self).__init__()
         config_dict = {}
@@ -78,7 +92,7 @@ class Train(object):
 
         self.checkpoint = checkpoint
         self.state_dict_only = state_dict_only
-        self.configs = Parser(config_dict).parser_init()
+        self.configs = Parser(config_dict, update_config=update_config).parser_init()
         if self.checkpoint:
             assert (
                 len(self.configs) == 1
@@ -132,7 +146,6 @@ class Train(object):
             None
 
         """
-        log_path = os.path.join(config.log_dir, name, "log.txt")
         with open(os.path.join(config.log_dir, name, "config.json"), "w") as f:
             json.dump({"@fit": config._to_dict()}, f, ensure_ascii=False, indent=4)
 
@@ -161,7 +174,7 @@ class Train(object):
         datamodule, data = self.get_datamodule(config, world_size=trainer.world_size)
 
         # init imodel and inject the origin test and valid data
-        imodel = self.get_imodel(config, data, hyper_config)
+        imodel = self.get_imodel(config, data, hyper_config, name)
 
         # start training
         if "valid" in data or "train" in data:
@@ -233,7 +246,7 @@ class Train(object):
         )
         return trainer
 
-    def get_imodel(self, config: DLKFitConfig, data, hyper_config):
+    def get_imodel(self, config: DLKFitConfig, data, hyper_config, name):
         """get the imodel decided by config, and inject the origin test and valid data
 
         Args:
@@ -253,6 +266,8 @@ class Train(object):
             rt_config={
                 "hp_metrics": config.hp_metrics,
                 "hyper_config": hyper_config,
+                "name": name,
+                "log_dir": config.log_dir,
             },
         )
         if self.checkpoint:

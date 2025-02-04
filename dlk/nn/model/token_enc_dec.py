@@ -4,9 +4,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 
-import copy
-import math
-from typing import Dict, List, Optional
+from typing import Dict
 
 import torch
 import torch.nn as nn
