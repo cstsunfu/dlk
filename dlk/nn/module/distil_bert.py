@@ -44,6 +44,10 @@ class DistilBertWrapConfig:
     from_pretrain = BoolField(value=True, help="whether to load the pretrained model")
     freeze = BoolField(value=False, help="whether to freeze the model")
     dropout = FloatField(value=0.0, minimum=0.0, maximum=1.0, help="the dropout rate")
+    return_attention = BoolField(
+        value=False,
+        help="whether to return the attention weights, BertSdpaSelfAttention does not support this",
+    )
 
 
 @register("module", "distil_bert")
@@ -119,7 +123,7 @@ class DistilBertWrap(Module):
                     attention_mask=inputs.get("attention_mask", None),
                     head_mask=inputs.get("head_mask", None),
                     inputs_embeds=inputs.get("inputs_embeds", None),
-                    output_attentions=True,
+                    output_attentions=self.config.return_attention,
                     output_hidden_states=True,
                     return_dict=False,
                 )
@@ -129,7 +133,7 @@ class DistilBertWrap(Module):
                 attention_mask=inputs.get("attention_mask", None),
                 head_mask=inputs.get("head_mask", None),
                 inputs_embeds=inputs.get("inputs_embeds", None),
-                output_attentions=True,
+                output_attentions=self.config.return_attention,
                 output_hidden_states=True,
                 return_dict=False,
             )

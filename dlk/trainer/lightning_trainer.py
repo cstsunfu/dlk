@@ -7,7 +7,7 @@ import logging
 import os
 from typing import Dict, List
 
-import torch.nn as nn
+import torch
 from intc import (
     MISSING,
     AnyField,
@@ -23,11 +23,10 @@ from intc import (
     cregister,
 )
 from lightning import Trainer as PLTrainer
+from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import TensorBoardLogger
-from torch.functional import Tensor
+from ray import train as ray_train
 
-from dlk.utils.get_root import get_root
-from dlk.utils.io import open
 from dlk.utils.register import register, register_module_name
 
 ogger = logging.getLogger(__name__)
@@ -206,7 +205,7 @@ class LightningTrainerConfig(Base):
         help="""Accumulates gradients over k batches before stepping the optimizer. Default: 1.""",
     )
     gradient_clip_val = FloatField(
-        value=5.0,
+        value=2.0,
         additions=[None],
         help=""" 
         The value at which to clip gradients.
@@ -269,6 +268,52 @@ class LightningTrainerConfig(Base):
     )
 
 
+class RayTuneReportCallback(Callback):
+
+    def __init__(self, report_stage: str = "train-epoch-end"):
+        """
+        Callback to report metrics to Ray Tune.
+        Args:
+            report_stage (str): The stage at which to report the results.
+                Options are "train-epoch-end", "validation-epoch-end", "test-epoch-end".
+        """
+        super().__init__()
+        self.report_stage = report_stage
+
+    def _report(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        epoch = trainer.current_epoch
+        step = trainer.global_step
+        logs = trainer.callback_metrics
+        logs = {
+            k: v.item() if isinstance(v, torch.Tensor) else v for k, v in logs.items()
+        }
+        logs["epoch"] = epoch
+        logs["step"] = step
+
+        ray_train.report(logs)
+
+    def on_validation_epoch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        """Called when the val epoch ends."""
+        if self.report_stage == "validation-epoch-end":
+            self._report(trainer, pl_module)
+
+    def on_train_epoch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        """Called when the train epoch ends."""
+        if self.report_stage == "train-epoch-end":
+            self._report(trainer, pl_module)
+
+    def on_test_epoch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
+        """Called when the test epoch ends."""
+        if self.report_stage == "test-epoch-end":
+            self._report(trainer, pl_module)
+
+
 @register("trainer", "lightning")
 class LightningTrainer(object):
     """pytorch-lightning trainer"""
@@ -296,6 +341,8 @@ class LightningTrainer(object):
                     "callback", register_module_name(callback_config._module_name)
                 )(callback_config)(rt_config=rt_config)
             )
+        if rt_config.get("ray_tune_report_stage", None):
+            callbacks.append(RayTuneReportCallback())
 
         config_dict["callbacks"] = callbacks
         config_dict["default_root_dir"] = rt_config["log_dir"]

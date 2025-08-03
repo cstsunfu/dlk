@@ -27,6 +27,7 @@ from intc import (
     SubModule,
     cregister,
 )
+from tabulate import tabulate
 from tokenizers import Tokenizer
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
@@ -62,8 +63,13 @@ class SpanRelationPostProcessorConfig(BasePostProcessorConfig):
     )
 
     class InputMap:
-        entity_logits = StrField(value="entity_logits", help="the entity logits")
-        relation_logits = StrField(value="relation_logits", help="the relation logits")
+        logits = StrField(value="logits", help="the entity logits")
+        head_logits = StrField(
+            value="head_logits", help="the head2head relation logits"
+        )
+        tail_logits = StrField(
+            value="tail_logits", help="the tail2tail relation logits"
+        )
         index = StrField(value="_index", help="the index of the sample")
 
     input_map = NestField(
@@ -103,6 +109,14 @@ class SpanRelationPostProcessorConfig(BasePostProcessorConfig):
         help="the ignore labels, if the entity label in this list, we will ignore this entity",
     )
     ignore_relations = ListField(value=[], help="the ignore relations")
+    entity_threshold = FloatField(
+        value=0.0,
+        help="the threshold of the entity logits, if the entity logits < this value, we will ignore this entity",
+    )
+    relation_threshold = FloatField(
+        value=0.0,
+        help="the threshold of the relation logits, if the relation logits < this value, we will ignore this relation",
+    )
 
 
 @register("postprocessor", "span_relation")
@@ -164,30 +178,61 @@ class SpanRelationPostProcessor(BasePostProcessor):
             )
         predicts = []
         for outputs in list_batch_outputs:
-            batch_entity_logits = outputs[self.config.input_map.entity_logits]
-            batch_relation_logits = outputs[self.config.input_map.relation_logits]
+            outputs[self.config.input_map.logits] = (
+                outputs[self.config.input_map.logits].float().cpu().numpy()
+            )
+            outputs[self.config.input_map.head_logits] = (
+                outputs[self.config.input_map.head_logits].float().cpu().numpy()
+            )
+            outputs[self.config.input_map.tail_logits] = (
+                outputs[self.config.input_map.tail_logits].float().cpu().numpy()
+            )
 
-            indexes = list(outputs[self.config.input_map.index])
-            for entity_logits, relation_logits, index in zip(
-                batch_entity_logits, batch_relation_logits, indexes
-            ):
-                one_ins_info = self._process4predict(
-                    entity_logits, relation_logits, index, origin_data
-                )
-                predicts.append(one_ins_info)
+            predicts.extend(
+                self.predict_one_batch(stage, outputs, origin_data, rt_config)
+            )
+        return predicts
+
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        batch_logits = batch_output[self.config.input_map.logits]
+        batch_head_logits = batch_output[self.config.input_map.head_logits]
+        batch_tail_logits = batch_output[self.config.input_map.tail_logits]
+        indexes = batch_output[self.config.input_map.index]
+        predicts = []
+        for i, (logits, head_logits, tail_logits, index) in enumerate(
+            zip(batch_logits, batch_head_logits, batch_tail_logits, indexes)
+        ):
+            one_ins_info = self._process4predict(
+                logits, head_logits, tail_logits, index, origin_data
+            )
+            one_ins_info["predict_extend_return"] = self.gather_predict_extend_data(
+                batch_output, i, self.config.predict_extend_return
+            )
+            predicts.append(one_ins_info)
         return predicts
 
     def _process4predict(
         self,
-        entity_logits: torch.FloatTensor,
-        relation_logits: torch.FloatTensor,
+        logits,
+        head_logits,
+        tail_logits,
         index: int,
         origin_data: pd.DataFrame,
     ) -> Dict:
         """gather the predict and origin text and ground_truth_entities_info for predict
 
         Args:
-            entity_logits: the predict entity span logits
+            logits: the predict entity span logits
             relation_logits: the predict relation logits
             index: the data index in origin_data
             origin_data: the origin pd.DataFrame
@@ -249,122 +294,62 @@ class SpanRelationPostProcessor(BasePostProcessor):
 
         predict_entities_id_info_map = {}
         entities_in_relations_id = set()
-        predict_entity_ids = entity_logits.argmax(-1).cpu().numpy()
+        max_entities = rel_token_len
 
-        # gather all predicted entities
-        entity_set_d = (
-            {}
-        )  # set_d, set_e, set_t defined in https://arxiv.org/pdf/2010.13415.pdf Algorithm 1
-        entity_cnt = 0
-        for i in range(rel_token_len):
-            for j in range(i, rel_token_len):
-                if word_ids[i] is None or word_ids[j] is None:
-                    continue
-                predict_entity_id = predict_entity_ids[i][j]
-                predict_entity = self.entity_label_vocab[predict_entity_id]
-                if predict_entity in {
-                    self.entity_label_vocab.pad,
-                    self.entity_label_vocab.unknown,
-                }:
-                    continue
-                else:
-                    entity_info = _get_entity_info(
-                        [i, j], offset_mapping, word_ids, predict_entity
-                    )
-                    if entity_info:
-                        entity_id = str(uuid.uuid1())
-                        predict_entities_id_info_map[entity_id] = entity_info
-                        entity_set_d[i] = entity_set_d.get(i, [])
-                        entity_set_d[i].append((i, j, entity_id))
-                        entity_cnt += 1
-            if entity_cnt > rel_token_len:
-                # HACK: too many predict, maybe wrong
+        for label_id, start, end in (
+            np.argwhere(
+                logits[:, :rel_token_len, :rel_token_len] > self.config.entity_threshold
+            )
+            .astype(int)
+            .tolist()
+        ):
+            predict_entity_label = self.entity_label_vocab[label_id]
+            entity_info = _get_entity_info(
+                [start, end], offset_mapping, word_ids, predict_entity_label
+            )
+            if entity_info:
+                entity_id = str(uuid.uuid1())
+                predict_entities_id_info_map[entity_id] = entity_info
+            if len(predict_entities_id_info_map) > max_entities:
+                # HACK: if the predict entities is more than max_entities, we will stop
+                predict_entities_id_info_map = {}
+                entities_in_relations_id = set()
                 break
 
-        # all predicted relations entity tail pair
-        entity_tail_pair_set_e = (
-            set()
-        )  # for each element (first_entity_tail_token_idx, second_entity_tail_token_idx, relation_idx)
-        entity_tail_pair_set_e_with_relation_id = (
-            set()
-        )  # for each element (first_entity_tail_token_idx, second_entity_tail_token_idx, relation_idx, tail_relation_label_id)
-
-        # all candidate relation set(only consider the entity head pair and the entity_set_d)
-        candidate_relation_set_c = (
-            set()
-        )  # for each element (first_entity_info, second_entity_info, relation_idx, head_relation_label_id)
-        candidate_cnt = 0
-        for relation_idx in range(self.config.relation_groups):
-            head_to_head_logits = relation_logits[relation_idx * 2]
-            tail_to_tail_logits = relation_logits[relation_idx * 2 + 1]
-            head_to_head_ids = head_to_head_logits.argmax(-1).cpu().numpy()
-            tail_to_tail_ids = tail_to_tail_logits.argmax(-1).cpu().numpy()
-            for i in range(rel_token_len):
-                if candidate_cnt > 2 * rel_token_len:
-                    # HACK: too many predict, maybe wrong
-                    break
-                for j in range(i if self.config.sym else 0, rel_token_len):
-                    if word_ids[i] is None or word_ids[j] is None:
-                        continue
-                    predict_tail_id = tail_to_tail_ids[i][j]
-                    predict_tail_relation = self.config.relation_label_vocab[
-                        predict_tail_id
-                    ]
-                    if predict_tail_relation not in {
-                        self.relation_label_vocab.pad,
-                        self.relation_label_vocab.unknown,
-                    }:
-                        entity_tail_pair_set_e.add((i, j, relation_idx))
-                        entity_tail_pair_set_e_with_relation_id.add(
-                            (i, j, relation_idx, predict_tail_id)
-                        )
-
-                    predict_head_id = head_to_head_ids[i][j]
-                    predict_head_relation = self.relation_label_vocab[predict_head_id]
-                    if predict_head_relation not in {
-                        self.relation_label_vocab.pad,
-                        self.relation_label_vocab.unknown,
-                    }:
-                        for first_entity in entity_set_d.get(i, []):
-                            for second_entity in entity_set_d.get(j, []):
-                                candidate_relation_set_c.add(
-                                    (
-                                        first_entity,
-                                        second_entity,
-                                        relation_idx,
-                                        predict_head_id,
-                                    )
-                                )
-                                candidate_cnt += 1
         predict_relations_info = []
-        for candidate_relation in candidate_relation_set_c:
-            (
-                first_entity,
-                second_entity,
-                relation_idx,
-                predict_head_id,
-            ) = candidate_relation
-            if self.config.sym and first_entity[1] > second_entity[1]:
-                first_entity, second_entity = second_entity, first_entity
-            if (
-                first_entity[1],
-                second_entity[1],
-                relation_idx,
-            ) in entity_tail_pair_set_e:
-                # HACK: if (first_entity[1], second_entity[1], relation_idx, predict_head_id) not in entity_tail_pair_set_e_with_relation_id, we can do better on it
-                predict_label = self.relation_label_vocab[predict_head_id]
+        entity_ids = list(predict_entities_id_info_map.keys())
+        for from_entity_id in entity_ids:
+            for to_entity_id in entity_ids:
+                from_entity_info = predict_entities_id_info_map[from_entity_id]
+                from_h, from_t = (
+                    from_entity_info["sub_token_start"],
+                    from_entity_info["sub_token_end"],
+                )
+                to_entity_info = predict_entities_id_info_map[to_entity_id]
+                to_h, to_t = (
+                    to_entity_info["sub_token_start"],
+                    to_entity_info["sub_token_end"],
+                )
 
-                if first_entity[2] not in entities_in_relations_id:
-                    entities_in_relations_id.add(first_entity[2])
-                if second_entity[2] not in entities_in_relations_id:
-                    entities_in_relations_id.add(second_entity[2])
-                predict_relation_info = {
-                    "from": first_entity[2],
-                    "to": second_entity[2],
-                    "labels": [predict_label],
-                }
-                predict_relations_info.append(predict_relation_info)
-
+                p1s = np.where(
+                    head_logits[:, from_h, to_h] > self.config.relation_threshold
+                )[0]
+                p2s = np.where(
+                    tail_logits[:, from_t, to_t] > self.config.relation_threshold
+                )[0]
+                ps = set(p1s) & set(p2s)
+                labels = []
+                for p in ps:
+                    labels.append(self.relation_label_vocab[p])
+                if labels:
+                    predict_relation_info = {
+                        "from": from_entity_id,
+                        "to": to_entity_id,
+                        "labels": labels,
+                    }
+                    entities_in_relations_id.add(from_entity_id)
+                    entities_in_relations_id.add(to_entity_id)
+                    predict_relations_info.append(predict_relation_info)
         entity_ids = entities_in_relations_id
         if self.config.unrelated_entity:
             entity_ids = predict_entities_id_info_map.keys()
@@ -415,12 +400,6 @@ class SpanRelationPostProcessor(BasePostProcessor):
             relation_recall,
             relation_f1,
         ) = self._do_calc_relation_metrics(predicts, list_batch_outputs)
-        logger.info(
-            f"{real_name:>8}_entity_precision: {entity_precision*100:.2f}, {real_name:>8}_recall: {entity_recall*100:.2f}, {real_name:>8}_f1: {entity_f1*100:.2f}"
-        )
-        logger.info(
-            f"{real_name:>8}_relation_precision: {relation_precision*100:.2f}, {real_name:>8}_recall: {relation_recall*100:.2f}, {real_name:>8}_f1: {relation_f1*100:.2f}"
-        )
         return {
             f"{real_name}_ent_p": entity_precision * 100,
             f"{real_name}_ent_r": entity_recall * 100,
@@ -594,6 +573,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
                 return 0.0
             return a / b
 
+        category_data = []
         for key in relation_match_info:
             tp = relation_match_info[key]["match"]
             fn = relation_match_info[key]["miss"]
@@ -605,13 +585,37 @@ class SpanRelationPostProcessor(BasePostProcessor):
             all_tp += tp
             all_fn += fn
             all_fp += fp
-            logger.info(
-                f"For {'relation':16} 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%"
+            category_data.append(
+                [
+                    key,
+                    f"{precision*100:.2f}%",
+                    f"{recall*100:.2f}%",
+                    f"{f1 * 100:.2f}%",
+                    tp,
+                    fp,
+                    fn,
+                ]
             )
 
         precision = _care_div(all_tp, all_tp + all_fp)
         recall = _care_div(all_tp, all_tp + all_fn)
         f1 = 2 * _care_div(precision * recall, precision + recall)
+        category_data.append(
+            [
+                "Overall",
+                f"{precision*100:.2f}%",
+                f"{recall*100:.2f}%",
+                f"{f1 * 100:.2f}%",
+                all_tp,
+                all_fp,
+                all_fn,
+            ]
+        )
+        headers = ["Relation Type", "Precision", "Recall", "F1", "TP", "FP", "FN"]
+        table = tabulate(category_data, headers, tablefmt="rounded_grid")
+
+        logger.info("\nRelation Metrics:\n" + table)
+
         return precision, recall, f1
 
     def _do_calc_entity_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
@@ -722,6 +726,8 @@ class SpanRelationPostProcessor(BasePostProcessor):
                     category_fp[key] = category_fp.get(key, 0) + fp
 
             all_tp, all_fn, all_fp = 0, 0, 0
+
+            category_data = []
             for key in category_tp:
                 tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
                 all_tp += tp
@@ -730,12 +736,35 @@ class SpanRelationPostProcessor(BasePostProcessor):
                 precision = _care_div(tp, tp + fp)
                 recall = _care_div(tp, tp + fn)
                 f1 = _care_div(2 * precision * recall, precision + recall)
-                logger.info(
-                    f"For {'entity':16} 「{key[:16]:16}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%"
+                category_data.append(
+                    [
+                        key,
+                        f"{precision*100:.2f}%",
+                        f"{recall*100:.2f}%",
+                        f"{f1 * 100:.2f}%",
+                        tp,
+                        fp,
+                        fn,
+                    ]
                 )
             precision = _care_div(all_tp, all_tp + all_fp)
             recall = _care_div(all_tp, all_tp + all_fn)
             f1 = _care_div(2 * precision * recall, precision + recall)
+            category_data.append(
+                [
+                    "Overall",
+                    f"{precision*100:.2f}%",
+                    f"{recall*100:.2f}%",
+                    f"{f1 * 100:.2f}%",
+                    all_tp,
+                    all_fp,
+                    all_fn,
+                ]
+            )
+            headers = ["Entity Type", "Precision", "Recall", "F1", "TP", "FP", "FN"]
+            table = tabulate(category_data, headers, tablefmt="rounded_grid")
+
+            logger.info("\nEntity Metrics:\n" + table)
             return precision, recall, f1
 
         all_predicts = []

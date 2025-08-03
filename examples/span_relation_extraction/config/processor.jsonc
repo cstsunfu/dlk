@@ -12,7 +12,7 @@
         ],
         "do_save": true,
         "@subprocessor@fast_tokenizer": {
-            "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json"
+            "tokenizer_path": "./hfl/chinese-roberta-wwm-ext/tokenizer.json"
         },
         "@subprocessor@token_gather#entity": {
             "token_vocab": "label_vocab#entity.json",
@@ -22,7 +22,8 @@
                     "trace": "labels"
                 }
             ],
-            "unk": "[UNK]"
+            "unk": null,
+            "pad": null
         },
         "@subprocessor@token_gather#relation": {
             "token_vocab": "label_vocab#relation.json",
@@ -32,20 +33,23 @@
                     "trace": "labels"
                 }
             ],
-            "unk": "[UNK]"
+            "unk": null,
+            "pad": null
         },
         "@subprocessor@span_cls_relabel": {
             "drop": "none",
             "vocab": "label_vocab#entity.json",
             "output_map": {
-                "label_ids": "entity_label_ids"
+                "sparse_label_ids": "sparse_label_ids"
             }
         },
         "@subprocessor@span_relation_relabel": {
             "vocab": "label_vocab#relation.json",
             "sym": false,
+            "strict": false,
             "output_map": {
-                "label_ids": "relation_label_ids"
+                "sparse_head_label_ids": "sparse_head_label_ids",
+                "sparse_tail_label_ids": "sparse_tail_label_ids"
             }
         }
     }

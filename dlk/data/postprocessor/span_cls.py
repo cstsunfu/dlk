@@ -26,6 +26,7 @@ from intc import (
     SubModule,
     cregister,
 )
+from tabulate import tabulate
 from tokenizers import Tokenizer
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
@@ -80,6 +81,10 @@ class SpanClsPostProcessorConfig(BasePostProcessorConfig):
     ignore_labels = ListField(
         value=["O", "X", "S", "E"],
         help="the ignore labels, if the entity label in this list, we will ignore this entity",
+    )
+    threshold = FloatField(
+        value=0.0,
+        help="the threshold of the logits, if the logits is less than this value, we will ignore this entity",
     )
 
 
@@ -154,24 +159,28 @@ class SpanClsPostProcessor(BasePostProcessor):
         ]
 
         predict_entities_info = []
-        predict_label_ids = predict_logits.argmax(-1).cpu().numpy()
-        for i in range(rel_token_len):
-            for j in range(i, rel_token_len):
-                if word_ids[i] is None or word_ids[j] is None:
-                    continue
-                predict_label_id = predict_label_ids[i][j]
-                predict_label = self.label_vocab[predict_label_id]
-                if (
-                    predict_label == self.label_vocab.pad
-                    or predict_label == self.label_vocab.unknown
-                ):
-                    continue
-                else:
-                    entity_info = _get_entity_info(
-                        [i, j], offset_mapping, word_ids, predict_label
-                    )
-                    if entity_info:
-                        predict_entities_info.append(entity_info)
+
+        max_entities = rel_token_len
+        for label_id, start, end in (
+            np.argwhere(
+                predict_logits[:, :rel_token_len, :rel_token_len]
+                > self.config.threshold
+            )
+            .astype(int)
+            .tolist()
+        ):
+            predict_label = self.label_vocab[label_id]
+            entity_info = _get_entity_info(
+                [start, end], offset_mapping, word_ids, predict_label
+            )
+            if entity_info:
+                predict_entities_info.append(entity_info)
+
+            if len(predict_entities_info) > max_entities:
+                # HACK: if the predict entities is more than max_entities, we will stop
+                predict_entities_info = []
+                break
+
         one_ins["predict_entities_info"] = predict_entities_info
         return one_ins
 
@@ -217,17 +226,35 @@ class SpanClsPostProcessor(BasePostProcessor):
 
         predicts = []
         for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.input_map.logits]
-            # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
+            outputs[self.config.input_map.logits] = (
+                outputs[self.config.input_map.logits].float().cpu().numpy()
+            )
+            predicts.extend(
+                self.predict_one_batch(stage, outputs, origin_data, rt_config)
+            )
 
-            indexes = list(outputs[self.config.input_map.index])
+        return predicts
 
-            for i, (predict, index) in enumerate(zip(batch_logits, indexes)):
-                one_ins = self._process4predict(predict, index, origin_data)
-                one_ins["predict_extend_return"] = self.gather_predict_extend_data(
-                    outputs, i, self.config.predict_extend_return
-                )
-                predicts.append(one_ins)
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        batch_logits = batch_output[self.config.input_map.logits]
+        indexes = batch_output[self.config.input_map.index]
+        predicts = []
+        for i, (predict, index) in enumerate(zip(batch_logits, indexes)):
+            one_ins = self._process4predict(predict, index, origin_data)
+            one_ins["predict_extend_return"] = self.gather_predict_extend_data(
+                batch_output, i, self.config.predict_extend_return
+            )
+            predicts.append(one_ins)
         return predicts
 
     def do_calc_metrics(
@@ -359,6 +386,7 @@ class SpanClsPostProcessor(BasePostProcessor):
                     category_fn[key] = category_fn.get(key, 0) + fn
                     category_fp[key] = category_fp.get(key, 0) + fp
 
+            category_data = []
             all_tp, all_fn, all_fp = 0, 0, 0
             for key in category_tp:
                 tp, fn, fp = category_tp[key], category_fn[key], category_fp[key]
@@ -368,12 +396,38 @@ class SpanClsPostProcessor(BasePostProcessor):
                 precision = _care_div(tp, tp + fp)
                 recall = _care_div(tp, tp + fn)
                 f1 = _care_div(2 * precision * recall, precision + recall)
-                logger.info(
-                    f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%"
+
+                category_data.append(
+                    [
+                        key,
+                        f"{precision*100:.2f}%",
+                        f"{recall*100:.2f}%",
+                        f"{f1 * 100:.2f}%",
+                        tp,
+                        fp,
+                        fn,
+                    ]
                 )
             precision = _care_div(all_tp, all_tp + all_fp)
             recall = _care_div(all_tp, all_tp + all_fn)
             f1 = _care_div(2 * precision * recall, precision + recall)
+
+            category_data.append(
+                [
+                    "Overall",
+                    f"{precision*100:.2f}%",
+                    f"{recall*100:.2f}%",
+                    f"{f1 * 100:.2f}%",
+                    all_tp,
+                    all_fp,
+                    all_fn,
+                ]
+            )
+
+            headers = ["Entity Type", "Precision", "Recall", "F1", "TP", "FP", "FN"]
+            table = tabulate(category_data, headers, tablefmt="rounded_grid")
+
+            logger.info("\nEntity Metrics:\n" + table)
             return precision, recall, f1
 
         all_predicts = []
@@ -387,9 +441,6 @@ class SpanClsPostProcessor(BasePostProcessor):
 
         precision, recall, f1 = _calc_score(all_predicts, all_ground_truths)
         real_name = self.loss_name_map(stage)
-        logger.info(
-            f"{real_name}_precision: {precision*100}, {real_name}_recall: {recall*100}, {real_name}_f1: {f1*100}"
-        )
         return {
             f"{real_name}_precision": precision * 100,
             f"{real_name}_recall": recall * 100,

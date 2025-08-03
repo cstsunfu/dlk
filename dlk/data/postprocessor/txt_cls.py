@@ -141,39 +141,54 @@ class TxtClsPostProcessor(BasePostProcessor):
         """
         results = []
         for outputs in list_batch_outputs:
-            logits = outputs[self.config.input_map.logits].detach()
-            assert len(logits.shape) == 2
-            # predict_indexes = list(torch.argmax(logits, 1))
-            indexes = list(outputs[self.config.input_map.index])
+            outputs[self.config.input_map.logits] = (
+                outputs[self.config.input_map.logits].detach().cpu().numpy()
+            )
+        return results
 
-            if self.config.input_map.label_ids in outputs:
-                label_ids = outputs[self.config.input_map.label_ids]
-            else:
-                label_ids = [None] * len(indexes)
-            for i, (one_logits, index, label_id) in enumerate(
-                zip(logits, indexes, label_ids)
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        results = []
+        logits = batch_output[self.config.input_map.logits]
+        assert len(logits.shape) == 2
+        indexes = list(batch_output[self.config.input_map.index])
+
+        if self.config.input_map.label_ids in batch_output:
+            label_ids = batch_output[self.config.input_map.label_ids]
+        else:
+            label_ids = [None] * len(indexes)
+        for i, (one_logits, index, label_id) in enumerate(
+            zip(logits, indexes, label_ids)
+        ):
+            one_ins = self._get_origin_data(origin_data.iloc[int(index)])
+
+            max_val = np.max(one_logits)  # 防止数值溢出
+            exp_logits = np.exp(one_logits - max_val)
+            softmax_logits = exp_logits / np.sum(exp_logits)
+
+            label_indeies = np.argsort(-softmax_logits)[: self.top_k]
+            label_values = softmax_logits[label_indeies]
+
+            predict = {}
+            for i, (label_value, label_index) in enumerate(
+                zip(label_values, label_indeies)
             ):
-                one_ins = self._get_origin_data(origin_data.iloc[int(index)])
-                one_logits = torch.softmax(one_logits, -1)
-                label_values, label_indeies = torch.topk(one_logits, self.top_k, dim=-1)
-                predict = {}
-                for i, (label_value, label_index) in enumerate(
-                    zip(label_values, label_indeies)
-                ):
-                    label_name = self.label_vocab.get_word(int(label_index))
-                    predict[i] = [label_name, float(label_value)]
-                ground_truth = []
-                if label_id is not None and label_id.shape:
-                    for one_label_id in label_id:
-                        ground_truth.append(self.label_vocab.get_word(one_label_id))
-                elif label_id:
-                    ground_truth.append(self.label_vocab.get_word(label_id))
-                one_ins["labels"] = ground_truth
-                one_ins["predicts"] = predict
-                one_ins["predict_extend_return"] = self.gather_predict_extend_data(
-                    outputs, i, self.config.predict_extend_return
-                )
-                results.append(one_ins)
+                label_name = self.label_vocab.get_word(int(label_index))
+                predict[i] = [label_name, float(label_value)]
+            one_ins["predicts"] = predict
+            one_ins["predict_extend_return"] = self.gather_predict_extend_data(
+                batch_output, i, self.config.predict_extend_return
+            )
+            results.append(one_ins)
         return results
 
     def do_calc_metrics(

@@ -37,6 +37,10 @@ class BartDecoderWrapConfig(Base):
     pretrained_model_path = StrField(value="???", help="the pretrained model path")
     from_pretrain = BoolField(value=True, help="from pretrained or not")
     freeze = BoolField(value=False, help="freeze or not")
+    return_attention = BoolField(
+        value=False,
+        help="whether to return the attention weights, BertSdpaSelfAttention does not support this",
+    )
 
 
 @register("module", "bart_decoder")
@@ -132,7 +136,7 @@ class BartDecoderWrap(Module):
                     past_key_values=inputs.get("past_caches", None),
                     inputs_embeds=inputs.get("inputs_embeds", None),
                     use_cache=True,
-                    output_attentions=True,
+                    output_attentions=False,
                     output_hidden_states=True,
                     return_dict=False,
                 )
@@ -145,7 +149,7 @@ class BartDecoderWrap(Module):
                 past_key_values=inputs.get("past_caches", None),
                 inputs_embeds=inputs["inputs_embeds"],
                 use_cache=True,
-                output_attentions=True,
+                output_attentions=self.config.return_attention,
                 output_hidden_states=True,
                 return_dict=False,
             )

@@ -53,7 +53,10 @@ class SpanClsRelabelConfig(BaseSubProcessorConfig):
     )
 
     class OutputMap:
-        label_ids = StrField(value="label_ids", help="the label ids")
+        sparse_label_ids = StrField(
+            value="sparse_label_ids",
+            help="the sparse label ids in format: [[start_idx, end_idx, label_id], ...]",
+        )
         processed_entities_info = StrField(
             value="processed_entities_info", help="the processed entities info"
         )
@@ -78,7 +81,7 @@ class SpanClsRelabelConfig(BaseSubProcessorConfig):
         value=1,
         help="if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy",
     )
-    mask_fill = IntField(value=-100, help="the mask fill for the label")
+    # MODIFIED: This is now less relevant for the output format, but kept for potential future use or consistency.
     mask_first_sent = BoolField(
         value=False, help="whether mask the first sentence for anwering"
     )
@@ -94,7 +97,8 @@ class SpanClsRelabelConfig(BaseSubProcessorConfig):
 @register("subprocessor", "span_cls_relabel")
 class SpanClsRelabel(BaseSubProcessor):
     """
-    Relabel the char level entity span to token level and construct matrix
+    Relabel the char level entity span to token level and construct a sparse list of labels.
+    The output format is a list of [start_token_index, end_token_index, label_id].
     """
 
     def __init__(self, stage: str, config: SpanClsRelabelConfig, meta_dir: str):
@@ -112,53 +116,20 @@ class SpanClsRelabel(BaseSubProcessor):
         self.vocab = Vocabulary.load_from_file(
             os.path.join(self.meta_dir, self.config.vocab)
         )
-        assert (
-            self.vocab.word2idx[self.vocab.unknown] == 0
-        ), f"For span_cls_relabel, 'unknown' must be index 0, and other labels as 1...num_label"
-        assert (
-            not self.vocab.pad
-        ), f"For span_cls_relabel, 'pad' must be index 0, and other labels as 1...num_label"
 
     def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """firstpiece relabel the data
-
-        Args:
-            data: one is like
-
-            >>> {
-            >>>     "uuid": '**-**-**-**'
-            >>>     "sentence": "Mie Merah - Buah Bit",
-            >>>     "offsets": see the offsets in fast_tokenizer
-            >>>     "entities_info": [
-            >>>                 {
-            >>>                     "end": 9,
-            >>>                     "start": 0,
-            >>>                     "labels": [
-            >>>                         "Product"
-            >>>                     ]
-            >>>                 },
-            >>>             ]
-            >>>         },
-            >>>     ],
-            >>> },
-
-            deliver_meta:
-                ignore
-        Returns:
-            relabeld data
-        """
         if not self.loaded_meta:
             self.load_meta()
 
         data[
             [
-                self.config.output_map.label_ids,
+                self.config.output_map.sparse_label_ids,
                 self.config.output_map.processed_entities_info,
             ]
         ] = data.apply(self.relabel, axis=1, result_type="expand")
         if self.config.strict:
             data.dropna(axis=0, inplace=True)
-            data.reset_index(inplace=True)
+            data.reset_index(inplace=True, drop=True)
 
         return data
 
@@ -171,20 +142,6 @@ class SpanClsRelabel(BaseSubProcessor):
         end: int,
         is_start: bool = False,
     ):
-        """find the sub_word index which the offset_list[index][0]<=position<offset_list[index][1]
-
-        Args:
-            position: position
-            offset_list: list of all tokens offsets
-            sub_word_ids: word_ids from tokenizer
-            start: start search index
-            end: end search index
-            is_start: is the position is the start of target token, if the is_start==True and cannot find return -1
-
-        Returns:
-            the index of the offset which include position
-
-        """
         while start < end:
             if sub_word_ids[start] is None:
                 start += 1
@@ -202,15 +159,15 @@ class SpanClsRelabel(BaseSubProcessor):
         return -1
 
     def relabel(self, one_ins: pd.Series):
-        """make token label, if use the first piece label please use the 'span_cls_firstpiece_relabel'
+        """
+        Creates a sparse list of labels for entity spans.
 
         Args:
             one_ins: include sentence, entity_info, offsets
 
         Returns:
-            labels(labels for each subtoken)
-            entities_info
-            processed_entities_info: for relation relabal
+            sparse_labels: A list of [start_token_idx, end_token_idx, label_id]
+            processed_entities_info: Enriched entity info with token indices
         """
         pre_clean_entities_info: List = one_ins[self.config.input_map.entities_info]
         if self.config.drop != "none":
@@ -218,13 +175,20 @@ class SpanClsRelabel(BaseSubProcessor):
         offsets: List = one_ins[self.config.input_map.offsets]
         sub_word_ids: List = one_ins[self.config.input_map.word_ids]
 
+        # Determine the start index for searching tokens, respecting sentence masking
+        mask_first_index = 0
         if self.config.mask_first_sent:
-            first_start = sub_word_ids.index(0)
-            second_start = sub_word_ids[first_start + 1 :].index(0)
-            mask_first_index = first_start + second_start + 2
-        else:
-            mask_first_index = 0  # if there is only one sentence, set to 0
+            try:
+                first_start = sub_word_ids.index(0)
+                # Find the start of the second sentence
+                second_start = sub_word_ids[first_start + 1 :].index(0)
+                # Mask includes [CLS] of sent1, sent1, [SEP], [CLS] of sent2
+                mask_first_index = first_start + second_start + 2
+            except ValueError:
+                # Only one sentence found, do not mask
+                mask_first_index = 0
 
+        # Overlap resolution logic (remains the same)
         entities_info = []
         pre_end = -1
         pre_length = 0
@@ -267,29 +231,11 @@ class SpanClsRelabel(BaseSubProcessor):
             pre_end = entity_info["end"]
             pre_length = entity_info["end"] - entity_info["start"]
 
+        # NEW: Initialize empty lists for sparse labels and processed info
+        sparse_labels = []
+        processed_entities_info = []
         offset_length = len(offsets)
 
-        unknown_id = self.vocab.get_index(self.vocab.unknown)
-        mask_matrices = np.full(
-            (offset_length, offset_length), self.config.mask_fill, dtype=np.int8
-        )
-        mask_matrices = np.tril(mask_matrices, k=-1)
-
-        unknown_matrices = np.full(
-            (offset_length, offset_length), unknown_id, dtype=np.int8
-        )
-        unknown_matrices = np.triu(unknown_matrices, k=0)
-
-        label_matrices = unknown_matrices + mask_matrices
-        if sub_word_ids[0] is None:
-            label_matrices[0, :] = self.config.mask_fill
-        if sub_word_ids[-1] is None:
-            label_matrices[:, -1] = self.config.mask_fill
-
-        if mask_first_index > 0:
-            label_matrices[:mask_first_index, :] = self.config.mask_fill
-            label_matrices[:, :mask_first_index] = self.config.mask_fill
-        processed_entities_info = []
         for entity_info in entities_info:
             if entity_info["start"] == 0 and entity_info["end"] == 0:
                 start_token_index, end_token_index = 0, 0
@@ -298,21 +244,22 @@ class SpanClsRelabel(BaseSubProcessor):
                     entity_info["start"],
                     offsets,
                     sub_word_ids,
-                    mask_first_index,
+                    mask_first_index,  # Start searching from after the mask
                     offset_length,
                     is_start=True,
                 )
+
                 if start_token_index == -1:
                     if self.config.null_to_zero_index:
                         start_token_index, end_token_index = 0, 0
                     else:
                         if self.config.strict:
                             logger.warning(
-                                f"cannot find the entity_info : {entity_info}, offsets: {offsets}, we will drop this instance"
+                                f"Cannot find start of entity: {entity_info}, offsets: {offsets}, we will drop this instance"
                             )
                             return None, None
                         logger.warning(
-                            f"cannot find the entity_info : {entity_info}, offsets: {offsets}"
+                            f"Cannot find start of entity: {entity_info}, offsets: {offsets}"
                         )
                         continue
                 else:
@@ -323,15 +270,28 @@ class SpanClsRelabel(BaseSubProcessor):
                         start_token_index,
                         offset_length,
                     )
-                    if self.config.null_to_zero_index and end_token_index == -1:
-                        start_token_index, end_token_index = 0, 0
-            assert (
-                end_token_index != -1
-            ), f"entity_info: {entity_info}, offsets: {offsets}"
+                    if end_token_index == -1:
+                        if self.config.null_to_zero_index:
+                            start_token_index, end_token_index = 0, 0
+                        else:
+                            if self.config.strict:
+                                logger.warning(
+                                    f"Cannot find end of entity: {entity_info}, offsets: {offsets}, we will drop this instance"
+                                )
+                                return None, None
+                            logger.warning(
+                                f"Cannot find end of entity: {entity_info}, offsets: {offsets}"
+                            )
+                            continue
+
             label_id = self.vocab.get_index(entity_info["labels"][0])
-            label_matrices[start_token_index, end_token_index] = label_id
+
+            # NEW: Append to the sparse list instead of filling a matrix
+            sparse_labels.append([start_token_index, end_token_index, label_id])
+
+            # Add sub_token info to entity_info for relation extraction step
             entity_info["sub_token_start"] = start_token_index
             entity_info["sub_token_end"] = end_token_index
             processed_entities_info.append(entity_info)
 
-        return label_matrices, processed_entities_info
+        return sparse_labels, processed_entities_info

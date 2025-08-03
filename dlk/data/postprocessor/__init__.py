@@ -165,6 +165,19 @@ class BasePostProcessor(object):
         """
         raise NotImplementedError
 
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def do_calc_metrics(
         self,
@@ -253,6 +266,8 @@ class BasePostProcessor(object):
             else:
                 save_file = os.path.join(save_path, "predict.json")
             logger.info(f"Save the {stage} predict data at {save_file}")
+            if not os.path.exists(save_path):
+                os.makedirs(save_path, exist_ok=True)
             with open(save_file, "w") as f:
                 json.dump(predicts, f, indent=4, ensure_ascii=False)
 

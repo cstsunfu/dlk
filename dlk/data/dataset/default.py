@@ -5,7 +5,7 @@
 
 import copy
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import pandas as pd
 import torch
@@ -107,10 +107,14 @@ class DefaultDataset(Dataset):
 
         """
         idx = idx // self.repeat_valid
+        return self.prepare_tensor(idx, self.data.iloc[idx])
+
+    def prepare_tensor(self, idx: int, item: Union[dict, pd.Series]):
         one_ins = {}
         for key, key_type in self.key_type_pairs.items():
-            one_ins[key] = torch.tensor(
-                self.data.iloc[idx][key], dtype=self.type_map[key_type]
-            )
+            if key_type in ("sparse", "object"):
+                one_ins[key] = item[key]
+                continue
+            one_ins[key] = torch.tensor(item[key], dtype=self.type_map[key_type])
         one_ins["_index"] = torch.tensor(idx, dtype=torch.long)
         return one_ins

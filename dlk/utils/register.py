@@ -26,7 +26,7 @@ class Register(object):
     def __init__(self):
         self.registry: Dict[str, Dict[str, Any]] = {}
 
-    def register(self, type_name: str, name: str) -> Callable:
+    def register(self, type_name: str, name: str = "") -> Callable:
         """register the name: module to self.registry
 
         Args:
@@ -40,8 +40,6 @@ class Register(object):
         def decorator(module):
             if type_name not in self.registry:
                 self.registry[type_name] = {}
-            if name.strip() == "":
-                raise ValueError(f"You must set a name for {module.__name__}")
 
             if name in self.registry[type_name]:
                 raise ValueError(f"The {name} is already registered in {type_name}.")
@@ -50,11 +48,11 @@ class Register(object):
 
         return decorator
 
-    def __call__(self, type_name: str, name: str) -> Callable:
+    def __call__(self, type_name: str, name: str = "") -> Callable:
         """you can directly call the object, the behavior is the same as object.register(name)"""
         return self.register(type_name, name)
 
-    def get(self, type_name: str, name: str) -> Any:
+    def get(self, type_name: str, name: str = "") -> Any:
         """get the module by name
 
         Args:

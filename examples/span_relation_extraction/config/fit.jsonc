@@ -4,11 +4,11 @@
         "log_dir": "./logs",
         "processed_data_dir": "./data/processed_data",
         "@trainer@lightning": {
-            "max_epochs": 50,
+            "max_epochs": 5,
             "devices": "auto",
             "strategy": "auto",
             "accelerator": "auto",
-            "precision": "16",
+            "precision": "bf16-mixed",
             "@callback@lr_monitor": {
                 "logging_interval": "step"
             },
@@ -16,6 +16,9 @@
                 "monitor": "val_rel_f1",
                 "mode": "max",
                 "save_top_k": 1
+            },
+            "@callback@prograss_bar": {
+                "type_bar": "rich"
             }
         },
         "@datamodule@default": {
@@ -28,29 +31,27 @@
                 "repeat_for_valid": false,
                 "key_type_pairs": {
                     "input_ids": "int",
-                    "entity_label_ids": "long",
-                    "relation_label_ids": "long",
+                    "sparse_label_ids": "sparse",
+                    "sparse_head_label_ids": "sparse",
+                    "sparse_tail_label_ids": "sparse",
                     "gather_index": "long",
                     "type_ids": "long",
                     "special_tokens_mask": "int"
                 }
             },
-            "@data_collate@default": {
+            "@data_collate@span_cls_relation": {
                 "gen_mask": {
                     "input_ids": "attention_mask"
                 },
+                "num_entity_classes": 19,
+                "num_relation_classes": 24,
                 "key_padding_pairs": {
                     "input_ids": 0,
                     "attention_mask": 0,
                     "special_tokens_mask": 0,
                     "type_ids": 0
                 },
-                "key_padding_pairs_2d": {
-                    "entity_label_ids": -100
-                },
-                "key_padding_pairs_3d": {
-                    "relation_label_ids": -100
-                }
+                "key_padding_pairs_2d": {}
             }
         },
         "@imodel@default": {
@@ -58,32 +59,41 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "pretrained_model_path": "./hfl/chinese-roberta-wwm-ext",
                     "embedding_dim": 768,
                     "dropout": 0.1
                 },
                 "@encoder@identity": {},
                 "@decoder@multi_decoder": {
-                    "@decoder@biaffine#entity": {
+                    "@decoder@bilinear#entity": {
                         "input_size": "@lambda @$$$.@embedding.embedding_dim",
-                        "output_size": 20,
-                        "dropout": 0.1,
-                        "bias": true,
-                        "active": "none",
+                        "output_size": "@lambda @$$$$$.@datamodule.@data_collate.num_entity_classes",
                         "output_map": {
-                            "logits": "entity_logits"
-                        }
+                            "logits": "logits"
+                        },
+                        "relation_position": true,
+                        "efficient": true,
+                        "apply_tril_mask": true
                     },
-                    "@decoder@biaffine#relation": {
+                    "@decoder@bilinear#head_relation": {
                         "input_size": "@lambda @$$$.@embedding.embedding_dim",
-                        "output_size": 25,
-                        "multi_matrix": 2, // 2 for head pair and tail pair
-                        "dropout": 0.1,
-                        "active": "none",
-                        "bias": true,
+                        "output_size": "@lambda @$$$$$.@datamodule.@data_collate.num_relation_classes",
                         "output_map": {
-                            "logits": "relation_logits"
-                        }
+                            "logits": "head_logits"
+                        },
+                        "relation_position": "@lambda @$$.#entity.relation_position",
+                        "efficient": "@lambda @$$.#entity.efficient",
+                        "apply_tril_mask": "@lambda @$$$$.@postprocessor.sym"
+                    },
+                    "@decoder@bilinear#tail_relation": {
+                        "input_size": "@lambda @$$$.@embedding.embedding_dim",
+                        "output_size": "@lambda @$$.#head_relation.output_size",
+                        "output_map": {
+                            "logits": "tail_logits"
+                        },
+                        "relation_position": "@lambda @$$.#entity.relation_position",
+                        "efficient": "@lambda @$$.#entity.efficient",
+                        "apply_tril_mask": "@lambda @$$$$.@postprocessor.sym"
                     }
                 }
             },
@@ -94,26 +104,28 @@
             },
             "@loss@multi_loss": {
                 "loss_collect": "sum",
-                "@loss@cross_entropy#entity": {
+                "@loss@multilabel_categorical_crossentropy#entity": {
                     "pred_truth_pair": {
-                        "entity_logits": "entity_label_ids"
+                        "logits": "label_ids"
                     },
-                    "weight": "@$$$.@model.@decoder.#entity.output_size @lambda x: [0.5]+[20]*(x-1)",
-                    "label_smoothing": 0.0001,
-                    "ignore_index": -100
+                    "label_smoothing": 1e-4
                 },
-                "@loss@cross_entropy#relation": {
+                "@loss@multilabel_categorical_crossentropy#relation_head": {
                     "pred_truth_pair": {
-                        "relation_logits": "relation_label_ids"
+                        "head_logits": "head_label_ids"
                     },
-                    "weight": "@$$$.@model.@decoder.#relation.output_size @lambda x: [0.5]+[20]*(x-1)",
-                    "ignore_index": -100,
-                    "label_smoothing": 0.0001
+                    "label_smoothing": 1e-4
+                },
+                "@loss@multilabel_categorical_crossentropy#relation_tail": {
+                    "pred_truth_pair": {
+                        "tail_logits": "tail_label_ids"
+                    },
+                    "label_smoothing": 1e-4
                 }
             },
             "@optimizer@adamw": {
                 "lr": 3e-5,
-                "eps": 1e-05,
+                "eps": 1e-06,
                 "optimizer_special_groups": {
                     "order": [
                         "decoder",
@@ -131,7 +143,7 @@
                     },
                     "decoder": {
                         "config": {
-                            "lr": 5e-4
+                            "lr": 1e-3
                         },
                         "pattern": [
                             "decoder"
@@ -142,7 +154,7 @@
             "@postprocessor@span_relation": {
                 "entity_label_vocab": "label_vocab#entity.json",
                 "relation_label_vocab": "label_vocab#relation.json",
-                "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json",
+                "tokenizer_path": "./hfl/chinese-roberta-wwm-ext/tokenizer.json",
                 "start_save_epoch": 1,
                 "sym": false
             }

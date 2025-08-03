@@ -6,26 +6,13 @@
 import json
 import logging
 import os
-import pickle as pkl
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
+from intc import MISSING, BoolField, ListField, NestField, StrField, cregister
+from tabulate import tabulate
 from tokenizers import Tokenizer
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
@@ -152,18 +139,40 @@ class SeqLabPostProcessor(BasePostProcessor):
 
         """
         predicts = []
+
+        for outputs in list_batch_outputs:
+            if not self.config.use_crf:
+                outputs[self.config.input_map.logits] = (
+                    outputs[self.config.input_map.logits].float().cpu().numpy()
+                )
+            predicts.extend(
+                self.predict_one_batch(
+                    stage=stage,
+                    batch_output=outputs,
+                    origin_data=origin_data,
+                    rt_config=rt_config,
+                )
+            )
+
+        return predicts
+
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
         if self.config.use_crf:
-            predicts = self.crf_predict(
-                list_batch_outputs=list_batch_outputs, origin_data=origin_data
-            )
+            predicts = self.crf_predict(output=batch_output, origin_data=origin_data)
         elif self.config.word_ready:
-            predicts = self.word_predict(
-                list_batch_outputs=list_batch_outputs, origin_data=origin_data
-            )
+            predicts = self.word_predict(output=batch_output, origin_data=origin_data)
         else:
-            predicts = self.predict(
-                list_batch_outputs=list_batch_outputs, origin_data=origin_data
-            )
+            predicts = self.predict(output=batch_output, origin_data=origin_data)
         return predicts
 
     def do_calc_metrics(
@@ -309,12 +318,12 @@ class SeqLabPostProcessor(BasePostProcessor):
             keys = set(list(predict.keys()) + list(ground_truth.keys()))
             for key in keys:
                 tp, fn, fp = _calc_num(predict.get(key, []), ground_truth.get(key, []))
-                # logger.info(f"{key} tp num {tp}, fn num {fn}, fp num {fp}")
                 category_tp[key] = category_tp.get(key, 0) + tp
                 category_fn[key] = category_fn.get(key, 0) + fn
                 category_fp[key] = category_fp.get(key, 0) + fp
 
         all_tp, all_fn, all_fp = 0, 0, 0
+        category_data = []
         for key in category_tp:
             if key in self.config.ignore_labels:
                 continue
@@ -325,12 +334,38 @@ class SeqLabPostProcessor(BasePostProcessor):
             precision = _care_div(tp, tp + fp)
             recall = _care_div(tp, tp + fn)
             f1 = _care_div(2 * precision * recall, precision + recall)
-            logger.info(
-                f"For entity 「{key}」, the precision={precision*100 :.2f}%, the recall={recall*100:.2f}%, f1={f1*100:.2f}%"
+            category_data.append(
+                [
+                    key,
+                    f"{precision*100:.2f}%",
+                    f"{recall*100:.2f}%",
+                    f"{f1 * 100:.2f}%",
+                    tp,
+                    fp,
+                    fn,
+                ]
             )
+
         precision = _care_div(all_tp, all_tp + all_fp)
         recall = _care_div(all_tp, all_tp + all_fn)
         f1 = _care_div(2 * precision * recall, precision + recall)
+
+        category_data.append(
+            [
+                "Overall",
+                f"{precision*100:.2f}%",
+                f"{recall*100:.2f}%",
+                f"{f1 * 100:.2f}%",
+                all_tp,
+                all_fp,
+                all_fn,
+            ]
+        )
+
+        headers = ["Entity Type", "Precision", "Recall", "F1", "TP", "FP", "FN"]
+        table = tabulate(category_data, headers, tablefmt="rounded_grid")
+
+        logger.info("\nEntity Metrics:\n" + table)
         return precision, recall, f1
 
     def get_entity_info(
@@ -423,13 +458,11 @@ class SeqLabPostProcessor(BasePostProcessor):
         one_ins["predict_entities_info"] = predict_entities_info
         return one_ins
 
-    def crf_predict(
-        self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame
-    ) -> List:
+    def crf_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
         """use the crf predict label_ids get predict info
 
         Args:
-            list_batch_outputs: the crf predict info
+            output: the crf predict info
             origin_data: the origin data
 
         Returns:
@@ -457,25 +490,19 @@ class SeqLabPostProcessor(BasePostProcessor):
             )
 
         predicts = []
-        for outputs in list_batch_outputs:
-            batch_predict = outputs[self.config.input_map.predict_seq_label]
-            # batch_special_tokens_mask = outputs[self.config.special_tokens_mask]
+        batch_predict = output[self.config.input_map.predict_seq_label]
 
-            indexes = list(outputs[self.config.input_map.index])
-            outputs = []
-
-            for predict, index in list(zip(batch_predict, indexes)):
-                one_ins = self._process4predict(predict, index, origin_data)
-                predicts.append(one_ins)
+        indexes = list(output[self.config.input_map.index])
+        for predict, index in list(zip(batch_predict, indexes)):
+            one_ins = self._process4predict(predict, index, origin_data)
+            predicts.append(one_ins)
         return predicts
 
-    def word_predict(
-        self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame
-    ) -> List:
+    def word_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
         """use the firstpiece or whole word predict label_logits get predict info
 
         Args:
-            list_batch_outputs: the predict labels logits info
+            output: the predict labels logits info
             origin_data: the origin data
 
         Returns:
@@ -503,32 +530,26 @@ class SeqLabPostProcessor(BasePostProcessor):
             )
 
         predicts = []
-        for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.input_map.logits].detach().cpu().numpy()
+        batch_logits = output[self.config.input_map.logits]
 
-            indexes = list(outputs[self.config.input_map.index])
+        indexes = list(output[self.config.input_map.index])
+        for logits, index in list(zip(batch_logits, indexes)):
+            origin_ins = origin_data.iloc[int(index)]
+            word_ids = origin_ins[self.config.origin_input_map.word_ids]
 
-            outputs = []
+            rel_token_len = len(word_ids)
+            logits = logits[:rel_token_len]
 
-            for logits, index in list(zip(batch_logits, indexes)):
-                origin_ins = origin_data.iloc[int(index)]
-                word_ids = origin_ins[self.config.origin_input_map.word_ids]
-
-                rel_token_len = len(word_ids)
-                logits = logits[:rel_token_len]
-
-                predict = logits.argmax(-1)
-                one_ins = self._process4predict(predict, index, origin_data)
-                predicts.append(one_ins)
+            predict = logits.argmax(-1)
+            one_ins = self._process4predict(predict, index, origin_data)
+            predicts.append(one_ins)
         return predicts
 
-    def predict(
-        self, list_batch_outputs: List[Dict], origin_data: pd.DataFrame
-    ) -> List:
+    def predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
         """general predict process (especially for subword)
 
         Args:
-            list_batch_outputs: the predict (sub-)labels logits info
+            output: the predict (sub-)labels logits info
             origin_data: the origin data
 
         Returns:
@@ -556,73 +577,69 @@ class SeqLabPostProcessor(BasePostProcessor):
             )
 
         predicts = []
-        for outputs in list_batch_outputs:
-            batch_logits = outputs[self.config.input_map.logits].detach().cpu().numpy()
+        batch_logits = output[self.config.input_map.logits]
 
-            indexes = list(outputs[self.config.input_map.index])
+        indexes = list(output[self.config.input_map.index])
 
-            outputs = []
+        for logits, index in list(zip(batch_logits, indexes)):
+            one_ins = {}
+            origin_ins = origin_data.iloc[int(index)]
 
-            for logits, index in list(zip(batch_logits, indexes)):
-                one_ins = {}
-                origin_ins = origin_data.iloc[int(index)]
+            input_ids = origin_ins[self.config.origin_input_map.input_ids]
+            one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
+            one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
+            one_ins["entities_info"] = origin_ins[
+                self.config.origin_input_map.entities_info
+            ]
 
-                input_ids = origin_ins[self.config.origin_input_map.input_ids]
-                one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
-                one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
-                one_ins["entities_info"] = origin_ins[
-                    self.config.origin_input_map.entities_info
-                ]
+            rel_token_len = len(input_ids)
 
-                rel_token_len = len(input_ids)
-
-                special_tokens_mask = np.array(
-                    origin_data.iloc[int(index)][
-                        self.config.origin_input_map.special_tokens_mask
-                    ][:rel_token_len]
-                )
-                offset_mapping = origin_data.iloc[int(index)][
-                    self.config.origin_input_map.offsets
+            special_tokens_mask = np.array(
+                origin_data.iloc[int(index)][
+                    self.config.origin_input_map.special_tokens_mask
                 ][:rel_token_len]
+            )
+            offset_mapping = origin_data.iloc[int(index)][
+                self.config.origin_input_map.offsets
+            ][:rel_token_len]
 
-                logits = logits[:rel_token_len]
+            logits = logits[:rel_token_len]
 
-                entity_idx = logits.argmax(-1)
-                labels = []
-                for i, idx in enumerate(list(entity_idx)):
-                    labels.append(self.label_vocab[idx])
+            entity_idx = logits.argmax(-1)
+            labels = []
+            for i, idx in enumerate(list(entity_idx)):
+                labels.append(self.label_vocab[idx])
 
-                maxes = np.max(logits, axis=-1, keepdims=True)
-                shifted_exp = np.exp(logits - maxes)
-                scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
+            maxes = np.max(logits, axis=-1, keepdims=True)
+            shifted_exp = np.exp(logits - maxes)
+            scores = shifted_exp / shifted_exp.sum(axis=-1, keepdims=True)
 
-                pre_entities = self.gather_pre_entities(
-                    one_ins["sentence"],
-                    input_ids,
-                    scores,
-                    offset_mapping,
-                    special_tokens_mask,
-                )
-                grouped_entities = self.aggregate(
-                    pre_entities, self.config.aggregation_strategy
-                )
-                # Filter anything that is in self.ignore_labels
-                entities = [
-                    entity
-                    for entity in grouped_entities
-                    if entity.get("entity", None) not in self.config.ignore_labels
-                    and entity.get("entity_group", None)
-                    not in self.config.ignore_labels
-                ]
-                predict_entities_info = []
-                for entity in entities:
-                    one_predict = {}
-                    one_predict["start"] = entity["start"]
-                    one_predict["end"] = entity["end"]
-                    one_predict["labels"] = [entity["entity_group"]]
-                    predict_entities_info.append(one_predict)
-                one_ins["predict_entities_info"] = predict_entities_info
-                predicts.append(one_ins)
+            pre_entities = self.gather_pre_entities(
+                one_ins["sentence"],
+                input_ids,
+                scores,
+                offset_mapping,
+                special_tokens_mask,
+            )
+            grouped_entities = self.aggregate(
+                pre_entities, self.config.aggregation_strategy
+            )
+            # Filter anything that is in self.ignore_labels
+            entities = [
+                entity
+                for entity in grouped_entities
+                if entity.get("entity", None) not in self.config.ignore_labels
+                and entity.get("entity_group", None) not in self.config.ignore_labels
+            ]
+            predict_entities_info = []
+            for entity in entities:
+                one_predict = {}
+                one_predict["start"] = entity["start"]
+                one_predict["end"] = entity["end"]
+                one_predict["labels"] = [entity["entity_group"]]
+                predict_entities_info.append(one_predict)
+            one_ins["predict_entities_info"] = predict_entities_info
+            predicts.append(one_ins)
         return predicts
 
     def aggregate(

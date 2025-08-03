@@ -32,17 +32,16 @@
                     "special_tokens_mask": "int"
                 }
             },
-            "@data_collate@default": {
+            "@data_collate@span_cls_relation": {
                 "gen_mask": {
                     "input_ids": "attention_mask"
                 },
+                "num_entity_classes": "???",
                 "key_padding_pairs": {
                     "input_ids": 0,
-                    "special_tokens_mask": 0
+                    "attention_mask": 0,
                 },
-                "key_padding_pairs_2d": {
-                    "label_ids": -100
-                }
+                "key_padding_pairs_2d": {}
             }
         },
         "@imodel@default": {
@@ -55,19 +54,19 @@
                     "dropout": 0.1
                 },
                 "@encoder@identity": {},
-                "@decoder@biaffine": {
+                "@decoder@bilinear": {
                     "input_size": "@lambda @$$.@embedding.embedding_dim",
-                    "output_size": 5
+                    "output_size": "@lambda @$$$$.@datamodule.@data_collate.num_entity_classes",
                 }
             },
             "@scheduler@linear_warmup": {
                 "num_warmup_steps": 0.1
             },
-            "@loss@cross_entropy": {
+            "@loss@multilabel_categorical_crossentropy": {
                 "pred_truth_pair": {
                     "logits": "label_ids"
                 },
-                "ignore_index": -100
+                "label_smoothing": 0.0
             },
             "@optimizer@adamw": {
                 "lr": 3e-5,

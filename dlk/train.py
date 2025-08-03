@@ -3,6 +3,7 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
+import copy
 import json
 import logging
 import os
@@ -35,6 +36,8 @@ import dlk.data.data_collate
 import dlk.data.datamodule
 import dlk.data.dataset
 import dlk.data.postprocessor
+import dlk.data.processor
+import dlk.data.subprocessor
 import dlk.imodel
 import dlk.initmethod
 import dlk.loss
@@ -90,17 +93,90 @@ class Train(object):
         else:
             config_dict = config
 
+        self.ray_tune_report_stage = None
+
         self.checkpoint = checkpoint
         self.state_dict_only = state_dict_only
-        self.configs = Parser(config_dict, update_config=update_config).parser_init()
+        self.config_dict = config_dict
+        self.update_config = update_config
+
+    def run(self, optuna_skip: Callable = lambda x: False):
+        """run for all configs
+
+        Returns:
+            None
+
+        """
+
+        if not self.config_dict.get("@optuna", {}):
+            self.default_run()
+            return
+        self.optuna_run(optuna_skip)
+
+    def optuna_run(self, optuna_skip):
+        configs = Parser(self.config_dict, update_config=self.update_config).parser(
+            parser_ref=False
+        )
+        assert len(configs) == 1, "Currently only support one config for optuna."
+        config = configs[0]
+        import ray
+        from ray import tune
+
+        from dlk.ray_optuna import RayOptunaConfig, prepare_tune
+
+        ray.init(ignore_reinit_error=True)
+        optuna_config = RayOptunaConfig._from_dict(config.pop("@optuna"))
+        self.ray_tune_report_stage = optuna_config.report_stage
+
+        asha_scheduler, optuna_search, search_space = prepare_tune(optuna_config)
+
+        def _trial(opt_paras):
+            specific_keys = search_space.keys()
+            config_name = []
+
+            hyper_paras = {}
+            for key in specific_keys:
+                config_name.append(f"{key}={opt_paras[key]}")
+                hyper_paras[key] = opt_paras[key]
+            config_name = "/".join(config_name)
+            cur_config = copy.deepcopy(config)
+            cur_config["_G"].update(hyper_paras)
+            parserd_cur_config = Parser(
+                self.config_dict, update_config=self.update_config
+            ).parser_init()[0]
+
+            self.run_oneturn(parserd_cur_config, config_name, hyper_paras)
+
+        analysis = tune.run(
+            _trial,
+            config=search_space,
+            num_samples=optuna_config.num_trials,
+            search_alg=optuna_search,
+            scheduler=asha_scheduler,
+            resources_per_trial=optuna_config.resources_per_trial,
+            verbose=optuna_config.verbose,
+            resume=optuna_config.resume,
+        )
+        best_config = analysis.get_best_config(
+            metric=optuna_config.metric, mode=optuna_config.mode
+        )
+        logger.info(
+            f"Optuna tuning finished. Best config: {best_config}, best value: {analysis.best_result[optuna_config.metric]}"
+        )
+        ray.shutdown()
+
+    def default_run(self):
+        configs = Parser(
+            self.config_dict, update_config=self.update_config
+        ).parser_init()
         if self.checkpoint:
             assert (
-                len(self.configs) == 1
+                len(configs) == 1
             ), f"Reuse the checkpoint(checkpoint is not none), you must provide the (only one) config which generate the checkpoint."
 
-        self.config_names = []
-        self.hyper_parameters = []
-        for i, possible_config in enumerate(self.configs):
+        config_names = []
+        hyper_parameters = []
+        for i, possible_config in enumerate(configs):
             train_config = possible_config["@fit"]._to_dict()
             specific = train_config.get("specific", {})
             if specific:
@@ -113,24 +189,16 @@ class Train(object):
                         config_point = config_point[t]
                     config_name.append(f"{to}={str(config_point)}")
                     hyper_parameter[to] = config_point
-                self.config_names.append("/".join(config_name))
-                self.hyper_parameters.append(hyper_parameter)
+                config_names.append("/".join(config_name))
+                hyper_parameters.append(hyper_parameter)
             else:
-                self.config_names.append(str(i))
-                self.hyper_parameters.append({})
-
-    def run(self):
-        """run for all configs
-
-        Returns:
-            None
-
-        """
+                config_names.append(str(i))
+                hyper_parameters.append({})
         logger.info(
-            f"You have {len(self.config_names)} training config(s), they all will be run."
+            f"You have {len(config_names)} training config(s), they all will be run."
         )
         for i, (config, name, hyper_config) in enumerate(
-            zip(self.configs, self.config_names, self.hyper_parameters)
+            zip(configs, config_names, hyper_parameters)
         ):
             logger.info(f"Runing the {i}th {name}...")
             self.run_oneturn(config, name, hyper_config)
@@ -240,6 +308,7 @@ class Train(object):
             rt_config={
                 "log_dir": config.log_dir,
                 "name": name,
+                "ray_tune_report_stage": self.ray_tune_report_stage,
                 "hp_metrics": config.hp_metrics,
                 "hyper_config": hyper_config,
             },

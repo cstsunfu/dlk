@@ -53,13 +53,20 @@ class ProgressBarCallbackConfig(Base):
         value=0,
         help="Set this to a value greater than ``0`` to offset the progress bars by this many lines. This is useful when you have progress bars defined elsewhere and want to show all of them together.",
     )
+    disable_metrics = BoolField(
+        value=False,
+        help="If set to ``True``, the progress bar will not display any metrics. Defaults to ``False``.",
+    )
 
 
 class NewRichProgressBar(RichProgressBar):
     """docstring for  ProgressBar"""
 
-    def __init__(self, **config):
-        super(NewRichProgressBar, self).__init__(**config)
+    def __init__(self, refresh_rate, leave, theme, disable_metrics=False):
+        super(NewRichProgressBar, self).__init__(
+            refresh_rate=refresh_rate, leave=leave, theme=theme
+        )
+        self.disable_metrics = disable_metrics
 
     def get_metrics(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
@@ -80,6 +87,8 @@ class NewRichProgressBar(RichProgressBar):
         Return:
             Dictionary with the items to be displayed in the progress bar.
         """
+        if self.disable_metrics:
+            return {}
         standard_metrics = {}  # NOTE: remove the `v_num` get_standard_metrics(trainer)
         pbar_metrics = trainer.progress_bar_metrics
         duplicates = list(standard_metrics.keys() & pbar_metrics.keys())
@@ -97,7 +106,11 @@ class NewTQDMProgressBar(TQDMProgressBar):
     """docstring for  ProgressBar"""
 
     def __init__(self, **config):
-        super(NewTQDMProgressBar, self).__init__(**config)
+        super(NewTQDMProgressBar, self).__init__(
+            refresh_rate=config["refresh_rate"],
+            process_position=config["process_position"],
+        )
+        self.disable_metrics = config["disable_metrics"]
 
     def get_metrics(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
@@ -118,6 +131,8 @@ class NewTQDMProgressBar(TQDMProgressBar):
         Return:
             Dictionary with the items to be displayed in the progress bar.
         """
+        if self.disable_metrics:
+            return {}
         standard_metrics = {}  # NOTE: remove the `v_num` get_standard_metrics(trainer)
         pbar_metrics = trainer.progress_bar_metrics
         duplicates = list(standard_metrics.keys() & pbar_metrics.keys())
@@ -153,6 +168,7 @@ class RichProgressBarCallback(object):
             return NewTQDMProgressBar(
                 refresh_rate=self.config.refresh_rate,
                 process_position=self.config.process_position,
+                disable_metrics=self.config.disable_metrics,
             )
         else:
             assert self.config.type_bar == "rich"
@@ -167,4 +183,5 @@ class RichProgressBarCallback(object):
                 refresh_rate=self.config.refresh_rate,
                 leave=self.config.leave,
                 theme=theme,
+                disable_metrics=self.config.disable_metrics,
             )

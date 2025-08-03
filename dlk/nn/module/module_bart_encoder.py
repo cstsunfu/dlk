@@ -36,6 +36,10 @@ class BartEncoderWrapConfig(Base):
     pretrained_model_path = StrField(value="???", help="the pretrained model path")
     from_pretrain = BoolField(value=True, help="from pretrained or not")
     freeze = BoolField(value=False, help="freeze or not")
+    return_attention = BoolField(
+        value=False,
+        help="whether to return the attention weights, BertSdpaSelfAttention does not support this",
+    )
 
 
 @register("module", "bart_encoder")
@@ -109,7 +113,7 @@ class BartEncoderWrap(Module):
                     attention_mask=inputs.get("attention_mask", None),
                     head_mask=inputs.get("head_mask", None),
                     inputs_embeds=inputs.get("inputs_embeds", None),
-                    output_attentions=True,
+                    output_attentions=self.config.return_attention,
                     output_hidden_states=True,
                     return_dict=False,
                 )
@@ -119,7 +123,7 @@ class BartEncoderWrap(Module):
                 attention_mask=inputs.get("attention_mask", None),
                 head_mask=inputs.get("head_mask", None),
                 inputs_embeds=inputs.get("inputs_embeds", None),
-                output_attentions=True,
+                output_attentions=self.config.return_attention,
                 output_hidden_states=True,
                 return_dict=False,
             )

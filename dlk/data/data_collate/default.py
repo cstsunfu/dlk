@@ -51,7 +51,7 @@ class DefaultCollate(object):
         super(DefaultCollate, self).__init__()
         self.config = config
 
-    def __call__(self, batch):
+    def __call__(self, batch, stage="train"):
         keys = batch[0].keys()
         data_map: Dict[str, Any] = {}
         for key in keys:

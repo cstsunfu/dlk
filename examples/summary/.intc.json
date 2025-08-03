@@ -3,6 +3,7 @@
         "bart_summary"
     ],
     "src": [
-        "dlk"
+        "dlk.online",
+        "dlk.train"
     ]
 }

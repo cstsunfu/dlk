@@ -105,39 +105,59 @@ class TxtRegPostProcessor(BasePostProcessor):
         """
         results = []
         for outputs in list_batch_outputs:
-            logits = outputs[self.config.input_map.logits].detach()
-            if self.config.log_reg:
-                logits = torch.sigmoid(logits)
-            assert len(logits.shape) == 2
-            # predict_indexes = list(torch.argmax(logits, 1))
-            indexes = list(outputs[self.config.input_map.index])
+            outputs[self.config.input_map.logits] = (
+                outputs[self.config.input_map.logits].detach().cpu().numpy()
+            )
+            results.extend(
+                self.predict_one_batch(stage, outputs, origin_data, rt_config)
+            )
+        return results
 
-            if self.config.input_map.value in outputs:
-                values = outputs[self.config.input_map.value]
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        logits = batch_output[self.config.input_map.logits]
+        if self.config.log_reg:
+            logits = 1 / (1 + np.exp(-logits))
+
+        assert (
+            len(logits.shape) == 2
+        ), f"Logits should be 2D array, got shape {logits.shape}"
+        # predict_indexes = list(torch.argmax(logits, 1))
+        indexes = list(batch_output[self.config.input_map.index])
+        results = []
+        if self.config.input_map.value in batch_output:
+            values = batch_output[self.config.input_map.value]
+        else:
+            values = [0.0] * len(indexes)
+        for i, (one_logits, index, value) in enumerate(zip(logits, indexes, values)):
+            one_ins = {}
+            one_origin = origin_data.iloc[int(index)]
+            if self.config.data_type == "single":
+                sentence = one_origin[self.config.origin_input_map.sentence]
+                one_ins["sentence"] = sentence
             else:
-                values = [0.0] * len(indexes)
-            for i, (one_logits, index, value) in enumerate(
-                zip(logits, indexes, values)
-            ):
-                one_ins = {}
-                one_origin = origin_data.iloc[int(index)]
-                if self.config.data_type == "single":
-                    sentence = one_origin[self.config.origin_input_map.sentence]
-                    one_ins["sentence"] = sentence
-                else:
-                    sentence_a = one_origin[self.config.origin_input_map.sentence_a]
-                    one_ins["sentence_a"] = sentence_a
-                    sentence_b = one_origin[self.config.origin_input_map.sentence_b]
-                    one_ins["sentence_b"] = sentence_b
+                sentence_a = one_origin[self.config.origin_input_map.sentence_a]
+                one_ins["sentence_a"] = sentence_a
+                sentence_b = one_origin[self.config.origin_input_map.sentence_b]
+                one_ins["sentence_b"] = sentence_b
 
-                uuid = one_origin[self.config.origin_input_map.uuid]
-                one_ins["uuid"] = uuid
-                one_ins["values"] = [float(value)]
-                one_ins["predict_values"] = [float(one_logits)]
-                one_ins["predict_extend_return"] = self.gather_predict_extend_data(
-                    outputs, i, self.config.predict_extend_return
-                )
-                results.append(one_ins)
+            uuid = one_origin[self.config.origin_input_map.uuid]
+            one_ins["uuid"] = uuid
+            one_ins["values"] = [float(value)]
+            one_ins["predict_values"] = [float(one_logits)]
+            one_ins["predict_extend_return"] = self.gather_predict_extend_data(
+                batch_output, i, self.config.predict_extend_return
+            )
+            results.append(one_ins)
         return results
 
     def do_calc_metrics(

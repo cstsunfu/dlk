@@ -124,32 +124,49 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         """
         results = []
         for outputs in list_batch_outputs:
-            indexes = list(outputs[self.config.input_map.index])
+            results.extend(
+                self.predict_one_batch(stage, outputs, origin_data, rt_config)
+            )
+        return results
 
-            batch_generated = outputs[self.config.input_map.generated]
-            for i, (index, generated) in enumerate(zip(indexes, batch_generated)):
-                one_origin = origin_data.iloc[int(index)]
-                one_ins = self._get_origin_data(one_origin)
+    def predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ) -> List:
+        """Process the model predict to human readable format for one batch
+        Args:
+            stage: train/test/etc.
+            batch_output: a dict of outputs
+            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+        Returns:
+            the predicts of one batch
+        """
+        results = []
+        indexes = list(batch_output[self.config.input_map.index])
 
-                generate_result = []
-                for i, (one_generate) in enumerate(generated):
-                    generate_sent = self.tokenizer.decode(
-                        list(one_generate["tokens"]),
-                        skip_special_tokens=self.config.skip_special_tokens,
-                    )
-                    generate_result.append(
-                        {
-                            "generate": generate_sent,
-                            "score": float(one_generate["score"]),
-                        }
-                    )
-                    if self.config.return_all_generations == False:
-                        break
-                one_ins["generated"] = generate_result
-                one_ins["predict_extend_return"] = self.gather_predict_extend_data(
-                    outputs, i, self.config.predict_extend_return
+        batch_generated = batch_output[self.config.input_map.generated]
+        for i, (index, generated) in enumerate(zip(indexes, batch_generated)):
+            one_origin = origin_data.iloc[int(index)]
+            one_ins = self._get_origin_data(one_origin)
+
+            generate_result = []
+            for i, (one_generate) in enumerate(generated):
+                generate_sent = self.tokenizer.decode(
+                    list(one_generate["tokens"]),
+                    skip_special_tokens=self.config.skip_special_tokens,
                 )
-                results.append(one_ins)
+                generate_result.append(
+                    {
+                        "generate": generate_sent,
+                        "score": float(one_generate["score"]),
+                    }
+                )
+                if self.config.return_all_generations == False:
+                    break
+            one_ins["generated"] = generate_result
+            one_ins["predict_extend_return"] = self.gather_predict_extend_data(
+                batch_output, i, self.config.predict_extend_return
+            )
+            results.append(one_ins)
         return results
 
     def do_calc_metrics(

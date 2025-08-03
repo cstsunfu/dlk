@@ -36,6 +36,10 @@ class BertLikeConfig:
     from_pretrain = BoolField(value=True, help="whether to load the pretrained model")
     freeze = BoolField(value=False, help="whether to freeze the model")
     dropout = FloatField(value=0.0, minimum=0.0, maximum=1.0, help="the dropout rate")
+    return_attention = BoolField(
+        value=False,
+        help="whether to return the attention weights, BertSdpaSelfAttention does not support this",
+    )
 
 
 @register("module", "bert_like")
@@ -89,7 +93,7 @@ class BertLike(Module):
                     position_ids=inputs.get("position_ids", None),
                     head_mask=inputs.get("head_mask", None),
                     use_cache=None,
-                    output_attentions=True,
+                    output_attentions=self.config.return_attention,
                     output_hidden_states=True,
                     return_dict=True,
                 )
@@ -101,7 +105,7 @@ class BertLike(Module):
                 position_ids=inputs.get("position_ids", None),
                 head_mask=inputs.get("head_mask", None),
                 use_cache=None,
-                output_attentions=True,
+                output_attentions=self.config.return_attention,
                 output_hidden_states=True,
                 return_dict=True,
             )

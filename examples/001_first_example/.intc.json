@@ -3,7 +3,8 @@
         "config"
     ],
     "src": [
-        "dlk",
+        "dlk.online",
+        "dlk.train",
         "src"
     ]
 }

@@ -24,7 +24,9 @@ from intc import (
 )
 
 from dlk.nn.module import Module
-from dlk.nn.utils.rope import RoFormerSinusoidalPositionalEmbedding
+from dlk.nn.utils.rope import (
+    RoFormerSinusoidalPositionalEmbedding,
+)  # Assuming this is in a local file
 from dlk.utils.register import register
 
 
@@ -40,99 +42,146 @@ class BiLinearConfig:
     hidden_size = IntField(
         value=0,
         minimum=0,
-        help="the hidden size of the bilinear module, if set to 0, will set the hidden size to the input size",
+        help="the hidden size of the bilinear module (equivalent to inner_dim in GlobalPointer), if set to 0, will set the hidden size to the input size",
     )
     output_size = IntField(
         value=MISSING,
         minimum=0,
-        help="the output size of the bilinear module",
-    )
-    dropout = FloatField(
-        value=0.0,
-        minimum=0.0,
-        maximum=1.0,
-        help="the dropout rate of the bilinear module",
+        help="the output size of the bilinear module (equivalent to ent_type_size in GlobalPointer)",
     )
     max_seq_len = IntField(
         value=1024,
         minimum=0,
-        help="the max sequence length of the bilinear module",
+        help="the max sequence length of the bilinear module, used for RoPE",
     )
     relation_position = BoolField(
-        value=False, help="whether to use the relative position"
+        value=False, help="whether to use the relative position (RoPE)"
     )
-    active = StrField(
-        value="leaky_relu",
-        options=["none", "leaky_relu", "relu", "gelu", "glu", "selu", "celu", "elu"],
-        help="the activation function",
+    efficient = BoolField(
+        value=False,
+        help="If True, use efficient bilinear like EffiGlobalPointer.",
     )
-
-
-active_map = {
-    "leaky_relu": nn.LeakyReLU,
-    "relu": nn.ReLU,
-    "gelu": nn.GELU,
-    "glu": nn.GLU,
-    "selu": nn.SELU,
-    "celu": nn.CELU,
-    "elu": nn.ELU,
-}
 
 
 @register("module", "bilinear")
 class BiLinear(Module):
-    """"""
+    """
+    A general Bilinear module with optional Rotary Position Embeddings (RoPE),
+    inspired by RawGlobalPointer and EffiGlobalPointer.
+
+    Args:
+        config (BiLinearConfig): Configuration object for the module.
+    """
 
     def __init__(self, config: BiLinearConfig):
         super(BiLinear, self).__init__()
         self.config = config
         if self.config.hidden_size == 0:
             self.config.hidden_size = self.config.input_size
-        self.linear_a = nn.Linear(self.config.input_size, self.config.hidden_size)
-        self.linear_b = nn.Linear(self.config.input_size, self.config.hidden_size)
+
+        if not self.config.efficient:
+            # RawGlobalPointer style: one large linear layer
+            self.dense = nn.Linear(
+                self.config.input_size,
+                self.config.output_size * self.config.hidden_size * 2,
+                bias=False,
+            )
+        else:
+            self.dense1 = nn.Linear(
+                self.config.input_size, self.config.hidden_size * 2, bias=False
+            )
+            self.dense2 = nn.Linear(
+                self.config.input_size, self.config.output_size * 2, bias=False
+            )
+
         if self.config.relation_position:
             self.embed_positions = RoFormerSinusoidalPositionalEmbedding(
                 self.config.max_seq_len, self.config.hidden_size
             )
-        self.dropout = nn.Dropout(p=self.config.dropout)
-        if config.active != "none":
-            self.active = active_map[config.active]()
-        else:
-            self.active = lambda x: x
 
     def init_weight(self, method):
         """init the weight of submodules by 'method'
 
         Args:
             method: init method
-
-        Returns:
-            None
-
         """
-        self.linear_a.apply(method)
-        self.linear_b.apply(method)
+        if hasattr(self, "dense"):
+            self.dense.apply(method)
+        if hasattr(self, "dense1"):
+            self.dense1.apply(method)
+        if hasattr(self, "dense2"):
+            self.dense2.apply(method)
 
     def forward(self, embedding: torch.Tensor) -> torch.Tensor:
         """do forward on a mini batch
 
         Args:
-            embedding: a mini batch embedding, shape==(batch_size, input_a_len, input_size)
+            embedding: a mini batch embedding, shape==(batch_size, seq_len, input_size)
 
         Returns:
-            input_a x bilinear x input_b, shape==(batch_size, input_a_len, input_b_len, output_size)
-
+            Logits tensor, shape==(batch_size, output_size, seq_len, seq_len)
         """
+        batch_size, seq_len, _ = embedding.shape
 
-        input_a = self.dropout(self.active(embedding))
-        input_b = self.dropout(self.active(embedding))
-        input_a = self.linear_a(input_a)
-        input_b = self.linear_b(input_b)
-
-        if self.config.relation_position:
-            sinusoidal_pos = self.embed_positions(input_a.shape[:-1])[None, :, :]
-            input_a, input_b = self.embed_positions.apply_rotary_position_embeddings(
-                sinusoidal_pos, input_a, input_b
+        if not self.config.efficient:
+            # RawGlobalPointer style
+            # (b, s, i) -> (b, s, o * h * 2)
+            outputs = self.dense(embedding)
+            # -> List[(b, s, h * 2)] with len o -> (b, s, o, h * 2)
+            outputs = torch.stack(
+                torch.split(outputs, self.config.hidden_size * 2, dim=-1), dim=-2
             )
+            # -> (b, s, o, h), (b, s, o, h)
+            qw, kw = (
+                outputs[..., : self.config.hidden_size],
+                outputs[..., self.config.hidden_size :],
+            )
+            # -> (b, o, s, h)
+            qw = qw.permute(0, 2, 1, 3)
+            kw = kw.permute(0, 2, 1, 3)
 
-        return output
+            if self.config.relation_position:
+                # (s, h) -> (1, 1, s, h) for broadcasting
+                sinusoidal_pos = (
+                    self.embed_positions(embedding.shape[:2]).unsqueeze(0).unsqueeze(0)
+                )
+                qw, kw = self.embed_positions.apply_rotary_position_embeddings(
+                    sinusoidal_pos, qw, kw
+                )
+            # (b, o, s, h) @ (b, o, h, s) -> (b, o, s, s)
+            logits = torch.einsum("bhid,bhjd->bhij", qw, kw)
+
+        else:
+            # (b, s, i) -> (b, s, h * 2)
+            outputs = self.dense1(embedding)
+            # -> (b, s, h), (b, s, h)
+            qw, kw = outputs[..., ::2], outputs[..., 1::2]
+
+            if self.config.relation_position:
+                # (s, h) -> (1, s, h) for broadcasting
+                sinusoidal_pos = self.embed_positions(embedding.shape[:2]).unsqueeze(0)
+                qw, kw = self.embed_positions.apply_rotary_position_embeddings(
+                    sinusoidal_pos, qw, kw
+                )
+
+            # (b, s, h) @ (b, h, s) -> (b, s, s)
+            logits = torch.einsum("bid,bjd->bij", qw, kw)
+
+            # (b, s, i) -> (b, s, o * 2)
+            bias = self.dense2(embedding)
+            # -> (b, s, o, 2) -> (b, o, s, 2)
+            bias = bias.view(batch_size, seq_len, self.config.output_size, 2).permute(
+                0, 2, 1, 3
+            )
+            # -> (b, o, s), (b, o, s)
+            bias_start, bias_end = bias[..., 0], bias[..., 1]
+
+            # Scale logits and bias
+            logits = logits / self.config.hidden_size**0.5
+            bias = (bias_start.unsqueeze(3) + bias_end.unsqueeze(2)) / 2
+
+            # Add bias via broadcasting
+            # (b, 1, s, s) + (b, o, s, 1) + (b, o, 1, s) -> (b, o, s, s)
+            logits = logits.unsqueeze(1) + bias
+
+        return logits

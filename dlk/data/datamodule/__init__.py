@@ -63,7 +63,7 @@ class IBaseDataModule(LightningDataModule):
         )
 
     @abc.abstractmethod
-    def online_dataloader(self):
+    def online_dataloader(self, *args, **kwargs):
         """
 
         Raises:

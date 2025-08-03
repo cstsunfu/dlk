@@ -6,6 +6,7 @@
         "./config/bert_firstpiece_lstm_crf"
     ],
     "src": [
-        "dlk"
+        "dlk.online",
+        "dlk.train"
     ]
 }

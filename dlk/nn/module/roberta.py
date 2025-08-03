@@ -115,7 +115,7 @@ class RobertaWrap(BertWrap):
                     encoder_attention_mask=inputs.get("encoder_attention_mask", None),
                     past_key_values=inputs.get("past_key_values", None),
                     use_cache=None,
-                    output_attentions=True,
+                    output_attentions=self.config.return_attention,
                     output_hidden_states=True,
                     return_dict=False,
                 )
@@ -131,7 +131,7 @@ class RobertaWrap(BertWrap):
                 encoder_attention_mask=inputs.get("encoder_attention_mask", None),
                 past_key_values=inputs.get("past_key_values", None),
                 use_cache=None,
-                output_attentions=True,
+                output_attentions=self.config.return_attention,
                 output_hidden_states=True,
                 return_dict=False,
             )

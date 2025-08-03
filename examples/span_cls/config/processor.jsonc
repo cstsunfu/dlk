@@ -20,7 +20,8 @@
                     "trace": "labels"
                 }
             ],
-            "unk": "[UNK]"
+            "unk": null,
+            "pad": null
         },
         "@subprocessor@span_cls_relabel": {
             "drop": "none"

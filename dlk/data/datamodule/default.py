@@ -4,8 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
+from functools import partial
 from typing import Any, Dict, List, Type, Union
 
+import pandas as pd
 from intc import (
     MISSING,
     AnyField,
@@ -107,10 +109,11 @@ class BasicDatamodule(IBaseDataModule):
         """get the train set dataloader"""
         if not self.train_data:
             return None
+        collate_fn = partial(self.collate_fn, stage="train")
         return DataLoader(
             self.train_data,
             batch_size=self.config.train_batch_size,
-            collate_fn=self.collate_fn,
+            collate_fn=collate_fn,
             pin_memory=self.config.pin_memory,
             shuffle=self.config.shuffle,
             num_workers=self.config.num_workers,
@@ -136,7 +139,7 @@ class BasicDatamodule(IBaseDataModule):
         return DataLoader(
             self.valid_data,
             batch_size=self.config.predict_batch_size,
-            collate_fn=self.collate_fn,
+            collate_fn=partial(self.collate_fn, stage="valid"),
             pin_memory=self.config.pin_memory,
             shuffle=False,
             num_workers=self.config.num_workers,
@@ -149,7 +152,7 @@ class BasicDatamodule(IBaseDataModule):
         return DataLoader(
             self.test_data,
             batch_size=self.config.predict_batch_size,
-            collate_fn=self.collate_fn,
+            collate_fn=partial(self.collate_fn, stage="test"),
             pin_memory=self.config.pin_memory,
             shuffle=False,
             num_workers=self.config.num_workers,
@@ -172,3 +175,25 @@ class BasicDatamodule(IBaseDataModule):
             shuffle=False,
             num_workers=1,
         )
+
+    def online_process_batch(self, data: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Directly process a list of raw data samples and collate them into a batch.
+        This is optimized for low-latency online inference, bypassing the overhead
+        of Dataset and DataLoader.
+
+        Args:
+            data: A list of raw data items (e.g., list of dictionaries).
+
+        Returns:
+            A single batch ready for the model.
+        """
+        if not self._online_key_type_pairs:
+            self._online_key_type_pairs = self.dataset_creator.real_key_type_pairs(
+                self.dataset_config.key_type_pairs, data
+            )
+        dataset = self.dataset_creator(
+            self.dataset_config, data, self.rt_config, self._online_key_type_pairs
+        )
+        batch = self.collate_fn(dataset)
+        return batch
