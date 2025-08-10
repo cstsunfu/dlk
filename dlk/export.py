@@ -12,6 +12,22 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from intc import (
+    MISSING,
+    AnyField,
+    Base,
+    BoolField,
+    DictField,
+    EnumField,
+    FloatField,
+    IntField,
+    ListField,
+    NestField,
+    StrField,
+    SubModule,
+    cregister,
+    dataclass,
+)
 
 from dlk.utils.register import register, register_module_name
 
@@ -28,85 +44,66 @@ except ImportError:
 from dlk.predict import Predict
 from dlk.preprocess import PreProcessor
 from dlk.utils.io import open
+from dlk.utils.onnx_export_wrap import GenericOnnxExportWrapper
 
 logger = logging.getLogger(__name__)
 
 
-class GenericOnnxExportWrapper(nn.Module):
-    """A generic wrapper to export PyTorch models that use dictionaries.
+@cregister("export")
+class ExportConfig(Base):
+    """the base loss config"""
 
-    This wrapper converts the tuple-based inputs (*args) expected by ONNX
-    into the dictionary-based input required by the model. It then converts
-    the model's dictionary-based output back into a tuple for ONNX.
-    """
-
-    def __init__(
-        self, model: nn.Module, input_names: List[str], output_names: List[str]
-    ):
-        """Initializes the GenericOnnxExportWrapper.
-
-        Args:
-            model: The original PyTorch model (nn.Module) that accepts and
-                returns dictionaries.
-            input_names: A list of strings defining the names and order of the
-                input tensors. This order must strictly match the order of the
-                `dummy_inputs` tuple provided to `torch.onnx.export`.
-            output_names: A list of strings defining the names and order of the
-                tensors to be extracted from the model's output dictionary.
-        """
-        super().__init__()
-        if not hasattr(model, "forward") or not callable(model.forward):
-            raise TypeError(
-                "The provided 'model' must be a valid nn.Module with a "
-                "callable forward method."
-            )
-        if not isinstance(input_names, list) or not isinstance(output_names, list):
-            raise TypeError(
-                "'input_names' and 'output_names' must be lists of strings."
-            )
-
-        self.model = model
-        self.input_names = input_names
-        self.output_names = output_names
-
-    def forward(self, *args: torch.Tensor) -> Tuple[torch.Tensor, ...]:
-        """Defines the ONNX-friendly forward pass.
-
-        Args:
-            *args: A tuple of input tensors.
-
-        Returns:
-            A tuple of output tensors.
-        """
-        # 1. Convert the input tuple (*args) to a dictionary for the model.
-        # The zip function ensures the order is preserved from `input_names`.
-        inputs_dict = {name: tensor for name, tensor in zip(self.input_names, args)}
-
-        # 2. Call the original model with the dictionary of inputs.
-        outputs_dict = self.model(inputs=inputs_dict)
-
-        # 3. Extract tensors from the output dictionary in the specified order.
-        # This ensures the output tuple has a predictable and fixed order.
-        outputs_tuple = tuple(outputs_dict[name] for name in self.output_names)
-
-        return outputs_tuple
+    input_names = ListField(
+        value=["input_ids", "type_ids", "attention_mask", "_index"],
+        help="List of input tensor names for the ONNX model.",
+    )
+    output_names = ListField(
+        value=["logits", "head_logits", "_index"],
+        help="List of output tensor names for the ONNX model.",
+    )
+    process_config = StrField(
+        value="./config/processor.jsonc",
+        help="Path to the preprocessing configuration file.",
+    )
+    fit_config = StrField(
+        value="./config/fit.jsonc",
+        help="Path to the training/fitting configuration file.",
+    )
+    checkpoint = StrField(
+        value="./logs/0/checkpoint/last.ckpt",
+        help="Path to the model checkpoint (.ckpt) file.",
+    )
+    output_path = StrField(
+        value="model.onnx",
+        help="Path where the exported ONNX model will be saved.",
+    )
+    opset_version = IntField(
+        value=14,
+        help="ONNX opset version to use for the export. Default is 14.",
+    )
+    dynamic_axes = DictField(
+        value={
+            "input_ids": {0: "batch_size", 1: "sequence_length"},
+            "type_ids": {0: "batch_size", 1: "sequence_length"},
+            "attention_mask": {0: "batch_size", 1: "sequence_length"},
+            "_index": {0: "batch_size"},
+            # It's good practice to also define dynamic axes for outputs
+            "logits": {0: "batch_size"},
+            "head_logits": {0: "batch_size"},
+        },
+        help="Dictionary specifying dynamic axes for inputs/outputs. "
+        "Example: {'input_ids': {0: 'batch', 1: 'sequence'}}.",
+    )
+    validate = BoolField(
+        value=True,
+        help="If True, validates the exported ONNX model against the original PyTorch model.",
+    )
 
 
 class Export:
     """Orchestrates the process of exporting a PyTorch model to ONNX format."""
 
-    def __init__(
-        self,
-        input_names: List[str],
-        output_names: List[str],
-        process_config: str,
-        fit_config: str,
-        checkpoint: str,
-        output_path: str = "model.onnx",
-        opset_version: int = 14,
-        dynamic_axes: Optional[Dict[str, Dict[int, str]]] = None,
-        validate: bool = True,
-    ):
+    def __init__(self, config: ExportConfig):
         """Initializes the Export object.
 
         Args:
@@ -123,17 +120,17 @@ class Export:
                 original PyTorch model.
         """
         super(Export, self).__init__()
-        self.processor = PreProcessor(process_config, stage="online")
-        self.output_path = output_path
-        self.opset_version = opset_version
-        self.input_names = input_names
-        self.output_names = output_names
-        self.dynamic_axes = dynamic_axes or {}
-        self.validate = validate
+        self.processor = PreProcessor(config.process_config, stage="online")
+        self.output_path = config.output_path
+        self.opset_version = config.opset_version
+        self.input_names = config.input_names
+        self.output_names = config.output_names
+        self.dynamic_axes = config.dynamic_axes or {}
+        self.validate = config.validate
 
         # The Predict class is used here to conveniently load the model
         # and its associated data module from configuration and a checkpoint.
-        predict = Predict(fit_config, checkpoint)
+        predict = Predict(config.fit_config, config.checkpoint)
         datamodule, _ = predict.get_datamodule(
             predict.dlk_config,
             {},
@@ -304,37 +301,10 @@ def main():
     data = [{"sentence": item["sentence"], "uuid": item["uuid"]} for item in data]
     input_df = pd.DataFrame(data)
 
+    config = ExportConfig()
+
     # Define the configuration for the export process.
-    export_task = Export(
-        input_names=[
-            "input_ids",
-            "type_ids",
-            "attention_mask",
-            "_index",
-        ],
-        # NOTE: Removed duplicate "head_logits" from the original list.
-        output_names=[
-            "logits",
-            "head_logits",
-            "_index",
-        ],
-        dynamic_axes={
-            "input_ids": {0: "batch_size", 1: "sequence_length"},
-            "type_ids": {0: "batch_size", 1: "sequence_length"},
-            "attention_mask": {0: "batch_size", 1: "sequence_length"},
-            # "special_tokens_mask": {0: "batch_size", 1: "sequence_length"},
-            "_index": {0: "batch_size"},
-            # It's good practice to also define dynamic axes for outputs
-            "logits": {0: "batch_size"},
-            "head_logits": {0: "batch_size"},
-            "_index": {0: "batch_size"},
-        },
-        process_config="./config/processor.jsonc",
-        fit_config="./config/fit.jsonc",
-        checkpoint="./logs/0/checkpoint/last.ckpt",
-        output_path="model.onnx",
-        validate=True,
-    )
+    export_task = Export(config=config)
 
     # Run the export process.
     export_task.export(input_df)
