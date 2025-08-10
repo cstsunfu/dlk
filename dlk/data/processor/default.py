@@ -258,14 +258,6 @@ class DefaultProcessor(object):
                     and i == 0
                 )
                 for name in self.config.feed_order:
-                    if (
-                        type_name
-                        not in self.subprocessors[name].will_processed_data_set
-                    ):
-                        logger.info(
-                            f"Skip {name} on {type_name} {i if i > 0 else ''}: {loaded_data}"
-                        )
-                        continue
                     logger.info(
                         f"Processing on {type_name} {i if i > 0 else ''}: {name}"
                     )

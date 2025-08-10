@@ -12,10 +12,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from intc.utils import fix_trace
 
-import dlk.data.dataset
-import dlk.nn
 from dlk.utils.register import register, register_module_name
 
 try:
@@ -313,7 +310,6 @@ def main():
             "input_ids",
             "type_ids",
             "attention_mask",
-            # "special_tokens_mask",
             "_index",
         ],
         # NOTE: Removed duplicate "head_logits" from the original list.

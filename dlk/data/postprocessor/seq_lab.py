@@ -110,20 +110,18 @@ class SeqLabPostProcessor(BasePostProcessor):
             tokenizer_str = json.dumps(json.load(f))
         self.tokenizer = Tokenizer.from_str(tokenizer_str)
 
-    def do_predict(
+    def wrap_predict_one_batch(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
 
-        There are three predictor for different seq_lab task dependent on the config.use_crf(the predict is already decoded to ids), and config.word_ready(subword has gathered to firstpiece)
-
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: model outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -135,26 +133,14 @@ class SeqLabPostProcessor(BasePostProcessor):
                 >>> }
 
         Returns:
-            all predicts
+            the predicts
 
         """
-        predicts = []
-
-        for outputs in list_batch_outputs:
-            if not self.config.use_crf:
-                outputs[self.config.input_map.logits] = (
-                    outputs[self.config.input_map.logits].float().cpu().numpy()
-                )
-            predicts.extend(
-                self.predict_one_batch(
-                    stage=stage,
-                    batch_output=outputs,
-                    origin_data=origin_data,
-                    rt_config=rt_config,
-                )
+        if not self.config.use_crf:
+            batch_output[self.config.input_map.logits] = (
+                batch_output[self.config.input_map.logits].float().cpu().numpy()
             )
-
-        return predicts
+        return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
         self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
@@ -179,8 +165,6 @@ class SeqLabPostProcessor(BasePostProcessor):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -188,8 +172,6 @@ class SeqLabPostProcessor(BasePostProcessor):
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {

@@ -160,8 +160,8 @@ def get_data():
     return data_list
 
 
-# with open("./test.json", "w") as f:
-#     json.dump(get_data(), f, indent=4, ensure_ascii=False)
+with open("./test.json", "w") as f:
+    json.dump(get_data(), f, indent=4, ensure_ascii=False)
 with open("./test.json", "r") as f:
     data = json.load(f)
 

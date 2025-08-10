@@ -29,6 +29,7 @@ from intc import (
 )
 from tabulate import tabulate
 from tokenizers import Tokenizer
+from torchmetrics import Metric
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
 from dlk.utils.io import open
@@ -124,6 +125,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
     """PostProcess for sequence labeling task"""
 
     def __init__(self, config: SpanRelationPostProcessorConfig):
+
         super(SpanRelationPostProcessor, self).__init__(config)
         self.config = config
 
@@ -137,10 +139,10 @@ class SpanRelationPostProcessor(BasePostProcessor):
             tokenizer_str = json.dumps(json.load(f))
         self.tokenizer = Tokenizer.from_str(tokenizer_str)
 
-    def do_predict(
+    def wrap_predict_one_batch(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> List:
@@ -148,7 +150,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
 
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: model outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -160,38 +162,19 @@ class SpanRelationPostProcessor(BasePostProcessor):
                 >>> }
 
         Returns:
-            all predicts
+            the predicts
 
         """
-        predicts = []
-        if self.config.origin_input_map.sentence not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.sentence} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.sentence} must be provided"
-            )
-        if self.config.origin_input_map.uuid not in origin_data:
-            logger.error(f"{self.config.origin_input_map.uuid} not in the origin data")
-            raise PermissionError(
-                f"{self.config.origin_input_map.uuid} must be provided"
-            )
-        predicts = []
-        for outputs in list_batch_outputs:
-            outputs[self.config.input_map.logits] = (
-                outputs[self.config.input_map.logits].float().cpu().numpy()
-            )
-            outputs[self.config.input_map.head_logits] = (
-                outputs[self.config.input_map.head_logits].float().cpu().numpy()
-            )
-            outputs[self.config.input_map.tail_logits] = (
-                outputs[self.config.input_map.tail_logits].float().cpu().numpy()
-            )
-
-            predicts.extend(
-                self.predict_one_batch(stage, outputs, origin_data, rt_config)
-            )
-        return predicts
+        batch_output[self.config.input_map.logits] = (
+            batch_output[self.config.input_map.logits].float().cpu().numpy()
+        )
+        batch_output[self.config.input_map.head_logits] = (
+            batch_output[self.config.input_map.head_logits].float().cpu().numpy()
+        )
+        batch_output[self.config.input_map.tail_logits] = (
+            batch_output[self.config.input_map.tail_logits].float().cpu().numpy()
+        )
+        return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
         self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
@@ -199,7 +182,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
-            batch_output: a dict of outputs
+            batch_output: a dict of output
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
@@ -367,16 +350,13 @@ class SpanRelationPostProcessor(BasePostProcessor):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
-        """calc the scores use the predicts or list_batch_outputs
+        """calc the scores use the predicts
 
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -393,13 +373,13 @@ class SpanRelationPostProcessor(BasePostProcessor):
         """
         real_name = self.loss_name_map(stage)
         entity_precision, entity_recall, entity_f1 = self._do_calc_entity_metrics(
-            predicts, list_batch_outputs
+            predicts
         )
         (
             relation_precision,
             relation_recall,
             relation_f1,
-        ) = self._do_calc_relation_metrics(predicts, list_batch_outputs)
+        ) = self._do_calc_relation_metrics(predicts)
         return {
             f"{real_name}_ent_p": entity_precision * 100,
             f"{real_name}_ent_r": entity_recall * 100,
@@ -409,7 +389,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
             f"{real_name}_rel_f1": relation_f1 * 100,
         }
 
-    def _do_calc_relation_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
+    def _do_calc_relation_metrics(self, predicts: List):
         """calc relation related metrics
         Returns:
             relation related metrics
@@ -618,7 +598,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
 
         return precision, recall, f1
 
-    def _do_calc_entity_metrics(self, predicts: List, list_batch_outputs: List[Dict]):
+    def _do_calc_entity_metrics(self, predicts: List):
         """calc entity related metrics
         Returns:
             entity related metrics

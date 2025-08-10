@@ -105,16 +105,13 @@ class FGMAdvMethod(AdvMethod):
             "total_epochs": imodel.num_training_epochs,
         }
         optimizer.zero_grad()
-        seed = random.randint(0, int(4e9))  # 4e9 < 2e32 - 1
-        torch.manual_seed(seed)  # NOTE: should fix manual seed for every forward
-        np.random.seed(seed)
         result = imodel.model.training_step(batch)
         loss, _ = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss)
+        imodel.manual_backward(loss // 2)
         self.attack()
         result = imodel.model.training_step(batch)
         loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss)
+        imodel.manual_backward(loss // 2)
         self.restore()
         optimizer.step()
 

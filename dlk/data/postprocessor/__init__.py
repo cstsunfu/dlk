@@ -8,11 +8,12 @@ import importlib
 import json
 import logging
 import os
-from typing import Callable, Dict, List, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union
 
 import pandas as pd
 import pyarrow.parquet as pq
 import torch
+import torch.distributed as dist
 from intc import (
     MISSING,
     AnyField,
@@ -27,6 +28,8 @@ from intc import (
     SubModule,
     dataclass,
 )
+from torchmetrics import Metric
+from torchmetrics.utilities.distributed import gather_all_tensors
 
 from dlk.utils.import_module import import_module_dir
 
@@ -63,14 +66,120 @@ class BasePostProcessorConfig(Base):
     predict_extend_return = DictField(value={}, help="the extend return of predict")
 
 
+class PostInfoCollection(Metric):
+
+    full_state_update = False
+
+    def __init__(self, postprocessor: "BasePostProcessor", dist_sync_on_step=False):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
+        self.postprocessor = postprocessor
+        self.loss_logs: List[Dict[str, float]] = []
+        self.predicts_list: List[Dict[str, Any]] = []
+        self.add_state("loss_logs", default=[], dist_reduce_fx=None)
+        self.add_state("predicts_list", default=[], dist_reduce_fx=None)
+
+    def _prepare_loss(self, batch_output, stage):
+        cur_loss = {}
+        for key in batch_output:
+            if key.endswith("_loss") or key == "loss":
+                cur_loss[f"{stage}_{key}"] = batch_output[key].detach().cpu().item()
+        return cur_loss
+
+    def update(self, stage, batch_output, origin_data, rt_config):
+
+        loss_log = self._prepare_loss(batch_output, stage)
+        predict_info = self.postprocessor.wrap_predict_one_batch(
+            stage, batch_output, origin_data, rt_config
+        )
+        self.predicts_list.append(predict_info)
+        self.loss_logs.append(loss_log)
+
+    def _average_loss(self, loss_logs: List[Dict]) -> Dict[str, float]:
+        """average all the loss of the list_batches
+
+        Args:
+            loss_logs: a list of loss_log
+
+        Returns:
+            average_loss
+
+        """
+        loss_names = []
+        average_losses = {}
+        batch_num = len(loss_logs)
+        if not batch_num:
+            return average_losses
+        for key in loss_logs[0]:
+            if key.endswith("_loss") or key == "loss":
+                loss_names.append(key)
+                average_losses[key] = 0
+        for batch_output in loss_logs:
+            for name in loss_names:
+                average_losses[name] = average_losses[name] + batch_output.get(name, 0)
+        average_losses = {
+            key: value / batch_num for key, value in average_losses.items()
+        }
+        return average_losses
+
+    def compute(
+        self, stage, rt_config, save_condition: bool = False
+    ) -> Dict[str, torch.Tensor]:
+        log_dict = self.postprocessor.do_calc_metrics(
+            stage=stage,
+            predicts=self.predicts_list,
+            rt_config=rt_config,
+        )
+
+        if stage not in self.postprocessor.without_ground_truth_stage:
+            average_loss = self._average_loss(loss_logs=self.loss_logs)
+            for name in average_loss:
+                log_dict[f"{self.postprocessor.loss_name_map(stage)}_{name}"] = (
+                    average_loss[name]
+                )
+
+        self.postprocessor.do_save(
+            predicts=self.predicts_list,
+            stage=stage,
+            rt_config=rt_config,
+            save_condition=save_condition,
+        )
+        return log_dict
+
+    def _sync_dist(
+        self,
+        dist_sync_fn: Callable = gather_all_tensors,
+        process_group: Optional[Any] = None,
+    ) -> None:
+        super()._sync_dist(dist_sync_fn=dist_sync_fn, process_group=process_group)
+
+        if not (dist.is_available() and dist.is_initialized()):
+            return
+
+        world_size = dist.get_world_size(group=process_group)
+
+        for state_name, reduce_fn in self._reductions.items():
+            # dist_reduce_fx=None and state is a list
+            if reduce_fn is None:
+                state_value = getattr(self, state_name)
+                if isinstance(state_value, list):
+                    gathered_data = [None for _ in range(world_size)]
+
+                    dist.all_gather_object(
+                        gathered_data, state_value, group=process_group
+                    )
+
+                    setattr(self, state_name, gathered_data)
+
+
 class BasePostProcessor(object):
     """the base postprocessor"""
 
     def __init__(self, config: BasePostProcessorConfig):
         super(BasePostProcessor, self).__init__()
         self.config = config
+        self._info_collections: Dict[str, Dict[int, PostInfoCollection]] = {}
 
-    def loss_name_map(self, stage) -> str:
+    def loss_name_map(self, stage: str) -> str:
         """get the stage loss name
 
         Args:
@@ -109,46 +218,19 @@ class BasePostProcessor(object):
             result[key] = data
         return result
 
-    def average_loss(self, list_batch_outputs: List[Dict]) -> Dict[str, float]:
-        """average all the loss of the list_batches
-
-        Args:
-            list_batch_outputs: a list of outputs
-
-        Returns:
-            average_loss
-
-        """
-        loss_names = []
-        average_losses = {}
-        batch_num = len(list_batch_outputs)
-        if not batch_num:
-            return average_losses
-        for key in list_batch_outputs[0]:
-            if key.endswith("_loss") or key == "loss":
-                loss_names.append(key)
-                average_losses[key] = 0
-        for batch_output in list_batch_outputs:
-            for name in loss_names:
-                average_losses[name] = average_losses[name] + batch_output.get(name, 0)
-        average_losses = {
-            key: value / batch_num for key, value in average_losses.items()
-        }
-        return average_losses
-
-    @abc.abstractmethod
-    def do_predict(
+    def update(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
-    ) -> List:
+        index: int,
+    ):
         """Process the model predict to human readable format
 
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: the model output
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -163,6 +245,24 @@ class BasePostProcessor(object):
             all predicts
 
         """
+        if stage not in self._info_collections:
+            self._info_collections[stage] = {}
+        if index not in (self._info_collections[stage]):
+            self._info_collections[stage][index] = PostInfoCollection(
+                postprocessor=self, dist_sync_on_step=True
+            )
+
+        self._info_collections[stage][index].update(
+            stage=stage,
+            batch_output=batch_output,
+            origin_data=origin_data,
+            rt_config=rt_config,
+        )
+
+    def wrap_predict_one_batch(
+        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+    ):
+        """prepare the predict one batch for no online/serve stage"""
         raise NotImplementedError
 
     def predict_one_batch(
@@ -183,8 +283,6 @@ class BasePostProcessor(object):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -192,8 +290,6 @@ class BasePostProcessor(object):
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>>
                 >>> current status
@@ -214,8 +310,6 @@ class BasePostProcessor(object):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
         save_condition: bool = False,
     ):
@@ -224,8 +318,6 @@ class BasePostProcessor(object):
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -281,20 +373,17 @@ class BasePostProcessor(object):
         """
         return {"predict", "online"}
 
-    def process(
+    def reduce(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
         save_condition: bool = False,
-    ) -> Union[Dict, List]:
+    ):
         """PostProcess entry
 
         Args:
             stage: train/test/etc.
             list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -309,60 +398,16 @@ class BasePostProcessor(object):
             the log_info(metrics) or the stage is "online" return the predicts
 
         """
-        log_info = {}
-        if stage not in self.without_ground_truth_stage:
-            average_loss = self.average_loss(list_batch_outputs=list_batch_outputs)
-            for name in average_loss:
-                log_info[f"{self.loss_name_map(stage)}_{name}"] = average_loss[name]
-        predicts = self.do_predict(stage, list_batch_outputs, origin_data, rt_config)
-        if stage not in self.without_ground_truth_stage:
-            log_info.update(
-                self.do_calc_metrics(
-                    predicts, stage, list_batch_outputs, origin_data, rt_config
-                )
+        metrics = {}
+        for index, info_collection in self._info_collections.get(stage, {}).items():
+            metrics[index] = info_collection.compute(
+                stage=stage,
+                rt_config=rt_config,
+                save_condition=save_condition,
             )
+            info_collection.reset()
 
-        if stage == "online":
-            return predicts
-        if stage == "predict":
-            if save_condition:
-                self.do_save(
-                    predicts,
-                    stage,
-                    list_batch_outputs,
-                    origin_data,
-                    rt_config,
-                    save_condition=True,
-                )
-            return predicts
-        else:
-            if save_condition:
-                self.do_save(
-                    predicts,
-                    stage,
-                    list_batch_outputs,
-                    origin_data,
-                    rt_config,
-                    save_condition=True,
-                )
-            else:
-                self.do_save(
-                    predicts,
-                    stage,
-                    list_batch_outputs,
-                    origin_data,
-                    rt_config,
-                    save_condition=False,
-                )
-            return log_info
-
-    def __call__(
-        self, stage, list_batch_outputs, origin_data, rt_config, save_condition=False
-    ):
-        """the same as self.process"""
-        return self.process(
-            stage, list_batch_outputs, origin_data, rt_config, save_condition
-        )
+        return metrics
 
 
 postprocessor_dir = os.path.dirname(__file__)

@@ -46,6 +46,7 @@ import dlk.optimizer
 import dlk.scheduler
 import dlk.trainer
 from dlk.utils.io import open
+from dlk.utils.logger import change_log_file, setup_logger
 from dlk.utils.register import register, register_module_name
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,35 @@ class DLKFitConfig(Base):
     log_dir = StrField(value="logs", help="the save dir of the config and logs")
     processed_data_dir = StrField(value=MISSING, help="the processed data path")
     submodule = SubModule(value={}, help="the submodule config")
+
+
+def setup_ray_logging(method="tune"):
+    """
+    Correctly removes the StreamHandler from the ROOT logger for non-zero ranks.
+    """
+    from ray import train, tune
+
+    if method == "train":
+        rank = train.get_context().get_world_rank()
+    elif method == "tune":
+        rank = tune.get_context().get_world_rank()
+    else:
+        raise ValueError("Unsupported method. Use 'train' or 'tune'.")
+
+    if rank != 0:
+        # 获取根 logger，而不是具名 logger
+        root_logger = logging.getLogger()
+
+        # 遍历根 logger 的 handlers
+        for handler in root_logger.handlers[:]:
+            # 移除 StreamHandler 来禁止控制台输出
+            if isinstance(handler, logging.StreamHandler):
+                root_logger.removeHandler(handler)
+                # 打印一条调试信息到文件日志（如果已配置）
+                root_logger.debug(
+                    f"Rank {rank}: Removed StreamHandler to suppress console output."
+                )
+                break  # 假设只有一个 StreamHandler
 
 
 class Train(object):
@@ -142,7 +172,7 @@ class Train(object):
             cur_config = copy.deepcopy(config)
             cur_config["_G"].update(hyper_paras)
             parserd_cur_config = Parser(
-                self.config_dict, update_config=self.update_config
+                cur_config, update_config=self.update_config
             ).parser_init()[0]
 
             self.run_oneturn(parserd_cur_config, config_name, hyper_paras)
@@ -157,6 +187,8 @@ class Train(object):
             verbose=optuna_config.verbose,
             resume=optuna_config.resume,
         )
+
+        change_log_file(os.path.join(config.log_dir, "log.txt"))
         best_config = analysis.get_best_config(
             metric=optuna_config.metric, mode=optuna_config.mode
         )
@@ -216,6 +248,8 @@ class Train(object):
         """
         with open(os.path.join(config.log_dir, name, "config.json"), "w") as f:
             json.dump({"@fit": config._to_dict()}, f, ensure_ascii=False, indent=4)
+
+        change_log_file(os.path.join(config.log_dir, name, "log.txt"))
 
     def run_oneturn(self, base_config, name, hyper_config):
         """run this config

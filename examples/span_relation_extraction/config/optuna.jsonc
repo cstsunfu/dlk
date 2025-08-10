@@ -1,10 +1,10 @@
 {
     "@fit": {
         "specific": {},
-        "log_dir": "./logs",
-        "processed_data_dir": "./data/processed_data",
+        "log_dir": "/workspace/dlk/examples/span_relation_extraction/logs",
+        "processed_data_dir": "/workspace/dlk/examples/span_relation_extraction/data/processed_data",
         "@trainer@lightning": {
-            "max_epochs": 5,
+            "max_epochs": "@lambda @_G.max_epochs",
             "devices": "auto",
             "strategy": "ddp_find_unused_parameters_true",
             "accelerator": "auto",
@@ -15,14 +15,15 @@
             "@callback@checkpoint": {
                 "monitor": "val_rel_f1",
                 "mode": "max",
-                "save_top_k": 1
+                "save_top_k": 0,
+                "save_last": false
             },
             "@callback@prograss_bar": {
                 "type_bar": "rich"
             }
         },
         "@datamodule@default": {
-            "train_batch_size": 24,
+            "train_batch_size": "@lambda @_G.batch_size",
             "predict_batch_size": 64,
             "num_workers": -1,
             "pin_memory": true,
@@ -60,9 +61,9 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./hfl/chinese-roberta-wwm-ext",
+                    "pretrained_model_path": "/tmp/hfl/chinese-roberta-wwm-ext",
                     "embedding_dim": 768,
-                    "dropout": 0.1
+                    "dropout": "@lambda @_G.dropout"
                 },
                 "@encoder@identity": {},
                 "@decoder@multi_decoder": {
@@ -72,8 +73,8 @@
                         "output_map": {
                             "logits": "logits"
                         },
-                        "relation_position": true,
-                        "efficient": true,
+                        "relation_position": "@lambda @_G.relation_position",
+                        "efficient": "@lambda @_G.efficient",
                         "apply_tril_mask": true
                     },
                     "@decoder@bilinear#head_relation": {
@@ -109,23 +110,23 @@
                     "pred_truth_pair": {
                         "logits": "label_ids"
                     },
-                    "label_smoothing": 1e-4
+                    "label_smoothing": "@lambda @_G.label_smoothing"
                 },
                 "@loss@multilabel_categorical_crossentropy#relation_head": {
                     "pred_truth_pair": {
                         "head_logits": "head_label_ids"
                     },
-                    "label_smoothing": 1e-4
+                    "label_smoothing": "@lambda @_G.label_smoothing"
                 },
                 "@loss@multilabel_categorical_crossentropy#relation_tail": {
                     "pred_truth_pair": {
                         "tail_logits": "tail_label_ids"
                     },
-                    "label_smoothing": 1e-4
+                    "label_smoothing": "@lambda @_G.label_smoothing"
                 }
             },
             "@optimizer@adamw": {
-                "lr": 3e-5,
+                "lr": "@lambda @_G.lr",
                 "eps": 1e-06,
                 "optimizer_special_groups": {
                     "order": [
@@ -144,7 +145,7 @@
                     },
                     "decoder": {
                         "config": {
-                            "lr": 1e-3
+                            "lr": "@lambda @_G.decoder_lr"
                         },
                         "pattern": [
                             "decoder"
@@ -153,12 +154,38 @@
                 }
             },
             "@postprocessor@span_relation": {
+                "meta_dir": "/workspace/dlk/examples/span_relation_extraction/data/meta_data",
                 "entity_label_vocab": "label_vocab#entity.json",
                 "relation_label_vocab": "label_vocab#relation.json",
-                "tokenizer_path": "./hfl/chinese-roberta-wwm-ext/tokenizer.json",
-                "start_save_epoch": 1,
+                "tokenizer_path": "/tmp/hfl/chinese-roberta-wwm-ext/tokenizer.json",
+                "start_save_epoch": 1000,
                 "sym": false
             }
+        },
+    },
+    "_G": {
+        batch_size: 16,
+    },
+    "@optuna": {
+        "study_name": "test_optuna",
+        "metric": "val_rel_f1",
+        "mode": "max",
+        "resources_per_trial": {
+            "gpu": 1,
+            "cpu": 6
+        },
+        "num_trials": 1000,
+        "reduction_factor": 1.1,
+        "verbose": 0,
+        "resume": false,
+        "search_space": {
+            "lr": "loguniform(1e-5, 1e-4)",
+            "decoder_lr": "loguniform(1e-5, 1e-3)",
+            "label_smoothing": "loguniform(1e-10, 1e-1)",
+            "relation_position": "choice([True, False])",
+            "efficient": "choice([True, False])",
+            "dropout": "uniform(0, 0.3)",
+            "max_epochs": "randint(5, 10)"
         }
     }
 }

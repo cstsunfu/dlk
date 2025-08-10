@@ -97,10 +97,10 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         origin["target"] = one_origin[self.config.origin_input_map.target]
         return origin
 
-    def do_predict(
+    def wrap_predict_one_batch(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> List:
@@ -108,7 +108,7 @@ class TokenGeneratePostProcessor(BasePostProcessor):
 
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: model outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -120,14 +120,10 @@ class TokenGeneratePostProcessor(BasePostProcessor):
                 >>> }
 
         Returns:
-            all predicts
+            the predicts
+
         """
-        results = []
-        for outputs in list_batch_outputs:
-            results.extend(
-                self.predict_one_batch(stage, outputs, origin_data, rt_config)
-            )
-        return results
+        return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
         self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
@@ -173,8 +169,6 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -182,8 +176,6 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {

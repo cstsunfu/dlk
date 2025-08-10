@@ -4,6 +4,7 @@
     ],
     "src": [
         "dlk.online",
-        "dlk.train"
+        "dlk.train",
+        "dlk.ray_optuna"
     ]
 }

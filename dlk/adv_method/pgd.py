@@ -53,7 +53,7 @@ class PGDAdvMethodConfig(AdvMethodConfig):
         minimum=0.0,
         help="alpha for PGD adversarial training",
     )
-    adv_k = IntField(value=3, minimum=1, help="PGD adversarial training times")
+    adv_k = IntField(value=1, minimum=1, help="PGD adversarial training times")
 
 
 @register("adv_method", "pgd")
@@ -80,6 +80,7 @@ class PGDAdvMethod(AdvMethod):
             if param.requires_grad and name in self.adv_para_name:
                 if is_first_attack:
                     self.emb_backup[name] = param.data.clone()
+                    continue
                 norm = torch.norm(param.grad)
                 if norm != 0 and not torch.isnan(norm):
                     r_at = self.config.alpha * param.grad / norm
@@ -106,8 +107,8 @@ class PGDAdvMethod(AdvMethod):
 
     def restore_grad(self):
         for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                param.grad = self.grad_backup[name]
+            if param.requires_grad and name in self.grad_backup:
+                param.grad = param.grad + self.grad_backup[name]
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
         """do training_step on a mini batch
@@ -129,27 +130,24 @@ class PGDAdvMethod(AdvMethod):
             "total_epochs": imodel.num_training_epochs,
         }
         optimizer.zero_grad()
-        seed = random.randint(0, int(4e9))  # 4e9 < 2e32 - 1
-        torch.manual_seed(seed)  # NOTE: should fix manual seed for every forward
-        np.random.seed(seed)
-        result = imodel.model.training_step(batch)
-        loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss)
 
-        self.backup_grad()
+        self.attack(is_first_attack=True)  # This just saves the embeddings
+
         for t in range(self.config.adv_k):
-            self.attack(is_first_attack=(t == 0))
-
-            if t != self.config.adv_k - 1:
-                optimizer.zero_grad()
-            else:
-                self.restore_grad()
+            optimizer.zero_grad()
             result = imodel.model.training_step(batch)
-            loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
+            loss, _ = imodel.calc_loss(result, batch, rt_config=rt_config)
             imodel.manual_backward(loss)
-        self.restore()
-        optimizer.step()
+            self.attack(is_first_attack=False)
 
-        schedule = imodel.lr_schedulers()
-        schedule.step()
-        return loss, loss_log
+        optimizer.zero_grad()
+        result = imodel.model.training_step(batch)
+        adv_loss, adv_loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
+        imodel.manual_backward(adv_loss)
+
+        self.restore()
+
+        optimizer.step()
+        imodel.lr_schedulers().step()
+
+        return adv_loss, adv_loss_log

@@ -108,7 +108,7 @@ class FreeLBAdvMethod(AdvMethod):
     def restore_grad(self):
         for name, param in self.model.named_parameters():
             if param.requires_grad and name in self.grad_backup:
-                param.grad = param.grad + self.grad_backup[name]
+                param.grad = (param.grad + self.grad_backup[name]) / 2
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
         """do training_step on a mini batch
@@ -130,9 +130,6 @@ class FreeLBAdvMethod(AdvMethod):
             "total_epochs": imodel.num_training_epochs,
         }
         optimizer.zero_grad()
-        seed = random.randint(0, int(4e9))  # 4e9 < 2e32 - 1
-        torch.manual_seed(seed)  # NOTE: should fix manual seed for every forward
-        np.random.seed(seed)
         result = imodel.model.training_step(batch)
         loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
         imodel.manual_backward(loss)

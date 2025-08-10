@@ -184,10 +184,10 @@ class SpanClsPostProcessor(BasePostProcessor):
         one_ins["predict_entities_info"] = predict_entities_info
         return one_ins
 
-    def do_predict(
+    def wrap_predict_one_batch(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> List:
@@ -195,7 +195,7 @@ class SpanClsPostProcessor(BasePostProcessor):
 
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: model outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -207,33 +207,13 @@ class SpanClsPostProcessor(BasePostProcessor):
                 >>> }
 
         Returns:
-            all predicts
+            the predicts
 
         """
-        predicts = []
-        if self.config.origin_input_map.sentence not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.sentence} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.sentence} must be provided"
-            )
-        if self.config.origin_input_map.uuid not in origin_data:
-            logger.error(f"{self.config.origin_input_map.uuid} not in the origin data")
-            raise PermissionError(
-                f"{self.config.origin_input_map.uuid} must be provided"
-            )
-
-        predicts = []
-        for outputs in list_batch_outputs:
-            outputs[self.config.input_map.logits] = (
-                outputs[self.config.input_map.logits].float().cpu().numpy()
-            )
-            predicts.extend(
-                self.predict_one_batch(stage, outputs, origin_data, rt_config)
-            )
-
-        return predicts
+        batch_output[self.config.input_map.logits] = (
+            batch_output[self.config.input_map.logits].float().cpu().numpy()
+        )
+        return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
         self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
@@ -261,8 +241,6 @@ class SpanClsPostProcessor(BasePostProcessor):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
         """calc the scores use the predicts or list_batch_outputs
@@ -270,8 +248,6 @@ class SpanClsPostProcessor(BasePostProcessor):
         Args:
             predicts: list of predicts
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {

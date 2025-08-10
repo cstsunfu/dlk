@@ -5,18 +5,9 @@
 
 import os
 
-from dlk.utils.logger import logfile
+from dlk.utils.logger import setup_logger
 
-if os.environ.get("DISABLE_LOGFILE", "0") not in {
-    "1",
-    "True",
-    "true",
-    "TRUE",
-    "YES",
-    "yes",
-    "Yes",
-} and os.environ.get("IN_INTC", "0") not in {"1", "True", "true", "TRUE", 1}:
-    logfile()
+setup_logger(name="DLK", log_file="logs/log.txt")
 
 
 from intc import cregister

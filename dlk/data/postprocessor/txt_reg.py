@@ -78,10 +78,10 @@ class TxtRegPostProcessor(BasePostProcessor):
         super(TxtRegPostProcessor, self).__init__(config)
         self.config = config
 
-    def do_predict(
+    def wrap_predict_one_batch(
         self,
         stage: str,
-        list_batch_outputs: List[Dict],
+        batch_output: Dict,
         origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> List:
@@ -89,7 +89,7 @@ class TxtRegPostProcessor(BasePostProcessor):
 
         Args:
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
+            batch_output: model outputs
             origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
@@ -101,17 +101,13 @@ class TxtRegPostProcessor(BasePostProcessor):
                 >>> }
 
         Returns:
-            all predicts
+            the predicts
+
         """
-        results = []
-        for outputs in list_batch_outputs:
-            outputs[self.config.input_map.logits] = (
-                outputs[self.config.input_map.logits].detach().cpu().numpy()
-            )
-            results.extend(
-                self.predict_one_batch(stage, outputs, origin_data, rt_config)
-            )
-        return results
+        batch_output[self.config.input_map.logits] = (
+            batch_output[self.config.input_map.logits].detach().cpu().numpy()
+        )
+        return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
         self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
@@ -164,18 +160,13 @@ class TxtRegPostProcessor(BasePostProcessor):
         self,
         predicts: List,
         stage: str,
-        list_batch_outputs: List[Dict],
-        origin_data: pd.DataFrame,
         rt_config: Dict,
     ) -> Dict:
         """calc the scores use the predicts or list_batch_outputs
 
         Args:
             predicts: list of predicts
-
             stage: train/test/etc.
-            list_batch_outputs: a list of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
