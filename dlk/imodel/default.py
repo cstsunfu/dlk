@@ -234,7 +234,7 @@ class DefaultIModel(pl.LightningModule):
             None
 
         """
-        list_metrics = self.postprocessor.reduce(
+        metrics = self.postprocessor.reduce(
             "valid",
             rt_config={
                 "current_step": self.global_step,
@@ -245,17 +245,17 @@ class DefaultIModel(pl.LightningModule):
                 "name": self.train_rt_config["name"],
             },
         )
-        for metrics in list_metrics:
+        for i, metric in metrics.items():
             self.log_dict(
-                metrics,
+                metric,
                 prog_bar=True,
                 rank_zero_only=True,
             )
-            if self.trainer.loggers and self.train_rt_config["hp_metrics"] in metrics:
+            if self.trainer.loggers and self.train_rt_config["hp_metrics"] in metric:
                 hp_met = self.train_rt_config["hp_metrics"]
                 self.trainer.loggers[0].log_hyperparams(
                     self.train_rt_config["hyper_config"],
-                    metrics={hp_met: metrics[hp_met]},
+                    metrics={hp_met: metric[hp_met]},
                 )
         return None
 

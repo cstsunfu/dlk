@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class TokenGatherConfig(BaseSubProcessorConfig):
     """the token gather subprocessor"""
 
-    train_data_set = ListField(
+    collect_data_set = ListField(
         value=["train"],
         suggestions=[["train", "valid", "test"]],
         help="the data set should be processed for train stage",

@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 class TokenEmbeddingConfig(BaseSubProcessorConfig):
     """the token embedding subprocessor"""
 
-    train_data_set = ListField(
+    collect_data_set = ListField(
         value=["train"],
         suggestions=[["train", "valid", "test"]],
         help="the data set should be processed for train stage",

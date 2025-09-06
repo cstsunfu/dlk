@@ -110,6 +110,8 @@ class TxtClsPostProcessor(BasePostProcessor):
             origin["sentence_a"] = sentence_a
             sentence_b = one_origin[self.config.origin_input_map.sentence_b]
             origin["sentence_b"] = sentence_b
+        if "labels" in one_origin:
+            origin["labels"] = one_origin["labels"]
         origin["uuid"] = one_origin[self.config.origin_input_map.uuid]
         return origin
 

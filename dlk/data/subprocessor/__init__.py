@@ -32,6 +32,11 @@ from dlk.utils.import_module import import_module_dir
 class BaseSubProcessorConfig(Base):
     """the base subprocessor"""
 
+    collect_data_set = ListField(
+        value=[],
+        suggestions=[["train", "valid", "test"]],
+        help="the data set should be processed for collect stage",
+    )
     train_data_set = ListField(
         value=[],
         suggestions=[["train", "valid", "test"]],

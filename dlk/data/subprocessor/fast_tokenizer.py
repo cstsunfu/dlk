@@ -293,9 +293,11 @@ class FastTokenizer(BaseSubProcessor):
         """
         if self.config.input_type == "single":
             batch_encodes = self.tokenizer.encode_batch(
-                data[self.config.input_map.pretokenized_words]
-                if self.config.process_data.is_pretokenized
-                else data[self.config.input_map.sentence],
+                (
+                    data[self.config.input_map.pretokenized_words]
+                    if self.config.process_data.is_pretokenized
+                    else data[self.config.input_map.sentence]
+                ),
                 is_pretokenized=self.config.process_data.is_pretokenized,
                 add_special_tokens=self.config.process_data.add_special_tokens,
             )
@@ -334,9 +336,8 @@ class FastTokenizer(BaseSubProcessor):
             special_tokens_mask_list,
             offsets_list,
             word_ids_list,
-            overflowing_list,
             sequence_ids_list,
-        ) = ([], [], [], [], [], [], [], [], [])
+        ) = ([], [], [], [], [], [], [], [])
         for encode in data["_tokenizer_encoders"]:
             tokens_list.append(encode.tokens)
             ids_list.append(encode.ids)
@@ -345,7 +346,6 @@ class FastTokenizer(BaseSubProcessor):
             special_tokens_mask_list.append(encode.special_tokens_mask)
             offsets_list.append(encode.offsets)
             word_ids_list.append(encode.word_ids)
-            # overflowing_list.append(encode.overflowing)
             sequence_ids_list.append(encode.sequence_ids)
         output_map = self.config.output_map
         data[output_map.tokens] = tokens_list
@@ -355,7 +355,6 @@ class FastTokenizer(BaseSubProcessor):
         data[output_map.special_tokens_mask] = special_tokens_mask_list
         data[output_map.offsets] = offsets_list
         data[output_map.word_ids] = word_ids_list
-        # data[output_map['overflowing']] = overflowing_list
         data[output_map.sequence_ids] = sequence_ids_list
         data.drop("_tokenizer_encoders", axis=1, inplace=True)
 

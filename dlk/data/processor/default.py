@@ -144,6 +144,7 @@ class DefaultProcessor(object):
     """docstring for IProcessor"""
 
     stage_data_set_map = {
+        "collect": "collect_data_set",
         "train": "train_data_set",
         "predict": "predict_data_set",
         "online": "online_data_set",

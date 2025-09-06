@@ -124,9 +124,13 @@ class PostInfoCollection(Metric):
     def compute(
         self, stage, rt_config, save_condition: bool = False
     ) -> Dict[str, torch.Tensor]:
+        all_predicts = []
+        for predicts in self.predicts_list:
+            all_predicts.extend(predicts)
+
         log_dict = self.postprocessor.do_calc_metrics(
             stage=stage,
-            predicts=self.predicts_list,
+            predicts=all_predicts,
             rt_config=rt_config,
         )
 
@@ -167,8 +171,12 @@ class PostInfoCollection(Metric):
                     dist.all_gather_object(
                         gathered_data, state_value, group=process_group
                     )
+                    flattened_data = []
+                    for data in gathered_data:
+                        if data is not None:
+                            flattened_data.extend(data)
 
-                    setattr(self, state_name, gathered_data)
+                    setattr(self, state_name, flattened_data)
 
 
 class BasePostProcessor(object):
