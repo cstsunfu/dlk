@@ -8,6 +8,7 @@ from functools import partial
 from typing import Any, Dict, List, Type, Union
 
 import pandas as pd
+from datasets import Dataset as HFDataset
 from intc import (
     MISSING,
     AnyField,

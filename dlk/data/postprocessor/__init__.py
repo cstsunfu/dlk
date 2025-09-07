@@ -67,7 +67,6 @@ class BasePostProcessorConfig(Base):
 
 
 class PostInfoCollection(Metric):
-
     full_state_update = False
 
     def __init__(self, postprocessor: "BasePostProcessor", dist_sync_on_step=False):
@@ -86,7 +85,6 @@ class PostInfoCollection(Metric):
         return cur_loss
 
     def update(self, stage, batch_output, origin_data, rt_config):
-
         loss_log = self._prepare_loss(batch_output, stage)
         predict_info = self.postprocessor.wrap_predict_one_batch(
             stage, batch_output, origin_data, rt_config
@@ -137,9 +135,9 @@ class PostInfoCollection(Metric):
         if stage not in self.postprocessor.without_ground_truth_stage:
             average_loss = self._average_loss(loss_logs=self.loss_logs)
             for name in average_loss:
-                log_dict[f"{self.postprocessor.loss_name_map(stage)}_{name}"] = (
-                    average_loss[name]
-                )
+                log_dict[
+                    f"{self.postprocessor.loss_name_map(stage)}_{name}"
+                ] = average_loss[name]
 
         self.postprocessor.do_save(
             predicts=self.predicts_list,
@@ -230,7 +228,7 @@ class BasePostProcessor(object):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: List,
         rt_config: Dict,
         index: int,
     ):
@@ -239,7 +237,7 @@ class BasePostProcessor(object):
         Args:
             stage: train/test/etc.
             batch_output: the model output
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -268,19 +266,19 @@ class BasePostProcessor(object):
         )
 
     def wrap_predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ):
         """prepare the predict one batch for no online/serve stage"""
         raise NotImplementedError
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """

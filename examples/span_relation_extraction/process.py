@@ -43,7 +43,7 @@ import logging
 import uuid
 
 import pandas as pd
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 
 from dlk.preprocess import PreProcessor
 
@@ -169,8 +169,8 @@ train = data[: len(data) // 2]
 valid = data[len(data) // 2 :]
 
 input = {
-    "train": pd.DataFrame(train),
-    "valid": pd.DataFrame(train),
+    "train": Dataset.from_list(train),
+    "valid": Dataset.from_list(valid),
 }
 
 processor = PreProcessor("./config/processor.jsonc")

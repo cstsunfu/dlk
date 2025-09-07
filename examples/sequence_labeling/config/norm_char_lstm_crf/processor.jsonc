@@ -1,11 +1,9 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
         "feed_order": [
             "token_norm",
-            "fast_tokenizer",
+            "hf_tokenizer",
             "char_gather",
             "token2charid",
             "seq_lab_relabel",
@@ -16,7 +14,7 @@
         ],
         "do_save": true,
         "@subprocessor@token_norm": {
-            "tokenizer_path": "@lambda @$$.@fast_tokenizer.tokenizer_path",
+            "tokenizer_path": "@lambda @$$.@hf_tokenizer.tokenizer_path",
             "input_map": {
                 "sentence": "sentence"
             },
@@ -24,8 +22,8 @@
                 "norm_sentence": "norm_sentence"
             }
         },
-        "@subprocessor@fast_tokenizer": {
-            "tokenizer_path": "./../../sequence_labeling/conll2003/data/bert/tokenizer.json",
+        "@subprocessor@hf_tokenizer": {
+            "tokenizer_path": "./../../sequence_labeling/conll2003/data/bert",
             "input_map": {
                 "sentence": "norm_sentence"
             }
@@ -61,7 +59,7 @@
         },
         "@subprocessor@token_embedding#token": {
             "embedding_file": "",
-            "tokenizer_path": "@lambda @$$.@fast_tokenizer.tokenizer_path",
+            "tokenizer_path": "@lambda @$$.@hf_tokenizer.tokenizer_path",
             "token_embedding": "token_embedding",
             "embedding_size": 32
         },

@@ -4,15 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import numpy as np
-import pandas as pd
+from datasets import Dataset
 from src.get_data import get_data
 
 from dlk.preprocess import PreProcessor
 
-data = get_data()
+data: list = get_data()
 input = {
-    "train": pd.DataFrame(data).head(100),
-    "valid": pd.DataFrame(data).head(100),
+    "train": Dataset.from_list(data),
+    "valid": Dataset.from_list(data),
 }
 
 processor = PreProcessor("./config/processor.jsonc")

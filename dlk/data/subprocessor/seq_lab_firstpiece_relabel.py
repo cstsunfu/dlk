@@ -109,7 +109,7 @@ class SeqLabFirstPieceRelabel(BaseSubProcessor):
             for priority, entity in enumerate(self.config.entity_priority)
         }
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> Dict:
         """firstpiece relabel the data
 
         Args:
@@ -131,31 +131,56 @@ class SeqLabFirstPieceRelabel(BaseSubProcessor):
             >>>         },
             >>>     ],
             >>> },
-
-            deliver_meta:
-                ignore
         Returns:
             relabeld data
         """
+        labels = []
+        gather_index = []
+        word_word_ids = []
+        word_offsets = []
+        entities_info = []
 
         if self.stage in {"predict", "online"}:
-            data[
-                [
-                    self.config.output_map.gather_index,
-                    self.config.output_map.word_word_ids,
-                    self.config.output_map.word_offsets,
-                ]
-            ] = data.apply(self.relabel, axis=1, result_type="expand")
+            for pre_clean_entities_info, offsets, sub_word_ids in zip(
+                data[self.config.input_map.entities_info],
+                data[self.config.input_map.offsets],
+                data[self.config.input_map.word_ids],
+            ):
+                (
+                    cur_gather_index,
+                    cur_word_ids,
+                    cur_word_offsets,
+                ) = self.relabel(pre_clean_entities_info, offsets, sub_word_ids)
+                gather_index.append(cur_gather_index)
+                word_word_ids.append(cur_word_ids)
+                word_offsets.append(cur_word_offsets)
+            data[self.config.output_map.gather_index] = gather_index
+            data[self.config.output_map.word_word_ids] = word_word_ids
+            data[self.config.output_map.word_offsets] = word_offsets
         else:
-            data[
-                [
-                    self.config.output_map.labels,
-                    self.config.output_map.gather_index,
-                    self.config.output_map.word_word_ids,
-                    self.config.output_map.word_offsets,
-                    self.config.input_map.entities_info,
-                ]
-            ] = data.apply(self.relabel, axis=1, result_type="expand")
+            for pre_clean_entities_info, offsets, sub_word_ids in zip(
+                data[self.config.input_map.entities_info],
+                data[self.config.input_map.offsets],
+                data[self.config.input_map.word_ids],
+            ):
+                (
+                    cur_labels,
+                    cur_gather_index,
+                    cur_word_ids,
+                    cur_word_offsets,
+                    cur_entities_info,
+                ) = self.relabel(pre_clean_entities_info, offsets, sub_word_ids)
+                labels.append(cur_labels)
+                gather_index.append(cur_gather_index)
+                word_word_ids.append(cur_word_ids)
+                word_offsets.append(cur_word_offsets)
+                entities_info.append(cur_entities_info)
+            data[self.config.output_map.labels] = labels
+            data[self.config.output_map.gather_index] = gather_index
+            data[self.config.output_map.word_word_ids] = word_word_ids
+            data[self.config.output_map.word_offsets] = word_offsets
+            data[self.config.input_map.entities_info] = entities_info
+
         return data
 
     def find_position_in_offsets(
@@ -197,11 +222,13 @@ class SeqLabFirstPieceRelabel(BaseSubProcessor):
                 start += 1
         return -1
 
-    def relabel(self, one_ins: pd.Series):
+    def relabel(self, pre_clean_entities_info, offsets, sub_word_ids):
         """make word label, first merge the token_offset to word_offsets then generate word label from  word_offsets
 
         Args:
-            one_ins: include sentence, entity_info, offsets
+            pre_clean_entities_info: the entities info before clean
+            offsets: the token offsets from tokenizer
+            sub_word_ids: the word_ids from tokenizer
 
         Returns:
             For train stage:
@@ -209,10 +236,7 @@ class SeqLabFirstPieceRelabel(BaseSubProcessor):
             For predict / online stage:
                 gather_index(real token index of labels), word_ids(sub_word_ids, updated to whole word), word_offsets(token_offsets updated to whole word)
         """
-        pre_clean_entities_info = one_ins[self.config.input_map.entities_info]
         pre_clean_entities_info.sort(key=lambda x: x["start"])
-        offsets = one_ins[self.config.input_map.offsets]
-        sub_word_ids = one_ins[self.config.input_map.word_ids]
         if not sub_word_ids:
             logger.warning(
                 f"entity_info: {pre_clean_entities_info}, offsets: {offsets} "
@@ -326,10 +350,8 @@ class SeqLabFirstPieceRelabel(BaseSubProcessor):
 
         if len(sub_labels) != len(gather_index):
             logger.error(f"{len(sub_labels)} vs {len(gather_index)}")
-            for i in one_ins:
-                logger.error(f"{i}")
             raise PermissionError
 
         if not self.config.clean_droped_entity:
-            entities_info = one_ins[self.config.input_map.entities_info]
+            entities_info = pre_clean_entities_info
         return sub_labels, gather_index, word_ids, word_offsets, entities_info

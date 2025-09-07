@@ -7,8 +7,7 @@ import copy
 import json
 import uuid
 
-import pandas as pd
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from utils import convert
 
 from dlk.preprocess import PreProcessor
@@ -50,10 +49,9 @@ for filed in ["train", "test"]:
 
 
 input = {
-    "train": pd.DataFrame(json_data_map["train"]).head(100),
-    "valid": pd.DataFrame(json_data_map["test"]).head(100),
+    "train": Dataset.from_list(json_data_map["train"][:1000]),
+    "valid": Dataset.from_list(json_data_map["test"][:100]),
 }
 
-# processor = PreProcessor("./bert_firstpiece/processor.jsonc")
 processor = PreProcessor("./config/bert_firstpiece_lstm_crf/processor.jsonc")
 processor.fit(input)

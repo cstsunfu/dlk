@@ -54,11 +54,9 @@ data = data.map(
         "uuid": str(uuid.uuid1()),
     },
 )
-flat_train = flat(data["train"].to_dict())
-# flat_val = flat(data['validation'].to_dict())
 input = {
-    "train": pd.DataFrame(flat_train).head(10000),
-    "valid": pd.DataFrame(flat_train).head(100),
+    "train": data["train"].select(range(10000)),
+    "valid": data["validation"].select(range(100)),
 }
 
 processor = PreProcessor("./config/processor.jsonc")

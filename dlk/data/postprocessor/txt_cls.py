@@ -119,7 +119,7 @@ class TxtClsPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: List,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -127,7 +127,7 @@ class TxtClsPostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin List data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -147,13 +147,13 @@ class TxtClsPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin List data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -169,7 +169,7 @@ class TxtClsPostProcessor(BasePostProcessor):
         for i, (one_logits, index, label_id) in enumerate(
             zip(logits, indexes, label_ids)
         ):
-            one_ins = self._get_origin_data(origin_data.iloc[int(index)])
+            one_ins = self._get_origin_data(origin_data[int(index)])
 
             max_val = np.max(one_logits)  # 防止数值溢出
             exp_logits = np.exp(one_logits - max_val)

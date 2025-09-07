@@ -102,43 +102,40 @@ class SpanRelationRelabel(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.vocab)
         )
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> Dict:
         if not self.loaded_meta:
             self.load_meta()
 
-        data[
-            [
-                self.config.output_map.sparse_head_label_ids,
-                self.config.output_map.sparse_tail_label_ids,
-            ]
-        ] = data.apply(self.relabel, axis=1, result_type="expand")
-
-        if self.config.strict:
-            # Drop rows where either of the new columns is None
-            data.dropna(
-                subset=[
-                    self.config.output_map.sparse_head_label_ids,
-                    self.config.output_map.sparse_tail_label_ids,
-                ],
-                inplace=True,
+        sparse_head_label_ids = []
+        sparse_tail_label_ids = []
+        for relations_info, processed_entities_info in zip(
+            data[self.config.input_map.relations_info],
+            data[self.config.input_map.processed_entities_info],
+        ):
+            head_labels, tail_labels = self.relabel(
+                relations_info, processed_entities_info
             )
-            data.reset_index(inplace=True, drop=True)
+            sparse_head_label_ids.append(head_labels)
+            sparse_tail_label_ids.append(tail_labels)
+        data[self.config.output_map.sparse_head_label_ids] = sparse_head_label_ids
+        data[self.config.output_map.sparse_tail_label_ids] = sparse_tail_label_ids
 
         return data
 
-    def relabel(self, one_ins: pd.Series) -> Tuple[List, List]:
+    def relabel(self, relations_info, processed_entities_info) -> Tuple[List, List]:
         """
         Creates two sparse lists of labels for head-to-head and tail-to-tail relations.
 
         Args:
-            one_ins: A pandas series containing 'relations_info' and 'processed_entities_info'.
+            relations_info: The list of relation dictionaries.
+            processed_entities_info: The list of processed entity dictionaries.
 
         Returns:
             A tuple containing (head_relation_labels, tail_relation_labels).
             Returns (None, None) on failure if strict mode is on.
         """
-        relations_info = one_ins[self.config.input_map.relations_info]
-        processed_entities_info = one_ins[self.config.input_map.processed_entities_info]
+        # relations_info = one_ins[self.config.input_map.relations_info]
+        # processed_entities_info = one_ins[self.config.input_map.processed_entities_info]
 
         entities_id_info_map = {
             entity_info["entity_id"]: entity_info

@@ -68,22 +68,18 @@ class BaseSubProcessor(object):
     def __init__(self, stage: str, config: BaseSubProcessorConfig, meta_dir: str):
         self.loaded_meta = False
         self.meta_dir = meta_dir
+        self.context = {}
 
     def load_meta(self):
         self.loaded_meta = True
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> pd.DataFrame:
         """SubProcess entry
 
         Args:
-            data:
-            >>> |sentence |label|
-            >>> |---------|-----|
-            >>> |sent_a...|la   |
-            >>> |sent_b...|lb   |
+            data: Dict or Dict Like
+            >>> {"sentence": ["sent_a", "sent_b"], "label": ["la", "lb"]}
 
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
         Returns:
             processed data
 

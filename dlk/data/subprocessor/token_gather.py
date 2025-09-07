@@ -93,7 +93,7 @@ class TokenGather(BaseSubProcessor):
             else os.path.join(self.meta_dir, self.config.update)
         )
 
-    def get_elements_from_series_by_trace(self, data: pd.Series, trace: str) -> List:
+    def get_elements_by_trace(self, data: pd.Series, trace: str) -> List:
         """get the data from data[trace_path]
         >>> for example:
         >>> data[0] = {'entities_info': [{'start': 0, 'end': 1, 'labels': ['Label1']}]} // data is a series, and every element is as data[0]
@@ -127,8 +127,8 @@ class TokenGather(BaseSubProcessor):
 
         return [get_elements_from_iter_by_trace(one, trace.split(".")) for one in data]
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
+    def process(self, data: Dict) -> Dict:
+        """token gather entry
 
         Args:
             data:
@@ -143,8 +143,6 @@ class TokenGather(BaseSubProcessor):
             processed data
 
         """
-        if not deliver_meta:
-            return data
         if self.update:
             with open(self.update, mode="r", encoding="utf-8") as f:
                 self.vocab = Vocabulary.load(json.load(f))
@@ -157,7 +155,7 @@ class TokenGather(BaseSubProcessor):
                 self.vocab.auto_update(data[column])
             elif isinstance(column, dict):
                 self.vocab.auto_update(
-                    self.get_elements_from_series_by_trace(
+                    self.get_elements_by_trace(
                         data[column["column"]], trace=column["trace"]
                     )
                 )

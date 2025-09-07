@@ -92,7 +92,7 @@ class SeqLabRelabel(BaseSubProcessor):
             for priority, entity in enumerate(self.config.entity_priority)
         }
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> Dict:
         """firstpiece relabel the data
 
         Args:
@@ -114,15 +114,25 @@ class SeqLabRelabel(BaseSubProcessor):
             >>>         },
             >>>     ],
             >>> },
-
-            deliver_meta:
-                ignore
         Returns:
             relabeld data
         """
-        data[
-            [self.config.output_map.labels, self.config.input_map.entities_info]
-        ] = data.apply(self.relabel, axis=1, result_type="expand")
+        labels = []
+        entities_info = []
+
+        for pre_clean_entities_info, offsets, sub_word_ids in zip(
+            data[self.config.input_map.entities_info],
+            data[self.config.input_map.offsets],
+            data[self.config.input_map.word_ids],
+        ):
+            (
+                cur_labels,
+                cur_entities_info,
+            ) = self.relabel(pre_clean_entities_info, offsets, sub_word_ids)
+            labels.append(cur_labels)
+            entities_info.append(cur_entities_info)
+        data[self.config.output_map.labels] = labels
+        data[self.config.input_map.entities_info] = entities_info
         return data
 
     def find_position_in_offsets(
@@ -164,20 +174,19 @@ class SeqLabRelabel(BaseSubProcessor):
                 start += 1
         return -1
 
-    def relabel(self, one_ins: pd.Series):
+    def relabel(self, pre_clean_entities_info, offsets, sub_word_ids):
         """make token label, if use the first piece label please use the 'seq_lab_firstpiece_relabel'
 
         Args:
-            one_ins: include sentence, entity_info, offsets
+            pre_clean_entities_info: the entities info before clean
+            offsets: the token offsets from tokenizer
+            sub_word_ids: the word_ids from tokenizer
 
         Returns:
             labels(labels for each subtoken)
 
         """
-        pre_clean_entities_info = one_ins[self.config.input_map.entities_info]
         pre_clean_entities_info.sort(key=lambda x: x["start"])
-        offsets: List = one_ins[self.config.input_map.offsets]
-        sub_word_ids: List = one_ins[self.config.input_map.word_ids]
         if not sub_word_ids:
             logger.warning(
                 f"entity_info: {pre_clean_entities_info}, offsets: {offsets} "
@@ -270,10 +279,8 @@ class SeqLabRelabel(BaseSubProcessor):
 
         if len(sub_labels) != offset_length:
             logger.error(f"{len(sub_labels)} vs {offset_length}")
-            for i in one_ins:
-                logger.error(f"{i}")
             raise PermissionError
 
         if not self.config.clean_droped_entity:
-            entities_info = one_ins[self.config.input_map.entities_info]
+            entities_info = pre_clean_entities_info
         return sub_labels, entities_info

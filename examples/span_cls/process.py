@@ -8,7 +8,7 @@ import json
 import uuid
 
 import pandas as pd
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from utils import convert
 
 from dlk.preprocess import PreProcessor
@@ -50,8 +50,8 @@ for filed in ["train", "test"]:
 
 
 input = {
-    "train": pd.DataFrame(json_data_map["train"]),
-    "valid": pd.DataFrame(json_data_map["test"]),
+    "train": Dataset.from_lists(json_data_map["train"]),
+    "valid": Dataset.from_lists(json_data_map["test"]),
 }
 
 

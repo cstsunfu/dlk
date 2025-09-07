@@ -114,7 +114,7 @@ class SeqLabPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: List,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -122,7 +122,7 @@ class SeqLabPostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -143,13 +143,13 @@ class SeqLabPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -376,14 +376,14 @@ class SeqLabPostProcessor(BasePostProcessor):
         return {"start": start, "end": end, "labels": [label]}
 
     def _process4predict(
-        self, predict: torch.LongTensor, index: int, origin_data: pd.DataFrame
+        self, predict: torch.LongTensor, index: int, origin_data: List
     ) -> Dict:
         """gather the predict and origin text and ground_truth_entities_info for predict
 
         Args:
             predict: the predict label_ids
             index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
+            origin_data: the origin data
 
         Returns:
             >>> one_ins info
@@ -396,7 +396,7 @@ class SeqLabPostProcessor(BasePostProcessor):
 
         """
         one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
+        origin_ins = origin_data[int(index)]
         one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
         one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
         one_ins["entities_info"] = origin_ins[
@@ -440,7 +440,7 @@ class SeqLabPostProcessor(BasePostProcessor):
         one_ins["predict_entities_info"] = predict_entities_info
         return one_ins
 
-    def crf_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
+    def crf_predict(self, output: Dict, origin_data: List) -> List:
         """use the crf predict label_ids get predict info
 
         Args:
@@ -480,7 +480,7 @@ class SeqLabPostProcessor(BasePostProcessor):
             predicts.append(one_ins)
         return predicts
 
-    def word_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
+    def word_predict(self, output: Dict, origin_data: List) -> List:
         """use the firstpiece or whole word predict label_logits get predict info
 
         Args:
@@ -516,7 +516,7 @@ class SeqLabPostProcessor(BasePostProcessor):
 
         indexes = list(output[self.config.input_map.index])
         for logits, index in list(zip(batch_logits, indexes)):
-            origin_ins = origin_data.iloc[int(index)]
+            origin_ins = origin_data[int(index)]
             word_ids = origin_ins[self.config.origin_input_map.word_ids]
 
             rel_token_len = len(word_ids)
@@ -527,7 +527,7 @@ class SeqLabPostProcessor(BasePostProcessor):
             predicts.append(one_ins)
         return predicts
 
-    def predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
+    def predict(self, output: Dict, origin_data: List) -> List:
         """general predict process (especially for subword)
 
         Args:
@@ -565,7 +565,7 @@ class SeqLabPostProcessor(BasePostProcessor):
 
         for logits, index in list(zip(batch_logits, indexes)):
             one_ins = {}
-            origin_ins = origin_data.iloc[int(index)]
+            origin_ins = origin_data[int(index)]
 
             input_ids = origin_ins[self.config.origin_input_map.input_ids]
             one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
@@ -577,11 +577,11 @@ class SeqLabPostProcessor(BasePostProcessor):
             rel_token_len = len(input_ids)
 
             special_tokens_mask = np.array(
-                origin_data.iloc[int(index)][
+                origin_data[int(index)][
                     self.config.origin_input_map.special_tokens_mask
                 ][:rel_token_len]
             )
-            offset_mapping = origin_data.iloc[int(index)][
+            offset_mapping = origin_data[int(index)][
                 self.config.origin_input_map.offsets
             ][:rel_token_len]
 

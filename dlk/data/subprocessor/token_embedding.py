@@ -189,8 +189,8 @@ class TokenEmbedding(BaseSubProcessor):
         )
         return embedding_dict
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
+    def process(self, data: Dict) -> Dict:
+        """the token embedding entry
 
         Args:
             data:
@@ -198,16 +198,10 @@ class TokenEmbedding(BaseSubProcessor):
             >>> |---------|-----|
             >>> |sent_a...|la   |
             >>> |sent_b...|lb   |
-
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
         Returns:
             processed data
 
         """
-        if not deliver_meta:
-            return data
-
         if not self.loaded_meta:
             self.load_meta()
 

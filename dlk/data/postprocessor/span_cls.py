@@ -103,14 +103,14 @@ class SpanClsPostProcessor(BasePostProcessor):
         self.tokenizer = Tokenizer.from_str(tokenizer_str)
 
     def _process4predict(
-        self, predict_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame
+        self, predict_logits: torch.FloatTensor, index: int, origin_data: List
     ) -> Dict:
         """gather the predict and origin text and ground_truth_entities_info for predict
 
         Args:
             predict: the predict span logits
             index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
+            origin_data: the origin List
 
         Returns:
             >>> one_ins info
@@ -145,7 +145,7 @@ class SpanClsPostProcessor(BasePostProcessor):
             return {"start": start, "end": end, "labels": [label]}
 
         one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
+        origin_ins = origin_data[int(index)]
         one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
         one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
         one_ins["entities_info"] = origin_ins[
@@ -188,7 +188,7 @@ class SpanClsPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: List,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -196,7 +196,7 @@ class SpanClsPostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin List data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -216,13 +216,13 @@ class SpanClsPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin List data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """

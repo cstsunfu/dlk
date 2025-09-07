@@ -99,7 +99,7 @@ class DefaultProcessor(object):
             meta_dir=config.meta_dir,
         )
 
-    def save(self, data: pd.DataFrame, type_name: str, i: int):
+    def save(self, dataset, dataset_name: str):
         """save data to self.config.processed_data_dir
 
         Args:
@@ -108,12 +108,7 @@ class DefaultProcessor(object):
         Returns:
             None
         """
-        os.makedirs(
-            os.path.join(self.config.processed_data_dir, type_name), exist_ok=True
-        )
-        data_path = os.path.join(self.config.processed_data_dir, type_name, f"{i}.pkl")
-        assert i == 0, f"Currently only support save one {type_name} data"
-        pkl.dump(data, open(data_path, "wb"))
+        dataset.save_to_disk(os.path.join(self.config.processed_data_dir, dataset_name))
 
     def process(self, data: Dict) -> Dict:
         """Process entry for train stage
@@ -128,18 +123,18 @@ class DefaultProcessor(object):
         Returns:
             processed data
         """
-        train_data: pd.DataFrame = data["train"]
-        valid_data: pd.DataFrame = data["valid"]
-        train_data = self.tokenizer.process(train_data, deliver_meta=False)
-        valid_data = self.tokenizer.process(valid_data, deliver_meta=False)
+        train_data = data["train"]
+        valid_data = data["valid"]
+        train_data = self.tokenizer.process(train_data)
+        valid_data = self.tokenizer.process(valid_data)
         self.label_gather.process(
-            train_data, deliver_meta=True
+            train_data
         )  # will save the label vocab to `os.path.join(self.config.meta_dir, "label_vocab.json")`
-        train_data = self.label2id.process(train_data, deliver_meta=False)
-        valid_data = self.label2id.process(valid_data, deliver_meta=False)
+        train_data = self.label2id.process(train_data)
+        valid_data = self.label2id.process(valid_data)
 
-        self.save(train_data, "train", 0)  # save the data
-        self.save(valid_data, "valid", 0)
+        self.save(train_data, "train")  # save the data
+        self.save(valid_data, "valid")
 
     def online_process(self, data: pd.DataFrame):
         """online server process the data without save, for online stage
@@ -154,5 +149,5 @@ class DefaultProcessor(object):
             data
         )  # for online stage, just need to add a fake label_ids, just for donot consider the different of train and online for next step, or you can skip this step
         return self.tokenizer.process(
-            data, deliver_meta=False
+            data
         )  # for online stage just need tokenized the data

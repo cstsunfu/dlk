@@ -117,19 +117,25 @@ class SpanClsRelabel(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.vocab)
         )
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> Dict:
         if not self.loaded_meta:
             self.load_meta()
 
-        data[
-            [
-                self.config.output_map.sparse_label_ids,
-                self.config.output_map.processed_entities_info,
-            ]
-        ] = data.apply(self.relabel, axis=1, result_type="expand")
-        if self.config.strict:
-            data.dropna(axis=0, inplace=True)
-            data.reset_index(inplace=True, drop=True)
+        label_ids = []
+        entities_info = []
+
+        for pre_clean_entities_info, offsets, sub_word_ids in zip(
+            data[self.config.input_map.entities_info],
+            data[self.config.input_map.offsets],
+            data[self.config.input_map.word_ids],
+        ):
+            sparse_label, processed_entities_info = self.relabel(
+                pre_clean_entities_info, offsets, sub_word_ids
+            )
+            label_ids.append(sparse_label)
+            entities_info.append(processed_entities_info)
+        data[self.config.output_map.sparse_label_ids] = label_ids
+        data[self.config.output_map.processed_entities_info] = entities_info
 
         return data
 
@@ -158,22 +164,24 @@ class SpanClsRelabel(BaseSubProcessor):
                 start += 1
         return -1
 
-    def relabel(self, one_ins: pd.Series):
+    def relabel(self, pre_clean_entities_info, offsets, sub_word_ids):
         """
         Creates a sparse list of labels for entity spans.
 
         Args:
-            one_ins: include sentence, entity_info, offsets
+            pre_clean_entities_info: the entities info before clean
+            offsets: the token offsets from tokenizer
+            sub_word_ids: the word_ids from tokenizer
 
         Returns:
             sparse_labels: A list of [start_token_idx, end_token_idx, label_id]
             processed_entities_info: Enriched entity info with token indices
         """
-        pre_clean_entities_info: List = one_ins[self.config.input_map.entities_info]
+        # pre_clean_entities_info: List = one_ins[self.config.input_map.entities_info]
         if self.config.drop != "none":
             pre_clean_entities_info.sort(key=lambda x: x["start"])
-        offsets: List = one_ins[self.config.input_map.offsets]
-        sub_word_ids: List = one_ins[self.config.input_map.word_ids]
+        # offsets: List = one_ins[self.config.input_map.offsets]
+        # sub_word_ids: List = one_ins[self.config.input_map.word_ids]
 
         # Determine the start index for searching tokens, respecting sentence masking
         mask_first_index = 0

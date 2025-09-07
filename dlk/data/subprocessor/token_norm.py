@@ -7,6 +7,7 @@ import json
 import logging
 import os
 from functools import partial
+from typing import Dict
 
 import pandas as pd
 from intc import (
@@ -162,7 +163,7 @@ class TokenNorm(BaseSubProcessor):
                 return norm
         return ""
 
-    def seq_norm(self, key: str, one_item: pd.Series) -> str:
+    def seq_norm(self, seq) -> str:
         """norm a sentence, the sentence is from one_item[key]
 
         Args:
@@ -173,7 +174,6 @@ class TokenNorm(BaseSubProcessor):
             norm_sentence
 
         """
-        seq = one_item[key]
         norm_seq = [c for c in seq]
         encode = self.tokenizer.encode(seq)
         for i, token in enumerate(encode.tokens):
@@ -189,8 +189,8 @@ class TokenNorm(BaseSubProcessor):
                 norm_seq[token_offset[0] : token_offset[1]] = norm_token
         return "".join(norm_seq)
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
+    def process(self, data: Dict) -> Dict:
+        """token norm entry
 
         Args:
             data:
@@ -199,15 +199,12 @@ class TokenNorm(BaseSubProcessor):
             >>> |sent_a...|la   |
             >>> |sent_b...|lb   |
 
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
         Returns:
             processed data
 
         """
-        _seq_norm = partial(self.seq_norm, self.config.input_map.sentence)
-        data[self.config.output_map.norm_sentence] = data.apply(_seq_norm, axis=1)
-        # WARNING: if you change the apply to parallel_apply, you should change the _zero_digits_replaced_num, etc. to multiprocess safely(BTW, use parallel_apply in tokenizers==0.10.3 will make the process very slow)
-        # data_set[value] = data_set.apply(_seq_norm, axis=1)
+        data[self.config.output_map.norm_sentence] = [
+            self.seq_norm(seq) for seq in data[self.config.input_map.sentence]
+        ]
 
         return data

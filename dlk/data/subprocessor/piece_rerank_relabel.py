@@ -72,8 +72,8 @@ class PieceRerankRelabel(BaseSubProcessor):
         self.stage = stage
         self.config = config
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
+    def process(self, data: Dict) -> Dict:
+        """relabel the piece rerank data
 
         Args:
             data: one is like
@@ -88,21 +88,27 @@ class PieceRerankRelabel(BaseSubProcessor):
         Returns:
             processed data
         """
-        data[self.config.output_map.label_ids] = data.apply(self.relabel, axis=1)
-
+        data[self.config.output_map.label_ids] = [
+            self.relabel(word_ids, rank_info)
+            for word_ids, rank_info in zip(
+                data[self.config.input_map.word_ids],
+                data[self.config.input_map.rank_info],
+            )
+        ]
         return data
 
-    def relabel(self, one_ins: pd.Series):
+    def relabel(self, word_ids, rank_info) -> np.ndarray:
         """make token label, if use the first piece label please use the 'piece_rerank_firstpiece_relabel'
 
         Args:
-            one_ins: include sentence, rank_info
+            word_ids: the word ids
+            rank_info: the rank info
 
         Returns:
             label_matrix for real rank
         """
-        word_ids: List = one_ins[self.config.input_map.word_ids]
-        rank_info = one_ins[self.config.input_map.rank_info]
+        # word_ids: List = one_ins[self.config.input_map.word_ids]
+        # rank_info = one_ins[self.config.input_map.rank_info]
         seq_len = len(word_ids)
         label_matrix = np.full((seq_len, seq_len), 0, dtype=np.int8)
         if not word_ids[0]:

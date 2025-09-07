@@ -22,8 +22,8 @@ from intc import (
     SubModule,
     cregister,
 )
-from tokenizers import Tokenizer, normalizers, pre_tokenizers
-from tokenizers.models import WordPiece
+from tokenizers import normalizers, pre_tokenizers
+from transformers import AutoTokenizer
 
 from dlk.utils.io import open
 from dlk.utils.register import register
@@ -38,9 +38,9 @@ from . import BaseSubProcessor, BaseSubProcessorConfig
 logger = logging.getLogger(__name__)
 
 
-@cregister("subprocessor", "fast_tokenizer")
-class FastTokenizerConfig(BaseSubProcessorConfig):
-    """FastTokenizer use hugingface tokenizers"""
+@cregister("subprocessor", "hf_tokenizer")
+class HFAutoTokenizerConfig(BaseSubProcessorConfig):
+    """HFAutoTokenizer use huggingface transformers.AutoTokenizer"""
 
     train_data_set = ListField(
         value=["train", "valid", "test"],
@@ -106,12 +106,12 @@ class FastTokenizerConfig(BaseSubProcessorConfig):
         attention_mask = StrField(
             value="attention_mask", help="the output attention_mask"
         )
-        type_ids = StrField(value="type_ids", help="the output type_ids")
+        type_ids = StrField(value="token_type_ids", help="the output token_type_ids")
         special_tokens_mask = StrField(value="", help="the output special_tokens_mask")
-        overflowing = StrField(value="", help="the output overflowing")
-        offsets = StrField(value="offsets", help="the output offsets")
+        overflowing = StrField(value="", help="the output overflowing_tokens")
+        offsets = StrField(value="offset_mapping", help="the output offset_mapping")
         word_ids = StrField(value="word_ids", help="the output word_ids")
-        sequence_ids = StrField(value="", help="the output sequence_ids")
+        sequence_ids = StrField(value="sequence_ids", help="the output sequence_ids")
 
     output_map = NestField(
         value=OutputMap,
@@ -166,11 +166,6 @@ class FastTokenizerConfig(BaseSubProcessorConfig):
         ],
         help="the pre tokenizer for the tokenizer, if not default, you can provide a list of pre tokenizers",
     )
-    post_processor = AnyField(
-        value="default",
-        suggestions=["default", "bert", {"some_processor_need_config": {}}],
-        help="the post processor for the tokenizer",
-    )
 
     class ProcessData:
         is_pretokenized = BoolField(
@@ -189,71 +184,54 @@ class FastTokenizerConfig(BaseSubProcessorConfig):
     )
 
 
-@register("subprocessor", "fast_tokenizer")
-class FastTokenizer(BaseSubProcessor):
-    """FastTokenizer use hugingface tokenizers
+@register("subprocessor", "hf_tokenizer")
+class HFAutoTokenizer(BaseSubProcessor):
+    """HFAutoTokenizer use hugingface transformers.AutoTokenizer
 
-    Tokenizer the single $sentence
+    Tokenize the single $sentence
     Or tokenizer the pair $sentence_a, $sentence_b
-    Generator $tokens, $input_ids, $type_ids, $special_tokens_mask, $offsets, $word_ids, $overflowing, $sequence_ids
+    Generator $tokens, $input_ids, $token_type_ids, $special_tokens_mask, $offset_mapping, $word_ids, $overflowing_tokens, $sequence_ids
     """
 
-    def __init__(self, stage: str, config: FastTokenizerConfig, meta_dir: str):
+    def __init__(self, stage: str, config: HFAutoTokenizerConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
         self.config = config
-        with open(self.config.tokenizer_path, "r", encoding="utf-8") as f:
-            tokenizer_str = json.dumps(json.load(f))
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.config.tokenizer_path, use_fast=True
+        )
 
-        self.tokenizer = Tokenizer.from_str(tokenizer_str)
-        pretokenizer_factory = PreTokenizerFactory(self.tokenizer)
-        tokenizer_postprocessor_factory = TokenizerPostprocessorFactory(self.tokenizer)
-        tokenizer_normalizer_factory = TokenizerNormalizerFactory(self.tokenizer)
+        # The `backend_tokenizer` attribute gives us access to the underlying `tokenizers` library object
+        backend_tokenizer = self.tokenizer.backend_tokenizer
+        pretokenizer_factory = PreTokenizerFactory(backend_tokenizer)
+        tokenizer_normalizer_factory = TokenizerNormalizerFactory(backend_tokenizer)
 
         if not self.config.pre_tokenizer:
-            self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
+            backend_tokenizer.pre_tokenizer = pre_tokenizers.Sequence([])
         elif self.config.pre_tokenizer != "default":
             assert isinstance(self.config.pre_tokenizer, list)
-            pre_tokenizers_list = []
-            for one_pre_tokenizer in self.config.pre_tokenizer:
-                pre_tokenizers_list.append(
-                    self._get_processor(pretokenizer_factory, one_pre_tokenizer)
-                )
-            self.tokenizer.pre_tokenizer = pre_tokenizers.Sequence(pre_tokenizers_list)
-
-        if not self.config.post_processor:
-            raise KeyError(
-                "The tokenizer is not support disable default tokenizers post processor. (You can delete the config manually)"
-            )
-        elif self.config.post_processor != "default":
-            self.tokenizer.post_processor = self._get_processor(
-                tokenizer_postprocessor_factory, self.config.post_processor
+            pre_tokenizers_list = [
+                self._get_processor(pretokenizer_factory, one_pre_tokenizer)
+                for one_pre_tokenizer in self.config.pre_tokenizer
+            ]
+            backend_tokenizer.pre_tokenizer = pre_tokenizers.Sequence(
+                pre_tokenizers_list
             )
 
         if not self.config.normalizer:
-            self.tokenizer.normalizer = normalizers.Sequence([])
+            backend_tokenizer.normalizer = normalizers.Sequence([])
         elif self.config.normalizer != "default":
             assert isinstance(self.config.normalizer, list)
-            normalizers_list = []
-            for one_normalizer in self.config.normalizer:
-                normalizers_list.append(
-                    self._get_processor(tokenizer_normalizer_factory, one_normalizer)
-                )
-            self.tokenizer.normalizer = normalizers.Sequence(normalizers_list)
-
-        if self.config.truncation:
-            self.tokenizer.enable_truncation(
-                max_length=self.config.truncation.max_length,
-                stride=self.config.truncation.stride,
-                strategy=self.config.truncation.strategy,
-                direction=self.config.truncation.direction,
-            )
+            normalizers_list = [
+                self._get_processor(tokenizer_normalizer_factory, one_normalizer)
+                for one_normalizer in self.config.normalizer
+            ]
+            backend_tokenizer.normalizer = normalizers.Sequence(normalizers_list)
 
     def _get_processor(
         self,
         factory: Union[
             PreTokenizerFactory,
             TokenizerNormalizerFactory,
-            TokenizerPostprocessorFactory,
         ],
         one_processor: Union[Dict, str],
     ):
@@ -276,7 +254,7 @@ class FastTokenizer(BaseSubProcessor):
             return factory.get(one_processor)()
 
     def process(self, data: Dict) -> Dict:
-        """fast tokenizer entry
+        """haggingface tokenizer entry
 
         Args:
             data: Dict or Dict Like
@@ -285,15 +263,30 @@ class FastTokenizer(BaseSubProcessor):
         Returns:
             updated data
         """
+        truncation_strategy = (
+            self.config.truncation.strategy
+            if self.config.truncation
+            else "do_not_truncate"
+        )
+
         if self.config.input_type == "single":
-            batch_encodes = self.tokenizer.encode_batch(
-                (
-                    data[self.config.input_map.pretokenized_words]
-                    if self.config.process_data.is_pretokenized
-                    else data[self.config.input_map.sentence]
-                ),
-                is_pretokenized=self.config.process_data.is_pretokenized,
+            sentences = (
+                data[self.config.input_map.pretokenized_words]
+                if self.config.process_data.is_pretokenized
+                else data[self.config.input_map.sentence]
+            )
+            batch_encodes = self.tokenizer(
+                sentences,
+                is_split_into_words=self.config.process_data.is_pretokenized,
                 add_special_tokens=self.config.process_data.add_special_tokens,
+                truncation=truncation_strategy,
+                max_length=self.config.truncation.max_length
+                if self.config.truncation
+                else None,
+                stride=self.config.truncation.stride if self.config.truncation else 0,
+                return_overflowing_tokens=self.config.output_map.overflowing != "",
+                return_offsets_mapping=True,
+                padding="max_length" if self.config.truncation else False,
             )
         else:  # pair
             sentence_as = (
@@ -306,50 +299,52 @@ class FastTokenizer(BaseSubProcessor):
                 if self.config.process_data.is_pretokenized
                 else data[self.config.input_map.sentence_b]
             )
-            batch_encodes = self.tokenizer.encode_batch(
-                [
-                    (sentence_a, sentence_b)
-                    for sentence_a, sentence_b in zip(sentence_as, sentence_bs)
-                ],
-                is_pretokenized=self.config.process_data.is_pretokenized,
+            batch_encodes = self.tokenizer(
+                sentence_as,
+                sentence_bs,
+                is_split_into_words=self.config.process_data.is_pretokenized,
                 add_special_tokens=self.config.process_data.add_special_tokens,
+                truncation=truncation_strategy,
+                max_length=self.config.truncation.max_length
+                if self.config.truncation
+                else None,
+                stride=self.config.truncation.stride if self.config.truncation else 0,
+                return_overflowing_tokens=self.config.output_map.overflowing != "",
+                return_offsets_mapping=True,
+                padding="max_length" if self.config.truncation else False,
             )
-        (
-            tokens_list,
-            ids_list,
-            attention_mask_list,
-            type_ids_list,
-            special_tokens_mask_list,
-            offsets_list,
-            word_ids_list,
-            sequence_ids_list,
-        ) = ([], [], [], [], [], [], [], [])
-        for encode in batch_encodes:
-            tokens_list.append(encode.tokens)
-            ids_list.append(encode.ids)
-            attention_mask_list.append(encode.attention_mask)
-            type_ids_list.append(encode.type_ids)
-            special_tokens_mask_list.append(encode.special_tokens_mask)
-            offsets_list.append(encode.offsets)
-            word_ids_list.append(encode.word_ids)
-            sequence_ids_list.append(encode.sequence_ids)
-        output_map = self.config.output_map
-        if output_map.tokens:
-            data[output_map.tokens] = tokens_list
-        if output_map.ids:
-            data[output_map.ids] = ids_list
-        if output_map.attention_mask:
-            data[output_map.attention_mask] = attention_mask_list
-        if output_map.type_ids:
-            data[output_map.type_ids] = type_ids_list
 
-        if output_map.special_tokens_mask:
-            data[output_map.special_tokens_mask] = special_tokens_mask_list
+        output_map = self.config.output_map
+        if output_map.ids:
+            data[output_map.ids] = batch_encodes["input_ids"]
+        if output_map.attention_mask:
+            data[output_map.attention_mask] = batch_encodes["attention_mask"]
+        if output_map.type_ids:
+            data[output_map.type_ids] = batch_encodes["token_type_ids"]
         if output_map.offsets:
-            data[output_map.offsets] = offsets_list
+            data[output_map.offsets] = batch_encodes["offset_mapping"]
+        if output_map.special_tokens_mask and "special_tokens_mask" in batch_encodes:
+            data[output_map.special_tokens_mask] = batch_encodes["special_tokens_mask"]
+        if output_map.overflowing:
+            data[output_map.overflowing] = batch_encodes["overflowing_tokens"]
+
+        if output_map.tokens:
+            tokens_list = [
+                self.tokenizer.convert_ids_to_tokens(ids)
+                for ids in batch_encodes["input_ids"]
+            ]
+            data[output_map.tokens] = tokens_list
         if output_map.word_ids:
+            word_ids_list = [
+                batch_encodes.word_ids(i)
+                for i in range(len(batch_encodes["input_ids"]))
+            ]
             data[output_map.word_ids] = word_ids_list
         if output_map.sequence_ids:
+            sequence_ids_list = [
+                batch_encodes.sequence_ids(i)
+                for i in range(len(batch_encodes["input_ids"]))
+            ]
             data[output_map.sequence_ids] = sequence_ids_list
 
         if self.config.process_data.is_pretokenized and self.config.fix_offset:
@@ -391,7 +386,7 @@ class FastTokenizer(BaseSubProcessor):
             fixed_offsets = []
             word_offsets = [word_offset_a, word_offset_b]
             for offset, word_id, type_id in zip(offsets, word_ids, type_ids):
-                if offset == (0, 0):
+                if offset == (0, 0) or word_id is None:
                     fixed_offsets.append(offset)
                 else:
                     fixed_offsets.append(

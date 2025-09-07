@@ -10,6 +10,7 @@ from typing import Callable, Dict, Iterator, Type
 
 import pandas as pd
 import pyarrow.parquet as pq
+from datasets import Dataset
 from intc import (
     MISSING,
     AnyField,
@@ -39,39 +40,6 @@ class DefaultProcessorConfig(Base):
         additions=[None],
         help="the root path of input(should be processed) data, if set the data_root to not null, all the path of data will be relative to the data_root",
     )
-    train_data_type = StrField(
-        value="none",
-        options=[
-            "dict",
-            "dataframe",
-            "parquet",
-            "parquet_list",
-            "json",
-            "none",
-            "pickle",
-        ],
-        help="the type of train data, `none` means no train data, `parquet_list` means the train data is a list of parquet file path, we will separate load->process->save the data into several parts, `pickle` means the data is a pickled `dataframe` file, we will load it directly.",
-    )
-    valid_data_type = StrField(
-        value="none",
-        options=["dict", "dataframe", "parquet", "json", "none"],
-        help="the type of valid data, `none` means no valid data",
-    )
-    test_data_type = StrField(
-        value="none",
-        options=["dict", "dataframe", "parquet", "json", "none"],
-        help="the type of test data, `none` means no test data",
-    )
-    predict_data_type = StrField(
-        value="none",
-        options=["dict", "dataframe", "parquet", "parquet_list", "json", "none"],
-        help="the type of predict data, `none` means no predict data",
-    )
-    online_data_type = StrField(
-        value="none",
-        options=["dict", "dataframe", "none"],
-        help="the type of online data, `none` means no online data",
-    )
     feed_order = ListField(
         value=[],
         suggestions=[["tokenizer", "token_gather", "label_to_id", "token_embedding"]],
@@ -93,6 +61,20 @@ class DefaultProcessorConfig(Base):
         value="data/meta_data",
         help="the save dir of the meta info, not effective by `data_root`.",
     )
+    batch_size = IntField(
+        value=1000,
+        help="the batch size to process the data, only effective when the data is a datasets.Dataset",
+    )
+    collect_batch_size = FloatField(
+        value=1.0,
+        minimum=0.0,
+        maximum=1.0,
+        help="the batch size to collect meta info, only effective when the data is a datasets.Dataset",
+    )
+    num_proc = IntField(
+        value=-1,
+        help="the number of process to process the data, only effective when the data is a datasets.Dataset, -1 means cpu_count",
+    )
     do_save = BoolField(
         value=True,
         help="""
@@ -105,38 +87,6 @@ class DefaultProcessorConfig(Base):
         value={},
         help="subprocessors for processor",
     )
-
-
-def yield_dataframe(origin, data_type, config: DefaultProcessorConfig):
-    if data_type == "none":
-        yield None
-    elif data_type == "dataframe":
-        yield origin
-    elif data_type == "dict":
-        yield pd.DataFrame(data=origin)
-    elif data_type == "pickle":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pkl.load(open(origin, "rb"))
-    elif data_type == "json":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pd.read_json(origin)
-    elif data_type == "parquet":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pq.read_table(origin).to_pandas()
-    elif data_type == "parquet_list":
-        assert isinstance(origin, list)
-        for path in origin:
-            if config.data_root:
-                path = os.path.join(config.data_root, path)
-            yield pq.read_table(path).to_pandas()
-    else:
-        raise NotImplementedError
 
 
 @register("processor", "default")
@@ -156,24 +106,20 @@ class DefaultProcessor(object):
         self.stage = stage
         self.config: DefaultProcessorConfig = config
 
-        assert (
-            (not self.config.meta_collection_on_train)
-            or (not self.config.load_meta_on_start)
-            or (not self.config.train_data_type == "none")
+        if self.config.num_proc == -1:
+            self.config.num_proc = os.cpu_count()
+
+        assert (not self.config.meta_collection_on_train) or (
+            not self.config.load_meta_on_start
         )
 
-        self.subprocessors = {}
-        droped_subprocessors = []
-        self.will_processed_data_set = set()
+        self.subprocessors = {}  # for dataset type
+
         for name in self.config.feed_order:
             subprocessor_config_dict = config_dict[f"@subprocessor@{name}"]
             if not subprocessor_config_dict[self.stage_data_set_map[stage]]:
                 logger.info(f"Skip '{name}' ....")
-                droped_subprocessors.append(name)
                 continue
-            self.will_processed_data_set.update(
-                set(subprocessor_config_dict[self.stage_data_set_map[stage]])
-            )
             logger.info(f"Init '{name}' ....")
             subprocessor_name = subprocessor_config_dict["_name"].split("-")[0]
             subprocessor_config = cregister.get("subprocessor", subprocessor_name)(
@@ -186,34 +132,13 @@ class DefaultProcessor(object):
             )
             if self.config.load_meta_on_start:
                 subprocessor.load_meta()
-            self.subprocessors[name] = subprocessor
-        for name in droped_subprocessors:
-            self.config.feed_order.remove(name)
 
-    def load_data(self, data: Dict, type_name: str) -> Iterator:
-        """load data
-        Returns:
-            Iterable DataFrame
-        """
-        if type_name == "train":
-            return yield_dataframe(
-                data.get("train", {}), self.config.train_data_type, self.config
-            )
-        if type_name == "valid":
-            return yield_dataframe(
-                data.get("valid", {}), self.config.valid_data_type, self.config
-            )
-        if type_name == "test":
-            return yield_dataframe(
-                data.get("test", {}), self.config.test_data_type, self.config
-            )
-        if type_name == "predict":
-            return yield_dataframe(
-                data.get("predict", {}), self.config.predict_data_type, self.config
-            )
-        raise NotImplementedError
+            for data_set in subprocessor_config_dict[self.stage_data_set_map[stage]]:
+                if data_set not in self.subprocessors:
+                    self.subprocessors[data_set] = []
+                self.subprocessors[data_set].append(subprocessor)
 
-    def save(self, data: pd.DataFrame, type_name: str, i: int):
+    def save(self, dataset, dataset_name: str):
         """save data to self.config.processed_data_dir
 
         Args:
@@ -222,20 +147,22 @@ class DefaultProcessor(object):
         Returns:
             None
         """
-        os.makedirs(
-            os.path.join(self.config.processed_data_dir, type_name), exist_ok=True
-        )
-        data_path = os.path.join(self.config.processed_data_dir, type_name, f"{i}.pkl")
-        assert (
-            i == 0
-        ), f"Currently only support save one {type_name} data"  # TODO: support save multi data
-        pkl.dump(data, open(data_path, "wb"))
+        dataset.save_to_disk(os.path.join(self.config.processed_data_dir, dataset_name))
 
-    def process(self, data: Dict) -> Dict:
+    @classmethod
+    def do_collect(cls, config, datasets):
+        """directly collect meta info on any stage
+        Returns:
+            None
+        """
+        processor = cls(stage="collect", config=config)
+        processor.process(datasets)
+
+    def process(self, datasets: Dict) -> Dict:
         """Process entry
 
         Args:
-            data:
+            datasets:
             >>> {
             >>>     "train": {training data....},
             >>>     "test": ..
@@ -244,34 +171,27 @@ class DefaultProcessor(object):
         Returns:
             processed data
         """
+        if self.config.meta_collection_on_train and self.stage == "train":
+            self.do_collect(self.config, datasets)
         result = {}
-        if not self.config.do_save:
-            result = {key: [] for key in data}
-        for type_name in ["train", "valid", "test", "predict"]:
-            if type_name not in self.will_processed_data_set:
-                continue
-            for i, loaded_data in enumerate(self.load_data(data, type_name)):
-                if loaded_data is None:
-                    continue
-                deliver_meta = (
-                    self.config.meta_collection_on_train
-                    and type_name == "train"
-                    and i == 0
+        for dataset_name in datasets:
+            processed_data: Dataset = datasets[dataset_name]
+            for subprocessor in self.subprocessors.get(dataset_name, []):
+                processed_data = processed_data.map(
+                    lambda x: subprocessor.process(data=x),
+                    batched=True,
+                    batch_size=self.config.batch_size
+                    if self.stage != "collect"
+                    else int(self.config.collect_batch_size * len(processed_data)),
+                    num_proc=self.config.num_proc,
                 )
-                for name in self.config.feed_order:
-                    logger.info(
-                        f"Processing on {type_name} {i if i > 0 else ''}: {name}"
-                    )
-                    loaded_data = self.subprocessors[name].process(
-                        data=loaded_data, deliver_meta=deliver_meta
-                    )
-                if not self.config.do_save:
-                    result[type_name].append(loaded_data)
-                else:
-                    self.save(loaded_data, type_name, i)
+            if not self.config.do_save:
+                result[dataset_name].append(processed_data)
+            else:
+                self.save(processed_data, dataset_name)
         return result
 
-    def online_process(self, data: pd.DataFrame):
+    def online_process(self, data: Dict):
         """online server process the data without save
         Args:
             data:
@@ -280,8 +200,6 @@ class DefaultProcessor(object):
         Returns:
             processed data
         """
-        if "online" not in self.will_processed_data_set:
-            return data
-        for name in self.config.feed_order:
-            data = self.subprocessors[name].process(data=data, deliver_meta=False)
+        for subprocessor in self.subprocessors.get("online", []):
+            data = subprocessor.process(data=data)
         return data

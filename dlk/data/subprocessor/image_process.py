@@ -106,7 +106,7 @@ class ImageProcess(BaseSubProcessor):
             self.config.preprocess_method
         ].from_json_file(self.config.preprocess_config)
 
-    def image_process(self, input: pd.Series) -> np.ndarray:
+    def image_process(self, image) -> np.ndarray:
         """norm token, the result len(result) == len(token), exp.  12348->00000
 
         Args:
@@ -116,11 +116,9 @@ class ImageProcess(BaseSubProcessor):
             normed_token
 
         """
-        return self.image_processor(
-            input[self.config.input_map.image], return_tensors="np"
-        ).pixel_values
+        return self.image_processor(image, return_tensors="np").pixel_values
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> Dict:
         """image process entry
 
         Args:
@@ -129,15 +127,11 @@ class ImageProcess(BaseSubProcessor):
             >>> |------------------------------------------------|
             >>> |PIL.JpegImagePlugin.JpegImageFile image mode=...|
             >>> |PIL.JpegImagePlugin.JpegImageFile image mode=...|
-
-            deliver_meta:
-                False
         Returns:
             processed data
 
         """
-        data[self.config.output_map.pixel_values] = data.apply(
-            self.image_process, axis=1
-        )
-
+        data[self.config.output_map.pixel_values] = [
+            self.image_process(image) for image in data[self.config.input_map.image]
+        ]
         return data

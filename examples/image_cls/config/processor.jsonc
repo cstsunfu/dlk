@@ -1,8 +1,6 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
         "feed_order": [
             "token_gather",
             "token2id-label",

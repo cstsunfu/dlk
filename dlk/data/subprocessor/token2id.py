@@ -144,23 +144,20 @@ class Token2ID(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.vocab)
         )
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """firstpiece relabel the data
-
+    def process(self, data: Dict) -> Dict:
+        """map the tokens to ids
         Args:
             data: will processed data
-
-            deliver_meta:
-                ignore
         Returns:
             relabeld data
         """
         if not self.loaded_meta:
             self.load_meta()
 
-        def get_index_wrap(key, x):
-            return self.vocab.auto_get_index(x[key])
+        def get_index_wrap(tokens):
+            return self.vocab.auto_get_index(tokens)
 
-        get_index = partial(get_index_wrap, self.config.input_map.tokens)
-        data[self.config.output_map.token_ids] = data.apply(get_index, axis=1)
+        data[self.config.output_map.token_ids] = [
+            get_index_wrap(tokens) for tokens in data[self.config.input_map.tokens]
+        ]
         return data

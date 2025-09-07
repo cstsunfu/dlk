@@ -9,6 +9,7 @@ from typing import Any, Dict, Union
 
 import pandas as pd
 import torch
+from datasets import Dataset as HFDataset
 from intc import (
     MISSING,
     AnyField,
@@ -46,7 +47,7 @@ class DefaultDataset(Dataset):
     def __init__(
         self,
         config: DefaultDatasetConfig,
-        data: pd.DataFrame,
+        data: HFDataset,
         rt_config: Dict,
         key_type_pairs: Dict = None,
     ):
@@ -71,19 +72,19 @@ class DefaultDataset(Dataset):
             self.key_type_pairs = self.real_key_type_pairs(config.key_type_pairs, data)
 
     @staticmethod
-    def real_key_type_pairs(key_type_pairs: Dict, data: pd.DataFrame):
+    def real_key_type_pairs(key_type_pairs: Dict, data: HFDataset):
         """return the keys = key_type_pairs.keys() ∩ data.columns
 
         Args:
             key_type_pairs: data in columns should map to tensor type
-            data: the pd.DataFrame
+            data: the HF dataset
 
         Returns:
             real_key_type_pairs where keys = key_type_pairs.keys() ∩ data.columns
 
         """
         copy_key_type_pairs = copy.deepcopy(key_type_pairs)
-        has_key = set(data.columns)
+        has_key = set(data.features.keys())
         remove = set()
         for key in copy_key_type_pairs:
             if key not in has_key:
@@ -107,7 +108,7 @@ class DefaultDataset(Dataset):
 
         """
         idx = idx // self.repeat_valid
-        return self.prepare_tensor(idx, self.data.iloc[idx])
+        return self.prepare_tensor(idx, self.data[idx])
 
     def prepare_tensor(self, idx: int, item: Union[dict, pd.Series]):
         one_ins = {}

@@ -44,8 +44,8 @@ data = data.map(
 data = data.filter(lambda one: one["labels"] in {"entails", "nor", "contradicts"})
 
 input = {
-    "train": pd.DataFrame(flat(data["train"].to_dict())).head(100),
-    "valid": pd.DataFrame(flat(data["test"].to_dict())).head(100),
+    "train": data["train"],
+    "valid": data["validation"],
 }
 
 processor = PreProcessor("./config/processor.jsonc")

@@ -101,7 +101,7 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: List,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -109,7 +109,7 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -126,13 +126,13 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: List, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -141,7 +141,7 @@ class TokenGeneratePostProcessor(BasePostProcessor):
 
         batch_generated = batch_output[self.config.input_map.generated]
         for i, (index, generated) in enumerate(zip(indexes, batch_generated)):
-            one_origin = origin_data.iloc[int(index)]
+            one_origin = origin_data[int(index)]
             one_ins = self._get_origin_data(one_origin)
 
             generate_result = []

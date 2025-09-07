@@ -1,15 +1,13 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
         "feed_order": [
-            "fast_tokenizer#encoder",
-            "fast_tokenizer#decoder"
+            "hf_tokenizer#encoder",
+            "hf_tokenizer#decoder"
         ],
         "do_save": true,
-        "@subprocessor@fast_tokenizer#encoder": {
-            "tokenizer_path": "./pretrain/tokenizer.json",
+        "@subprocessor@hf_tokenizer#encoder": {
+            "tokenizer_path": "./pretrain",
             "input_map": {
                 "sentence": "input"
             },
@@ -25,8 +23,8 @@
                 "sequence_ids": "encoder_sequence_ids"
             }
         },
-        "@subprocessor@fast_tokenizer#decoder": {
-            "tokenizer_path": "./pretrain/tokenizer.json",
+        "@subprocessor@hf_tokenizer#decoder": {
+            "tokenizer_path": "./pretrain",
             "input_map": {
                 "sentence": "target"
             },

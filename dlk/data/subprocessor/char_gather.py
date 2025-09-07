@@ -100,24 +100,17 @@ class CharGather(BaseSubProcessor):
         else:
             return [self.split_to_char(sub_input) for sub_input in input]
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
+    def process(self, data: Dict) -> None:
         """Character gather entry
 
         Args:
-            data:
-            >>> |sentence |label|
-            >>> |---------|-----|
-            >>> |sent_a...|la   |
-            >>> |sent_b...|lb   |
+            data: Dict or Dict Like
+            >>> {"sentence": ["sent_a", "sent_b"], "label": ["la", "lb"]}
 
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
         Returns:
-            processed data
+            None
 
         """
-        if not deliver_meta:
-            return data
         if self.update:
             with open(self.update, mode="r", encoding="utf-8") as f:
                 self.vocab = Vocabulary.load(json.load(f))
@@ -134,4 +127,3 @@ class CharGather(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.char_vocab), "w", encoding="utf-8"
         ) as f:
             json.dump(self.vocab.dumps(), f)
-        return data

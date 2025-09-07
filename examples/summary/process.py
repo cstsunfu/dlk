@@ -1,6 +1,6 @@
 import uuid
 
-import pandas as pd
+from datasets import Dataset
 
 from dlk.preprocess import PreProcessor
 
@@ -20,10 +20,7 @@ data.append(
     }
 )
 # data = [data[0], data[0]]
-input = {
-    "train": pd.DataFrame(data).head(100),
-    "valid": pd.DataFrame(data).head(100),
-}
+input = {"train": Dataset.from_list(data), "train": Dataset.from_list(data)}
 
 processor = PreProcessor("./config/processor.jsonc")
 processor.fit(input)

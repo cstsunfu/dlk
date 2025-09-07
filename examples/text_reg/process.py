@@ -32,8 +32,8 @@ data = data.map(
     remove_columns=["sentence", "label"],
 )
 input = {
-    "train": pd.DataFrame(flat(data["train"].to_dict())),
-    "valid": pd.DataFrame(flat(data["validation"].to_dict())),
+    "train": data["train"],
+    "valid": data["validation"],
 }
 
 processor = PreProcessor("./config/processor.jsonc")

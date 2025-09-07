@@ -95,25 +95,21 @@ class Token2CharID(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.vocab)
         )
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """firstpiece relabel the data
+    def process(self, data: Dict) -> Dict:
+        """map the character in tokens to ids
         one_token like 'apple' will generate [1, 2, 2, 3] if max_token_len==4 and the vocab.word2idx = {'a': 1, "p": 2, "l": 3}
 
         Args:
             data: will processed data
-
-            deliver_meta:
-                ignore
         Returns:
-            relabeld data
+            processed data
         """
         if not self.loaded_meta:
             self.load_meta()
 
-        def get_index_wrap(sentence_name, offset_name, x):
+        def get_index_wrap(sentence, offsets):
             """wrap the vocab.get_index"""
-            sentence = list(x[sentence_name])
-            offsets = x[offset_name]
+            sentence = list(sentence)
             char_ids = []
             for offset in offsets:
                 token = sentence[offset[0] : offset[1]][: self.config.max_token_len]
@@ -123,10 +119,11 @@ class Token2CharID(BaseSubProcessor):
                 char_ids.append([self.vocab.get_index(c) for c in token])
             return char_ids
 
-        get_index = partial(
-            get_index_wrap,
-            self.config.input_map.sentence,
-            self.config.input_map.offsets,
-        )
-        data[self.config.output_map.char_ids] = data.apply(get_index, axis=1)
+        data[self.config.output_map.char_ids] = [
+            get_index_wrap(sentence, offsets)
+            for sentence, offsets in zip(
+                data[self.config.input_map.sentence],
+                data[self.config.input_map.offsets],
+            )
+        ]
         return data

@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List, Union
 
 import hjson
 import torch
+from datasets import Dataset
 from intc import (
     MISSING,
     AnyField,
@@ -294,10 +295,8 @@ class Train(object):
         # TODO: support load multi data for each type
         data = {}
         for data_type in ["train", "valid", "test"]:
-            data_path = os.path.join(config.processed_data_dir, data_type, "0.pkl")
-            if os.path.exists(data_path):
-                with open(data_path, "rb") as f:
-                    data[data_type] = pkl.load(f)
+            data_path = os.path.join(config.processed_data_dir, data_type)
+            data[data_type] = Dataset.load_from_disk(data_path)
         return data
 
     def get_datamodule(self, config: DLKFitConfig, world_size):
