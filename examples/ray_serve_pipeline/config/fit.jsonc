@@ -1,0 +1,64 @@
+{
+    "@fit": {
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 2,
+            "devices": 1,
+            "accelerator": "cpu",
+            "@callback@checkpoint": {
+                "monitor": "val_acc",
+                "save_last": true
+            }
+        },
+        "@datamodule@default": {
+            "train_batch_size": 4,
+            "predict_batch_size": 4,
+            "num_workers": 0,
+            "@dataset@default": {
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "label_ids": "long",
+                    "attention_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "key_padding_pairs": {
+                    "input_ids": 0,
+                    "label_ids": -100,
+                    "attention_mask": 0
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@bert_like": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "/tmp/bert/",
+                    "embedding_dim": 128,
+                    "dropout": 0.1
+                },
+                "@encoder@identity": {},
+                "@decoder@linear": {
+                    "input_size": 128,
+                    "output_size": 2,
+                    "pool": "first"
+                }
+            },
+            "@scheduler@constant": {},
+            "@loss@cross_entropy": {
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "ignore_index": -100
+            },
+            "@optimizer@adamw": {
+                "lr": 1e-4
+            },
+            "@postprocessor@txt_cls": {
+                "label_vocab": "label_vocab.json"
+            }
+        }
+    }
+}

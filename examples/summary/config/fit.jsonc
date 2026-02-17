@@ -46,7 +46,7 @@
                 "@initmethod@default": {},
                 "@encoder@bart_like_encoder": {
                     "from_pretrain": false,
-                    "pretrained_model_path": "./pretrain/"
+                    "pretrained_model_path": "/tmp/bert/"
                 },
                 "@token_gen_decoder@bart_like_decoder": {
                     "from_pretrain": false,

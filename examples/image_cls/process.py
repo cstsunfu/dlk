@@ -3,63 +3,47 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import copy
-import io
-import json
 import os
-import random
 import uuid
 
-import numpy as np
-from PIL import Image
+from datasets import Dataset, load_dataset
 from src.label import label_map
-
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
-
-import pandas as pd
-from datasets import load_dataset
 
 from dlk.preprocess import PreProcessor
 
-
-def flat(data):
-    """flat the data like zip"""
-    images = data["image"]
-    uuids = data["uuid"]
-    labels = data["label"]
-    # print(Image.open(io.BytesIO(images[0]["bytes"])).size)
-    result = []
-    for image, label, uuid in zip(images, labels, uuids):
-        image = Image.open(io.BytesIO(image["bytes"]))
-        if image.mode != "RGB":
-            continue
-        result.append(
-            {
-                "image": image,
-                "labels": [label_map[label]],
-                "uuid": uuid,
-            }
-        )
-    random.shuffle(result)
-    return result
+# Ensure proxy if needed
+os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
+os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
 
 
-# data = load_dataset("evanarlian/imagenet_1k_resized_256")
-data = load_dataset("./data/imagenet")
-data = data.map(
-    lambda one: {
-        "image": one["image"],
-        "label": one["label"],
-        "uuid": str(uuid.uuid1()),
-    },
-)
-flat_train = flat(data["train"].to_dict())
-# flat_val = flat(data['validation'].to_dict())
-input = {
-    "train": pd.DataFrame(flat_train).head(10000),
-    "valid": pd.DataFrame(flat_train).head(100),
-}
+def preprocess_images(batch):
+    # Batch process: map label IDs to strings and generate UUIDs
+    # HF Datasets handles 'image' column automatically as PIL images
+    return {
+        "image": batch["image"],
+        "labels": [label_map[l] for l in batch["label"]],
+        "uuid": [str(uuid.uuid4()) for _ in range(len(batch["label"]))],
+    }
 
-processor = PreProcessor("./config/processor.jsonc")
-processor.fit(input)
+
+if __name__ == "__main__":
+    # Load ImageNet (or subset)
+    # data = load_dataset("imagenet-1k", split="train", streaming=True) # If large
+    data = load_dataset("./data/imagenet")  # Local loading
+
+    # Transform
+    processed = data.map(
+        preprocess_images,
+        batched=True,
+        remove_columns=["label"],
+        writer_batch_size=1000,  # Efficient writing
+    )
+
+    # Split manually for demo purposes (HF Dataset slicing)
+    input_data = {
+        "train": processed["train"].select(range(10000)),
+        "valid": processed["train"].select(range(10000, 10100)),
+    }
+
+    processor = PreProcessor("./config/processor.jsonc")
+    processor.fit(input_data)

@@ -3,17 +3,14 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import copy
-import json
-import uuid
 
 import pandas as pd
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from utils import convert
 
 from dlk.preprocess import PreProcessor
 
-# this is just for prepro the data, not the real label<->id pair in process.
+# NER Label Mapping
 label_map = {
     0: "O",
     1: "B-PER",
@@ -26,34 +23,51 @@ label_map = {
     8: "I-MISC",
 }
 
-# data = load_dataset(path="conll2003")
-data = load_dataset(path="./tmp")
 
-data = data.map(
-    lambda one: {
-        "tokens": one["tokens"],
-        "ner_tags": [label_map[i] for i in one["ner_tags"]],
+def convert_to_span_format(batch):
+    """
+    Convert BIO format to Span format.
+    Handles Integer -> String mapping AND structural conversion.
+    """
+    batch_inses = []
+
+    for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
+
+        labels = [label_map[i] for i in tags]
+
+        ins = [tokens, labels]
+        batch_inses.append(ins)
+
+    converted_list = convert(batch_inses)
+
+    if not converted_list:
+        return {}
+
+    output = {k: [] for k in converted_list[0].keys()}
+    for item in converted_list:
+        for k, v in item.items():
+            output[k].append(v)
+
+    return output
+
+
+if __name__ == "__main__":
+
+    # Load Data
+    data = load_dataset("lhoestq/conll2003")  # HF Hub fallback
+
+    # remove columns that are replaced/unused
+    columns_to_remove = [
+        c for c in data["train"].column_names if c not in ["tokens"]
+    ]  # convert handles tokens -> sentence
+    data = data.map(
+        convert_to_span_format, batched=True, remove_columns=data["train"].column_names
+    )
+
+    input_data = {
+        "train": data["train"],
+        "valid": data["test"],  # Using test as valid for demo consistency
     }
-)
 
-
-filed_name_map = {"train": "train", "validation": "valid", "test": "test"}
-json_data_map = {}
-for filed in ["train", "test"]:
-    filed_data = data[filed].to_dict()
-    tokens = filed_data["tokens"]
-    labels = filed_data["ner_tags"]
-    inses = []
-    for token, label in zip(tokens, labels):
-        inses.append([token, label])
-    json_data_map[filed_name_map[filed]] = convert(inses)
-
-
-input = {
-    "train": pd.DataFrame(json_data_map["train"]),
-    "valid": pd.DataFrame(json_data_map["test"]),
-}
-
-
-processor = PreProcessor("./config/processor.jsonc")
-processor.fit(input)
+    processor = PreProcessor("./config/processor.jsonc")
+    processor.fit(input_data)

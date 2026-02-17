@@ -5,7 +5,6 @@
 
 import copy
 import logging
-from functools import lru_cache
 from typing import Callable, Dict, List, Union
 
 import lightning as pl
@@ -133,10 +132,15 @@ class DefaultIModel(pl.LightningModule):
                 "adv_method", register_module_name(adv_method_configs[0]._module_name)
             )(self.model, adv_method_configs[0])
             self.automatic_optimization = False
+            assert (
+                self.trainer.accumulate_grad_batches == 1
+            ), f"currently, do not support accumulate for adv train"
         else:
             self.adv_method = None
 
         self._origin_data = {}
+        self.gather_data: Dict = asdict(postprocessor_configs[0].input_map)
+        self.gather_data.update(postprocessor_configs[0].predict_extend_return)
 
     def forward(self, inputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """do forward on a mini batch
@@ -357,23 +361,16 @@ class DefaultIModel(pl.LightningModule):
         return return_result
 
     @property
-    @lru_cache(maxsize=5)  # the size should always == 1
     def num_training_epochs(self) -> int:
         """Total training epochs inferred from datamodule and devices."""
         return self.trainer.max_epochs
 
     @property
-    @lru_cache(maxsize=2)  # the size should always == 1
     def num_training_steps(self) -> int:
         """Total training steps inferred from datamodule and devices."""
         if self.trainer.max_steps != -1:
             return self.trainer.max_steps
-        # FIXED: https://github.com/PyTorchLightning/pytorch-lightning/pull/11599
-        # NEED TEST
-        return (
-            int(self.trainer.estimated_stepping_batches)
-            // self.trainer.accumulate_grad_batches
-        )
+        return int(self.trainer.estimated_stepping_batches)
 
     def configure_optimizers(self):
         """Configure the optimizer and scheduler"""
@@ -411,7 +408,7 @@ class DefaultIModel(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "interval": "step",
+                "interval": scheduler_configs[0].interval,
                 "frequency": 1,
             },
         }

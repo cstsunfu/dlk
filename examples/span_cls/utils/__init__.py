@@ -1,7 +1,8 @@
-from typing import Dict, List
 import uuid
+from typing import Dict, List
 
-def convert(data: List[List])->List[Dict]:
+
+def convert(data: List[List]) -> List[Dict]:
     """convert from bio to json
 
     Args:
@@ -29,52 +30,55 @@ def convert(data: List[List])->List[Dict]:
     for line in data:
         tokens, labels = line[0], line[1]
         text = ""
-        cur_label = ''
-        start = -1
         entities_info = []
-        entity_info = {}
-        for token, label in zip(tokens, labels):
-            assert label[0] in ['B', 'I', "O"]
-            if label[0] == 'B':
-                if text:
-                    cur_start = len(text) + 1 # will add space begin current token
-                    text = " ".join([text, token])
-                else:
-                    cur_start = 0
-                    text = token
-                if cur_label:
-                    entity_info['start'] = start
-                    entity_info['end'] = len(text)
-                    entity_info["labels"] = [cur_label]
-                    entities_info.append(entity_info)
-                start = cur_start
-                cur_label = label.split('-')[-1]
-                entity_info = {}
-            elif label[0] == 'O':
-                if cur_label:
-                    entity_info['start'] = start
-                    entity_info['end'] = len(text)
-                    entity_info["labels"] = [cur_label]
-                    entities_info.append(entity_info)
-                entity_info = {}
-                cur_label = ''
-                start = -1
-                if text:
-                    text = " ".join([text, token])
-                else:
-                    text = token
-            else:
-                if text:
-                    text = " ".join([text, token])
-                else:
-                    text = token
-        if cur_label:
-            entity_info['start'] = start
-            entity_info['end'] = len(text)
-            entity_info['labels'] = [cur_label]
-            entities_info.append(entity_info)
-        for entity in entities_info:
-            assert len(text[entity['start']: entity['end']].strip()) == entity['end'] - entity['start'], f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
 
-        format_data.append({'uuid': str(uuid.uuid1()),  "sentence": text, "entities_info": entities_info})
+        current_entity = None  # {start, label}
+
+        for token, label in zip(tokens, labels):
+            start_idx = len(text) + 1 if text else 0
+            end_idx = start_idx + len(token)
+
+            if text:
+                text += " " + token
+            else:
+                text = token
+
+            tag_type = label[0]
+            tag_value = label.split("-")[-1] if "-" in label else ""
+
+            if tag_type == "B":
+                if current_entity:
+                    current_entity["end"] = start_idx - 1  # 减去当前的空格
+                    entities_info.append(current_entity)
+                current_entity = {"start": start_idx, "labels": [tag_value]}
+
+            elif tag_type == "O":
+                if current_entity:
+                    current_entity["end"] = start_idx - 1
+                    entities_info.append(current_entity)
+                    current_entity = None
+
+            elif tag_type == "I":
+                if current_entity:
+                    pass
+                else:
+                    current_entity = {"start": start_idx, "labels": [tag_value]}
+
+        if current_entity:
+            current_entity["end"] = len(text)
+            entities_info.append(current_entity)
+
+        for entity in entities_info:
+            assert (
+                len(text[entity["start"] : entity["end"]].strip())
+                == entity["end"] - entity["start"]
+            ), f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
+
+        format_data.append(
+            {
+                "uuid": str(uuid.uuid4()),
+                "sentence": text,
+                "entities_info": entities_info,
+            }
+        )
     return format_data

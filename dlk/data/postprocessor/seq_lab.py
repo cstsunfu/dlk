@@ -6,18 +6,17 @@
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
 import torch
 from intc import MISSING, BoolField, ListField, NestField, StrField, cregister
 from tabulate import tabulate
-from tokenizers import Tokenizer
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
 from dlk.utils.io import open
 from dlk.utils.register import register
+from dlk.utils.tokenizer_util import load_fast_tokenizer
 from dlk.utils.vocab import Vocabulary
 
 logger = logging.getLogger(__name__)
@@ -106,36 +105,15 @@ class SeqLabPostProcessor(BasePostProcessor):
         self.label_vocab = Vocabulary.load_from_file(
             os.path.join(self.config.meta_dir, self.config.label_vocab)
         )
-        with open(self.config.tokenizer_path, "r", encoding="utf-8") as f:
-            tokenizer_str = json.dumps(json.load(f))
-        self.tokenizer = Tokenizer.from_str(tokenizer_str)
+        self.tokenizer = load_fast_tokenizer(self.config.tokenizer_path)
 
     def wrap_predict_one_batch(
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
-        """Process the model predict to human readable format
-
-        Args:
-            stage: train/test/etc.
-            batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the predicts
-
-        """
         if not self.config.use_crf:
             batch_output[self.config.input_map.logits] = (
                 batch_output[self.config.input_map.logits].float().cpu().numpy()
@@ -143,16 +121,8 @@ class SeqLabPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
-        """Process the model predict to human readable format for one batch
-        Args:
-            stage: train/test/etc.
-            batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-        Returns:
-            the predicts of one batch
-        """
         if self.config.use_crf:
             predicts = self.crf_predict(output=batch_output, origin_data=origin_data)
         elif self.config.word_ready:
@@ -167,48 +137,8 @@ class SeqLabPostProcessor(BasePostProcessor):
         stage: str,
         rt_config: Dict,
     ) -> Dict:
-        """calc the scores use the predicts or list_batch_outputs
-
-        Args:
-            predicts: list of predicts
-            stage: train/test/etc.
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the named scores, recall, precision, f1
-
-        """
 
         def _flat_entities_info(entities_info: List[Dict], text: str) -> Dict:
-            """gather the same labeled entity to the same list
-
-            Args:
-                entities_info:
-                    >>> [
-                    >>>     {
-                    >>>         "start": start1,
-                    >>>         "end": end1,
-                    >>>         "labels": ["label_1"]
-                    >>>     },
-                    >>>     {
-                    >>>         "start": start2,
-                    >>>         "end": end2,
-                    >>>         "labels": ["label_2"]
-                    >>>     },....
-                    >>> ]
-                text: be labeled text
-
-            Returns:
-                >>> { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
-
-            """
             info = {}
             for item in entities_info:
                 label = item["labels"][0]
@@ -225,9 +155,7 @@ class SeqLabPostProcessor(BasePostProcessor):
                         end_position -= 1
                     else:
                         break
-                if (
-                    start_position == end_position
-                ):  # if the entity after remove ignore char be null, we set it to origin
+                if start_position == end_position:
                     start_position, end_position = item["start"], item["end"]
 
                 if self.config.ignore_position:
@@ -257,37 +185,16 @@ class SeqLabPostProcessor(BasePostProcessor):
         }
 
     def calc_score(self, predict_list: List, ground_truth_list: List):
-        """use predict_list and ground_truth_list to calc scores
-
-        Args:
-            predict_list: list of predict
-            ground_truth_list: list of ground_truth
-
-        Returns:
-            precision, recall, f1
-
-        """
         category_tp = {}
         category_fp = {}
         category_fn = {}
 
         def _care_div(a, b):
-            """return a/b or 0.0 if b == 0"""
             if b == 0:
                 return 0.0
             return a / b
 
         def _calc_num(_pred: List, _ground_truth: List):
-            """calc tp, fn, fp
-
-            Args:
-                pred: pred list
-                ground_truth: groud truth list
-
-            Returns:
-                tp, fn, fp
-
-            """
             num_p = len(_pred)
             num_t = len(_ground_truth)
             truth = 0
@@ -353,18 +260,6 @@ class SeqLabPostProcessor(BasePostProcessor):
     def get_entity_info(
         self, sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str
     ) -> Dict:
-        """gather sub_tokens to get the start and end
-
-        Args:
-            sub_tokens_index: the entity tokens index list
-            offset_mapping: every token offset in text
-            word_ids: every token in the index of words
-            label: predict label
-
-        Returns:
-            entity_info
-
-        """
         if (
             (not sub_tokens_index)
             or (not label)
@@ -376,27 +271,10 @@ class SeqLabPostProcessor(BasePostProcessor):
         return {"start": start, "end": end, "labels": [label]}
 
     def _process4predict(
-        self, predict: torch.LongTensor, index: int, origin_data: pd.DataFrame
+        self, predict: torch.LongTensor, index: int, origin_data: Any
     ) -> Dict:
-        """gather the predict and origin text and ground_truth_entities_info for predict
-
-        Args:
-            predict: the predict label_ids
-            index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
-
-        Returns:
-            >>> one_ins info
-            >>> {
-            >>>     "sentence": "...",
-            >>>     "uuid": "..",
-            >>>     "entities_info": [".."],
-            >>>     "predict_entities_info": [".."],
-            >>> }
-
-        """
         one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
+        origin_ins = self._get_origin_row(origin_data, index)
         one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
         one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
         one_ins["entities_info"] = origin_ins[
@@ -413,14 +291,14 @@ class SeqLabPostProcessor(BasePostProcessor):
         pre_label = ""
         sub_tokens_index = []
         for i, label_id in enumerate(predict):
-            if offset_mapping[i] == (0, 0):  # added token like [CLS]/<s>/..
+            if offset_mapping[i] == (0, 0):
                 continue
             label = self.label_vocab[label_id]
             if (
                 label in self.config.ignore_labels
                 or (label[0] == "B")
                 or (label.split("-")[-1] != pre_label)
-            ):  # label == "O" or label=='B' or label.tail != previor_label
+            ):
                 entity_info = self.get_entity_info(
                     sub_tokens_index, offset_mapping, word_ids, pre_label
                 )
@@ -440,37 +318,7 @@ class SeqLabPostProcessor(BasePostProcessor):
         one_ins["predict_entities_info"] = predict_entities_info
         return one_ins
 
-    def crf_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
-        """use the crf predict label_ids get predict info
-
-        Args:
-            output: the crf predict info
-            origin_data: the origin data
-
-        Returns:
-            all predict instances info
-
-        """
-        if self.config.origin_input_map.sentence not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.sentence} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.sentence} must be provided"
-            )
-        if self.config.origin_input_map.uuid not in origin_data:
-            logger.error(f"{self.config.origin_input_map.uuid} not in the origin data")
-            raise PermissionError(
-                f"{self.config.origin_input_map.uuid} must be provided"
-            )
-        if self.config.origin_input_map.entities_info not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.entities_info} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.entities_info} must be provided"
-            )
-
+    def crf_predict(self, output: Dict, origin_data: Any) -> List:
         predicts = []
         batch_predict = output[self.config.input_map.predict_seq_label]
 
@@ -480,43 +328,13 @@ class SeqLabPostProcessor(BasePostProcessor):
             predicts.append(one_ins)
         return predicts
 
-    def word_predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
-        """use the firstpiece or whole word predict label_logits get predict info
-
-        Args:
-            output: the predict labels logits info
-            origin_data: the origin data
-
-        Returns:
-            all predict instances info
-
-        """
-        if self.config.origin_input_map.sentence not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.sentence} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.sentence} must be provided"
-            )
-        if self.config.origin_input_map.uuid not in origin_data:
-            logger.error(f"{self.config.origin_input_map.uuid} not in the origin data")
-            raise PermissionError(
-                f"{self.config.origin_input_map.uuid} must be provided"
-            )
-        if self.config.origin_input_map.entities_info not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.entities_info} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.entities_info} must be provided"
-            )
-
+    def word_predict(self, output: Dict, origin_data: Any) -> List:
         predicts = []
         batch_logits = output[self.config.input_map.logits]
 
         indexes = list(output[self.config.input_map.index])
         for logits, index in list(zip(batch_logits, indexes)):
-            origin_ins = origin_data.iloc[int(index)]
+            origin_ins = self._get_origin_row(origin_data, index)
             word_ids = origin_ins[self.config.origin_input_map.word_ids]
 
             rel_token_len = len(word_ids)
@@ -527,37 +345,7 @@ class SeqLabPostProcessor(BasePostProcessor):
             predicts.append(one_ins)
         return predicts
 
-    def predict(self, output: Dict, origin_data: pd.DataFrame) -> List:
-        """general predict process (especially for subword)
-
-        Args:
-            output: the predict (sub-)labels logits info
-            origin_data: the origin data
-
-        Returns:
-            all predict instances info
-
-        """
-        if self.config.origin_input_map.sentence not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.sentence} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.sentence} must be provided"
-            )
-        if self.config.origin_input_map.uuid not in origin_data:
-            logger.error(f"{self.config.origin_input_map.uuid} not in the origin data")
-            raise PermissionError(
-                f"{self.config.origin_input_map.uuid} must be provided"
-            )
-        if self.config.origin_input_map.entities_info not in origin_data:
-            logger.error(
-                f"{self.config.origin_input_map.entities_info} not in the origin data"
-            )
-            raise PermissionError(
-                f"{self.config.origin_input_map.entities_info} must be provided"
-            )
-
+    def predict(self, output: Dict, origin_data: Any) -> List:
         predicts = []
         batch_logits = output[self.config.input_map.logits]
 
@@ -565,7 +353,7 @@ class SeqLabPostProcessor(BasePostProcessor):
 
         for logits, index in list(zip(batch_logits, indexes)):
             one_ins = {}
-            origin_ins = origin_data.iloc[int(index)]
+            origin_ins = self._get_origin_row(origin_data, index)
 
             input_ids = origin_ins[self.config.origin_input_map.input_ids]
             one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
@@ -577,11 +365,11 @@ class SeqLabPostProcessor(BasePostProcessor):
             rel_token_len = len(input_ids)
 
             special_tokens_mask = np.array(
-                origin_data.iloc[int(index)][
+                self._get_origin_row(origin_data, index)[
                     self.config.origin_input_map.special_tokens_mask
                 ][:rel_token_len]
             )
-            offset_mapping = origin_data.iloc[int(index)][
+            offset_mapping = self._get_origin_row(origin_data, index)[
                 self.config.origin_input_map.offsets
             ][:rel_token_len]
 
@@ -606,7 +394,6 @@ class SeqLabPostProcessor(BasePostProcessor):
             grouped_entities = self.aggregate(
                 pre_entities, self.config.aggregation_strategy
             )
-            # Filter anything that is in self.ignore_labels
             entities = [
                 entity
                 for entity in grouped_entities
@@ -653,7 +440,10 @@ class SeqLabPostProcessor(BasePostProcessor):
 
     def aggregate_word(self, entities: List[dict], aggregation_strategy: str) -> dict:
         word = self.tokenizer.decode(
-            [self.tokenizer.token_to_id(entity["word"]) for entity in entities]
+            [
+                int(self.tokenizer.convert_tokens_to_ids(entity["word"]))
+                for entity in entities
+            ]
         )
         if aggregation_strategy == AggregationStrategy.FIRST:
             scores = entities[0]["scores"]
@@ -684,12 +474,6 @@ class SeqLabPostProcessor(BasePostProcessor):
         return new_entity
 
     def group_sub_entities(self, entities: List[dict]) -> dict:
-        """Group together the adjacent tokens with the same entity predicted.
-
-        Args:
-            entities: The entities predicted by the pipeline.
-        """
-        # Get the first entity in the entity group
         entity = entities[0]["entity"].split("-")[-1]
         scores = np.nanmean([entity["score"] for entity in entities])
         tokens = [entity["word"] for entity in entities]
@@ -710,19 +494,11 @@ class SeqLabPostProcessor(BasePostProcessor):
             bi = "I"
             tag = entity_name[2:]
         else:
-            # It's not in B-, I- format
-            # Default to I- for continuation.
             bi = "I"
             tag = entity_name
         return bi, tag
 
     def group_entities(self, entities: List[dict]) -> List[dict]:
-        """Find and group together the adjacent tokens with the same entity predicted.
-
-        Args:
-            entities: The entities predicted by the pipeline.
-        """
-
         entity_groups = []
         entity_group_disagg = []
 
@@ -731,23 +507,15 @@ class SeqLabPostProcessor(BasePostProcessor):
                 entity_group_disagg.append(entity)
                 continue
 
-            # If the current entity is similar and adjacent to the previous entity,
-            # append it to the disaggregated entity group
-            # The split is meant to account for the "B" and "I" prefixes
-            # Shouldn't merge if both entities are B-type
             bi, tag = self.get_tag(entity["entity"])
             last_bi, last_tag = self.get_tag(entity_group_disagg[-1]["entity"])
 
             if tag == last_tag and bi != "B":
-                # Modify subword type to be previous_type
                 entity_group_disagg.append(entity)
             else:
-                # If the current entity is different from the previous entity
-                # aggregate the disaggregated entity group
                 entity_groups.append(self.group_sub_entities(entity_group_disagg))
                 entity_group_disagg = [entity]
         if entity_group_disagg:
-            # it's the last entity, add it to the entity groups
             entity_groups.append(self.group_sub_entities(entity_group_disagg))
 
         return entity_groups
@@ -755,12 +523,6 @@ class SeqLabPostProcessor(BasePostProcessor):
     def aggregate_words(
         self, entities: List[dict], aggregation_strategy: str
     ) -> List[dict]:
-        """Override tokens from a given word that disagree to force agreement on word boundaries.
-
-        Example:
-            micro|soft| com|pany| B-ENT I-NAME I-ENT I-ENT will be rewritten with first strategy as microsoft|
-            company| B-ENT I-ENT
-        """
         if aggregation_strategy in {
             AggregationStrategy.NONE,
             AggregationStrategy.SIMPLE,
@@ -781,7 +543,6 @@ class SeqLabPostProcessor(BasePostProcessor):
                     self.aggregate_word(word_group, aggregation_strategy)
                 )
                 word_group = [entity]
-        # Last item
         word_entities.append(self.aggregate_word(word_group, aggregation_strategy))
         return word_entities
 
@@ -793,25 +554,25 @@ class SeqLabPostProcessor(BasePostProcessor):
         offset_mapping: Optional[List[Tuple[int, int]]],
         special_tokens_mask: np.ndarray,
     ) -> List[dict]:
-        """Fuse various numpy arrays into dicts with all the information needed for aggregation"""
         pre_entities = []
         for idx, token_scores in enumerate(scores):
-            # Filter special_tokens, they should only occur
-            # at the sentence boundaries since we're not encoding pairs of
-            # sentences so we don't have to keep track of those.
             if special_tokens_mask[idx]:
                 continue
 
-            word = self.tokenizer.id_to_token(int(input_ids[idx]))
+            word = self.tokenizer.convert_ids_to_tokens(int(input_ids[idx]))
             if offset_mapping is not None:
                 start_ind, end_ind = offset_mapping[idx]
                 word_ref = sentence[start_ind:end_ind]
-                if getattr(self.tokenizer.model, "continuing_subword_prefix", None):
-                    # This is a BPE, word aware tokenizer, there is a correct way
-                    # to fuse tokens
+                prefix = None
+                if hasattr(self.tokenizer, "backend_tokenizer"):
+                    prefix = getattr(
+                        self.tokenizer.backend_tokenizer.model,
+                        "continuing_subword_prefix",
+                        None,
+                    )
+                if prefix:
                     is_subword = len(word) != len(word_ref)
                 else:
-                    # This is a fallback heuristic. This will fail most likely on any kind of text + punctuation mixtures that will be considered "words". Non word aware models cannot do better than this unfortunately.
                     is_subword = (
                         sentence[start_ind - 1 : start_ind] != " "
                         if start_ind > 0

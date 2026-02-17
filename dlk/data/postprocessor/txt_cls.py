@@ -6,12 +6,9 @@
 import json
 import logging
 import os
-import pickle as pkl
 from typing import Any, Dict, List, Union
 
 import numpy as np
-import pandas as pd
-import torch
 from intc import (
     MISSING,
     AnyField,
@@ -81,7 +78,7 @@ class TxtClsPostProcessorConfig(BasePostProcessorConfig):
 
 @register("postprocessor", "txt_cls")
 class TxtClsPostProcessor(BasePostProcessor):
-    """postprocess for text classfication"""
+    """Postprocess for text classification."""
 
     def __init__(self, config: TxtClsPostProcessorConfig):
         super(TxtClsPostProcessor, self).__init__(config)
@@ -91,15 +88,14 @@ class TxtClsPostProcessor(BasePostProcessor):
         )
         self.top_k = config.top_k if config.top_k > 0 else self.label_vocab.word_num
 
-    def _get_origin_data(self, one_origin: pd.Series) -> Dict:
-        """
+    def _get_origin_data(self, one_origin: Dict) -> Dict:
+        """Get the origin data from the raw input.
 
         Args:
-            one_origin: the original data
+            one_origin: The original data dictionary.
 
         Returns:
-            the gather origin data
-
+            A dictionary containing the gathered origin data.
         """
         origin = {}
         if self.config.data_type == "single":
@@ -111,7 +107,12 @@ class TxtClsPostProcessor(BasePostProcessor):
             sentence_b = one_origin[self.config.origin_input_map.sentence_b]
             origin["sentence_b"] = sentence_b
         if "labels" in one_origin:
-            origin["labels"] = one_origin["labels"]
+            labels = one_origin["labels"]
+            # Fix: Ensure labels is always a list, mitigating the string length issue
+            if isinstance(labels, str) or not isinstance(labels, list):
+                labels = [labels]
+            origin["labels"] = labels
+
         origin["uuid"] = one_origin[self.config.origin_input_map.uuid]
         return origin
 
@@ -119,7 +120,7 @@ class TxtClsPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -127,7 +128,7 @@ class TxtClsPostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin Any data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -147,13 +148,13 @@ class TxtClsPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage: str, batch_output: Dict, origin_data: Any, rt_config: Dict
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin Any data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -166,24 +167,25 @@ class TxtClsPostProcessor(BasePostProcessor):
             label_ids = batch_output[self.config.input_map.label_ids]
         else:
             label_ids = [None] * len(indexes)
+
         for i, (one_logits, index, label_id) in enumerate(
             zip(logits, indexes, label_ids)
         ):
-            one_ins = self._get_origin_data(origin_data.iloc[int(index)])
+            one_ins = self._get_origin_data(self._get_origin_row(origin_data, index))
 
             max_val = np.max(one_logits)  # 防止数值溢出
             exp_logits = np.exp(one_logits - max_val)
             softmax_logits = exp_logits / np.sum(exp_logits)
 
-            label_indeies = np.argsort(-softmax_logits)[: self.top_k]
-            label_values = softmax_logits[label_indeies]
+            label_indices = np.argsort(-softmax_logits)[: self.top_k]
+            label_values = softmax_logits[label_indices]
 
             predict = {}
-            for i, (label_value, label_index) in enumerate(
-                zip(label_values, label_indeies)
+            for j, (label_value, label_index) in enumerate(
+                zip(label_values, label_indices)
             ):
                 label_name = self.label_vocab.get_word(int(label_index))
-                predict[i] = [label_name, float(label_value)]
+                predict[j] = [label_name, float(label_value)]
             one_ins["predicts"] = predict
             one_ins["predict_extend_return"] = self.gather_predict_extend_data(
                 batch_output, i, self.config.predict_extend_return
@@ -217,14 +219,18 @@ class TxtClsPostProcessor(BasePostProcessor):
         """
         right_num = 0
         for one_ins in predicts:
-            labels = one_ins["labels"]
+            labels = one_ins.get("labels", [])
+            # Double check for metric calculation to guarantee it's a list
+            if isinstance(labels, str) or not isinstance(labels, list):
+                labels = [labels]
+
             assert (
                 len(labels) == 1
-            ), "We currently is not support multi label in classification postprocess"
+            ), "We currently do not support multi label in classification postprocess"
             label = labels[0]
             one_predicts = one_ins["predicts"]
             predict_label, predict_value = one_predicts[0]  # the first predict
             if label == predict_label:
                 right_num += 1
         real_name = self.loss_name_map(stage)
-        return {f"{real_name}_acc": right_num / len(predicts)}
+        return {f"{real_name}_acc": right_num / max(len(predicts), 1)}

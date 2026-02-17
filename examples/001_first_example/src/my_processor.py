@@ -5,25 +5,10 @@
 
 import logging
 import os
-import pickle as pkl
-from typing import Callable, Dict, Iterator, Type
+from typing import Dict
 
-import pandas as pd
-import pyarrow.parquet as pq
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
+from datasets import Dataset
+from intc import MISSING, Base, StrField, cregister
 
 from dlk.data.subprocessor.fast_tokenizer import FastTokenizer, FastTokenizerConfig
 from dlk.data.subprocessor.token2id import Token2ID, Token2IDConfig
@@ -53,7 +38,10 @@ class DefaultProcessorConfig(Base):
 
 @register("processor", "my")
 class DefaultProcessor(object):
-    """docstring for IProcessor"""
+    """
+    Custom Processor Example.
+    Demonstrates how to manually orchestrate subprocessors and save data using the new HF Datasets backend.
+    """
 
     stage_data_set_map = {
         "train": "train_data_set",
@@ -62,97 +50,90 @@ class DefaultProcessor(object):
 
     def __init__(self, stage: str, config: DefaultProcessorConfig):
         super(DefaultProcessor, self).__init__()
-        config_dict = config._to_dict()
         self.stage = stage
         assert (
             stage in self.stage_data_set_map
-        ), f"stage {stage} not supported for this example, the @processor@default support more"
+        ), f"stage {stage} not supported for this example"
         self.config: DefaultProcessorConfig = config
-        self.tokenizer = FastTokenizer(  # for tokenize the data
+
+        # Initialize Subprocessors
+        self.tokenizer = FastTokenizer(
             stage=stage,
             config=FastTokenizerConfig._from_dict(
                 {"tokenizer_path": config.tokenizer_path}
             ),
             meta_dir=config.meta_dir,
         )
-        self.label_gather = TokenGather(  # gather all the labels
+        self.label_gather = TokenGather(
             stage=stage,
             config=TokenGatherConfig._from_dict(
                 {
                     "gather_columns": ["labels"],
                     "token_vocab": "label_vocab.json",
-                    "unk": "",  # do not add unk and pad
+                    "unk": "",
                     "pad": "",
                 }
             ),
             meta_dir=config.meta_dir,
         )
-        self.label2id = Token2ID(  # convert the labels to label_ids
+        self.label2id = Token2ID(
             stage=stage,
             config=Token2IDConfig._from_dict(
                 {
                     "input_map": {"tokens": "labels"},
                     "output_map": {"token_ids": "label_ids"},
-                    "vocab": "label_vocab.json",  # use the vocab from TokenGather
+                    "vocab": "label_vocab.json",
                 }
             ),
             meta_dir=config.meta_dir,
         )
 
-    def save(self, data: pd.DataFrame, type_name: str, i: int):
-        """save data to self.config.processed_data_dir
+    def save(self, data: Dataset, type_name: str):
+        """Save data to disk using HF Datasets (Arrow format).
 
         Args:
-            data: should saved data
-
-        Returns:
-            None
+            data: processed Dataset
+            type_name: 'train' or 'valid'
         """
-        os.makedirs(
-            os.path.join(self.config.processed_data_dir, type_name), exist_ok=True
-        )
-        data_path = os.path.join(self.config.processed_data_dir, type_name, f"{i}.pkl")
-        assert i == 0, f"Currently only support save one {type_name} data"
-        pkl.dump(data, open(data_path, "wb"))
+        save_path = os.path.join(self.config.processed_data_dir, type_name)
+        os.makedirs(save_path, exist_ok=True)
+
+        data.save_to_disk(save_path)
+        logger.info(f"Saved {type_name} data to {save_path}")
 
     def process(self, data: Dict) -> Dict:
         """Process entry for train stage
 
         Args:
-            data:
-            >>> {
-            >>>     "train": {training data....},
-            >>>     "valid": ..
-            >>> }
+            data: {"train": Dataset, "valid": Dataset}
 
         Returns:
-            processed data
+            processed data dict
         """
-        train_data: pd.DataFrame = data["train"]
-        valid_data: pd.DataFrame = data["valid"]
+        train_data: Dataset = data["train"]
+        valid_data: Dataset = data["valid"]
+
+        # 1. Tokenize
         train_data = self.tokenizer.process(train_data, deliver_meta=False)
         valid_data = self.tokenizer.process(valid_data, deliver_meta=False)
-        self.label_gather.process(
-            train_data, deliver_meta=True
-        )  # will save the label vocab to `os.path.join(self.config.meta_dir, "label_vocab.json")`
+
+        # 2. Gather Labels (Only on train)
+        self.label_gather.process(train_data, deliver_meta=True)
+
+        # 3. Map Labels to IDs
         train_data = self.label2id.process(train_data, deliver_meta=False)
         valid_data = self.label2id.process(valid_data, deliver_meta=False)
 
-        self.save(train_data, "train", 0)  # save the data
-        self.save(valid_data, "valid", 0)
+        # 4. Save to Disk
+        self.save(train_data, "train")
+        self.save(valid_data, "valid")
 
-    def online_process(self, data: pd.DataFrame):
-        """online server process the data without save, for online stage
-        Args:
-            data:
-                the data to be processed
+        return {}
 
-        Returns:
-            processed data
-        """
-        data["label_ids"] = [[0]] * len(
-            data
-        )  # for online stage, just need to add a fake label_ids, just for donot consider the different of train and online for next step, or you can skip this step
-        return self.tokenizer.process(
-            data, deliver_meta=False
-        )  # for online stage just need tokenized the data
+    def online_process(self, data: Dict):
+        """Online server process without save."""
+        # For dictionary dict of lists
+        if "labels" not in data:
+            data["label_ids"] = [[0]] * len(next(iter(data.values())))
+        # Tokenize
+        return self.tokenizer.process_batch(data, deliver_meta=False)

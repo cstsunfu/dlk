@@ -5,48 +5,35 @@
 
 import uuid
 
-import pandas as pd
 from datasets import load_dataset
 
 from dlk.preprocess import PreProcessor
 
-
-def flat(data):
-    sentence_as = data["sentence_a"]
-    sentence_bs = data["sentence_b"]
-    uuids = data["uuid"]
-    labelses = data["labels"]
-    return [
-        {
-            "sentence_a": sentence_a,
-            "sentence_b": sentence_b,
-            "labels": [labels],
-            "uuid": uuid,
-        }
-        for sentence_a, sentence_b, labels, uuid in zip(
-            sentence_as, sentence_bs, labelses, uuids
-        )
-    ]
+label_map = {0: "entails", 1: "nor", 2: "contradicts"}
 
 
-label_map = {0: "entails", 1: "nor", 2: "contradicts", -1: "remove"}
+def preprocess_function(batch):
+    return {
+        "sentence_a": batch["hypothesis"],
+        "sentence_b": batch["premise"],
+        "labels": [label_map[l] for l in batch["label"]],
+        "uuid": [str(uuid.uuid4()) for _ in range(len(batch["label"]))],
+    }
 
-data = load_dataset("snli")
-data = data.map(
-    lambda one: {
-        "sentence_a": one["hypothesis"],
-        "sentence_b": one["premise"],
-        "labels": label_map[one["label"]],
-        "uuid": str(uuid.uuid1()),
-    },
-    remove_columns=["hypothesis", "label", "premise"],
-)
-data = data.filter(lambda one: one["labels"] in {"entails", "nor", "contradicts"})
 
-input = {
-    "train": pd.DataFrame(flat(data["train"].to_dict())).head(100),
-    "valid": pd.DataFrame(flat(data["test"].to_dict())).head(100),
-}
+if __name__ == "__main__":
+    data = load_dataset("snli")
+    data = data.filter(lambda x: x["label"] in label_map)
+    data = data.map(
+        preprocess_function,
+        batched=True,
+        remove_columns=["hypothesis", "premise", "label"],
+    )
 
-processor = PreProcessor("./config/processor.jsonc")
-processor.fit(input)
+    input_data = {
+        "train": data["train"].select(range(100)),
+        "valid": data["test"].select(range(100)),
+    }
+
+    processor = PreProcessor("./config/processor.jsonc")
+    processor.fit(input_data)

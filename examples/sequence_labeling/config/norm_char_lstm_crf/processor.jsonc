@@ -1,8 +1,8 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
+        "train_data_type": "dataset",
+        "valid_data_type": "dataset",
         "feed_order": [
             "token_norm",
             "fast_tokenizer",
@@ -25,7 +25,7 @@
             }
         },
         "@subprocessor@fast_tokenizer": {
-            "tokenizer_path": "./../../sequence_labeling/conll2003/data/bert/tokenizer.json",
+            "tokenizer_path": "/tmp/bert/tokenizer.json",
             "input_map": {
                 "sentence": "norm_sentence"
             }

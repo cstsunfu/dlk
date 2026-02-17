@@ -40,11 +40,7 @@ class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
         return out
 
     @torch.no_grad()
-    def forward(
-        self, input_ids_shape: torch.Size, past_key_values_length: int = 0
-    ) -> torch.Tensor:
-        """`input_ids_shape` is expected to be [bsz x seqlen]."""
-        bsz, seq_len = input_ids_shape[:2]
+    def forward(self, seq_len: int, past_key_values_length: int = 0) -> torch.Tensor:
         positions = torch.arange(
             past_key_values_length,
             past_key_values_length + seq_len,
@@ -65,21 +61,27 @@ class RoFormerSinusoidalPositionalEmbedding(nn.Embedding):
         sin_pos = torch.stack([sin, sin], dim=-1).reshape_as(sinusoidal_pos)
         # cos [θ0,θ1,θ2......θd/2-1] -> cos_pos [θ0,θ0,θ1,θ1,θ2,θ2......θd/2-1,θd/2-1]
         cos_pos = torch.stack([cos, cos], dim=-1).reshape_as(sinusoidal_pos)
-        # rotate_half_query_layer [-q1,q0,-q3,q2......,-qd-1,qd-2]
+
         rotate_half_query_layer = torch.stack(
             [-query_layer[..., 1::2], query_layer[..., ::2]], dim=-1
         ).reshape_as(query_layer)
-        query_layer = query_layer * cos_pos + rotate_half_query_layer * sin_pos
+        query_layer = (
+            query_layer * cos_pos + rotate_half_query_layer * sin_pos
+        ).contiguous()
+
         # rotate_half_key_layer [-k1,k0,-k3,k2......,-kd-1,kd-2]
         rotate_half_key_layer = torch.stack(
             [-key_layer[..., 1::2], key_layer[..., ::2]], dim=-1
         ).reshape_as(key_layer)
-        key_layer = key_layer * cos_pos + rotate_half_key_layer * sin_pos
+        key_layer = (key_layer * cos_pos + rotate_half_key_layer * sin_pos).contiguous()
+
         if value_layer is not None:
             # rotate_half_value_layer [-v1,v0,-v3,v2......,-vd-1,vd-2]
             rotate_half_value_layer = torch.stack(
                 [-value_layer[..., 1::2], value_layer[..., ::2]], dim=-1
             ).reshape_as(value_layer)
-            value_layer = value_layer * cos_pos + rotate_half_value_layer * sin_pos
+            value_layer = (
+                value_layer * cos_pos + rotate_half_value_layer * sin_pos
+            ).contiguous()
             return query_layer, key_layer, value_layer
         return query_layer, key_layer

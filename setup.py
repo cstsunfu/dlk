@@ -88,24 +88,25 @@ setup(
         "fsspec>=2023.5,<2024.2",
         "torchmetrics>=1.2.1",
         "transformers>=4.24.0,<4.45",
+        "datasets>=2.17.0,<3.0",  # Moved from extras to core
     ],
+    entry_points={
+        "console_scripts": [
+            "dlk=dlk.cli:main",
+        ],
+    },
     extras_require={
         "train": [
             "lightning>=2.1.0,<=2.2",
             "torch>=2.1,<=2.6",
             "tensorboard>=2.7.0,<3.0",
-            "datasets>=2.17.0,<2.20",
-            "torchmetrics>=1.2.1",
         ],
         "export": ["torch>=1.8.1,<2.5"],
-        "process": [
-            "datasets>=2.17.0,<2.20",
-        ],
+        "process": [],
         "all": [
             "lightning>=2.1.0,<=2.2",
             "torch>=2.1,<=2.6",
             "tensorboard>=2.7.0,<3.0",
-            "datasets>=2.17.0,<2.20",
             "streamlit>=1.32",
             "svgwrite>=1.4",
             "pyecharts>=2.0",

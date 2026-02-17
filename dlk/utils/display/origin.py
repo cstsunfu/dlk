@@ -367,13 +367,13 @@ class RelationExtractionVisualizer:
                 t.metadata["entity2"],
             ]
             if t.metadata["entity1"].lower().strip() not in self.entity_color_dict:
-                self.entity_color_dict[
-                    t.metadata["entity1"].lower().strip()
-                ] = self.__get_color(t.metadata["entity1"].lower().strip())
+                self.entity_color_dict[t.metadata["entity1"].lower().strip()] = (
+                    self.__get_color(t.metadata["entity1"].lower().strip())
+                )
             if t.metadata["entity2"].lower().strip() not in self.entity_color_dict:
-                self.entity_color_dict[
-                    t.metadata["entity2"].lower().strip()
-                ] = self.__get_color(t.metadata["entity2"].lower().strip())
+                self.entity_color_dict[t.metadata["entity2"].lower().strip()] = (
+                    self.__get_color(t.metadata["entity2"].lower().strip())
+                )
 
             # all_entities_1_index.append(t[4]['entity1_begin'])
         all_entities_index = np.asarray(list(all_entities_index))
@@ -557,21 +557,15 @@ class RelationExtractionVisualizer:
     def display(
         self,
         result,
-        # relation_col,
-        document_col="document",
         exclude_relations=["O"],
         show_relations=True,
-        return_html=False,
         save_path=None,
     ):
         """Displays Relation Extraction visualization.
         Inputs:
         result -- A Dataframe or dictionary.
-        relation_col -- Name of the column/key containing relationships.
-        document_col -- Name of the column/key containing text document.
         exclude_relations -- list of relations that don't need to be displayed. Default: ["O"]
         show_relations -- Display relation types on arrows. Default: True
-        return_html -- If true, returns raw html code instead of displaying. Default: False
         Output: Visualization
         """
         original_text = result["sentence"]
@@ -599,15 +593,15 @@ class RelationExtractionVisualizer:
                 )
             )
 
-        # original_text = result[document_col][0].result
-        # res = result[relation_col]
-
         html_content = self.__gen_graph(
             relations, original_text, exclude_relations, show_relations
         )
 
-        with open("/home/sun/Downloads/demo.html", "w") as f_:
-            f_.write(html_content)
+        if save_path:
+            with open(save_path, "w", encoding="utf-8") as f_:
+                f_.write(html_content)
+
+        return html_content
 
 
 if __name__ == "__main__":

@@ -61,5 +61,5 @@ class BCEWithLogitsLoss(BaseLoss):
         """
         pred = result[self.pred_name]
         target = inputs[self.truth_name]
-        loss = self.bce(torch.sigmoid(pred), target) * scale
-        return loss, {self.config.log_map.loss: loss}
+        loss = self.bce(torch.sigmoid(pred), target)
+        return loss * scale, {self.config.log_map.loss: loss.detach()}

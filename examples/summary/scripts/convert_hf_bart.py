@@ -72,13 +72,13 @@ decoder_layer_weight = [
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model_path", type=str, default="../pretrain/model.safetensors_back"
+        "--model_path", type=str, default="/tmp/bert/model.safetensors_back"
     )
     parser.add_argument(
-        "--tokenizer_path", type=str, default="../pretrain/tokenizer.json"
+        "--tokenizer_path", type=str, default="/tmp/bert/tokenizer.json"
     )
     parser.add_argument(
-        "--model_config_path", type=str, default="../pretrain/config.json"
+        "--model_config_path", type=str, default="/tmp/bert/config.json"
     )
     parser.add_argument("--layer_num", type=int, default=12)
     parser.add_argument("--output_path", type=str, default="../pretrain/dlk_model.bin")

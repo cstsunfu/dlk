@@ -35,7 +35,6 @@ class BertLikeConfig:
     pretrained_model_path = StrField(value=MISSING, help="the pretrained model path")
     from_pretrain = BoolField(value=True, help="whether to load the pretrained model")
     freeze = BoolField(value=False, help="whether to freeze the model")
-    dropout = FloatField(value=0.0, minimum=0.0, maximum=1.0, help="the dropout rate")
     return_attention = BoolField(
         value=False,
         help="whether to return the attention weights, BertSdpaSelfAttention does not support this",
@@ -52,8 +51,8 @@ class BertLike(Module):
         self.model_config = AutoConfig.from_pretrained(
             self.config.pretrained_model_path
         )
-        self.model = AutoModel.from_config(self.model_config)
-        self.dropout = nn.Dropout(float(self.config.dropout))
+
+        self.model = AutoModel.from_config(self.model_config, add_pooling_layer=False)
 
     def init_weight(self, method):
         """init the weight of model by 'bert.init_weight()' or from_pretrain
@@ -84,35 +83,27 @@ class BertLike(Module):
             sequence_output, all_hidden_states, all_self_attentions
 
         """
+        model_kwargs = {
+            "input_ids": inputs.get("input_ids", None),
+            "attention_mask": inputs.get("attention_mask", None),
+            "token_type_ids": inputs.get("token_type_ids", None),
+            "position_ids": inputs.get("position_ids", None),
+            "head_mask": inputs.get("head_mask", None),
+            "use_cache": None,
+            "output_attentions": self.config.return_attention,
+            "output_hidden_states": True,
+            "return_dict": True,
+        }
+
         if self.config.freeze:
             with torch.no_grad():
-                outputs = self.model(
-                    input_ids=inputs.get("input_ids", None),
-                    attention_mask=inputs.get("attention_mask", None),
-                    token_type_ids=inputs.get("token_type_ids", None),
-                    position_ids=inputs.get("position_ids", None),
-                    head_mask=inputs.get("head_mask", None),
-                    use_cache=None,
-                    output_attentions=self.config.return_attention,
-                    output_hidden_states=True,
-                    return_dict=True,
-                )
+                outputs = self.model(**model_kwargs)
         else:
-            outputs = self.model(
-                input_ids=inputs.get("input_ids", None),
-                attention_mask=inputs.get("attention_mask", None),
-                token_type_ids=inputs.get("token_type_ids", None),
-                position_ids=inputs.get("position_ids", None),
-                head_mask=inputs.get("head_mask", None),
-                use_cache=None,
-                output_attentions=self.config.return_attention,
-                output_hidden_states=True,
-                return_dict=True,
-            )
+            outputs = self.model(**model_kwargs)
+
         sequence_output, all_hidden_states, all_self_attentions = (
             outputs.last_hidden_state,
             outputs.hidden_states,
             outputs.attentions,
         )
-        sequence_output = self.dropout(sequence_output)
         return sequence_output, all_hidden_states, all_self_attentions

@@ -9,8 +9,9 @@ import lightning as pl
 
 from dlk.train import Train
 
-pl.seed_everything(88)
+if __name__ == "__main__":
+    pl.seed_everything(88)
 
-trainer = Train("./config/fit.jsonc", checkpoint="./pretrain/dlk_model.bin")
+    trainer = Train("./config/fit.jsonc", checkpoint="./pretrain/dlk_model.bin")
 
-trainer.run()
+    trainer.run()

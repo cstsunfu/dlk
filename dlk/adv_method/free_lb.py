@@ -83,8 +83,9 @@ class FreeLBAdvMethod(AdvMethod):
                     self.emb_backup[name] = param.data.clone()
                 norm = torch.norm(param.grad)
                 if norm != 0 and not torch.isnan(norm):
-                    r_at = self.config.alpha * param.grad / norm
-                    param.data.add_(r_at)
+                    r_at = self.config.alpha * param.grad / (norm + 1e-8)
+                    with torch.no_grad():
+                        param.add_(r_at)
                     param.data = self.project(name, param.data, self.config.epsilon)
 
     def project(self, param_name, param_data, epsilon):
@@ -111,16 +112,19 @@ class FreeLBAdvMethod(AdvMethod):
                 param.grad = (param.grad + self.grad_backup[name]) / 2
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
-        """do training_step on a mini batch
+        """Performs a training step using the FreeLB adversarial method.
+
+        In FreeLB, gradients are accumulated over K steps. Under AMP, gradients are scaled.
+        This implementation correctly manually accumulates scaled gradients and allows
+        `optimizer.step()` to unscale them.
 
         Args:
-            imodel: imodel instance
-            batch: a mini batch inputs
-            batch_idx: the index(dataloader) of the mini batch
+            imodel: The integrated model instance (LightningModule).
+            batch: A dictionary containing the mini-batch inputs.
+            batch_idx: The index of the current batch.
 
         Returns:
-            the outputs
-
+            Tuple[torch.Tensor, Dict]: A tuple containing the loss and the loss log.
         """
         optimizer = imodel.optimizers()
         rt_config = {
@@ -129,25 +133,45 @@ class FreeLBAdvMethod(AdvMethod):
             "total_steps": imodel.num_training_steps,
             "total_epochs": imodel.num_training_epochs,
         }
-        optimizer.zero_grad()
-        result = imodel.model.training_step(batch)
-        loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss)
 
-        self.backup_grad()
+        # 1. Backup clean embeddings
+        self.attack(is_first_attack=True)
+        model_grads = {}
+
         for t in range(self.config.adv_k):
-            self.attack(is_first_attack=(t == 0))
-            if t == 0:
-                optimizer.zero_grad()
-
+            optimizer.zero_grad()
             result = imodel.model.training_step(batch)
             loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-            loss = loss / self.config.adv_k
-            imodel.manual_backward(loss)
-        self.restore_grad()
-        self.restore()
-        optimizer.step()
 
-        schedule = imodel.lr_schedulers()
-        schedule.step()
+            # Compute gradients scaled by AMP (averaged over K steps)
+            imodel.manual_backward(loss / self.config.adv_k)
+
+            # Accumulate the pure (but potentially AMP-scaled) gradients
+            for name, param in self.model.named_parameters():
+                if param.requires_grad and param.grad is not None:
+                    if name not in model_grads:
+                        model_grads[name] = param.grad.clone()
+                    else:
+                        model_grads[name] += param.grad
+
+            # Calculate next perturbation based on current step's gradient
+            if t < self.config.adv_k - 1:
+                self.attack(is_first_attack=False)
+
+        # 2. Restore clean embeddings
+        self.restore()
+
+        # 3. Inject the accumulated gradients back into the model
+        optimizer.zero_grad()
+        for name, param in self.model.named_parameters():
+            if name in model_grads:
+                param.grad = model_grads[name]
+
+        # 4. Step optimizer (Lightning handles AMP unscaling internally via the scaler)
+        imodel.clip_gradients(
+            optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+        )
+        optimizer.step()
+        imodel.lr_schedulers().step()
+
         return loss, loss_log

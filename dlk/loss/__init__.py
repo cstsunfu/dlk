@@ -31,6 +31,7 @@ class BaseLossConfig(Base):
 
     schedule = ListField(value=[1], help="the schedule of the loss, works with scale")
     scale = ListField(value=[1], help="the scale of the loss for every schedule stage")
+    ignore_index = IntField(value=-100, help="the ignore index")
     pred_truth_pair = DictField(
         value={},
         suggestions=[{"logits": "label_ids"}],

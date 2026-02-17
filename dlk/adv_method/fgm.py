@@ -74,9 +74,10 @@ class FGMAdvMethod(AdvMethod):
             if param.requires_grad and name in self.adv_para_name:
                 self.backup[name] = param.data.clone()
                 norm = torch.norm(param.grad)
-                if norm != 0:
-                    r_at = self.config.epsilon * param.grad / norm
-                    param.data.add_(r_at)
+                if norm != 0 and not torch.isnan(norm):
+                    r_at = self.config.alpha * param.grad / (norm + 1e-8)
+                    with torch.no_grad():
+                        param.add_(r_at)
 
     def restore(self):
         for name, param in self.model.named_parameters():
@@ -86,16 +87,19 @@ class FGMAdvMethod(AdvMethod):
         self.backup = {}
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
-        """do training_step on a mini batch
+        """Performs a training step using the Fast Gradient Method (FGM).
+
+        This method supports PyTorch Lightning's Automatic Mixed Precision (AMP) by
+        utilizing `manual_backward` for gradient scaling and `optimizer.step()` for
+        unscaling and updating weights.
 
         Args:
-            imodel: imodel instance
-            batch: a mini batch inputs
-            batch_idx: the index(dataloader) of the mini batch
+            imodel: The integrated model instance (LightningModule).
+            batch: A dictionary containing the mini-batch inputs.
+            batch_idx: The index of the current batch.
 
         Returns:
-            the outputs
-
+            Tuple[torch.Tensor, Dict]: A tuple containing the combined loss and the loss log.
         """
         optimizer = imodel.optimizers()
         rt_config = {
@@ -104,17 +108,30 @@ class FGMAdvMethod(AdvMethod):
             "total_steps": imodel.num_training_steps,
             "total_epochs": imodel.num_training_epochs,
         }
+
         optimizer.zero_grad()
-        result = imodel.model.training_step(batch)
-        loss, _ = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss // 2)
-        self.attack()
+
+        # 1. Forward and backward for clean data
         result = imodel.model.training_step(batch)
         loss, loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(loss // 2)
-        self.restore()
-        optimizer.step()
+        imodel.manual_backward(loss / 2.0)
 
-        schedule = imodel.lr_schedulers()
-        schedule.step()
-        return loss, loss_log
+        # 2. Attack: Calculate perturbations using current gradients and apply to embeddings
+        self.attack()
+
+        # 3. Forward and backward for adversarial data
+        result = imodel.model.training_step(batch)
+        adv_loss, adv_loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
+        imodel.manual_backward(adv_loss / 2.0)
+
+        # 4. Restore clean parameters
+        self.restore()
+
+        # 5. Optimizer step: Lightning handles AMP unscaling internally
+        imodel.clip_gradients(
+            optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+        )
+        optimizer.step()
+        imodel.lr_schedulers().step()
+
+        return (loss + adv_loss) / 2.0, loss_log

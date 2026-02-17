@@ -13,18 +13,20 @@
 # limitations under the License.
 
 """
-    This script is for reconvert the json format data to bio data to use conlleval script to get the score
+This script is for reconvert the json format data to bio data to use conlleval script to get the score
 """
 import json
-from tokenizers import Token, Tokenizer
-tokenizer = Tokenizer.from_file('../../dlk/local_data/embeddings/glove_tokenizer.json')
 
-data = json.load(open('./predict.json', 'r'))
+from tokenizers import Token, Tokenizer
+
+tokenizer = Tokenizer.from_file("../../dlk/local_data/embeddings/glove_tokenizer.json")
+
+data = json.load(open("./predict.json", "r"))
 
 
 def align(sentence, labels):
     """
-        convert the Sequence Labeling result to B-I-O resutl
+    convert the Sequence Labeling result to B-I-O resutl
     """
     # predicts = line['predict_entities_info']
     encode = tokenizer.encode(sentence)
@@ -35,39 +37,40 @@ def align(sentence, labels):
     output = []
     cur_token = 0
     cur_label = 0
-    while cur_token<token_num:
+    while cur_token < token_num:
         if cur_label >= num_label:
-            output.append((tokens[cur_token], 'O'))
+            output.append((tokens[cur_token], "O"))
             cur_token += 1
             continue
-        label_start = labels[cur_label]['start']
-        label_end = labels[cur_label]['end']
-        label = labels[cur_label]['labels'][0]
+        label_start = labels[cur_label]["start"]
+        label_end = labels[cur_label]["end"]
+        label = labels[cur_label]["labels"][0]
 
         token_start = offsets[cur_token][0]
         token_end = offsets[cur_token][1]
 
-        if token_start==label_start:
-            output.append((tokens[cur_token], 'B-'+label))
+        if token_start == label_start:
+            output.append((tokens[cur_token], "B-" + label))
             cur_token += 1
-        elif token_start<label_start:
-            output.append((tokens[cur_token], 'O'))
+        elif token_start < label_start:
+            output.append((tokens[cur_token], "O"))
             cur_token += 1
-        elif token_start<label_end:
-            output.append((tokens[cur_token], 'I-'+label))
+        elif token_start < label_end:
+            output.append((tokens[cur_token], "I-" + label))
             cur_token += 1
-        elif token_start>=label_end:
+        elif token_start >= label_end:
             cur_label += 1
         else:
             raise PermissionError
     # # for truth in truthes:
     return output
 
+
 write = []
 for line in data:
-    sentence = line['sentence']
-    truth_labels = line['entities_info']
-    predict_labels = line['predict_entities_info']
+    sentence = line["sentence"]
+    truth_labels = line["entities_info"]
+    predict_labels = line["predict_entities_info"]
     truth = align(sentence, truth_labels)
     predict = align(sentence, predict_labels)
     one = []
@@ -76,8 +79,8 @@ for line in data:
         one.append([t[0], t[1], p[1]])
     write.append(one)
 
-with open('predict.txt', 'w') as f:
+with open("predict.txt", "w") as f:
     for line in write:
         for token in line:
-            f.write(' '.join(token)+'\n')
-        f.write('\n')
+            f.write(" ".join(token) + "\n")
+        f.write("\n")

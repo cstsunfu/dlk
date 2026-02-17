@@ -25,8 +25,25 @@ python train.py
 
 
 
-### TODO
+### Result
 
-The biaffine model is not good on sparse label.
 
-implement the `tplink-plus`
+```
+Default
+efficent=False
+
+relation_position=False
+
+Epoch 7/7  ──────────────────────────────────────── 439/439 0:00:30 _ 0:00:00 14.49it/s train_loss: 0.076 val_precision: 90.672 val_recall: 91.041 val_f1: 90.856 val_valid_loss: 0.63
+```
+
+```
+efficent=True
+Epoch 7/7  ──────────────────────────────────────── 439/439 0:00:29 _ 0:00:00 14.70it/s train_loss: 0.004 val_precision: 91.145 val_recall: 91.856 val_f1: 91.499 val_valid_loss: 0.500
+
+```
+
+```
+relation_position=True
+Epoch 7/7  ──────────────────────────────────────── 439/439 0:00:30 _ 0:00:00 14.38it/s train_loss: 0.038 val_precision: 91.677 val_recall: 92.050 val_f1: 91.863 val_valid_loss: 0.703
+```

@@ -37,141 +37,146 @@ data format
     ]
 }
 """
-import copy
 import json
 import logging
 import uuid
+from typing import Any, Dict, List
 
-import pandas as pd
-from datasets import load_dataset
+from datasets import concatenate_datasets, load_dataset
 
 from dlk.preprocess import PreProcessor
 
 logger = logging.getLogger(__name__)
 
 
-def simple_tokenize(sentence, sep=" "):
-    token_infos = []
-    one = None
-    for i, c in enumerate(sentence):
-        if c != sep and not one:
-            one = {"start": i, "end": i, "token": ""}
-        if c == sep:
-            if (not one) or (not one["token"]):
-                continue
-            token_infos.append(one)
-            one = None
-        else:
-            one["token"] += c
-            one["end"] += 1
-    if one:
-        token_infos.append(one)
-    return token_infos
+def process_batch(batch):
+    """
+    CoNLL04 数据处理核心逻辑：
+    1. DFKI-SLT/conll04 数据集包含 ['entities', 'tokens', 'relations', 'orig_id']。
+    2. 将 tokens 拼接为 sentence，并严格计算每个 token 对应的 character offset（字符级别起始与结束索引）。
+    3. 将基于 token index 的 entities 的 start 和 end，转换为基于 character index 的 start 和 end。
+    4. 生成实体的唯一 id (entity_id)，并在 relations_info 中用 entity_id 来代替基于索引的 head 和 tail。
+    """
+    batch_uuids = []
+    batch_sentences = []
+    batch_entities_info = []
+    batch_relations_info = []
 
+    # 遍历 batch 中的每一条数据
+    for idx, tokens in enumerate(batch["tokens"]):
+        entities = batch["entities"][idx]
+        relations = batch["relations"][idx]
 
-def get_all_entities_position(tokens, tags, sentence):
-    entities_list = []
-    entity_info = None
-    assert len(tokens) == len(tags), f"{len(tokens)}!= {len(tags)}"
-    for token, tag in zip(tokens, tags):
-        if tag == 0:
-            if not entity_info:
-                continue
-            entities_list.append(entity_info)
-            entity_info = None
-        if tag > 3:
-            if entity_info:
-                entities_list.append(entity_info)
-            entity_info = token
-        if tag in (1, 2, 3):
-            entity_info["end"] = token["end"]
-            entity_info["token"] = sentence[entity_info["start"] : entity_info["end"]]
-    if entity_info:
-        entities_list.append(entity_info)
-    return entities_list
+        # 1. 拼接句子并记录 token -> character 级别的 offset
+        token_char_offsets = []
+        current_offset = 0
+        for token in tokens:
+            token_length = len(token)
+            # 记录当前 token 的字符级 (start, end)
+            token_char_offsets.append((current_offset, current_offset + token_length))
+            # 加上一个空格的长度
+            current_offset += token_length + 1
 
+        sentence = " ".join(tokens)
 
-def get_data():
-    data = load_dataset(path="xiaobendanyn/nyt10")
-    data = data["test"].to_dict()
-
-    data_list = []
-    no_regular_cnt = 0
-    for entities, relations, sentence in zip(
-        data["entities"], data["relations"], data["sentext"]
-    ):
-        tokens = simple_tokenize(sentence)
-        entities_info_dict = {}
-        relations_info = []
-        flag = True
-        for relation in relations:
-            _, entity_type_1, entity_type_2, relation_type = relation["rtext"].split(
-                "/"
-            )
-            entity_type_map = {
-                relation["em1"]: entity_type_1,
-                relation["em2"]: entity_type_2,
-            }
-            tags = relation["tags"]
-            assert len(tags) == len(tokens)
-            position_entities = get_all_entities_position(tokens, tags, sentence)
-            if len(position_entities) != 2:
-                logger.warning(
-                    f"No regular:\n {json.dumps(position_entities, indent=4, ensure_ascii=False)}"
-                )
-                flag = False
-                continue
-            entities_index = {}
-            first = -1
-            second = -1
-            for position_entity in position_entities:
-                assert (
-                    position_entity["token"] in entity_type_map
-                ), f"{position_entity['token']} not in {entity_type_map.keys()},\n Relation: \n{json.dumps(relation, indent=4, ensure_ascii=False)}\n Entities: \n{json.dumps(entities, indent=4, ensure_ascii=False)}\nRelations: \n{json.dumps(relations, indent=4, ensure_ascii=False)}\nSentence: \n{json.dumps(relations, indent=4, ensure_ascii=False)} \nPosition Entities: \n{json.dumps(position_entities, indent=4, ensure_ascii=False)} "
-                position_entity["labels"] = [entity_type_map[position_entity["token"]]]
-                position_entity_str = json.dumps(position_entity)
-                if position_entity_str not in entities_info_dict:
-                    entities_info_dict[position_entity_str] = str(uuid.uuid1())
-                if position_entity["token"] == relation["em1"]:
-                    first = entities_info_dict[position_entity_str]
-                else:
-                    assert position_entity["token"] == relation["em2"]
-                    second = entities_info_dict[position_entity_str]
-            relation_info = {"labels": [relation_type], "from": first, "to": second}
-            relations_info.append(relation_info)
-        if not flag:
-            no_regular_cnt += 1
-            continue
+        # 2. 处理实体信息
         entities_info = []
-        for entity_info, id in entities_info_dict.items():
-            entity_info = json.loads(entity_info)
-            entity_info.pop("token")
-            entity_info["entity_id"] = id
-            entities_info.append(entity_info)
+        # 保存 Dataset 原本索引 -> 我们自己生成的 UUID 映射，用于之后处理 relations
+        entity_idx_to_id = {}
 
-        data_list.append(
-            {
-                "uuid": str(uuid.uuid1()),
-                "sentence": sentence,
-                "entities_info": entities_info,
-                "relations_info": relations_info,
-            }
+        for e_idx, ent in enumerate(entities):
+            # CoNLL04 数据集中的 entities 格式如: {"start": 0, "end": 2, "type": "Org"}
+            # 其 end 是开区间 (exclusive)的。即 start=0, end=2 包含第0和第1个 token。
+            t_start = ent["start"]
+            t_end = ent["end"] - 1  # 转为闭区间来取索引
+
+            # 安全检查防越界
+            t_end = min(t_end, len(token_char_offsets) - 1)
+
+            # 拿到字符级别的 start 和 end
+            char_start = token_char_offsets[t_start][0]
+            char_end = token_char_offsets[t_end][1]
+
+            ent_id = str(uuid.uuid4())
+            entity_idx_to_id[e_idx] = ent_id
+
+            entities_info.append(
+                {
+                    "entity_id": ent_id,
+                    "start": char_start,  # 框架要求：字符级别 start
+                    "end": char_end,  # 框架要求：字符级别 end
+                    "labels": [ent["type"]],  # 实体标签
+                }
+            )
+
+        # 3. 处理关系信息
+        relations_info = []
+        for rel in relations:
+            # CoNLL04 的 relations 格式如: {"head": 0, "tail": 1, "type": "Work_For"}
+            head_idx = rel["head"]
+            tail_idx = rel["tail"]
+            rel_type = rel["type"]
+
+            # 确保引用的实体存在
+            if head_idx in entity_idx_to_id and tail_idx in entity_idx_to_id:
+                relations_info.append(
+                    {
+                        "from": entity_idx_to_id[head_idx],
+                        "to": entity_idx_to_id[tail_idx],
+                        "labels": [rel_type],
+                    }
+                )
+
+        # 原数据集如果有 orig_id 则保留，没有则自动生成
+        ins_uuid = (
+            str(batch["orig_id"][idx]) if "orig_id" in batch else str(uuid.uuid4())
         )
-    return data_list
+
+        batch_uuids.append(ins_uuid)
+        batch_sentences.append(sentence)
+        batch_entities_info.append(entities_info)
+        batch_relations_info.append(relations_info)
+
+    # uuid, sentence, entities_info, relations_info
+    return {
+        "uuid": batch_uuids,
+        "sentence": batch_sentences,
+        "entities_info": batch_entities_info,
+        "relations_info": batch_relations_info,
+    }
 
 
-with open("./test.json", "w") as f:
-    json.dump(get_data(), f, indent=4, ensure_ascii=False)
-with open("./test.json", "r") as f:
-    data = json.load(f)
+if __name__ == "__main__":
+    # 1. 加载权威数据集
+    logger.info("Loading DFKI-SLT/conll04 dataset...")
+    try:
+        dataset = load_dataset("DFKI-SLT/conll04")
+    except Exception as e:
+        logger.error(f"Failed to load dataset: {e}")
+        exit(1)
 
-train = data[: len(data) // 2]
-valid = data[len(data) // 2 :]
+    # 2. 获取原始列名，准备清除以避免后续冲突
+    raw_cols = dataset[list(dataset.keys())[0]].column_names
 
-input = {
-    "train": pd.DataFrame(train),
-    "valid": pd.DataFrame(train),
-}
+    # 3. 数据处理 (使用 dataset.map 加速并规范化数据结构)
+    logger.info("Mapping raw dataset to Span-Relation expected format...")
+    processed_datasets = dataset.map(
+        process_batch, batched=True, remove_columns=raw_cols, desc="Processing dataset"
+    )
 
-processor = PreProcessor("./config/processor.jsonc")
-processor.fit(input)
+    # 4. 构建 Input Data 字典
+    # "train" set merge train and validataion processed_datasets["train"] + processed_datasets["validation"]
+    input_data = {
+        "train": concatenate_datasets(
+            [processed_datasets["train"], processed_datasets["validation"]]
+        ),
+        "valid": processed_datasets["test"],
+    }
+
+    # "test": processed_datasets["test"]
+    # 5. 运行 PreProcessor
+    logger.info("Running PreProcessor to generate tokenized data and vocabs...")
+    processor = PreProcessor("./config/processor.jsonc")
+    processor.fit(input_data)
+
+    logger.info("Data processing complete!")

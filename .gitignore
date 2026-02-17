@@ -5,6 +5,7 @@
 *.pyc
 *.ckpt
 *.log
+*.gz
 *.raw
 tools/**/*.txt
 *.zip

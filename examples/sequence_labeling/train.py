@@ -10,7 +10,8 @@ from intc import ic_repo
 
 from dlk.train import Train
 
-pl.seed_everything(88)
+if __name__ == "__main__":
+    pl.seed_everything(88)
 
-trainer = Train("./config/bert_firstpiece_lstm_crf/fit.jsonc")
-trainer.run()
+    trainer = Train("./config/bert_firstpiece_lstm_crf/fit.jsonc")
+    trainer.run()

@@ -97,7 +97,8 @@ class SpanClsRelationCollate(DefaultCollate):
 
         for i, sample_labels in enumerate(sparse_labels):
             for from_idx, to_idx, label_id in sample_labels:
-                target[i, label_id, from_idx, to_idx] = 1.0
+                if from_idx < seq_len and to_idx < seq_len:
+                    target[i, label_id, from_idx, to_idx] = 1.0
         return target
 
     def __call__(

@@ -1,0 +1,45 @@
+{
+    "@ray_serve": {
+        "models": {
+            "bert_pytorch": {
+                "process_config": "./config/processor.jsonc",
+                "fit_config": "./config/fit.jsonc",
+                "checkpoint": "./logs/0/checkpoint/last.ckpt",
+                "use_onnx": false,
+                "preprocessor_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1
+                },
+                "inference_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1,
+                    "max_batch_size": 4
+                },
+                "postprocessor_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1
+                }
+            },
+            "bert_onnx": {
+                "process_config": "./config/processor.jsonc",
+                "fit_config": "./config/fit.jsonc",
+                "checkpoint": "./logs/0/checkpoint/last.ckpt",
+                "use_onnx": true,
+                "onnx_path": "./data/model.onnx",
+                "preprocessor_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1
+                },
+                "inference_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1,
+                    "max_batch_size": 8
+                },
+                "postprocessor_resources": {
+                    "num_replicas": 1,
+                    "num_cpus": 1
+                }
+            }
+        }
+    }
+}

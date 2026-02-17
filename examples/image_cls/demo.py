@@ -5,9 +5,10 @@
 
 from dlk.demo import Demo
 
-demo = Demo(
-    display_config={"@display@img_cls": {}},
-    process_config="./config/processor.jsonc",
-    fit_config="./config/fit.jsonc",
-    checkpoint="./logs/0/checkpoint/epoch=2-step=939.ckpt",
-)
+if __name__ == "__main__":
+    demo = Demo(
+        display_config={"@display@img_cls": {}},
+        process_config="./config/processor.jsonc",
+        fit_config="./config/fit.jsonc",
+        checkpoint="./logs/0/checkpoint/epoch=2-step=939.ckpt",
+    )

@@ -126,44 +126,29 @@ class BartDecoderWrap(Module):
             sequence_output, all_hidden_states, all_self_attentions
 
         """
+        model_kwargs = {
+            "input_ids": None,
+            "attention_mask": inputs.get("attention_mask", None),
+            "encoder_hidden_states": inputs.get("encoder_outputs", None),
+            "head_mask": inputs.get("head_mask", None),
+            "past_key_values": inputs.get("past_caches", None),
+            "inputs_embeds": inputs.get("inputs_embeds", None),
+            "output_attentions": self.config.return_attention,
+            "output_hidden_states": True,
+            "return_dict": True,
+        }
+
         if self.config.freeze:
             with torch.no_grad():
-                outputs = self.bart_decoder(
-                    input_ids=None,  # NOTE: we will add embedding in embedding layer
-                    attention_mask=inputs.get("decoder_attention_mask", None),
-                    encoder_hidden_states=inputs.get("encoder_outputs", None),
-                    head_mask=inputs.get("decoder_head_mask", None),
-                    past_key_values=inputs.get("past_caches", None),
-                    inputs_embeds=inputs.get("inputs_embeds", None),
-                    use_cache=True,
-                    output_attentions=False,
-                    output_hidden_states=True,
-                    return_dict=False,
-                )
+                outputs = self.bart_decoder(**model_kwargs)
         else:
-            outputs = self.bart_decoder(
-                input_ids=None,  # NOTE: we will add embedding in embedding layer
-                attention_mask=inputs.get("decoder_attention_mask", None),
-                encoder_hidden_states=inputs.get("encoder_outputs", None),
-                head_mask=inputs.get("decoder_head_mask", None),
-                past_key_values=inputs.get("past_caches", None),
-                inputs_embeds=inputs["inputs_embeds"],
-                use_cache=True,
-                output_attentions=self.config.return_attention,
-                output_hidden_states=True,
-                return_dict=False,
-            )
-        assert (
-            len(outputs) == 5
-        ), f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
-        # sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[2]
-        (
-            hidden_states,
-            next_cache,
-            all_hidden_states,
-            all_self_attns,
-            all_cross_attentions,
-        ) = (outputs[0], outputs[1], outputs[2], outputs[3], outputs[4])
+            outputs = self.bart_decoder(**model_kwargs)
+
+        hidden_states = outputs.last_hidden_state
+        next_cache = outputs.past_key_values
+        all_hidden_states = outputs.hidden_states
+        all_self_attns = outputs.attentions
+        all_cross_attentions = outputs.cross_attentions
         return (
             hidden_states,
             next_cache,

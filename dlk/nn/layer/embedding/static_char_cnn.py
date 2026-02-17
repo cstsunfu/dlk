@@ -136,14 +136,17 @@ class StaticCharCNNEmbedding(SimpleModule):
         char_embedding = char_embedding.view(bs * seq_len, token_len, emb_dim)
         char_embedding = char_embedding.transpose(1, 2)
         char_embedding = self.cnn(char_embedding)  # bs*seq_len, emb_dim, token_len
+        word_embedding = char_embedding.masked_fill(
+            char_mask.view(bs * seq_len, 1, token_len), -float("inf")
+        ).max(-1)[0]
         word_embedding = (
-            char_embedding.masked_fill_(
-                char_mask.view(bs * seq_len, 1, token_len), -1000
+            torch.where(
+                word_embedding == -float("inf"),
+                torch.zeros_like(word_embedding),
+                word_embedding,
             )
-            .max(-1)[0]
             .view(bs, seq_len, emb_dim)
             .contiguous()
         )
-
         inputs[self.config.output_map.char_embedding] = self.dropout(word_embedding)
         return inputs

@@ -89,13 +89,12 @@ class DecoderBiLinear(SimpleModule):
 
         # padding mask
         if self.config.apply_mask:
-            pad_mask = (
-                inputs[self.config.input_map.attention_mask]
-                .unsqueeze(1)
-                .unsqueeze(1)
-                .expand(shape[0], shape[1], shape[2], shape[3])
+            mask1d = inputs[self.config.input_map.attention_mask].bool()
+            mask2d = mask1d.unsqueeze(2) & mask1d.unsqueeze(1)
+            pad_mask = mask2d.unsqueeze(1).expand(
+                shape[0], shape[1], shape[2], shape[3]
             )
-            logits = torch.where(pad_mask.to(torch.bool), logits, -torch.inf)
+            logits = torch.where(pad_mask, logits, -torch.inf)
         if self.config.apply_tril_mask:
             tril_mask = torch.tril(torch.ones_like(logits), -1)
             logits = torch.where(tril_mask.to(torch.bool), -torch.inf, logits)

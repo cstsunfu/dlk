@@ -3,6 +3,7 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
+from asteval import Interpreter
 from intc import (
     MISSING,
     AnyField,
@@ -122,11 +123,12 @@ def prepare_tune(config: RayOptunaConfig):
     randint = tune.randint
     lograndint = tune.lograndint
     randn = tune.randn
+    aeval = Interpreter(use_numpy=False)
     for key, value in config.search_space.items():
         assert isinstance(value, str)
         if value.startswith("lambda "):
             # "Invalid search space format for {key}: {value}. 'lambda c: c.config.a + 1' for dependent config."
-            search_space[key] = tune.sample_from(eval(value))
+            search_space[key] = tune.sample_from(aeval(value))
         else:
             assert (
                 value.startswith("uniform")

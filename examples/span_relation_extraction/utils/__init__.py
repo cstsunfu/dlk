@@ -1,7 +1,8 @@
-from typing import Dict, List
 import uuid
+from typing import Dict, List
 
-def convert(data: List[List])->List[Dict]:
+
+def convert(data: List[List]) -> List[Dict]:
     """convert from bio to json
 
     Args:
@@ -29,35 +30,35 @@ def convert(data: List[List])->List[Dict]:
     for line in data:
         tokens, labels = line[0], line[1]
         text = ""
-        cur_label = ''
+        cur_label = ""
         start = -1
         entities_info = []
         entity_info = {}
         for token, label in zip(tokens, labels):
-            assert label[0] in ['B', 'I', "O"]
-            if label[0] == 'B':
+            assert label[0] in ["B", "I", "O"]
+            if label[0] == "B":
                 if text:
-                    cur_start = len(text) + 1 # will add space begin current token
+                    cur_start = len(text) + 1  # will add space begin current token
                     text = " ".join([text, token])
                 else:
                     cur_start = 0
                     text = token
                 if cur_label:
-                    entity_info['start'] = start
-                    entity_info['end'] = len(text)
+                    entity_info["start"] = start
+                    entity_info["end"] = len(text)
                     entity_info["labels"] = [cur_label]
                     entities_info.append(entity_info)
                 start = cur_start
-                cur_label = label.split('-')[-1]
+                cur_label = label.split("-")[-1]
                 entity_info = {}
-            elif label[0] == 'O':
+            elif label[0] == "O":
                 if cur_label:
-                    entity_info['start'] = start
-                    entity_info['end'] = len(text)
+                    entity_info["start"] = start
+                    entity_info["end"] = len(text)
                     entity_info["labels"] = [cur_label]
                     entities_info.append(entity_info)
                 entity_info = {}
-                cur_label = ''
+                cur_label = ""
                 start = -1
                 if text:
                     text = " ".join([text, token])
@@ -69,12 +70,21 @@ def convert(data: List[List])->List[Dict]:
                 else:
                     text = token
         if cur_label:
-            entity_info['start'] = start
-            entity_info['end'] = len(text)
-            entity_info['labels'] = [cur_label]
+            entity_info["start"] = start
+            entity_info["end"] = len(text)
+            entity_info["labels"] = [cur_label]
             entities_info.append(entity_info)
         for entity in entities_info:
-            assert len(text[entity['start']: entity['end']].strip()) == entity['end'] - entity['start'], f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
+            assert (
+                len(text[entity["start"] : entity["end"]].strip())
+                == entity["end"] - entity["start"]
+            ), f"{entity}, {len(text[entity['start']: entity['end']].strip())},{entity['end'] - entity['start']},{text}"
 
-        format_data.append({'uuid': str(uuid.uuid1()),  "sentence": text, "entities_info": entities_info})
+        format_data.append(
+            {
+                "uuid": str(uuid.uuid4()),
+                "sentence": text,
+                "entities_info": entities_info,
+            }
+        )
     return format_data

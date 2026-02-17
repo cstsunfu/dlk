@@ -106,33 +106,24 @@ class BartEncoderWrap(Module):
             sequence_output, all_hidden_states, all_self_attentions
 
         """
+        model_kwargs = {
+            "input_ids": None,
+            "attention_mask": inputs.get("attention_mask", None),
+            "head_mask": inputs.get("head_mask", None),
+            "inputs_embeds": inputs.get("inputs_embeds", None),
+            "output_attentions": self.config.return_attention,
+            "output_hidden_states": True,
+            "return_dict": True,
+        }
+
         if self.config.freeze:
             with torch.no_grad():
-                outputs = self.bart_encoder(
-                    input_ids=None,  # NOTE: we will add embedding in embedding layer
-                    attention_mask=inputs.get("attention_mask", None),
-                    head_mask=inputs.get("head_mask", None),
-                    inputs_embeds=inputs.get("inputs_embeds", None),
-                    output_attentions=self.config.return_attention,
-                    output_hidden_states=True,
-                    return_dict=False,
-                )
+                outputs = self.bart_encoder(**model_kwargs)
         else:
-            outputs = self.bart_encoder(
-                input_ids=None,  # NOTE: we will add embedding in embedding layer
-                attention_mask=inputs.get("attention_mask", None),
-                head_mask=inputs.get("head_mask", None),
-                inputs_embeds=inputs.get("inputs_embeds", None),
-                output_attentions=self.config.return_attention,
-                output_hidden_states=True,
-                return_dict=False,
-            )
-        assert (
-            len(outputs) == 3
-        ), f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
-        sequence_output, all_hidden_states, all_self_attentions = (
-            outputs[0],
-            outputs[1],
-            outputs[2],
-        )
+            outputs = self.bart_encoder(**model_kwargs)
+
+        sequence_output = outputs.last_hidden_state
+        all_hidden_states = getattr(outputs, "hidden_states", None)
+        all_self_attentions = getattr(outputs, "attentions", None)
+
         return sequence_output, all_hidden_states, all_self_attentions

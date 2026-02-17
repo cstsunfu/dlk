@@ -111,6 +111,8 @@ def preprocess_chinese_sentence(sentence: str, tokenizer: PreTrainedTokenizer):
     - chinese_ref (indices of non-first characters in a word)
     - force_mask_words (list of nouns found in the sentence)
     """
+    import jieba.posseg as pseg
+
     # 1. 使用 jieba 进行词性标注
     words_with_pos = pseg.lcut(sentence)
 
@@ -154,7 +156,6 @@ def preprocess_chinese_sentence(sentence: str, tokenizer: PreTrainedTokenizer):
 if __name__ == "__main__":
 
     import jieba
-    import jieba.posseg as pseg
     from transformers import PreTrainedTokenizer
 
     # 1. 初始化 Tokenizer 和我们自定义的 Collator

@@ -6,33 +6,24 @@
 import json
 import logging
 import os
-import pickle as pkl
 import uuid
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
-import pandas as pd
-import torch
 from intc import (
     MISSING,
-    AnyField,
     Base,
     BoolField,
-    DictField,
     FloatField,
     IntField,
     ListField,
     NestField,
     StrField,
-    SubModule,
     cregister,
 )
 from tabulate import tabulate
-from tokenizers import Tokenizer
-from torchmetrics import Metric
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
-from dlk.utils.io import open
 from dlk.utils.register import register
 from dlk.utils.vocab import Vocabulary
 
@@ -59,9 +50,6 @@ class SpanRelationPostProcessorConfig(BasePostProcessorConfig):
         value=MISSING,
         help="the label vocab file path of relation, it should be the same as file in the preprocessor",
     )
-    tokenizer_path = StrField(
-        value=MISSING, help="the tokenizer file path, is not effected by `meta_dir`"
-    )
 
     class InputMap:
         logits = StrField(value="logits", help="the entity logits")
@@ -75,7 +63,7 @@ class SpanRelationPostProcessorConfig(BasePostProcessorConfig):
 
     input_map = NestField(
         value=InputMap,
-        help="the input map of the processor, the key is the name of the processor needed key, the value is the provided data provided key",
+        help="the input map of the processor",
     )
 
     class OriginInputMap:
@@ -92,37 +80,37 @@ class SpanRelationPostProcessorConfig(BasePostProcessorConfig):
 
     origin_input_map = NestField(
         value=OriginInputMap,
-        help="the origin input map of the processor, the key is the name of the processor needed key, the value is the provided data provided key",
+        help="the origin input map",
     )
     unrelated_entity = BoolField(
         value=True, help="whether to save the unrelated entity(no pair relation)"
     )
     relation_groups = IntField(
         value=1,
-        help="the relation groups, when set label_seperate==True in span_relation_relabel, the relation_groups maybe >1, but currently is not Tested",
+        help="the relation groups",
     )
     sym = BoolField(
         value=True,
-        help="whether the relation is sym, if sym==True, we can just calc the upper trim and set down trim as -100 to ignore",
+        help="whether the relation is sym",
     )
     ignore_labels = ListField(
         value=["O", "X", "S", "E"],
-        help="the ignore labels, if the entity label in this list, we will ignore this entity",
+        help="the ignore labels",
     )
     ignore_relations = ListField(value=[], help="the ignore relations")
     entity_threshold = FloatField(
         value=0.0,
-        help="the threshold of the entity logits, if the entity logits < this value, we will ignore this entity",
+        help="the threshold of the entity logits",
     )
     relation_threshold = FloatField(
         value=0.0,
-        help="the threshold of the relation logits, if the relation logits < this value, we will ignore this relation",
+        help="the threshold of the relation logits",
     )
 
 
 @register("postprocessor", "span_relation")
 class SpanRelationPostProcessor(BasePostProcessor):
-    """PostProcess for sequence labeling task"""
+    """PostProcess for relation extraction task"""
 
     def __init__(self, config: SpanRelationPostProcessorConfig):
 
@@ -135,36 +123,14 @@ class SpanRelationPostProcessor(BasePostProcessor):
         self.relation_label_vocab = Vocabulary.load_from_file(
             os.path.join(self.config.meta_dir, self.config.relation_label_vocab)
         )
-        with open(self.config.tokenizer_path, "r", encoding="utf-8") as f:
-            tokenizer_str = json.dumps(json.load(f))
-        self.tokenizer = Tokenizer.from_str(tokenizer_str)
 
     def wrap_predict_one_batch(
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
-        """Process the model predict to human readable format
-
-        Args:
-            stage: train/test/etc.
-            batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the predicts
-
-        """
         batch_output[self.config.input_map.logits] = (
             batch_output[self.config.input_map.logits].float().cpu().numpy()
         )
@@ -177,16 +143,8 @@ class SpanRelationPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
-        """Process the model predict to human readable format for one batch
-        Args:
-            stage: train/test/etc.
-            batch_output: a dict of output
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-        Returns:
-            the predicts of one batch
-        """
         batch_logits = batch_output[self.config.input_map.logits]
         batch_head_logits = batch_output[self.config.input_map.head_logits]
         batch_tail_logits = batch_output[self.config.input_map.tail_logits]
@@ -210,42 +168,12 @@ class SpanRelationPostProcessor(BasePostProcessor):
         head_logits,
         tail_logits,
         index: int,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
     ) -> Dict:
-        """gather the predict and origin text and ground_truth_entities_info for predict
-
-        Args:
-            logits: the predict entity span logits
-            relation_logits: the predict relation logits
-            index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
-
-        Returns:
-            >>> one_ins info
-            >>> {
-            >>>     "sentence": "...",
-            >>>     "uuid": "..",
-            >>>     "entities_info": [".."],
-            >>>     "predict_entities_info": [".."],
-            >>> }
-
-        """
 
         def _get_entity_info(
             sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str
         ) -> Dict:
-            """gather sub_tokens to get the start and end
-
-            Args:
-                sub_tokens_index: the entity tokens index list
-                offset_mapping: every token offset in text
-                word_ids: every token in the index of words
-                label: predict label
-
-            Returns:
-                entity_info
-
-            """
             if not sub_tokens_index or not label:
                 return {}
             start = offset_mapping[sub_tokens_index[0]][0]
@@ -259,7 +187,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
             }
 
         one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
+        origin_ins = self._get_origin_row(origin_data, index)
         one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
         one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
         one_ins["entities_info"] = origin_ins.get(
@@ -291,10 +219,9 @@ class SpanRelationPostProcessor(BasePostProcessor):
                 [start, end], offset_mapping, word_ids, predict_entity_label
             )
             if entity_info:
-                entity_id = str(uuid.uuid1())
+                entity_id = str(uuid.uuid4())
                 predict_entities_id_info_map[entity_id] = entity_info
             if len(predict_entities_id_info_map) > max_entities:
-                # HACK: if the predict entities is more than max_entities, we will stop
                 predict_entities_id_info_map = {}
                 entities_in_relations_id = set()
                 break
@@ -352,25 +279,6 @@ class SpanRelationPostProcessor(BasePostProcessor):
         stage: str,
         rt_config: Dict,
     ) -> Dict:
-        """calc the scores use the predicts
-
-        Args:
-            predicts: list of predicts
-            stage: train/test/etc.
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the named scores, recall, precision, f1
-
-        """
         real_name = self.loss_name_map(stage)
         entity_precision, entity_recall, entity_f1 = self._do_calc_entity_metrics(
             predicts
@@ -390,79 +298,10 @@ class SpanRelationPostProcessor(BasePostProcessor):
         }
 
     def _do_calc_relation_metrics(self, predicts: List):
-        """calc relation related metrics
-        Returns:
-            relation related metrics
-
-        """
-
         def _group_relations_info(
-            relations_info: List[Dict], entities_info: List[Dict]
+            relations_info: List[Dict], entities_info: List[Dict], text
         ) -> Dict[str, Set[Tuple]]:
-            """flat the relations info by relations info dict and entities info dict
-
-            Args:
-                relations_info (List[Dict]): like
-                        [
-                            {
-                                "labels": [
-                                    "belong_to"
-                                ],
-                                "from": "bd7a2928-52a8-11ed-8b5c-18c04d299e80", # id of entity
-                                "to": "bd798da3-52a8-11ed-801c-18c04d299e80",
-                            }
-                        ]
-                entities_info (List[Dict]): like
-                        [
-                            {
-                                "entity_id": "bd798da3-52a8-11ed-801c-18c04d299e80",
-                                "start_sub_token":1,
-                                "end_sub_token": 3,
-                                "labels": [
-                                    "Brand"
-                                ]
-                            },
-                            {
-                                "entity_id": "bd7a2928-52a8-11ed-8b5c-18c04d299e80",
-                                "start_sub_token":5,
-                                "end_sub_token": 9,
-                                "labels": [
-                                    "Product"
-                                ]
-                            }
-                        ],
-
-            Returns:
-                relations type relation info set pair, like
-                    {
-                        "belong_to": {
-                            (1, 3, 5, 9),
-                            ...
-                        }
-                    }
-
-            Explanation:
-                in the returns example,
-                    1 ==> from_entity.sub_token_start
-                    3 ==> from_entity.sub_token_end
-                    5 ==> to_entity.sub_token_start
-                    9 ==> to_entity.sub_token_end
-            belong_to ==> the relation type
-            """
-
             def _norm_entity(entity):
-                """norm the entity start and end by the ignore_char
-
-                Args:
-                    entity: one entity is like:
-                        {
-                            "start": .,
-                            "end": .,
-                            "sub_token_start": .,
-                            "sub_token_end": .,
-                        }
-                Returns: norm entity
-                """
                 start_position, end_position = entity["start"], entity["end"]
                 while start_position < end_position:
                     if text[start_position] in self.config.ignore_char:
@@ -474,9 +313,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
                         end_position -= 1
                     else:
                         break
-                if (
-                    start_position == end_position
-                ):  # if the entity after remove ignore char be null, we set it to origin
+                if start_position == end_position:
                     return entity["start"], entity["end"]
                 return start_position, end_position
 
@@ -488,15 +325,12 @@ class SpanRelationPostProcessor(BasePostProcessor):
             for relation_info in relations_info:
                 from_entity = entities_id_info_map[relation_info["from"]]
                 to_entity = entities_id_info_map[relation_info["to"]]
-                relation_type = relation_info["labels"][
-                    0
-                ]  # NOTE: you can also change the relation type format for different label format
+                relation_type = relation_info["labels"][0]
                 if relation_type not in flat_relations:
                     flat_relations[relation_type] = set()
                 from_start, from_end = _norm_entity(from_entity)
                 to_start, to_end = _norm_entity(to_entity)
 
-                # flat_relations[relation_type].add((from_entity['sub_token_start'], from_entity['sub_token_end'], to_entity['sub_token_start'], to_entity['sub_token_end']))
                 flat_relations[relation_type].add(
                     (from_start, from_end, to_start, to_end)
                 )
@@ -506,10 +340,12 @@ class SpanRelationPostProcessor(BasePostProcessor):
         for predict in predicts:
             text = predict["sentence"]
             predict_relations = _group_relations_info(
-                predict["predict_relations_info"], predict["predict_entities_info"]
+                predict["predict_relations_info"],
+                predict["predict_entities_info"],
+                text,
             )
             ground_truth_relations = _group_relations_info(
-                predict["relations_info"], predict["entities_info"]
+                predict["relations_info"], predict["entities_info"], text
             )
             for key in set(ground_truth_relations.keys()).union(
                 set(predict_relations.keys())
@@ -548,7 +384,6 @@ class SpanRelationPostProcessor(BasePostProcessor):
         all_tp, all_fn, all_fp = 0, 0, 0
 
         def _care_div(a, b):
-            """return a/b or 0.0 if b == 0"""
             if b == 0:
                 return 0.0
             return a / b
@@ -599,35 +434,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
         return precision, recall, f1
 
     def _do_calc_entity_metrics(self, predicts: List):
-        """calc entity related metrics
-        Returns:
-            entity related metrics
-
-        """
-
         def _group_entities_info(entities_info: List[Dict], text: str) -> Dict:
-            """gather the same labeled entity to the same list
-
-            Args:
-                entities_info:
-                    >>> [
-                    >>>     {
-                    >>>         "start": start1,
-                    >>>         "end": end1,
-                    >>>         "labels": ["label_1"]
-                    >>>     },
-                    >>>     {
-                    >>>         "start": start2,
-                    >>>         "end": end2,
-                    >>>         "labels": ["label_2"]
-                    >>>     },....
-                    >>> ]
-                text: be labeled text
-
-            Returns:
-                >>> { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
-
-            """
             info = {}
             for item in entities_info:
                 label = item["labels"][0]
@@ -644,9 +451,7 @@ class SpanRelationPostProcessor(BasePostProcessor):
                         end_position -= 1
                     else:
                         break
-                if (
-                    start_position == end_position
-                ):  # if the entity after remove ignore char be null, we set it to origin
+                if start_position == end_position:
                     start_position, end_position = item["start"], item["end"]
 
                 if self.config.ignore_position:
@@ -656,37 +461,16 @@ class SpanRelationPostProcessor(BasePostProcessor):
             return info
 
         def _calc_entity_score(predict_list: List, ground_truth_list: List):
-            """use predict_list and ground_truth_list to calc scores
-
-            Args:
-                predict_list: list of predict
-                ground_truth_list: list of ground_truth
-
-            Returns:
-                precision, recall, f1
-
-            """
             category_tp = {}
             category_fp = {}
             category_fn = {}
 
             def _care_div(a, b):
-                """return a/b or 0.0 if b == 0"""
                 if b == 0:
                     return 0.0
                 return a / b
 
             def _calc_num(_pred: List, _ground_truth: List):
-                """calc tp, fn, fp
-
-                Args:
-                    pred: pred list
-                    ground_truth: groud truth list
-
-                Returns:
-                    tp, fn, fp
-
-                """
                 num_p = len(_pred)
                 num_t = len(_ground_truth)
                 truth = 0

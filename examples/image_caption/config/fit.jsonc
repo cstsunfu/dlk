@@ -46,14 +46,14 @@
                 "@initmethod@default": {},
                 "@encoder@vit": {
                     "from_pretrain": false,
-                    "pretrained_model_path": "./pretrain/vit/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "encoder_dim": 768,
                     "dropout": 0.0
                 },
                 "@token_gen_decoder@bart_like_decoder": {
                     "from_pretrain": false,
                     "bart_like_module_name": "gpt2_decoder",
-                    "pretrained_model_path": "./pretrain/gpt2/"
+                    "pretrained_model_path": "/tmp/bert/"
                 },
                 "add_bos_token": true,
                 "beam_size": 3,

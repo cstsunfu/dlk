@@ -53,7 +53,7 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1,
                     "_search": {

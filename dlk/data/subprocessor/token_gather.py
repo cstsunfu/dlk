@@ -6,9 +6,8 @@
 import json
 import logging
 import os
-from typing import Callable, Dict, Iterable, List, Set, Union
+from typing import Any, Dict, Iterable, List, Union
 
-import pandas as pd
 from intc import (
     MISSING,
     AnyField,
@@ -51,7 +50,7 @@ class TokenGatherConfig(BaseSubProcessorConfig):
                 {"column": "entities_column", "trace": "entities_info.labels"},
             ],
         ],
-        help="List of columns. If the column is a reprent as a dict,  we will trace the real elements by 'trace'. for example: {'entities_info': [{'start': 1， 'end': 2, labels: ['Label1']}, ..]}, the trace to labels is 'entities_info.labels'",
+        help="List of columns. If the column is a reprent as a dict,  we will trace the real elements by 'trace'.",
     )
     token_vocab = StrField(
         value="token_vocab.json",
@@ -63,113 +62,90 @@ class TokenGatherConfig(BaseSubProcessorConfig):
     )
     update = StrField(
         value="",
-        help="null or another exists Vocabulary object should be update, if the update is not null, the unk and pad ignore will be ignored",
+        help="null or another exists Vocabulary object should be update",
     )
     unk = StrField(value="[UNK]", additions=[None], help="the unk token")
     pad = StrField(value="[PAD]", additions=[None], help="the pad token")
     min_freq = IntField(
         value=1,
         minimum=1,
-        help="the min freq of token, you can only change one of the value of min_freq and most_common",
+        help="the min freq of token",
     )
     most_common = IntField(
         value=-1,
         minimum=-1,
-        help="the most common token, -1 for all, you can only change one of the value of min_freq and most_common.",
+        help="the most common token, -1 for all",
     )
 
 
 @register("subprocessor", "token_gather")
 class TokenGather(BaseSubProcessor):
-    """gather all tokens from the 'gather_columns' and deliver a vocab named 'token_vocab'"""
+    """Gathers tokens sequentially to build and save a global vocabulary."""
+
+    # Declare stateful mode to ensure sequential main-process execution
+    PROCESSOR_MODE = "gather"
 
     def __init__(self, stage: str, config: TokenGatherConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
-        self.stage = stage
         self.config = config
-        self.update = (
-            None
-            if not self.config.update
-            else os.path.join(self.meta_dir, self.config.update)
+        self.update_path = (
+            os.path.join(self.meta_dir, self.config.update)
+            if self.config.update
+            else None
         )
+        self.vocab = None
 
-    def get_elements_from_series_by_trace(self, data: pd.Series, trace: str) -> List:
-        """get the data from data[trace_path]
-        >>> for example:
-        >>> data[0] = {'entities_info': [{'start': 0, 'end': 1, 'labels': ['Label1']}]} // data is a series, and every element is as data[0]
-        >>> trace = 'entities_info.labels'
-        >>> return_result = [['Label1']]
-
-        Args:
-            data: origin data series
-            trace: get data element trace
-
-        Returns:
-            the data in the tail of traces
-
-        """
-
-        def get_elements_from_iter_by_trace(iter: Iterable, cur_trace_list: List):
-            if not cur_trace_list:
-                return iter
-            if isinstance(iter, dict):
-                return get_elements_from_iter_by_trace(
-                    iter[cur_trace_list[0]], cur_trace_list[1:]
-                )
-            if isinstance(iter, list) or isinstance(iter, tuple):
-                return [
-                    get_elements_from_iter_by_trace(sub_iter, cur_trace_list)
-                    for sub_iter in iter
-                ]
-            raise PermissionError(
-                f"The trace path is only support type list and dict, but you provide {type(iter)}"
-            )
-
-        return [get_elements_from_iter_by_trace(one, trace.split(".")) for one in data]
-
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
-
-        Args:
-            data:
-            >>> |sentence |label|
-            >>> |---------|-----|
-            >>> |sent_a...|la   |
-            >>> |sent_b...|lb   |
-
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
-        Returns:
-            processed data
-
-        """
-        if not deliver_meta:
-            return data
-        if self.update:
-            with open(self.update, mode="r", encoding="utf-8") as f:
-                self.vocab = Vocabulary.load(json.load(f))
-        else:
-            self.vocab = Vocabulary(
-                do_strip=True, unknown=self.config.unk, ignore=self.config.ignore
-            )
-        for column in self.config.gather_columns:
-            if isinstance(column, str):
-                self.vocab.auto_update(data[column])
-            elif isinstance(column, dict):
-                self.vocab.auto_update(
-                    self.get_elements_from_series_by_trace(
-                        data[column["column"]], trace=column["trace"]
-                    )
-                )
+    def _init_vocab_if_needed(self):
+        """Initializes the vocabulary object on the first batch."""
+        if self.vocab is None:
+            if self.update_path:
+                with open(self.update_path, mode="r", encoding="utf-8") as f:
+                    self.vocab = Vocabulary.load(json.load(f))
             else:
-                raise PermissionError(
-                    f"The gather column currently is only support str or dict."
+                self.vocab = Vocabulary(
+                    do_strip=True, unknown=self.config.unk, ignore=self.config.ignore
                 )
-        self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
-        logger.info(f"The Vocab Num is {self.vocab.word_num}")
-        with open(
-            os.path.join(self.meta_dir, self.config.token_vocab), "w", encoding="utf-8"
-        ) as f:
-            json.dump(self.vocab.dumps(), f)
 
-        return data
+    def get_elements_from_list_by_trace(self, data: List[Any], trace: str) -> List[Any]:
+        def recursive_extract(item: Any, path_parts: List[str]) -> Any:
+            if not path_parts:
+                return item
+            current_key = path_parts[0]
+            if isinstance(item, dict):
+                return recursive_extract(item.get(current_key, []), path_parts[1:])
+            elif isinstance(item, (list, tuple)):
+                return [recursive_extract(sub_item, path_parts) for sub_item in item]
+            return item
+
+        return [recursive_extract(item, trace.split(".")) for item in data]
+
+    def process_batch(
+        self, batch: Dict[str, List[Any]], deliver_meta: bool = False
+    ) -> Dict[str, List[Any]]:
+        """Accumulates tokens from the current batch into the global vocabulary."""
+        self._init_vocab_if_needed()
+
+        for column in self.config.gather_columns:
+            if isinstance(column, str) and column in batch:
+                self.vocab.auto_update(batch[column])
+            elif isinstance(column, dict):
+                col_name = column["column"]
+                if col_name in batch:
+                    extracted = self.get_elements_from_list_by_trace(
+                        batch[col_name], trace=column["trace"]
+                    )
+                    self.vocab.auto_update(extracted)
+
+        return batch  # Return unmodified batch
+
+    def save_meta(self):
+        """Filters rare tokens and persists the vocabulary to disk."""
+        if self.vocab is not None:
+            self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
+
+            vocab_path = os.path.join(self.meta_dir, self.config.token_vocab)
+            with open(vocab_path, "w", encoding="utf-8") as f:
+                json.dump(self.vocab.dumps(), f)
+            logger.info(
+                f"Updated vocab saved to {vocab_path}. Final size: {self.vocab.word_num}"
+            )

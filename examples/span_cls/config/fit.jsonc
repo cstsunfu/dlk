@@ -6,8 +6,8 @@
         "@trainer@lightning": {
             "max_epochs": 8,
             "devices": "auto",
-            "strategy": "auto",
-            "accelerator": "auto",
+            "strategy": "ddp_find_unused_parameters_true",
+            "accelerator": "gpu",
             "@callback@lr_monitor": {
                 "logging_interval": "step"
             },
@@ -26,7 +26,7 @@
                 "repeat_for_valid": false,
                 "key_type_pairs": {
                     "input_ids": "int",
-                    "label_ids": "long",
+                    "sparse_label_ids": "sparse",
                     "gather_index": "long",
                     "type_ids": "long",
                     "special_tokens_mask": "int"
@@ -36,10 +36,10 @@
                 "gen_mask": {
                     "input_ids": "attention_mask"
                 },
-                "num_entity_classes": "???",
+                "num_entity_classes": 4,
                 "key_padding_pairs": {
                     "input_ids": 0,
-                    "attention_mask": 0,
+                    "attention_mask": 0
                 },
                 "key_padding_pairs_2d": {}
             }
@@ -49,14 +49,15 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1
                 },
                 "@encoder@identity": {},
                 "@decoder@bilinear": {
+                    "relation_position": true,
                     "input_size": "@lambda @$$.@embedding.embedding_dim",
-                    "output_size": "@lambda @$$$$.@datamodule.@data_collate.num_entity_classes",
+                    "output_size": "@lambda @$$$$.@datamodule.@data_collate.num_entity_classes"
                 }
             },
             "@scheduler@linear_warmup": {
@@ -97,8 +98,7 @@
                 }
             },
             "@postprocessor@span_cls": {
-                "label_vocab": "label_vocab.json",
-                "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json"
+                "label_vocab": "label_vocab.json"
             }
         }
     }

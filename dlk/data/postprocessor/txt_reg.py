@@ -3,13 +3,9 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 import logging
-import os
-import pickle as pkl
 from typing import Any, Dict, List, Union
 
-import pandas as pd
 import torch
 from intc import (
     MISSING,
@@ -27,9 +23,7 @@ from intc import (
 )
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
-from dlk.utils.io import open
 from dlk.utils.register import register
-from dlk.utils.vocab import Vocabulary
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +76,7 @@ class TxtRegPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
         """Process the model predict to human readable format
@@ -90,7 +84,7 @@ class TxtRegPostProcessor(BasePostProcessor):
         Args:
             stage: train/test/etc.
             batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin Any data, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -110,13 +104,13 @@ class TxtRegPostProcessor(BasePostProcessor):
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin Any data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -136,7 +130,7 @@ class TxtRegPostProcessor(BasePostProcessor):
             values = [0.0] * len(indexes)
         for i, (one_logits, index, value) in enumerate(zip(logits, indexes, values)):
             one_ins = {}
-            one_origin = origin_data.iloc[int(index)]
+            one_origin = self._get_origin_row(origin_data, index)
             if self.config.data_type == "single":
                 sentence = one_origin[self.config.origin_input_map.sentence]
                 one_ins["sentence"] = sentence

@@ -39,7 +39,7 @@ class WarmupRecDecayScheduleConfig(BaseSchedulerConfig):
     )
 
 
-@register("scheduler", "rec_decay")
+@register("scheduler", "warmup_rec_decay")
 class WarmupRecDecaySchedule(BaseScheduler):
     """lr=lr*1/(1+decay)"""
 

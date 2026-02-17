@@ -6,23 +6,9 @@
 import json
 import logging
 import os
-from typing import Callable, Dict, Iterable, List, Set, Union
+from typing import Any, Dict, Iterable, List, Union
 
-import pandas as pd
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
+from intc import MISSING, Base, IntField, ListField, StrField, cregister
 
 from dlk.utils.io import open
 from dlk.utils.register import register
@@ -56,82 +42,74 @@ class CharGatherConfig(BaseSubProcessorConfig):
     )
     update = StrField(
         value="",
-        help="null or another exists Vocabulary object should be update, if the update is not null, the unk and pad ignore will be ignored",
+        help="null or another exists Vocabulary object should be update",
     )
     unk = StrField(value="[UNK]", help="the unk token")
     pad = StrField(value="[PAD]", help="the pad token")
     min_freq = IntField(
         value=1,
         minimum=1,
-        help="the min freq of token, you can only change one of the value of min_freq and most_common",
+        help="the min freq of token",
     )
     most_common = IntField(
         value=-1,
         minimum=-1,
-        help="the most common token, -1 for all, you can only change one of the value of min_freq and most_common.",
+        help="the most common token, -1 for all",
     )
 
 
 @register("subprocessor", "char_gather")
 class CharGather(BaseSubProcessor):
-    """gather all character from the 'gather_columns' and deliver a vocab named 'char_vocab'"""
+    """Gathers characters sequentially to build and save a global character vocabulary."""
+
+    PROCESSOR_MODE = "gather"
 
     def __init__(self, stage: str, config: CharGatherConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
         self.config = config
-        self.update = (
-            None
-            if not self.config.update
-            else os.path.join(self.meta_dir, self.config.update)
+        self.update_path = (
+            os.path.join(self.meta_dir, self.config.update)
+            if self.config.update
+            else None
         )
+        self.vocab = None
 
-    def split_to_char(self, input: Union[str, Iterable]):
-        """the char is from token or sentence, so we need split them to List[char]
+    def _init_vocab_if_needed(self):
+        if self.vocab is None:
+            if self.update_path:
+                with open(self.update_path, mode="r", encoding="utf-8") as f:
+                    self.vocab = Vocabulary.load(json.load(f))
+            else:
+                self.vocab = Vocabulary(
+                    do_strip=True, unknown=self.config.unk, ignore=self.config.ignore
+                )
 
-        Args:
-            input: auto detach the type of input and split it to char
+    def split_to_char(self, input_data: Union[str, Iterable]):
+        """Recursively splits strings into distinct characters."""
+        if isinstance(input_data, str):
+            return list(input_data)
+        elif isinstance(input_data, (list, tuple, set)):
+            return [self.split_to_char(sub_input) for sub_input in input_data]
+        return []
 
-        Returns:
-            the same shape of the input but the str is split to List[char]
+    def process_batch(
+        self, batch: Dict[str, List[Any]], deliver_meta: bool = False
+    ) -> Dict[str, List[Any]]:
+        self._init_vocab_if_needed()
 
-        """
-        if isinstance(input, str):
-            return [c for c in input]
-        else:
-            return [self.split_to_char(sub_input) for sub_input in input]
-
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
-
-        Args:
-            data:
-            >>> |sentence |label|
-            >>> |---------|-----|
-            >>> |sent_a...|la   |
-            >>> |sent_b...|lb   |
-
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
-        Returns:
-            processed data
-
-        """
-        if not deliver_meta:
-            return data
-        if self.update:
-            with open(self.update, mode="r", encoding="utf-8") as f:
-                self.vocab = Vocabulary.load(json.load(f))
-        else:
-            self.vocab = Vocabulary(
-                do_strip=True, unknown=self.config.unk, ignore=self.config.ignore
-            )
         for column in self.config.gather_columns:
-            column: str
-            self.vocab.auto_update(self.split_to_char(data[column]))
-        self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
-        logger.info(f"The Char Vocab Num is {self.vocab.word_num}")
-        with open(
-            os.path.join(self.meta_dir, self.config.char_vocab), "w", encoding="utf-8"
-        ) as f:
-            json.dump(self.vocab.dumps(), f)
-        return data
+            if column in batch:
+                chars_batch = [self.split_to_char(item) for item in batch[column]]
+                self.vocab.auto_update(chars_batch)
+        return batch
+
+    def save_meta(self):
+        if self.vocab is not None:
+            self.vocab.filter_rare(self.config.min_freq, self.config.most_common)
+
+            vocab_path = os.path.join(self.meta_dir, self.config.char_vocab)
+            with open(vocab_path, "w", encoding="utf-8") as f:
+                json.dump(self.vocab.dumps(), f)
+            logger.info(
+                f"Char Vocab saved to {vocab_path}. Size: {self.vocab.word_num}"
+            )

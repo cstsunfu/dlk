@@ -45,7 +45,7 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./data/bert/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1,
                     "input_map": {
@@ -104,7 +104,7 @@
             "@postprocessor@seq_lab": {
                 "label_vocab": "label_vocab.json",
                 "word_ready": true,
-                "tokenizer_path": "./data/bert/tokenizer.json"
+                "tokenizer_path": "/tmp/bert/tokenizer.json"
             }
         }
     }

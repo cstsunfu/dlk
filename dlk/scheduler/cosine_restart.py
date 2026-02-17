@@ -68,9 +68,14 @@ class CosineRestartSchedule(BaseScheduler):
             Schedule
 
         """
+        t0 = (
+            self.config.first_restart_step
+            if self.config.first_restart_step > 0
+            else self.num_training_steps
+        )
         return CosineAnnealingWarmRestarts(
             self.optimizer,
-            T_0=self.config.first_restart_step,
+            T_0=t0,
             T_mult=self.config.mult_fact,
             eta_min=self.config.eta_min,
             last_epoch=-1,

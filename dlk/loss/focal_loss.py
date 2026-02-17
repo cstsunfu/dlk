@@ -40,7 +40,6 @@ class FocalLossConfig(BaseLossConfig):
         additions=[None],
         help="the list of weights of every class",
     )
-    ignore_index = IntField(value=-100, help="the ignore index")
     gamma = FloatField(value=1.0, help="the gamma of focal loss")
 
 
@@ -52,7 +51,9 @@ class FocalLoss(BaseLoss):
         super(FocalLoss, self).__init__(config)
         self.config: FocalLossConfig
         if self.config.weight:
-            self.weight = torch.tensor(self.config.weight, dtype=torch.float)
+            self.register_buffer(
+                "weight", torch.tensor(self.config.weight, dtype=torch.float)
+            )
         else:
             self.weight = None
 
@@ -71,6 +72,8 @@ class FocalLoss(BaseLoss):
         mask = target != self.config.ignore_index
         target = target[mask]
         pred = pred[mask]
+        if target.numel() == 0:
+            return torch.tensor(0.0, device=pred.device)
         # [N, 1]
         target = target.unsqueeze(-1)
         # [N, C]
@@ -116,5 +119,5 @@ class FocalLoss(BaseLoss):
         pred = pred.reshape(-1, pred.shape[-1])
         target = target.reshape(-1)
 
-        loss = self.focal_loss(pred, target) * scale
-        return loss, {self.config.log_map.loss: loss}
+        loss = self.focal_loss(pred, target)
+        return loss * scale, {self.config.log_map.loss: loss.detach()}

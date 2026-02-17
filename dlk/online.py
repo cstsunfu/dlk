@@ -25,22 +25,18 @@ class OnlinePredict(Predict):
         self.datamodule = datamodule
 
     def predict(self, data):
-        """init the model, datamodule, manager then predict the predict_dataloader
-
-        Args:
-            data: the preprocessed data
-
-        Returns:
-            None
-
-        """
-        # get data
         dataloader = self.datamodule.online_dataloader(data)
         result = []
         with torch.no_grad():
             for i, batch in enumerate(dataloader):
-                result.append(self.imodel.predict_step(batch, i))
-        # start predict
+                out = self.imodel.predict_step(batch, i)
+                out = {
+                    k: v.cpu() if isinstance(v, torch.Tensor) else v
+                    for k, v in out.items()
+                }
+                result.append(out)
+
+        # Delegate correctly to pipeline __call__ method
         return self.imodel.postprocessor(
             stage="online",
             list_batch_outputs=result,

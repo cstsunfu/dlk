@@ -1,0 +1,67 @@
+// config/fit.jsonc
+{
+    "@fit": {
+        "log_dir": "./logs",
+        "processed_data_dir": "./data/processed_data",
+        "@trainer@lightning": {
+            "max_epochs": 5,
+            "devices": "auto",
+            "accelerator": "cpu"
+        },
+        "@datamodule@default": {
+            "train_batch_size": 8,
+            "@dataset@default": {
+                "key_type_pairs": {
+                    "input_ids": "int",
+                    "label_ids": "long",
+                    "teacher_logits": "float", // 从 Dataset 加载 Teacher 的 Logits
+                    "attention_mask": "int"
+                }
+            },
+            "@data_collate@default": {
+                "key_padding_pairs": {
+                    "input_ids": 0,
+                    "label_ids": -100,
+                    "attention_mask": 0
+                }
+            }
+        },
+        "@imodel@default": {
+            "@model@basic": {
+                "@initmethod@default": {},
+                "@embedding@bert_like": {
+                    "from_pretrain": true,
+                    "pretrained_model_path": "/tmp/bert/",
+                    "embedding_dim": 128
+                },
+                "@encoder@identity": {},
+                "@decoder@linear": {
+                    "input_size": 128,
+                    "output_size": 2,
+                    "pool": "first"
+                }
+            },
+            "@scheduler@constant": {},
+            "@loss@kd": {
+                "temperature": 2.0,
+                "alpha": 0.5, // 0.5 KD + 0.5 CE
+                "use_hard_label": true,
+                "pred_truth_pair": {
+                    "logits": "label_ids"
+                },
+                "student_teacher_pair": {
+                    "logits": "teacher_logits"
+                },
+                "log_map": {
+                    "loss": "loss"
+                }
+            },
+            "@optimizer@adamw": {
+                "lr": 5e-5
+            },
+            "@postprocessor@txt_cls": {
+                "label_vocab": "label_vocab.json"
+            }
+        }
+    }
+}

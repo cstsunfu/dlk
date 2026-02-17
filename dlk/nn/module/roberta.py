@@ -70,7 +70,6 @@ class RobertaWrap(BertWrap):
                     )
 
         self.roberta = RobertaModel(self.bert_config, add_pooling_layer=False)
-        self.dropout = nn.Dropout(float(self.config.dropout))
 
     def init_weight(self, method):
         """init the weight of model by 'bert.init_weight()' or from_pretrain
@@ -101,47 +100,25 @@ class RobertaWrap(BertWrap):
             sequence_output, all_hidden_states, all_self_attentions
 
         """
+        model_kwargs = {
+            "input_ids": inputs.get("input_ids", None),
+            "attention_mask": inputs.get("attention_mask", None),
+            "token_type_ids": inputs.get("token_type_ids", None),
+            "position_ids": inputs.get("position_ids", None),
+            "head_mask": inputs.get("head_mask", None),
+            "use_cache": None,
+            "output_attentions": self.config.return_attention,
+            "output_hidden_states": True,
+            "return_dict": True,
+        }
+
         if self.config.freeze:
-            self.roberta.eval()
             with torch.no_grad():
-                outputs = self.roberta(
-                    input_ids=inputs.get("input_ids", None),
-                    attention_mask=inputs.get("attention_mask", None),
-                    token_type_ids=inputs.get("token_type_ids", None),
-                    position_ids=inputs.get("position_ids", None),
-                    head_mask=inputs.get("head_mask", None),
-                    inputs_embeds=inputs.get("inputs_embeds", None),
-                    encoder_hidden_states=inputs.get("encoder_hidden_states", None),
-                    encoder_attention_mask=inputs.get("encoder_attention_mask", None),
-                    past_key_values=inputs.get("past_key_values", None),
-                    use_cache=None,
-                    output_attentions=self.config.return_attention,
-                    output_hidden_states=True,
-                    return_dict=False,
-                )
+                outputs = self.roberta(**model_kwargs)
         else:
-            outputs = self.roberta(
-                input_ids=inputs.get("input_ids", None),
-                attention_mask=inputs.get("attention_mask", None),
-                token_type_ids=inputs.get("token_type_ids", None),
-                position_ids=inputs.get("position_ids", None),
-                head_mask=inputs.get("head_mask", None),
-                inputs_embeds=inputs.get("inputs_embeds", None),
-                encoder_hidden_states=inputs.get("encoder_hidden_states", None),
-                encoder_attention_mask=inputs.get("encoder_attention_mask", None),
-                past_key_values=inputs.get("past_key_values", None),
-                use_cache=None,
-                output_attentions=self.config.return_attention,
-                output_hidden_states=True,
-                return_dict=False,
-            )
-        assert (
-            len(outputs) == 4
-        ), f"Please check transformers version, the len(outputs) is 4 in version == 4.12, or check your config and remove the 'add_cross_attention'"
-        sequence_output, all_hidden_states, all_self_attentions = (
-            outputs[0],
-            outputs[2],
-            outputs[3],
-        )
-        sequence_output = self.dropout(sequence_output)
+            outputs = self.roberta(**model_kwargs)
+
+        sequence_output = outputs.last_hidden_state
+        all_hidden_states = getattr(outputs, "hidden_states", None)
+        all_self_attentions = getattr(outputs, "attentions", None)
         return sequence_output, all_hidden_states, all_self_attentions

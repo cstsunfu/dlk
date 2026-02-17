@@ -61,5 +61,5 @@ class IdentityLoss(BaseLoss):
         if rt_config["current_step"] > self.config.schedule[self.current_stage]:
             self.current_stage += 1
         scale = self.config.scale[self.current_stage]
-        loss = result[self.config.loss] * scale
-        return loss, {self.config.log_map.loss: loss}
+        loss = result[self.config.loss]
+        return loss * scale, {self.config.log_map.loss: loss.detach()}

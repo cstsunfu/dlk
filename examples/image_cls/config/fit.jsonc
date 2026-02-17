@@ -43,7 +43,7 @@
                 "@initmethod@default": {},
                 "@embedding@vit": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./pretrain/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1
                 },

@@ -43,7 +43,6 @@ class CrossEntropyLossConfig(BaseLossConfig):
     label_smoothing = FloatField(
         value=0.0, minimum=0.0, maximum=1.0, help="the label smoothing"
     )
-    ignore_index = IntField(value=-100, help="the ignore index")
 
 
 @register("loss", "cross_entropy")
@@ -95,5 +94,5 @@ class CrossEntropyLoss(BaseLoss):
         target = inputs[self.truth_name]
         pred = pred.reshape(-1, pred.shape[-1])
         target = target.reshape(-1)
-        loss = self.cross_entropy(pred, target) * scale
-        return loss, {self.config.log_map.loss: loss}
+        loss = self.cross_entropy(pred, target)
+        return loss * scale, {self.config.log_map.loss: loss.detach()}

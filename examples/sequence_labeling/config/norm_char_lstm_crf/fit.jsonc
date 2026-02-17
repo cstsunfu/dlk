@@ -94,7 +94,7 @@
             "@postprocessor@seq_lab": {
                 "label_vocab": "label_vocab.json",
                 "use_crf": true,
-                "tokenizer_path": "./data/bert/tokenizer.json"
+                "tokenizer_path": "/tmp/bert/tokenizer.json"
             }
         }
     }

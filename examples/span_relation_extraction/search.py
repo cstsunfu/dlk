@@ -1,3 +1,10 @@
+import multiprocessing as mp
+
+try:
+    mp.set_start_method("spawn", force=True)
+except RuntimeError:
+    pass
+
 import lightning as pl
 
 import dlk.ray_optuna
@@ -24,8 +31,9 @@ def loss_sum(losses, **args):
     return loss
 
 
-pl.seed_everything(88)
+if __name__ == "__main__":
+    pl.seed_everything(88)
 
-trainer = Train("./config/optuna.jsonc")
+    trainer = Train("./config/optuna.jsonc")
 
-trainer.run()
+    trainer.run()

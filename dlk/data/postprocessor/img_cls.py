@@ -3,15 +3,9 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 import logging
-import os
-import pickle as pkl
 from typing import Any, Dict, List, Union
 
-import numpy as np
-import pandas as pd
-import torch
 from intc import (
     MISSING,
     AnyField,
@@ -66,7 +60,7 @@ class ImgClsPostProcessor(TxtClsPostProcessor):
         super(ImgClsPostProcessor, self).__init__(config)
         self.config = config
 
-    def _get_origin_data(self, one_origin: pd.Series) -> Dict:
+    def _get_origin_data(self, one_origin: Dict) -> Dict:
         """
 
         Args:

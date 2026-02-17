@@ -6,24 +6,9 @@
 import logging
 import os
 from functools import partial
-from typing import Callable, Dict, List, Set
+from typing import Any, Dict, List
 
-import numpy as np
-import pandas as pd
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
+from intc import MISSING, Base, DictField, ListField, NestField, StrField, cregister
 
 from dlk.utils.register import register
 from dlk.utils.vocab import Vocabulary
@@ -35,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @cregister("subprocessor", "token2id")
 class Token2IDConfig(BaseSubProcessorConfig):
-    """the token 2 character id subprocessor"""
+    """the token 2 id subprocessor"""
 
     train_data_set = ListField(
         value=["train", "valid", "test"],
@@ -62,7 +47,7 @@ class Token2IDConfig(BaseSubProcessorConfig):
 
     input_map = NestField(
         value=InputMap,
-        help="the input map of the processor, the key is the name of the processor needed key, the value is the provided data provided key",
+        help="the input map of the processor",
     )
 
     class OutputMap:
@@ -74,7 +59,7 @@ class Token2IDConfig(BaseSubProcessorConfig):
 
     output_map = NestField(
         value=OutputMap,
-        help="the output map of the processor, the key is the name of the processor provided key, the value is the nexted processor needed key",
+        help="the output map of the processor",
     )
     vocab = StrField(
         value="token_vocab.json",
@@ -134,7 +119,6 @@ class Token2ID(BaseSubProcessor):
 
     def __init__(self, stage: str, config: Token2IDConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
-        self.stage = stage
         self.config = config
         self.vocab: Vocabulary = None
 
@@ -144,23 +128,29 @@ class Token2ID(BaseSubProcessor):
             os.path.join(self.meta_dir, self.config.vocab)
         )
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """firstpiece relabel the data
+    def process_batch(
+        self, batch: Dict[str, List[Any]], deliver_meta: bool = False
+    ) -> Dict[str, List[Any]]:
+        """Map tokens to IDs using the loaded vocabulary.
 
         Args:
-            data: will processed data
+            batch: Input batch data.
+            deliver_meta: Unused.
 
-            deliver_meta:
-                ignore
         Returns:
-            relabeld data
+            Batch with added token_ids column.
         """
         if not self.loaded_meta:
             self.load_meta()
 
-        def get_index_wrap(key, x):
-            return self.vocab.auto_get_index(x[key])
+        input_col = self.config.input_map.tokens
+        output_col = self.config.output_map.token_ids
 
-        get_index = partial(get_index_wrap, self.config.input_map.tokens)
-        data[self.config.output_map.token_ids] = data.apply(get_index, axis=1)
-        return data
+        if input_col in batch:
+            # Use list comprehension for efficient mapping
+            # vocab.auto_get_index handles both single strings and lists of strings
+            batch[output_col] = [
+                self.vocab.auto_get_index(item) for item in batch[input_col]
+            ]
+
+        return batch

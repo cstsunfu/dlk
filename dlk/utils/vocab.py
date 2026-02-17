@@ -178,6 +178,8 @@ class Vocabulary(object):
                     self.word2idx[token] = index
                     self.idx2word[index] = token
                     index += 1
+
+        self.word_num = len(self.word2idx)
         return self
 
     def get_word(self, index: int) -> str:

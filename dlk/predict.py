@@ -38,10 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 class Predict(object):
-    """Predict
-
-    Config Example:
-    """
+    """Predict"""
 
     def __init__(
         self,
@@ -67,93 +64,55 @@ class Predict(object):
         self.init(dlk_config, name_str)
 
     def get_config(self, config_dict, update_config):
-        """get the predict config
-
-        Args:
-            config: the init config
-
-        Returns:
-            DLKFitConfig, config_name_str
-        """
         configs = Parser(config_dict, update_config=update_config).parser_init()
         assert len(configs) == 1, f"You should not use '_search' for predict/online"
-
         fit_config: DLKFitConfig = configs[0]["@fit"]
-
         config_name_str = "predict"
         return fit_config, config_name_str
 
     def init(self, config, name):
-        """init the model and trainer
-        Args:
-            config: the config
-            name: the name of the config
-
-        Returns: None
-        """
-        # set trainer
         self.trainer = self.get_trainer(config, name)
-
-        # init imodel and inject the origin test and valid data
         self.imodel = self.get_imodel(config)
 
     def predict(self, data=None, save_condition=False):
-        """init the model, datamodule, manager then predict the predict_dataloader
-
-        Args:
-            data: if provide will not load from data_path
-
-        Returns:
-            None
-
-        """
-        # set datamodule
+        """init the model, datamodule, manager then predict the predict_dataloader"""
         datamodule, data = self.get_datamodule(
             self.dlk_config, data, world_size=self.trainer.world_size
         )
 
-        # start predict
+        dataloader = datamodule.predict_dataloader()
+        result = []
         with torch.no_grad():
-            predict_result = self.trainer.predict(
-                model=self.imodel, datamodule=datamodule
-            )
+            for i, batch in enumerate(dataloader):
+                out = self.imodel.predict_step(batch, i)
+                out = {
+                    k: v.cpu() if isinstance(v, torch.Tensor) else v
+                    for k, v in out.items()
+                }
+                result.append(out)
+
         return self.imodel.postprocessor(
             stage="predict",
-            list_batch_outputs=predict_result,
+            list_batch_outputs=result,
             origin_data=data["predict"],
             rt_config={},
             save_condition=save_condition,
         )
 
     def get_data(self, config):
-        """get the data decided by config
+        from datasets import load_from_disk
 
-        Args:
-            config: {"config": {"data_path": '..'}}
-
-        Returns:
-            loaded data
-
-        """
         data = {}
         for data_type in ["predict"]:
-            data_path = os.path.join(config.processed_data_dir, data_type, "0.pkl")
-            if os.path.exists(data_path):
-                with open(data_path, "rb") as f:
-                    data[data_type] = pkl.load(f)
+            data_path = os.path.join(config.processed_data_dir, data_type)
+            if os.path.exists(data_path) and os.path.isdir(data_path):
+                try:
+                    data[data_type] = load_from_disk(data_path)
+                except Exception as e:
+                    logger.warning(f"Failed to load dataset from {data_path}: {e}")
         return data
 
     def get_datamodule(self, config, data, world_size):
-        """get the datamodule decided by config, and fit the data to datamodule
-
-        Args:
-            config: {"task": {"datamodule": '..'}}
-            data: {"train": '..', 'valid': '..', ..}
-
-        Returns:
-            datamodule
-
-        """
         if not data and not self.online:
             data = self.get_data(config)
         datamodule_configs = config._get_modules("datamodule")
@@ -166,16 +125,6 @@ class Predict(object):
         return datamodule, data
 
     def get_trainer(self, config: DLKFitConfig, name):
-        """get the train/predict manager decided by config
-
-        Args:
-            config: DLKFitConfig
-            name: the predict progress name
-
-        Returns:
-            trainer
-
-        """
         trainer_configs = config._get_modules("trainer")
         assert len(trainer_configs) == 1, "Currently only support one trainer"
         trainer_config = trainer_configs[0]
@@ -186,18 +135,8 @@ class Predict(object):
         return trainer
 
     def get_imodel(self, config):
-        """get the imodel decided by config
-
-        Args:
-
-        Returns:
-            imodel
-
-        """
         imodel_configs = config._get_modules("imodel")
-        assert (
-            len(imodel_configs) == 1
-        ), f"Currently only support one imodel, {imodel_configs}"
+        assert len(imodel_configs) == 1, f"Currently only support one imodel"
         imodel_config = imodel_configs[0]
         imodel_name = register_module_name(imodel_config._module_name)
         imodel = register.get("imodel", imodel_name)(imodel_config, checkpoint=True)

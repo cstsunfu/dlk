@@ -15,17 +15,15 @@ import svgwrite
 
 from dlk.utils.display.annotation import SpanAnnotation
 
-# overlap_hist = []
-# y_hist_dict = {}
-x_i_diff_dict = {}
-x_o_diff_dict = {}
-
 
 class RelationExtractionVisualizer:
     def __init__(self, exclude_relations: List = [], width=900):
         here = os.path.abspath(os.path.dirname(__file__))
         self.width = width
         self.exclude_relations = set(exclude_relations)
+        self.x_i_diff_dict = {}
+        self.x_o_diff_dict = {}
+
         with open(
             os.path.join(here, "label_colors/relations.json"), "r", encoding="utf-8"
         ) as f_:
@@ -160,37 +158,37 @@ class RelationExtractionVisualizer:
         unique_o_index = str(s_x) + str(s_y)
         unique_i_index = str(e_x) + str(e_y)
         if s_x > e_x:
-            if unique_o_index in x_o_diff_dict:
+            if unique_o_index in self.x_o_diff_dict:
                 s_x -= 5
             else:
                 s_x -= 10
-                x_o_diff_dict[unique_o_index] = 5
+                self.x_o_diff_dict[unique_o_index] = 5
             if s_y > e_y:
                 e_x += size_of_entity_label
             elif s_y < e_y:
                 s_x -= size_of_entity_label
 
-            if unique_i_index in x_i_diff_dict:
+            if unique_i_index in self.x_i_diff_dict:
                 e_x += 5
             else:
                 e_x += 10
-                x_i_diff_dict[unique_i_index] = 5
+                self.x_i_diff_dict[unique_i_index] = 5
         else:
-            if unique_o_index in x_o_diff_dict:
+            if unique_o_index in self.x_o_diff_dict:
                 s_x += 5
             else:
                 s_x += 10
-                x_o_diff_dict[unique_o_index] = 5
+                self.x_o_diff_dict[unique_o_index] = 5
             if s_y > e_y:
                 e_x -= size_of_entity_label
             elif s_y < e_y:
                 s_x += size_of_entity_label
 
-            if unique_i_index in x_i_diff_dict:
+            if unique_i_index in self.x_i_diff_dict:
                 e_x -= 5
             else:
                 e_x -= 10
-                x_i_diff_dict[unique_i_index] = 5
+                self.x_i_diff_dict[unique_i_index] = 5
         # this_y_vals = list(range(min(s_x,e_x), max(s_x,e_x)+1))
         # this_y_vals = [ str(s_y)+'|'+str(i) for i in this_y_vals]
         # common = set(this_y_vals) & set(overlap_hist)
@@ -321,6 +319,9 @@ class RelationExtractionVisualizer:
     def __gen_graph(self, rdf, selected_text, show_relations):
         rdf = [i for i in rdf if i.result.lower().strip() not in self.exclude_relations]
 
+        self.x_i_diff_dict = {}
+        self.x_o_diff_dict = {}
+
         done_ent1 = {}
         done_ent2 = {}
         all_done = {}
@@ -354,13 +355,13 @@ class RelationExtractionVisualizer:
                 t.metadata["entity2"],
             ]
             if t.metadata["entity1"].lower().strip() not in self.entity_color_dict:
-                self.entity_color_dict[
-                    t.metadata["entity1"].lower().strip()
-                ] = self.__get_color(t.metadata["entity1"].lower().strip())
+                self.entity_color_dict[t.metadata["entity1"].lower().strip()] = (
+                    self.__get_color(t.metadata["entity1"].lower().strip())
+                )
             if t.metadata["entity2"].lower().strip() not in self.entity_color_dict:
-                self.entity_color_dict[
-                    t.metadata["entity2"].lower().strip()
-                ] = self.__get_color(t.metadata["entity2"].lower().strip())
+                self.entity_color_dict[t.metadata["entity2"].lower().strip()] = (
+                    self.__get_color(t.metadata["entity2"].lower().strip())
+                )
 
             # all_entities_1_index.append(t[4]['entity1_begin'])
         all_entities_index = np.asarray(list(all_entities_index))

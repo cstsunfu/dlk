@@ -1,0 +1,24 @@
+{
+    "@fit": {
+        "@imodel@default": {
+            "@model@two_tower": {
+                "share_encoder": true, // 参数共享，只加载一个 BERT
+                "anchor_encoder_name": "encoder@bert_like#text",
+                "@encoder@bert_like#text": {
+                    "pretrained_model_path": "/tmp/bert/",
+                    "dropout": 0.1, // 关键：利用 Dropout 生成差异化 Embedding
+                    "input_map": {
+                        // 在 dataloader 中把 sentence_a 给到 anchor，sentence_b(其实是同一句话) 给到 positive
+                        "input_ids": "input_ids_a",
+                        "attention_mask": "attention_mask_a"
+                    }
+                }
+            },
+            "@loss@infonce": {
+                "temperature": 0.05,
+                "gather_with_grad": true,
+                "symmetric": false
+            }
+        }
+    }
+}

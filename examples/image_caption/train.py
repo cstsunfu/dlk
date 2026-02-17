@@ -9,10 +9,11 @@ import src
 
 from dlk.train import Train
 
-pl.seed_everything(88)
+if __name__ == "__main__":
+    pl.seed_everything(88)
 
-trainer = Train(
-    "./config/fit.jsonc", checkpoint="./pretrain/dlk_model.bin", strict=False
-)
+    trainer = Train(
+        "./config/fit.jsonc", checkpoint="./pretrain/dlk_model.bin", strict=False
+    )
 
-trainer.run()
+    trainer.run()

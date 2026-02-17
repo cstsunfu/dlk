@@ -182,55 +182,6 @@ class GatherOutputMixin(object):
         return key_all_ins_map
 
 
-class IModuleIO(metaclass=abc.ABCMeta):
-    """Currently Deprecated:
-    interface for check the modules input and output"""
-
-    @abc.abstractmethod
-    def provide_keys(self) -> List[str]:
-        """return all keys of the dict of the module returned
-
-        Returns:
-            all keys
-        """
-        pass
-
-    @abc.abstractmethod
-    def check_keys_are_provided(self, provide: List[str]) -> bool:
-        """check this module required key are provided
-
-        Returns:
-            pass or not
-
-        """
-        pass
-
-    def check_module_chain(self, module_list: List["BaseModule"]) -> bool:
-        """check the interfaces of the list of modules are aligned or not.
-
-        Args:
-            module_list: a series modules
-
-        Returns:
-            pass or not
-
-        Raises:
-            ValueError: the check is not passed
-        """
-        assert len(module_list) > 1
-        result = True
-        for i in range(len(module_list) - 1):
-            result = result and module_list[i + 1].check_keys_are_provided(
-                module_list[i].provide_keys()
-            )
-            if not result:
-                raise ValueError(
-                    f'The module "{module_list[i+1]._name}" is required "{", ".join(module_list[i+1].provide_keys())}", \
-                    but the module "{module_list[i]._name}" provide "{", ".join(module_list[i].provide_keys())}"! '
-                )
-        return True
-
-
 class IModuleStep(metaclass=abc.ABCMeta):
     """docstring for ModuleStepMixin"""
 

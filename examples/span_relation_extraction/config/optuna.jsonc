@@ -6,8 +6,8 @@
         "@trainer@lightning": {
             "max_epochs": "@lambda @_G.max_epochs",
             "devices": "auto",
-            "strategy": "ddp_find_unused_parameters_true",
-            "accelerator": "auto",
+            "strategy": "auto",
+            "accelerator": "gpu",
             "precision": "bf16-mixed",
             "@callback@lr_monitor": {
                 "logging_interval": "step"
@@ -44,8 +44,8 @@
                 "gen_mask": {
                     "input_ids": "attention_mask"
                 },
-                "num_entity_classes": 19,
-                "num_relation_classes": 24,
+                "num_entity_classes": 4,
+                "num_relation_classes": 5,
                 "key_padding_pairs": {
                     "input_ids": 0,
                     "attention_mask": 0,
@@ -61,7 +61,7 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "/tmp/hfl/chinese-roberta-wwm-ext",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": "@lambda @_G.dropout"
                 },
@@ -157,14 +157,13 @@
                 "meta_dir": "/workspace/dlk/examples/span_relation_extraction/data/meta_data",
                 "entity_label_vocab": "label_vocab#entity.json",
                 "relation_label_vocab": "label_vocab#relation.json",
-                "tokenizer_path": "/tmp/hfl/chinese-roberta-wwm-ext/tokenizer.json",
                 "start_save_epoch": 1000,
                 "sym": false
             }
-        },
+        }
     },
     "_G": {
-        batch_size: 16,
+        "batch_size": 16
     },
     "@optuna": {
         "study_name": "test_optuna",
@@ -174,8 +173,8 @@
             "gpu": 1,
             "cpu": 6
         },
-        "num_trials": 1000,
-        "reduction_factor": 1.1,
+        "num_trials": 100,
+        "reduction_factor": 1.5,
         "verbose": 0,
         "resume": false,
         "search_space": {
@@ -185,7 +184,7 @@
             "relation_position": "choice([True, False])",
             "efficient": "choice([True, False])",
             "dropout": "uniform(0, 0.3)",
-            "max_epochs": "randint(5, 10)"
+            "max_epochs": "choice([10, 15, 20])"
         }
     }
 }

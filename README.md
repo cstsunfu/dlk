@@ -21,11 +21,11 @@
     </p>
 </h4>
 
-```
+```markdown
 dlk                                  --
 ├── adv_method                       -- adversarial training method like free_lb, fgm, etc.
 ├── callback                         -- callbacks, like checkpoint, early_stop, etc.
-├── data                             -- data processor part
+├── data                             -- data processor part (Powered by HuggingFace datasets)
 │   ├── data_collate                 -- data collate for collate a batch of data from dataset to dataloader
 │   ├── datamodule                   -- the datamodule a.k.a lightning.LightningDataModule
 │   ├── dataset                      -- the dataset inherit the torch.Dataset
@@ -58,7 +58,6 @@ dlk                                  --
 ├── server.py                        -- deploy this to server your pretrained model
 ├── demo.py                          -- demo main
 └── version.txt                      --
-```
 
 
 * [Install](#install)
@@ -66,6 +65,7 @@ dlk                                  --
     * [Grid Search](#grid-search)
     * [Task Demo](#task-demo)
 * [Usage and Feature](#usage-and-feature)
+    * [核心特性](#核心特性)
     * [使用方法](#使用方法)
     * [模块注册](#模块注册)
     * [部分内置模块介绍](#部分内置模块介绍)
@@ -73,7 +73,7 @@ dlk                                  --
         * [虚拟对抗训练](#虚拟对抗训练)
         * [复杂训练控制](#复杂训练控制)
         * [文本生成](#文本生成)
-    * [实现你自己的模型](#你自己的模型)
+    * [实现你自己的模型](#实现你自己的模型)
     * [More Document](#more-document)
 
 
@@ -103,7 +103,7 @@ dlk                                  --
 
 
 ```bash
-pip install dlk == 0.1.0
+pip install dlk
 
 # or clone this repo and cd to the project root dir
 pip install .
@@ -164,58 +164,69 @@ streamlit run ./demo.py
 
 ### Usage and Feature
 
+#### 核心特性
+
+`dlk` 的数据处理引擎已全面升级，基于 HuggingFace `datasets` 库构建，带来以下核心优势：
+
+1.  **高性能数据处理**: 底层采用 Apache Arrow 内存格式，利用内存映射（Memory Mapping）技术，即使处理百 GB 级的数据集，也几乎不占用 RAM。所有 Subprocessor 都支持多进程并行处理，能充分利用现代 CPU 的所有核心。
+2.  **无缝断点续传**: `datasets` 的 `.map()` 操作自带智能缓存。当数据处理流水线意外中断时，下次重启会自动从中断处继续，已完成的步骤会秒级加载缓存，无需从头开始。
+3.  **统一的在线/离线处理逻辑**: SubProcessor 的核心逻辑被抽象为处理 Python `dict` 的 `process_batch` 方法。离线训练时，`datasets` 库会自动调用它并享受多进程加速；在线推理时，`Server` 可以直接将 API 请求的单条或小批量 `dict` 数据喂给 `process_batch`，无任何 DataFrame 或 Dataset 对象的转换开销，延迟极低。
+4.  **分布式训练友好**: `DataModule` 遵循 PyTorch Lightning 的最佳实践。数据处理落盘（`save_to_disk`）在主进程（rank 0）完成，而所有 GPU 进程通过 `load_from_disk` 零拷贝地加载数据，完美解决了 DDP 环境下的数据读取竞争和内存冗余问题。
+
 #### 使用方法
 
-一般来说一个常见的`dlk`开发任务包含两个pipeline，即数据预处理pipeline和模型推理pipeline. *实际上这两个步骤是可以放到同一个pipeline中的, 当前示例中的大多数任务都需要对预处理数据的复用，因此使用两个pipeline*
+一个常见的 `dlk` 开发任务包含两个 pipeline：数据预处理和模型推理。
 
-数据预处理pipeline对应的内置入口是`dlk.preprocess.Process`，我们需要编写`process.jsonc` config文件来对预处理过程(训练、推理、deploy过程全都复用同一个文件，因此配置文件中有针对不同`stage`的不同设置)进行配置并初始化`Process`, 将数据传入并执行`run`即可按要求输出预处理好的数据
+**数据预处理 Pipeline**:
+-   **入口**: `dlk.preprocess.PreProcessor`
+-   **输入**: 在 `process.py` 脚本中，加载你的原始数据（如 json, csv）并构建为 HuggingFace `datasets.Dataset` 对象。
+-   **配置**: 编写 `process.jsonc` 来定义 Subprocessor 流水线。将 `train_data_type` 等设置为 `dataset`。
+-   **执行**: `PreProcessor` 会高效地处理 `Dataset` 对象，并将结果以 Arrow 格式落盘，以便复用。
 
-模型训练pipeline对应的内置入口是`dlk.train.Train`, 我们需要编写`fit.jsonc` config文件来对模型训练（推理和deploy过程也同样复用这个文件），使用配置文件初始化`Train`之后执行`run`即可获得训练好的模型。
+**模型训练 Pipeline**:
+-   **入口**: `dlk.train.Train`
+-   **配置**: 编写 `fit.jsonc` 来配置模型、优化器、损失函数等。`DataModule` 会自动从 `processed_data_dir` 加载预处理好的数据。
+-   **执行**: `Train.run()` 启动训练。
 
-demo则只需要导入训练过程中相同的`process.jsonc`和`fit.jsonc`以及训练好的模型（由`checkpoint` callback组件保存）即可
-
-模型部署只需将`dlk.server.Server`实例化，分发到对应的服务器，通过`Server.fit`接受单条或一个batch的数据即可（TODO: 示例）
-
+**Demo 和部署**:
+-   **Demo**: `dlk.demo.Demo` 复用 `process.jsonc` 和 `fit.jsonc` 配置，加载 Checkpoint 即可启动。
+-   **部署**: `dlk.server.Server` 实例化后，其 `fit` 方法接收原始数据（如 `dict`），内部调用 `online_process`，实现低延迟推理。
 
 #### 模块注册
 
-DLK依赖两个注册系统，一套是`intc`的`config`注册`cregister`，一套是`dlk`自己的模块注册，注册原则是一致的，都是将一个模块以`module_type`和`module_name`为`key`注册到注册器中，之所以选择两层的命名作为`key`是因为这样更方便区分不同的模块类型
+DLK 依赖两个注册系统：`intc` 的 `cregister` 和 `dlk` 自身的 `register`。这使得框架具有极高的扩展性。
 
-以`dlk.nn.layer.embedding.static` 为例，我们将`StaticEmbeddingConfig` 作为`StaticEmbedding`的`config`以`("embedding", "static")`为key注册到`intc`的`cregister`中，以同样的`key`将`StaticEmbedding`注册到`dlk`的模块注册器`register`中。
+以`dlk.nn.layer.embedding.static`为例，我们将 `StaticEmbeddingConfig` 以 `("embedding", "static")` 为 key 注册到 `intc` 的 `cregister` 中，以同样的 `key` 将 `StaticEmbedding` 注册到 `dlk` 的模块注册器 `register` 中。
 
-使用注册器的好处是，我们可以不必关注具体类在哪里实现，只要知道注册的名称就可以直接获取这个类，这使得我们可以非常方便的在任意位置扩展`embedding`的类型，对于我们在自己的项目里面扩展`dlk`非常重要，注册模块对于`intc`也同样重要。在我们已知`StaticEmbedding`的注册名的情况下，获取这个模块的方法非常简单，可以直接`register.get("embedding", "static")`即可，而不必关注他的实际存储位置(`cregister`也有同样的功能)
-
+这种机制允许你在自己的项目中轻松扩展 `dlk` 的内置模块，只需使用注册器即可获取，而不必关心其具体实现位置（`register.get("embedding", "static")`)。
 
 #### 部分内置模块介绍
 
 ##### callback
 
-`dlk`的`Trainer`是基于`lightning.Trainer`实现的，因此`dlk`同样可以使用`lightning`提供的`callback`, `dlk.callback`中包含一些常用的`callback`
+`dlk` 的 `Trainer` 基于 `lightning.Trainer`，因此完全兼容 `lightning` 提供的所有 `callback`。`dlk.callback` 中也内置了一些常用 `callback` 的封装。
 
 ##### 虚拟对抗训练
 
-`Adversarial Training`是一种常见的提升模型效果的技巧，`dlk`内置了一些常用的针对`embedding`的`adv`方法(`dlk.adv_method`)，`./examples/adv_exp`是一个使用示例
+对抗训练是提升模型鲁棒性和效果的常用技巧。`dlk` 内置了多种针对 Embedding 层的对抗训练方法（`dlk.adv_method`），如 FGM、PGD 等。参考 `./examples/adv_exp`。
 
 ##### 复杂训练控制
 
-`dlk`的`dlk.scheduler`模块提供了多种的训练`scheduler`， `dlk.nn.loss`模块中的`multi_loss`同样针对多个`loss`提供了自由控制各种`loss`的能力
+`dlk.scheduler` 提供了多种学习率调度策略。`dlk.nn.loss` 中的 `multi_loss` 支持对多个损失函数进行灵活的加权和调度。
 
 ##### 文本生成
 
-`dlk`还参考`fairseq`的实现，实现了多种的`token_sample`方法，为文本生成提供非常强大的控制能力
+`dlk` 参考 `fairseq` 的实现，内置了多种 `token_sample` 策略（如 Beam Search、Diverse Beam Search 等），为文本生成任务提供了强大的解码控制能力。
 
 #### 实现你自己的模型
 
-参考`./examples/001_first_example` 实现你自己的模型
+参考 `./examples/001_first_example` 实现你自己的模型。
 
-看完例子之后。但你可能会有疑问，这似乎并不比我直接实现一个模型简单，甚至有很多概念让我觉得这看起来更复杂。
-是的，如果你只是想训练一个简单的模型，不需要考虑预测、演示等，没错，但是`dlk`提供了一个非常统一的框架，让你只需按照步骤来实现相应的组件，就可以获得一个可用的模型。并且所有的工作都是可重用的，包括你刚刚实现的组件。
+你可能会觉得这比直接用 PyTorch 写一个模型要复杂。是的，对于简单的单次实验来说或许如此。但 `dlk` 提供了一个**可复用、可扩展、生产就绪**的统一框架。你只需按组件规范实现自己的逻辑，就能免费获得数据处理、训练、验证、参数搜索、部署和 Demo 的全流程能力。你实现的每个组件也都是可复用的。
 
-而且`dlk`还提供了很多优化方面的工具，让你不是止步于简单模型
+而且 `dlk` 还提供了很多优化方面的工具，让你不是止步于简单模型。
 
-记住这个包的原则是Donot Repeat Yourself
-
+记住这个包的原则是 **Don't Repeat Yourself**。
 
 #### More Document
-
 TODO

@@ -4,23 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-from typing import Callable, Dict, List, Set
+from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
+from intc import Base, BoolField, IntField, ListField, NestField, StrField, cregister
 
 from dlk.utils.register import register
 
@@ -44,18 +30,13 @@ class SeqLabRelabelConfig(BaseSubProcessorConfig):
         offsets = StrField(value="offsets", help="the offsets")
         entities_info = StrField(value="entities_info", help="the entities info")
 
-    input_map = NestField(
-        value=InputMap,
-        help="the input map of the processor, the key is the name of the processor needed key, the value is the provided data provided key",
-    )
+    input_map = NestField(value=InputMap, help="input map")
 
     class OutputMap:
         labels = StrField(value="labels", help="the label names")
 
-    output_map = NestField(
-        value=OutputMap,
-        help="the output map of the processor, the key is the name of the processor provided key, the value is the nexted processor needed key",
-    )
+    output_map = NestField(value=OutputMap, help="output map")
+
     drop = StrField(
         value="shorter",
         options=["longer", "shorter", "none"],
@@ -69,92 +50,43 @@ class SeqLabRelabelConfig(BaseSubProcessorConfig):
     entity_priority = ListField(
         value=[],
         suggestions=[["Product", "Brand"]],
-        help="the entity priority, when conflict, will keep the entity with the highest priority",
+        help="the entity priority",
     )
     priority_trigger = IntField(
         value=1,
-        help="if the overlap entity abs(length_a - length_b)<=priority_trigger, will trigger the entity_priority strategy",
+        help="priority trigger threshold",
     )
 
 
 @register("subprocessor", "seq_lab_relabel")
 class SeqLabRelabel(BaseSubProcessor):
-    """
-    Relabel the json data to bio
-    """
+    """Relabel the json data to bio for Sequence Labeling."""
 
     def __init__(self, stage: str, config: SeqLabRelabelConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
-        self.stage = stage
         self.config = config
         self.entity_priority = {
             entity: priority
             for priority, entity in enumerate(self.config.entity_priority)
         }
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """firstpiece relabel the data
-
-        Args:
-            data: one is like
-
-            >>> {
-            >>>     "uuid": '**-**-**-**'
-            >>>     "sentence": "Mie Merah - Buah Bit",
-            >>>     "offsets": see the offsets in fast_tokenizer
-            >>>     "entities_info": [
-            >>>                 {
-            >>>                     "end": 9,
-            >>>                     "start": 0,
-            >>>                     "labels": [
-            >>>                         "Product"
-            >>>                     ]
-            >>>                 },
-            >>>             ]
-            >>>         },
-            >>>     ],
-            >>> },
-
-            deliver_meta:
-                ignore
-        Returns:
-            relabeld data
-        """
-        data[
-            [self.config.output_map.labels, self.config.input_map.entities_info]
-        ] = data.apply(self.relabel, axis=1, result_type="expand")
-        return data
-
     def find_position_in_offsets(
         self,
         position: int,
-        offset_list: List,
-        sub_word_ids: List,
+        offset_list: List[Tuple[int, int]],
+        sub_word_ids: List[int],
         start: int,
         end: int,
         is_start: bool = False,
-    ):
-        """find the sub_word index which the offset_list[index][0]<=position<offset_list[index][1]
-
-        Args:
-            position: position
-            offset_list: list of all tokens offsets
-            sub_word_ids: word_ids from tokenizer
-            start: start search index
-            end: end search index
-            is_start: is the position is the start of target token, if the is_start==True and cannot find return -1
-
-        Returns:
-            the index of the offset which include position
-
-        """
+    ) -> int:
+        """Find token index covering the position."""
         while start < end:
             if sub_word_ids[start] is None:
                 start += 1
             elif position >= offset_list[start][0] and position < offset_list[start][1]:
                 return start
             elif position < offset_list[start][0]:
-                if start == 1 and offset_list[0] == [0, 0]:
+                if start == 1 and list(offset_list[0]) == [0, 0]:
                     return 1
                 if is_start:
                     return -1
@@ -164,116 +96,120 @@ class SeqLabRelabel(BaseSubProcessor):
                 start += 1
         return -1
 
-    def relabel(self, one_ins: pd.Series):
-        """make token label, if use the first piece label please use the 'seq_lab_firstpiece_relabel'
+    def _relabel_one(
+        self, entities_info: List[Dict], offsets: List, sub_word_ids: List
+    ):
+        """Logic to generate BIO labels for a single sample."""
+        # 1. Resolve Overlaps
+        clean_entities = []
+        if self.config.drop != "none" or self.config.entity_priority:
+            entities_info.sort(key=lambda x: x["start"])
+            pre_end = -1
+            pre_length = 0
+            pre_label = ""
 
-        Args:
-            one_ins: include sentence, entity_info, offsets
+            for entity in entities_info:
+                # Logic for overlap dropping
+                if entity["start"] < pre_end:
+                    drop_current = False
+                    drop_prev = False
 
-        Returns:
-            labels(labels for each subtoken)
+                    # Priority Check
+                    if (
+                        abs(entity["end"] - entity["start"] - pre_length)
+                        <= self.config.priority_trigger
+                    ):
+                        pre_p = self.entity_priority.get(pre_label, 1e9)
+                        cur_p = self.entity_priority.get(entity["labels"][0], 1e9)
+                        if cur_p < pre_p:
+                            drop_prev = True
+                        else:
+                            drop_current = True
+                    # Length Check
+                    elif self.config.drop == "shorter":
+                        if entity["end"] - entity["start"] > pre_length:
+                            drop_prev = True
+                        else:
+                            drop_current = True
+                    elif self.config.drop == "longer":
+                        if entity["end"] - entity["start"] < pre_length:
+                            drop_prev = True
+                        else:
+                            drop_current = True
 
-        """
-        pre_clean_entities_info = one_ins[self.config.input_map.entities_info]
-        pre_clean_entities_info.sort(key=lambda x: x["start"])
-        offsets: List = one_ins[self.config.input_map.offsets]
-        sub_word_ids: List = one_ins[self.config.input_map.word_ids]
-        if not sub_word_ids:
-            logger.warning(
-                f"entity_info: {pre_clean_entities_info}, offsets: {offsets} "
-            )
-
-        entities_info = []
-        pre_end = -1
-        pre_length = 0
-        pre_label = ""
-        for entity_info in pre_clean_entities_info:
-            assert (
-                len(entity_info["labels"]) == 1
-            ), f"currently we just support one label for one entity"
-            if entity_info["start"] < pre_end:  # if overlap will remove one
-                if self.config.drop == "none":
-                    pass
-                elif (
-                    abs(entity_info["end"] - entity_info["start"] - pre_length)
-                    <= self.config.priority_trigger
-                ):
-                    pre_label_order = self.entity_priority.get(pre_label, 1e9)
-                    label_order = self.entity_priority.get(
-                        entity_info["labels"][0], 1e9
-                    )
-                    if label_order < pre_label_order:
-                        entities_info.pop()
-                    else:
+                    if drop_prev:
+                        clean_entities.pop()
+                    elif drop_current:
                         continue
-                elif self.config.drop == "shorter":
-                    if entity_info["end"] - entity_info["start"] > pre_length:
-                        entities_info.pop()
-                    else:
-                        continue
-                elif self.config.drop == "longer":
-                    if entity_info["end"] - entity_info["start"] < pre_length:
-                        entities_info.pop()
-                    else:
-                        continue
-                else:
-                    raise PermissionError(
-                        f"The drop method must in 'none'/'shorter'/'longer'"
-                    )
-                pre_label = entity_info["labels"][0]
-            entities_info.append(entity_info)
-            pre_end = entity_info["end"]
-            pre_length = entity_info["end"] - entity_info["start"]
 
-        cur_token_index = 0
-        offset_length = len(offsets)
-        sub_labels = []
-        for entity_info in entities_info:
-            start_token_index = self.find_position_in_offsets(
-                entity_info["start"],
+                clean_entities.append(entity)
+                pre_end = entity["end"]
+                pre_length = entity["end"] - entity["start"]
+                pre_label = entity["labels"][0]
+        else:
+            clean_entities = entities_info
+
+        # 2. Generate Labels
+        offset_len = len(offsets)
+        sub_labels = ["O"] * offset_len
+        cur_token_idx = 0
+
+        for entity in clean_entities:
+            label = entity["labels"][0]
+            start_idx = self.find_position_in_offsets(
+                entity["start"],
                 offsets,
                 sub_word_ids,
-                cur_token_index,
-                offset_length,
+                cur_token_idx,
+                offset_len,
                 is_start=True,
             )
-            if start_token_index == -1:
-                logger.warning(
-                    f"cannot find the entity_info : {entity_info}, offsets: {offsets} "
-                )
-                continue
-            for _ in range(start_token_index - cur_token_index):
-                sub_labels.append("O")
-            end_token_index = self.find_position_in_offsets(
-                entity_info["end"] - 1,
-                offsets,
-                sub_word_ids,
-                start_token_index,
-                offset_length,
-            )
-            assert (
-                end_token_index != -1
-            ), f"entity_info: {entity_info}, offsets: {offsets}"
-            sub_labels.append("B-" + entity_info["labels"][0])
-            for _ in range(end_token_index - start_token_index):
-                sub_labels.append("I-" + entity_info["labels"][0])
-            cur_token_index = end_token_index + 1
-        assert cur_token_index <= offset_length
-        for _ in range(offset_length - cur_token_index):
-            sub_labels.append("O")
 
+            if start_idx == -1:
+                continue
+
+            end_idx = self.find_position_in_offsets(
+                entity["end"] - 1, offsets, sub_word_ids, start_idx, offset_len
+            )
+
+            if end_idx != -1:
+                sub_labels[start_idx] = f"B-{label}"
+                for i in range(start_idx + 1, end_idx + 1):
+                    sub_labels[i] = f"I-{label}"
+                cur_token_idx = end_idx + 1
+
+        # 3. Handle Special Tokens (CLS/SEP)
         if sub_word_ids[0] is None:
             sub_labels[0] = self.config.start_label
+        if sub_word_ids[-1] is None:
+            sub_labels[-1] = self.config.end_label
 
-        if sub_word_ids[offset_length - 1] is None:
-            sub_labels[offset_length - 1] = self.config.end_label
+        return sub_labels, clean_entities
 
-        if len(sub_labels) != offset_length:
-            logger.error(f"{len(sub_labels)} vs {offset_length}")
-            for i in one_ins:
-                logger.error(f"{i}")
-            raise PermissionError
+    def process_batch(
+        self, batch: Dict[str, List[Any]], deliver_meta: bool = False
+    ) -> Dict[str, List[Any]]:
+        """Process batch to relabel sequences."""
 
-        if not self.config.clean_droped_entity:
-            entities_info = one_ins[self.config.input_map.entities_info]
-        return sub_labels, entities_info
+        ent_col = self.config.input_map.entities_info
+        off_col = self.config.input_map.offsets
+        word_col = self.config.input_map.word_ids
+
+        out_lab_col = self.config.output_map.labels
+
+        if ent_col in batch:
+            res_labels = []
+            res_entities = []
+
+            for ent_info, offsets, word_ids in zip(
+                batch[ent_col], batch[off_col], batch[word_col]
+            ):
+                labels, final_entities = self._relabel_one(ent_info, offsets, word_ids)
+                res_labels.append(labels)
+                res_entities.append(final_entities)
+
+            batch[out_lab_col] = res_labels
+            if self.config.clean_droped_entity:
+                batch[ent_col] = res_entities
+
+        return batch

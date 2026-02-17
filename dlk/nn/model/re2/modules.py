@@ -1,13 +1,29 @@
 import math
 from typing import Collection, Optional
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from config import ModelConfig  # Import the dataclass config
 
+from dlk.nn.model.re2.config import ModelConfig
 from dlk.nn.utils.rope import RoFormerSinusoidalPositionalEmbedding
+
+
+class Embedding(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        self.fix_embeddings = args.fix_embeddings
+        self.embedding = nn.Embedding(args.num_vocab, args.embedding_dim, padding_idx=0)
+        self.dropout = args.dropout
+
+    def set_(self, value):
+        self.embedding.weight.requires_grad = not self.fix_embeddings
+        self.embedding.load_state_dict({"weight": torch.tensor(value)})
+
+    def forward(self, x):
+        x = self.embedding(x)
+        x = f.dropout(x, self.dropout, self.training)
+        return x
 
 
 class Linear(nn.Module):
@@ -304,7 +320,7 @@ class MultiHeadAttention(nn.Module):
 
         # 3. Apply RoPE if enabled
         if self.use_rope and self.rope_emb is not None:
-            pos_emb = self.rope_emb(q.shape)
+            pos_emb = self.rope_emb(q.shape[2])
             q, k = (
                 RoFormerSinusoidalPositionalEmbedding.apply_rotary_position_embeddings(
                     pos_emb, q, k

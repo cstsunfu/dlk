@@ -103,6 +103,14 @@ class BaseOptimizer(object):
         all_named_parameters = list(model.named_parameters())
         total_all_named_parameters = len(all_named_parameters)
         logger.info(f"All Named Params Num is {len(all_named_parameters)}")
+        all_named_parameters = [
+            (n, p) for n, p in model.named_parameters() if p.requires_grad
+        ]
+        total_all_named_parameters = len(all_named_parameters)
+        logger.info(
+            f"All Named Params Requires Grad Num is {len(all_named_parameters)}"
+        )
+
         has_grouped_params = set()
         for special_group_name in optimizer_special_groups.get("order", []):
             group_config = optimizer_special_groups[special_group_name]["config"]

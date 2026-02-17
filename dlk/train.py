@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
+import gc
 import json
 import logging
 import os
@@ -161,6 +162,10 @@ class Train(object):
         asha_scheduler, optuna_search, search_space = prepare_tune(optuna_config)
 
         def _trial(opt_paras):
+            from lightning.pytorch.trainer import trainer as trainer_mod
+
+            trainer_mod.Trainer._teardown = lambda self: None
+
             specific_keys = search_space.keys()
             config_name = []
 
@@ -176,6 +181,11 @@ class Train(object):
             ).parser_init()[0]
 
             self.run_oneturn(parserd_cur_config, config_name, hyper_paras)
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            if torch.distributed.is_initialized():
+                torch.distributed.destroy_process_group()
 
         analysis = tune.run(
             _trial,
@@ -246,10 +256,11 @@ class Train(object):
             None
 
         """
-        with open(os.path.join(config.log_dir, name, "config.json"), "w") as f:
+        save_dir = os.path.join(config.log_dir, name)
+        os.makedirs(save_dir, exist_ok=True)
+        with open(os.path.join(save_dir, "config.json"), "w") as f:
             json.dump({"@fit": config._to_dict()}, f, ensure_ascii=False, indent=4)
-
-        change_log_file(os.path.join(config.log_dir, name, "log.txt"))
+        change_log_file(os.path.join(save_dir, "log.txt"))
 
     def run_oneturn(self, base_config, name, hyper_config):
         """run this config
@@ -285,19 +296,16 @@ class Train(object):
             trainer.test(model=imodel, datamodule=datamodule)
 
     def get_data(self, config: DLKFitConfig):
-        """get the data decided by config
+        from datasets import load_from_disk
 
-        Returns:
-            loaded all the processed data
-        """
-        # NOTE: currently only support load one data for each type
-        # TODO: support load multi data for each type
         data = {}
         for data_type in ["train", "valid", "test"]:
-            data_path = os.path.join(config.processed_data_dir, data_type, "0.pkl")
-            if os.path.exists(data_path):
-                with open(data_path, "rb") as f:
-                    data[data_type] = pkl.load(f)
+            data_path = os.path.join(config.processed_data_dir, data_type)
+            if os.path.exists(data_path) and os.path.isdir(data_path):
+                try:
+                    data[data_type] = load_from_disk(data_path)
+                except Exception as e:
+                    logger.warning(f"Failed to load dataset from {data_path}: {e}")
         return data
 
     def get_datamodule(self, config: DLKFitConfig, world_size):
@@ -390,4 +398,5 @@ class Train(object):
         if "test" in data:
             imodel._origin_data["test"] = data["test"]
 
+        imodel.train()
         return imodel

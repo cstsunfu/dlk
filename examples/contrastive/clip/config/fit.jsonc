@@ -1,0 +1,29 @@
+{
+    "@fit": {
+        "@imodel@default": {
+            "@model@two_tower": {
+                "share_encoder": false, // 双塔参数不共享
+                "anchor_encoder_name": "encoder@vit#image",
+                "positive_encoder_name": "encoder@bert_like#text",
+                "@encoder@vit#image": {
+                    "pretrained_model_path": "/tmp/bert/",
+                    "input_map": {
+                        "pixel_values": "pixel_values"
+                    }
+                },
+                "@encoder@bert_like#text": {
+                    "pretrained_model_path": "/tmp/bert/",
+                    "input_map": {
+                        "input_ids": "input_ids",
+                        "attention_mask": "attention_mask"
+                    }
+                }
+            },
+            "@loss@infonce": {
+                "temperature": 0.07,
+                "gather_with_grad": true,
+                "symmetric": true // 图文对比必须用对称 Loss
+            }
+        }
+    }
+}

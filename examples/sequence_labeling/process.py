@@ -3,17 +3,13 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-import copy
-import json
 import uuid
 
-import pandas as pd
 from datasets import load_dataset
 from utils import convert
 
 from dlk.preprocess import PreProcessor
 
-# this is just for prepro the data, not the real label<->id pair in process.
 label_map = {
     0: "O",
     1: "B-PER",
@@ -26,34 +22,68 @@ label_map = {
     8: "I-MISC",
 }
 
-# data = load_dataset(path="conll2003")
-data = load_dataset(path="./tmp")
 
-data = data.map(
-    lambda one: {
-        "tokens": one["tokens"],
-        "ner_tags": [label_map[i] for i in one["ner_tags"]],
+def convert_to_span_format(batch):
+    output = {"sentence": [], "entities_info": [], "uuid": []}
+    for tokens, tags in zip(batch["tokens"], batch["ner_tags"]):
+        labels = [label_map[i] for i in tags]
+
+        text = ""
+        entities_info = []
+        current_entity = None
+
+        for token, label in zip(tokens, labels):
+            start_idx = len(text) + 1 if text else 0
+            if text:
+                text += " " + token
+            else:
+                text = token
+
+            tag_type = label[0]
+            tag_value = label.split("-")[-1] if "-" in label else ""
+
+            if tag_type == "B":
+                if current_entity:
+                    current_entity["end"] = start_idx - 1
+                    entities_info.append(current_entity)
+                current_entity = {"start": start_idx, "labels": [tag_value]}
+
+            elif tag_type == "O":
+                if current_entity:
+                    current_entity["end"] = start_idx - 1
+                    entities_info.append(current_entity)
+                    current_entity = None
+
+            elif tag_type == "I":
+                if not current_entity:
+                    current_entity = {"start": start_idx, "labels": [tag_value]}
+
+        if current_entity:
+            current_entity["end"] = len(text)
+            entities_info.append(current_entity)
+
+        output["sentence"].append(text)
+        output["entities_info"].append(entities_info)
+        output["uuid"].append(str(uuid.uuid4()))
+
+    return output
+
+
+if __name__ == "__main__":
+    # Load Data
+    data = load_dataset("conll2003")
+
+    # Process using efficient dataset map
+    columns_to_remove = data["train"].column_names
+    processed_data = data.map(
+        convert_to_span_format, batched=True, remove_columns=columns_to_remove
+    )
+
+    # Create Datasets
+    input_data = {
+        "train": processed_data["train"].select(range(100)),  # Demo size
+        "valid": processed_data["validation"].select(range(100)),
     }
-)
 
-
-filed_name_map = {"train": "train", "test": "test"}
-json_data_map = {}
-for filed in ["train", "test"]:
-    filed_data = data[filed].to_dict()
-    tokens = filed_data["tokens"]
-    labels = filed_data["ner_tags"]
-    inses = []
-    for token, label in zip(tokens, labels):
-        inses.append([token, label])
-    json_data_map[filed_name_map[filed]] = convert(inses)
-
-
-input = {
-    "train": pd.DataFrame(json_data_map["train"]).head(100),
-    "valid": pd.DataFrame(json_data_map["test"]).head(100),
-}
-
-# processor = PreProcessor("./bert_firstpiece/processor.jsonc")
-processor = PreProcessor("./config/bert_firstpiece_lstm_crf/processor.jsonc")
-processor.fit(input)
+    processor = PreProcessor("./config/bert_firstpiece_lstm_crf/processor.jsonc")
+    processor.fit(input_data)

@@ -152,17 +152,22 @@ def setup_logger(
             file_handler = RotatingFileHandler(
                 final_log_path, maxBytes=max_bytes, backupCount=backup_count
             )
-            # Use a more detailed format for file logs.
             file_formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - Rank:%(process)d - %(levelname)8s - "
                 "%(filename)s:%(lineno)4d - %(message)s"
             )
             file_handler.setFormatter(file_formatter)
-            if not should_log_per_rank:
-                file_handler.addFilter(RankFilter(rank=0, ray_tune=False))
-            root_logger.addHandler(file_handler)
+
+            is_rank_0 = os.environ.get("LOCAL_RANK", "0") == "0"
+
+            if should_log_per_rank or is_rank_0:
+                if not should_log_per_rank:
+                    file_handler.addFilter(RankFilter(rank=0, ray_tune=False))
+                root_logger.addHandler(file_handler)
+
         except Exception as e:
-            root_logger.error(f"Failed to add file handler for '{final_log_path}': {e}")
+            # Only print error to console to avoid recursive failure
+            print(f"Failed to add file handler for '{final_log_path}': {e}")
 
     # Prevent logs from propagating to the parent logger (the default root).
     root_logger.propagate = False

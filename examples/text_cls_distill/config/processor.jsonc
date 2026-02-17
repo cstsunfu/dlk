@@ -1,0 +1,49 @@
+// config/processor.jsonc
+{
+    "@processor@default": {
+        "train_data_type": "dataset",
+        "valid_data_type": "dataset",
+        "feed_order": [
+            "fast_tokenizer",
+            "token_gather",
+            "token2id-label",
+            "teacher_label_gather"
+        ],
+        "do_save": true,
+        "processed_data_dir": "/tmp/processed_data",
+        "@subprocessor@fast_tokenizer": {
+            "tokenizer_path": "/tmp/bert"
+        },
+        "@subprocessor@token_gather": {
+            "gather_columns": [
+                "labels"
+            ],
+            "token_vocab": "label_vocab.json"
+        },
+        "@subprocessor@token2id-label": {
+            "input_map": {
+                "tokens": "labels"
+            },
+            "output_map": {
+                "token_ids": "label_ids"
+            }
+        },
+        "@subprocessor@teacher_label_gather": {
+            "input_map": {
+                "sentence": "sentence"
+            },
+            "output_map": {
+                "teacher_logits": "teacher_logits"
+            },
+            "@teacher_fetcher@http": {
+                "endpoints": [
+                    "http://127.0.0.1:8080/predict/teacher"
+                ],
+                // ensemble_method: "mean", "max" 或者 "first"
+                "ensemble_method": "first",
+                "result_json_path": "result.logits",
+                "timeout": 10
+            }
+        }
+    }
+}

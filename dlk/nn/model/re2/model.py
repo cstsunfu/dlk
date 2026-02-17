@@ -4,6 +4,7 @@ import torch.nn as nn
 from dlk.nn.model.re2.config import ModelConfig
 from dlk.nn.model.re2.modules import (
     AugmentedConnection,
+    Embedding,
     Encoder,
     FullFusion,
     FullPrediction,

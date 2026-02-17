@@ -5,11 +5,10 @@
 
 from dlk.demo import Demo
 
-demo = Demo(
-    display_config={"@display@txt_cls": {}},
-    process_config="./config/processor.jsonc",
-    fit_config="./config/fit.jsonc",
-    checkpoint="./logs/0/checkpoint/last.ckpt",
-)
-
-# a subtle and well-crafted ( for the most part ) chiller .
+if __name__ == "__main__":
+    demo = Demo(
+        display_config={"@display@txt_cls": {}},
+        process_config="./config/processor.jsonc",
+        fit_config="./config/fit.jsonc",
+        checkpoint="./logs/0/checkpoint/last.ckpt",
+    )

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
+import os
 
 from tokenizers import Tokenizer
 from tokenizers.normalizers import NFC, NFD, Lowercase, Strip, StripAccents
@@ -14,8 +15,50 @@ from tokenizers.pre_tokenizers import (
     WhitespaceSplit,
 )
 from tokenizers.processors import TemplateProcessing
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 logger = logging.getLogger(__name__)
+
+
+def load_fast_tokenizer(tokenizer_path: str):
+    """Load a fast tokenizer optimally from HuggingFace Transformers.
+
+    This replaces direct instantiations of `tokenizers.Tokenizer.from_file` and ensures
+    compatibility across the framework.
+    """
+    try:
+        if tokenizer_path.endswith("tokenizer.json"):
+            parent_dir = os.path.dirname(tokenizer_path)
+            # Check if there is a config to load a full AutoTokenizer
+            if os.path.exists(
+                os.path.join(parent_dir, "config.json")
+            ) or os.path.exists(os.path.join(parent_dir, "tokenizer_config.json")):
+                try:
+                    tokenizer = AutoTokenizer.from_pretrained(parent_dir, use_fast=True)
+                    if tokenizer.pad_token is None:
+                        tokenizer.pad_token = "[PAD]"
+                    return tokenizer
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to load AutoTokenizer from parent dir {parent_dir}, falling back to file. Error: {e}"
+                    )
+            tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = "[PAD]"
+            return tokenizer
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, use_fast=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = "[PAD]"
+            return tokenizer
+    except Exception as e:
+        logger.warning(
+            f"AutoTokenizer failed, trying PreTrainedTokenizerFast directly. Error: {e}"
+        )
+        tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = "[PAD]"
+        return tokenizer
 
 
 class TokenizerPostprocessorFactory(object):

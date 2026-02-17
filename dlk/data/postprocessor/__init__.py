@@ -10,8 +10,6 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union
 
-import pandas as pd
-import pyarrow.parquet as pq
 import torch
 import torch.distributed as dist
 from intc import (
@@ -75,8 +73,10 @@ class PostInfoCollection(Metric):
         self.postprocessor = postprocessor
         self.loss_logs: List[Dict[str, float]] = []
         self.predicts_list: List[Dict[str, Any]] = []
-        self.add_state("loss_logs", default=[], dist_reduce_fx=None)
-        self.add_state("predicts_list", default=[], dist_reduce_fx=None)
+        self.add_state("loss_logs", default=[], dist_reduce_fx=None, persistent=False)
+        self.add_state(
+            "predicts_list", default=[], dist_reduce_fx=None, persistent=False
+        )
 
     def _prepare_loss(self, batch_output, stage):
         cur_loss = {}
@@ -154,8 +154,7 @@ class PostInfoCollection(Metric):
         dist_sync_fn: Callable = gather_all_tensors,
         process_group: Optional[Any] = None,
     ) -> None:
-        super()._sync_dist(dist_sync_fn=dist_sync_fn, process_group=process_group)
-
+        # We manually handle the synchronization of all states (loss_logs and predicts_list) below.
         if not (dist.is_available() and dist.is_initialized()):
             return
 
@@ -186,6 +185,27 @@ class BasePostProcessor(object):
         super(BasePostProcessor, self).__init__()
         self.config = config
         self._info_collections: Dict[str, Dict[int, PostInfoCollection]] = {}
+
+    def _get_origin_row(self, origin_data: Any, index: int) -> Dict:
+        """Safely get a row from origin_data which can be Dataset, DataFrame, List, or Dict."""
+        if hasattr(origin_data, "iloc"):  # Pandas DataFrame
+            return origin_data.iloc[int(index)].to_dict()
+        elif isinstance(origin_data, dict):  # Dict of lists (Online pipeline)
+            return {k: v[int(index)] for k, v in origin_data.items()}
+        else:  # HF Dataset or List of dicts
+            return origin_data[int(index)]
+
+    def _check_origin_column(self, origin_data: Any, column: str) -> bool:
+        """Safely check if a column exists in the data."""
+        if hasattr(origin_data, "column_names"):  # HF Dataset
+            return column in origin_data.column_names
+        elif hasattr(origin_data, "columns"):  # Pandas DataFrame
+            return column in origin_data.columns
+        elif isinstance(origin_data, dict):  # Dict of lists
+            return column in origin_data
+        elif isinstance(origin_data, list) and len(origin_data) > 0:  # List of dicts
+            return column in origin_data[0]
+        return False
 
     def loss_name_map(self, stage: str) -> str:
         """get the stage loss name
@@ -230,7 +250,7 @@ class BasePostProcessor(object):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
         index: int,
     ):
@@ -239,7 +259,7 @@ class BasePostProcessor(object):
         Args:
             stage: train/test/etc.
             batch_output: the model output
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin Any, there are some data not be able to convert to tensor
             rt_config:
                 >>> current status
                 >>> {
@@ -268,19 +288,19 @@ class BasePostProcessor(object):
         )
 
     def wrap_predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ):
         """prepare the predict one batch for no online/serve stage"""
         raise NotImplementedError
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
         """Process the model predict to human readable format for one batch
         Args:
             stage: train/test/etc.
             batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
+            origin_data: the origin data, there are some data not be able to convert to tensor
         Returns:
             the predicts of one batch
         """
@@ -340,14 +360,20 @@ class BasePostProcessor(object):
             None
 
         """
-        if self.config.start_save_epoch == -1 or self.config.start_save_step == -1:
-            self.config.start_save_step = rt_config.get("total_steps", 0) - 1
-            self.config.start_save_epoch = rt_config.get("total_epochs", 0) - 1
+        start_save_step = self.config.start_save_step
+        start_save_epoch = self.config.start_save_epoch
+
+        if start_save_step == -1:
+            start_save_step = rt_config.get("total_steps", 0) - 1
+        if start_save_epoch == -1:
+            start_save_epoch = rt_config.get("total_epochs", 0) - 1
+
         if not save_condition and (
-            rt_config["current_step"] >= self.config.start_save_step
-            or rt_config["current_epoch"] >= self.config.start_save_epoch
+            rt_config["current_step"] >= start_save_step
+            or rt_config["current_epoch"] >= start_save_epoch
         ):
             save_condition = True
+
         if save_condition:
             if self.config.save_root_path:
                 save_path = os.path.join(
@@ -416,6 +442,24 @@ class BasePostProcessor(object):
             info_collection.reset()
 
         return metrics
+
+    def __call__(
+        self,
+        stage: str,
+        list_batch_outputs: List[Dict],
+        origin_data: Any,
+        rt_config: Dict,
+        save_condition: bool = False,
+    ):
+        """Unified Pipeline Executor for both Off/Online batch predictions."""
+        results = []
+        for i, batch in enumerate(list_batch_outputs):
+            results.extend(
+                self.wrap_predict_one_batch(stage, batch, origin_data, rt_config)
+            )
+
+        self.do_save(results, stage, rt_config, save_condition)
+        return results
 
 
 postprocessor_dir = os.path.dirname(__file__)

@@ -6,16 +6,17 @@
 from dlk import register
 from dlk.demo import Demo
 
-demo = Demo(
-    display_config={
-        "@display@span_relation": {
-            # "input": {
-            #     "sentence": "text",
-            # }
-        }
-    },
-    process_config="./config/processor.jsonc",
-    fit_config="./config/fit.jsonc",
-    checkpoint="./logs/0/checkpoint/epoch=28-step=2117.ckpt",
-)
-# ever since hamas won palestinian legislative elections last january , president bush and prime minister ehud olmert of israel have done everything they could think of to isolate hamas and far less than they might have to help fatah 's most important remaining leader , the palestinian president , mahmoud abbas .
+if __name__ == "__main__":
+    demo = Demo(
+        display_config={
+            "@display@span_relation": {
+                # "input": {
+                #     "sentence": "text",
+                # }
+            }
+        },
+        process_config="./config/processor.jsonc",
+        fit_config="./config/fit.jsonc",
+        checkpoint="./logs/0/checkpoint/epoch=28-step=2117.ckpt",
+    )
+    # ever since hamas won palestinian legislative elections last january , president bush and prime minister ehud olmert of israel have done everything they could think of to isolate hamas and far less than they might have to help fatah 's most important remaining leader , the palestinian president , mahmoud abbas .

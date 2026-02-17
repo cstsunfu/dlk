@@ -5,12 +5,13 @@
 
 from dlk.demo import Demo
 
-demo = Demo(
-    display_config={"@display@txt_match": {}},
-    process_config="./config/processor.jsonc",
-    fit_config="./config/fit.jsonc",
-    checkpoint="./logs/0/checkpoint/epoch=8-step=36.ckpt",
-)
+if __name__ == "__main__":
+    demo = Demo(
+        display_config={"@display@txt_match": {}},
+        process_config="./config/processor.jsonc",
+        fit_config="./config/fit.jsonc",
+        checkpoint="./logs/0/checkpoint/epoch=8-step=36.ckpt",
+    )
 
-# The boy is playing on the swings after school.
-# A little boy in a gray and white striped sweater and tan pants is playing on a piece of playground equipment.
+    # The boy is playing on the swings after school.
+    # A little boy in a gray and white striped sweater and tan pants is playing on a piece of playground equipment.

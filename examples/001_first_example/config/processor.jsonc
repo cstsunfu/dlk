@@ -1,5 +1,5 @@
 {
     "@processor@my": {
-        "tokenizer_path": "./pretrain/tokenizer.json"
+        "tokenizer_path": /tmp/bert/tokenizer.json"
     }
 }

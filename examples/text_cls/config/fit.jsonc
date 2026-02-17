@@ -6,8 +6,8 @@
         "@trainer@lightning": {
             "max_epochs": 6,
             "devices": "auto",
-            "strategy": "auto",
-            "accelerator": "cpu",
+            "strategy": "ddp_find_unused_parameters_true",
+            "accelerator": "gpu",
             "@callback@lr_monitor": {
                 "logging_interval": "step"
             },
@@ -46,7 +46,7 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./../sequence_labeling/data/bert/",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1
                 },

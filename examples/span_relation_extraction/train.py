@@ -28,8 +28,9 @@ def loss_sum(losses, **args):
     return loss
 
 
-pl.seed_everything(88)
+if __name__ == "__main__":
+    pl.seed_everything(88)
 
-trainer = Train("./config/fit.jsonc")
+    trainer = Train("./config/fit.jsonc")
 
-trainer.run()
+    trainer.run()

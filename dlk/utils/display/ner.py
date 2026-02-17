@@ -6,7 +6,7 @@
 import json
 import os
 import random
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -15,13 +15,13 @@ from dlk.utils.display.annotation import SpanAnnotation
 
 
 class NerVisualizer:
-    def __init__(self, ignore_labels: List = []):
+    def __init__(self, ignore_labels: Optional[List] = None):
         here = os.path.abspath(os.path.dirname(__file__))
         with open(
             os.path.join(here, "label_colors/ner.json"), "r", encoding="utf-8"
         ) as f_:
             self.label_colors = json.load(f_)
-        self.ignore_labels = set(ignore_labels)
+        self.ignore_labels = set(ignore_labels or [])
 
     # public function to get color for a label
     def get_label_color(self, label):

@@ -6,27 +6,13 @@
 import json
 import logging
 import os
-from functools import partial
+from typing import Any, Dict, List
 
-import pandas as pd
-from intc import (
-    MISSING,
-    AnyField,
-    Base,
-    BoolField,
-    DictField,
-    FloatField,
-    IntField,
-    ListField,
-    NestField,
-    StrField,
-    SubModule,
-    cregister,
-)
-from tokenizers import Tokenizer
+from intc import MISSING, Base, BoolField, ListField, NestField, StrField, cregister
 
 from dlk.utils.io import open
 from dlk.utils.register import register
+from dlk.utils.tokenizer_util import load_fast_tokenizer
 
 from . import BaseSubProcessor, BaseSubProcessorConfig
 
@@ -72,7 +58,7 @@ class TokenNormConfig(BaseSubProcessorConfig):
 
     input_map = NestField(
         value=InputMap,
-        help="the input map of the processor, the key is the name of the processor needed key, the value is the provided data provided key",
+        help="the input map of the processor",
     )
 
     class OutputMap:
@@ -84,130 +70,86 @@ class TokenNormConfig(BaseSubProcessorConfig):
 
     output_map = NestField(
         value=OutputMap,
-        help="the output map of the processor, the key is the name of the processor provided key, the value is the nexted processor needed key",
+        help="the output map of the processor",
     )
 
 
 @register("subprocessor", "token_norm")
 class TokenNorm(BaseSubProcessor):
-    """
-    This part could merged to fast_tokenizer(it will save some time), but not all process need this part(except some special dataset like conll2003), and will make the fast_tokenizer be heavy.
-
-    Token norm:
-        Love -> love
-        3281 -> 0000
-    """
+    """Normalize tokens in a sentence (digits -> 0, lowercase) while preserving alignment."""
 
     def __init__(self, stage: str, config: TokenNormConfig, meta_dir: str):
         super().__init__(stage, config, meta_dir)
-        self.stage = stage
         self.config = config
 
-        with open(os.path.join(self.config.tokenizer_path), "r", encoding="utf-8") as f:
-            tokenizer_str = json.dumps(json.load(f))
-
-        self.tokenizer = Tokenizer.from_str(tokenizer_str)
+        self.tokenizer = load_fast_tokenizer(self.config.tokenizer_path)
         self.vocab = self.tokenizer.get_vocab()
-        self.prefix = self.tokenizer.model.continuing_subword_prefix
-        self.unk = self.tokenizer.model.unk_token
 
-        self._zero_digits_replaced_num = 0
-        self._lower_case_num = 0
-        self._lower_case_zero_digits_replaced_num = 0
-        logger.info(
-            f"We use zero digits to replace digit token num is {self._zero_digits_replaced_num}, do lowercase token num is {self._lower_case_num}, do both num is {self._lower_case_zero_digits_replaced_num}"
-        )
+        self.prefix = None
+        if hasattr(self.tokenizer, "backend_tokenizer") and hasattr(
+            self.tokenizer.backend_tokenizer.model, "continuing_subword_prefix"
+        ):
+            self.prefix = getattr(
+                self.tokenizer.backend_tokenizer.model,
+                "continuing_subword_prefix",
+                None,
+            )
+
+        self.unk = self.tokenizer.unk_token
 
     def token_norm(self, token: str) -> str:
-        """norm token, the result len(result) == len(token), exp.  12348->00000
-
-        Args:
-            token: origin token
-
-        Returns:
-            normed_token
-
-        """
+        """Normalize a single token string."""
         if token in self.vocab:
             return token
 
-        if self.config.zero_digits_replaced:
-            norm = ""
-            digit_num = 0
-            for c in token:
-                if c.isdigit() or c == ".":
-                    norm += "0"
-                    digit_num += 1
-                else:
-                    norm += c
-            if norm in self.vocab or self.prefix + norm in self.vocab:
-                self._zero_digits_replaced_num += 1
-                return norm
-
+        norm = token
         if self.config.lowercase:
-            norm = token.lower()
-            if norm in self.vocab or self.prefix + norm in self.vocab:
-                self._lower_case_num += 1
-                return norm
+            norm = norm.lower()
 
-        if self.config.lowercase and self.config.zero_digits_replaced:
-            norm = ""
-            for c in token.lower():
-                if c.isdigit() or c == ".":
-                    norm += "0"
-                else:
-                    norm += c
-            if norm in self.vocab or self.prefix + norm in self.vocab:
-                self._lower_case_zero_digits_replaced_num += 1
-                return norm
+        if self.config.zero_digits_replaced:
+            # Replace digits with 0
+            norm = "".join(["0" if c.isdigit() or c == "." else c for c in norm])
+
+        # Check validity in vocab
+        if norm in self.vocab or (self.prefix and self.prefix + norm in self.vocab):
+            return norm
+
         return ""
 
-    def seq_norm(self, key: str, one_item: pd.Series) -> str:
-        """norm a sentence, the sentence is from one_item[key]
+    def seq_norm(self, seq: str) -> str:
+        """Normalize a full sentence string based on tokenization."""
+        norm_seq = list(seq)
+        encodings = self.tokenizer(
+            seq, return_offsets_mapping=True, add_special_tokens=False
+        )
 
-        Args:
-            key: the name in one_item
-            one_item: a pd.Series which include the key
+        tokens = self.tokenizer.convert_ids_to_tokens(encodings["input_ids"])
+        offsets = encodings["offset_mapping"]
 
-        Returns:
-            norm_sentence
-
-        """
-        seq = one_item[key]
-        norm_seq = [c for c in seq]
-        encode = self.tokenizer.encode(seq)
-        for i, token in enumerate(encode.tokens):
+        for i, token in enumerate(tokens):
             if token == self.unk:
-                token_offset = encode.offsets[i]
-                prenorm_token: str = seq[token_offset[0] : token_offset[1]]
-                norm_token = self.token_norm(prenorm_token)
-                if not norm_token:
+                start, end = offsets[i]
+                if start == end:
                     continue
-                assert (
-                    len(norm_token) == token_offset[1] - token_offset[0]
-                ), f"Prenorm '{prenorm_token}', postnorm: '{norm_token}' and {len(norm_token)}!= {token_offset[1]} - {token_offset[0]}"
-                norm_seq[token_offset[0] : token_offset[1]] = norm_token
+
+                prenorm_token = seq[start:end]
+                normed_token = self.token_norm(prenorm_token)
+
+                if normed_token:
+                    # Only replace if length matches to preserve char-level alignment
+                    if len(normed_token) == (end - start):
+                        norm_seq[start:end] = list(normed_token)
+
         return "".join(norm_seq)
 
-    def process(self, data: pd.DataFrame, deliver_meta: bool) -> pd.DataFrame:
-        """Character gather entry
+    def process_batch(
+        self, batch: Dict[str, List[Any]], deliver_meta: bool = False
+    ) -> Dict[str, List[Any]]:
+        """Normalize sentences in the batch."""
+        input_col = self.config.input_map.sentence
+        output_col = self.config.output_map.norm_sentence
 
-        Args:
-            data:
-            >>> |sentence |label|
-            >>> |---------|-----|
-            >>> |sent_a...|la   |
-            >>> |sent_b...|lb   |
+        if input_col in batch:
+            batch[output_col] = [self.seq_norm(sent) for sent in batch[input_col]]
 
-            deliver_meta:
-                if there are some meta info need to deliver to next processor, and deliver_meta is True, save the meta info to datadir
-        Returns:
-            processed data
-
-        """
-        _seq_norm = partial(self.seq_norm, self.config.input_map.sentence)
-        data[self.config.output_map.norm_sentence] = data.apply(_seq_norm, axis=1)
-        # WARNING: if you change the apply to parallel_apply, you should change the _zero_digits_replaced_num, etc. to multiprocess safely(BTW, use parallel_apply in tokenizers==0.10.3 will make the process very slow)
-        # data_set[value] = data_set.apply(_seq_norm, axis=1)
-
-        return data
+        return batch

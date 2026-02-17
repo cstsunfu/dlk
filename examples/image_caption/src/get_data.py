@@ -426,6 +426,6 @@ def get_data(multi_caption=False):
         image = Image.open(requests.get(url, stream=True).raw)
         if image.mode != "RGB":
             continue
-        data.append({"image": image, "target": caption, "uuid": str(uuid.uuid1())})
+        data.append({"image": image, "target": caption, "uuid": str(uuid.uuid4())})
     pkl.dump(data, open(os.path.join("data", "data_dump.pkl"), "wb"))
     return data

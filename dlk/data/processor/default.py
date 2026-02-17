@@ -3,20 +3,20 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
+import hashlib
+import json
 import logging
 import os
 import pickle as pkl
-from typing import Callable, Dict, Iterator, Type
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 import pandas as pd
 import pyarrow.parquet as pq
+from datasets import Dataset, concatenate_datasets, load_dataset, load_from_disk
 from intc import (
     MISSING,
-    AnyField,
     Base,
     BoolField,
-    DictField,
-    FloatField,
     IntField,
     ListField,
     NestField,
@@ -25,6 +25,7 @@ from intc import (
     cregister,
 )
 
+from dlk.utils.io import open
 from dlk.utils.register import register
 
 logger = logging.getLogger(__name__)
@@ -32,116 +33,137 @@ logger = logging.getLogger(__name__)
 
 @cregister("processor", "default")
 class DefaultProcessorConfig(Base):
-    """the default processor"""
+    """The default processor configuration."""
 
     data_root = StrField(
         value=None,
         additions=[None],
-        help="the root path of input(should be processed) data, if set the data_root to not null, all the path of data will be relative to the data_root",
+        help="The root path of input data. If set, all data paths will be relative to this root.",
     )
     train_data_type = StrField(
         value="none",
         options=[
             "dict",
             "dataframe",
+            "dataset",  # NEW: Support passing datasets.Dataset object directly
             "parquet",
             "parquet_list",
             "json",
-            "none",
+            "arrow",
+            "disk",
             "pickle",
+            "none",
         ],
-        help="the type of train data, `none` means no train data, `parquet_list` means the train data is a list of parquet file path, we will separate load->process->save the data into several parts, `pickle` means the data is a pickled `dataframe` file, we will load it directly.",
+        help="The type of train data. `dataset` means passing a HF Dataset object in python script.",
     )
     valid_data_type = StrField(
         value="none",
-        options=["dict", "dataframe", "parquet", "json", "none"],
-        help="the type of valid data, `none` means no valid data",
+        options=[
+            "dict",
+            "dataframe",
+            "dataset",
+            "parquet",
+            "json",
+            "arrow",
+            "disk",
+            "pickle",
+            "none",
+        ],
+        help="The type of valid data.",
     )
     test_data_type = StrField(
         value="none",
-        options=["dict", "dataframe", "parquet", "json", "none"],
-        help="the type of test data, `none` means no test data",
+        options=[
+            "dict",
+            "dataframe",
+            "dataset",
+            "parquet",
+            "json",
+            "arrow",
+            "disk",
+            "pickle",
+            "none",
+        ],
+        help="The type of test data.",
     )
     predict_data_type = StrField(
         value="none",
-        options=["dict", "dataframe", "parquet", "parquet_list", "json", "none"],
-        help="the type of predict data, `none` means no predict data",
+        options=[
+            "dict",
+            "dataframe",
+            "dataset",
+            "parquet",
+            "parquet_list",
+            "json",
+            "arrow",
+            "disk",
+            "pickle",
+            "none",
+        ],
+        help="The type of predict data.",
     )
     online_data_type = StrField(
         value="none",
         options=["dict", "dataframe", "none"],
-        help="the type of online data, `none` means no online data",
+        help="The type of online data. Usually 'dict' for server requests.",
     )
-    feed_order = ListField(
-        value=[],
-        suggestions=[["tokenizer", "token_gather", "label_to_id", "token_embedding"]],
-        help="the order of data feed",
-    )
+    feed_order = ListField(value=[], help="The order of subprocessors execution.")
     meta_collection_on_train = BoolField(
-        value=True,
-        help="whether to collect meta info on train data, if there are more than one train data, we will only collect meta info on the first part.",
+        value=True, help="Whether to collect meta info on train data."
     )
     load_meta_on_start = BoolField(
-        value=False,
-        help="whether to load meta info when start the processor, when `load_meta_on_start` set to `True`, the `meta_collection_on_train` must be `False`.",
+        value=False, help="Whether to load meta info when starting the processor."
     )
     processed_data_dir = StrField(
-        value="data/processed_data",
-        help="the save dir of the processor, not effective by `data_root`.",
+        value="data/processed_data", help="The directory to save processed data."
     )
-    meta_dir = StrField(
-        value="data/meta_data",
-        help="the save dir of the meta info, not effective by `data_root`.",
+    meta_dir = StrField(value="data/meta_data", help="The directory to save meta info.")
+    do_save = BoolField(value=True, help="Whether to save the processed data to disk.")
+    num_proc = IntField(value=4, minimum=1, help="Number of processes to use.")
+    verbose = BoolField(
+        value=True, help="Whether to print verbose logs during processing."
     )
-    do_save = BoolField(
-        value=True,
-        help="""
-        whether save the processed data, 
-        if `false` will return the processed dict
-        """,
-    )
-
-    submodule = SubModule(
-        value={},
-        help="subprocessors for processor",
-    )
+    submodule = SubModule(value={}, help="Subprocessors configuration.")
 
 
-def yield_dataframe(origin, data_type, config: DefaultProcessorConfig):
+def load_data_source(
+    origin: Any, data_type: str, config: DefaultProcessorConfig
+) -> Iterator[Dataset]:
+    """Load data from various sources and yield HuggingFace Datasets."""
     if data_type == "none":
         yield None
-    elif data_type == "dataframe":
+        return
+
+    # Handle data_root logic for paths
+    if config.data_root and isinstance(origin, (str, list)):
+        if isinstance(origin, str):
+            origin = os.path.join(config.data_root, origin)
+        elif isinstance(origin, list):
+            origin = [os.path.join(config.data_root, p) for p in origin]
+
+    if data_type == "dataset":
         yield origin
+    elif data_type == "dataframe":
+        yield Dataset.from_pandas(origin)
     elif data_type == "dict":
-        yield pd.DataFrame(data=origin)
+        yield Dataset.from_dict(origin)
     elif data_type == "pickle":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pkl.load(open(origin, "rb"))
+        df = pkl.load(open(origin, "rb"))
+        yield Dataset.from_pandas(df)
     elif data_type == "json":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pd.read_json(origin)
+        yield load_dataset("json", data_files=origin, split="train")
     elif data_type == "parquet":
-        assert isinstance(origin, str)
-        if config.data_root:
-            origin = os.path.join(config.data_root, origin)
-        yield pq.read_table(origin).to_pandas()
+        yield load_dataset("parquet", data_files=origin, split="train")
     elif data_type == "parquet_list":
-        assert isinstance(origin, list)
-        for path in origin:
-            if config.data_root:
-                path = os.path.join(config.data_root, path)
-            yield pq.read_table(path).to_pandas()
+        yield load_dataset("parquet", data_files=origin, split="train")
+    elif data_type in ["arrow", "disk"]:
+        yield load_from_disk(origin)
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Data type {data_type} is not supported.")
 
 
 @register("processor", "default")
 class DefaultProcessor(object):
-    """docstring for IProcessor"""
 
     stage_data_set_map = {
         "collect": "collect_data_set",
@@ -156,25 +178,13 @@ class DefaultProcessor(object):
         self.stage = stage
         self.config: DefaultProcessorConfig = config
 
-        assert (
-            (not self.config.meta_collection_on_train)
-            or (not self.config.load_meta_on_start)
-            or (not self.config.train_data_type == "none")
-        )
-
         self.subprocessors = {}
-        droped_subprocessors = []
-        self.will_processed_data_set = set()
+
         for name in self.config.feed_order:
-            subprocessor_config_dict = config_dict[f"@subprocessor@{name}"]
-            if not subprocessor_config_dict[self.stage_data_set_map[stage]]:
-                logger.info(f"Skip '{name}' ....")
-                droped_subprocessors.append(name)
+            subprocessor_config_dict = config_dict.get(f"@subprocessor@{name}")
+            if not subprocessor_config_dict:
+                logger.warning(f"Config for subprocessor '{name}' not found.")
                 continue
-            self.will_processed_data_set.update(
-                set(subprocessor_config_dict[self.stage_data_set_map[stage]])
-            )
-            logger.info(f"Init '{name}' ....")
             subprocessor_name = subprocessor_config_dict["_name"].split("-")[0]
             subprocessor_config = cregister.get("subprocessor", subprocessor_name)(
                 subprocessor_config_dict
@@ -184,104 +194,108 @@ class DefaultProcessor(object):
                 config=subprocessor_config,
                 meta_dir=self.config.meta_dir,
             )
+
             if self.config.load_meta_on_start:
                 subprocessor.load_meta()
-            self.subprocessors[name] = subprocessor
-        for name in droped_subprocessors:
-            self.config.feed_order.remove(name)
-
-    def load_data(self, data: Dict, type_name: str) -> Iterator:
-        """load data
-        Returns:
-            Iterable DataFrame
-        """
-        if type_name == "train":
-            return yield_dataframe(
-                data.get("train", {}), self.config.train_data_type, self.config
+            used_data_set_names = set(
+                subprocessor_config[self.stage_data_set_map[self.stage]]
             )
-        if type_name == "valid":
-            return yield_dataframe(
-                data.get("valid", {}), self.config.valid_data_type, self.config
-            )
-        if type_name == "test":
-            return yield_dataframe(
-                data.get("test", {}), self.config.test_data_type, self.config
-            )
-        if type_name == "predict":
-            return yield_dataframe(
-                data.get("predict", {}), self.config.predict_data_type, self.config
-            )
-        raise NotImplementedError
+            if self.config.meta_collection_on_train and self.stage == "train":
+                update_data_set_names = set(
+                    subprocessor_config[self.stage_data_set_map["collect"]]
+                )
+                used_data_set_names = used_data_set_names.union(update_data_set_names)
+            for data_set_name in used_data_set_names:
+                if data_set_name not in self.subprocessors:
+                    self.subprocessors[data_set_name] = []
+                self.subprocessors[data_set_name].append(
+                    (subprocessor, subprocessor_name)
+                )
 
-    def save(self, data: pd.DataFrame, type_name: str, i: int):
-        """save data to self.config.processed_data_dir
+    def get_cache_path(self, type_name: str) -> str:
+        return os.path.join(self.config.processed_data_dir, type_name)
 
-        Args:
-            data: should saved data
+    def get_config_hash(self):
+        """Generates a stable MD5 hash based on the current configuration."""
+        dict_repr = json.dumps(self.config._to_dict(), sort_keys=True).encode("utf-8")
+        return hashlib.md5(dict_repr).hexdigest()
 
-        Returns:
-            None
-        """
-        os.makedirs(
-            os.path.join(self.config.processed_data_dir, type_name), exist_ok=True
-        )
-        data_path = os.path.join(self.config.processed_data_dir, type_name, f"{i}.pkl")
-        assert (
-            i == 0
-        ), f"Currently only support save one {type_name} data"  # TODO: support save multi data
-        pkl.dump(data, open(data_path, "wb"))
+    def is_cached(self, type_name: str) -> bool:
+        """Validates if the cached dataset is exactly aligned with current configuration."""
+        path = self.get_cache_path(type_name)
+        hash_path = os.path.join(path, "config_hash.txt")
+        if not os.path.exists(path) or not os.path.exists(hash_path):
+            return False
+        with open(hash_path, "r") as f:
+            saved_hash = f.read().strip()
+        return saved_hash == self.get_config_hash()
 
     def process(self, data: Dict) -> Dict:
-        """Process entry
-
-        Args:
-            data:
-            >>> {
-            >>>     "train": {training data....},
-            >>>     "test": ..
-            >>> }
-
-        Returns:
-            processed data
-        """
         result = {}
         if not self.config.do_save:
             result = {key: [] for key in data}
+
         for type_name in ["train", "valid", "test", "predict"]:
-            if type_name not in self.will_processed_data_set:
-                continue
-            for i, loaded_data in enumerate(self.load_data(data, type_name)):
-                if loaded_data is None:
+            cache_path = self.get_cache_path(type_name)
+
+            # Use strict MD5 Hash Check!
+            if self.config.do_save and self.is_cached(type_name):
+                logger.info(f"Load strict cached {type_name} from {cache_path}")
+                try:
+                    result[type_name] = load_from_disk(cache_path)
                     continue
+                except:
+                    pass
+
+            processed_datasets = []
+            type_datasets = data.get(type_name, [])
+            if isinstance(type_datasets, Dataset):
+                type_datasets = [type_datasets]
+            else:
+                assert isinstance(
+                    type_datasets, list
+                ), f"Expected data[{type_name}] to be a Dataset or list of Datasets, got {type(type_datasets)}"
+            for i, dataset in enumerate(type_datasets):
                 deliver_meta = (
                     self.config.meta_collection_on_train
                     and type_name == "train"
                     and i == 0
                 )
-                for name in self.config.feed_order:
-                    logger.info(
-                        f"Processing on {type_name} {i if i > 0 else ''}: {name}"
+
+                for sub_processor, sub_processor_name in self.subprocessors.get(
+                    type_name, []
+                ):
+                    if self.config.verbose:
+                        logger.info(f"Processing {type_name}: {sub_processor_name}")
+
+                    dataset = sub_processor.process(
+                        data=dataset,
+                        deliver_meta=deliver_meta,
+                        num_proc=self.config.num_proc,
                     )
-                    loaded_data = self.subprocessors[name].process(
-                        data=loaded_data, deliver_meta=deliver_meta
-                    )
-                if not self.config.do_save:
-                    result[type_name].append(loaded_data)
+                processed_datasets.append(dataset)
+
+            if processed_datasets:
+                if len(processed_datasets) > 1:
+                    final_dataset = concatenate_datasets(processed_datasets)
                 else:
-                    self.save(loaded_data, type_name, i)
+                    final_dataset = processed_datasets[0]
+
+                if self.config.do_save:
+                    final_dataset.save_to_disk(cache_path)
+
+                    # Store MD5 Hash explicitly
+                    with open(os.path.join(cache_path, "config_hash.txt"), "w") as f:
+                        f.write(self.get_config_hash())
+
+                    result[type_name] = load_from_disk(cache_path)
+                else:
+                    result[type_name] = final_dataset
+
         return result
 
-    def online_process(self, data: pd.DataFrame):
-        """online server process the data without save
-        Args:
-            data:
-                the data to be processed
+    def online_process(self, data: Dict) -> Dict:
 
-        Returns:
-            processed data
-        """
-        if "online" not in self.will_processed_data_set:
-            return data
-        for name in self.config.feed_order:
-            data = self.subprocessors[name].process(data=data, deliver_meta=False)
+        for sub_processor, sub_processor_name in self.subprocessors.get("online", []):
+            data = sub_processor.process(data, deliver_meta=False)
         return data

@@ -83,7 +83,7 @@ class LSTM(Module):
 
         """
         max_seq_len = input.size(1)
-        seq_lens = mask.sum(1).cpu()
+        seq_lens = mask.sum(1).clamp(min=1).cpu()
         pack_seq_rep = pack_padded_sequence(
             input=input, lengths=seq_lens, batch_first=True, enforce_sorted=False
         )

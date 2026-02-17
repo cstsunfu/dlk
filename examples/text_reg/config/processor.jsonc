@@ -1,14 +1,14 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
+        "train_data_type": "dataset",
+        "valid_data_type": "dataset",
         "feed_order": [
             "fast_tokenizer"
         ],
         "do_save": true,
         "@subprocessor@fast_tokenizer": {
-            "tokenizer_path": "./../sequence_labeling/data/bert/tokenizer.json"
+            "tokenizer_path": "/tmp/bert"
         }
     }
 }

@@ -148,17 +148,11 @@ class GPT2DecoderWrap(Module):
                 output_hidden_states=True,
                 return_dict=False,
             )
-        assert (
-            len(outputs) == 5
-        ), f"Please check transformers version, the len(outputs) is 3 in version == 4.12|4.15"
-        # sequence_output, all_hidden_states, all_self_attentions = outputs[0], outputs[1], outputs[2]
-        (
-            hidden_states,
-            next_cache,
-            all_hidden_states,
-            all_self_attns,
-            all_cross_attentions,
-        ) = (outputs[0], outputs[1], outputs[2], outputs[3], outputs[4])
+        hidden_states = outputs.last_hidden_state
+        next_cache = getattr(outputs, "past_key_values", None)
+        all_hidden_states = getattr(outputs, "hidden_states", None)
+        all_self_attns = getattr(outputs, "attentions", None)
+        all_cross_attentions = getattr(outputs, "cross_attentions", None)
         return (
             hidden_states,
             next_cache,

@@ -25,11 +25,17 @@ from intc import (
 from lightning import Trainer as PLTrainer
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import TensorBoardLogger
-from ray import train as ray_train
+
+try:
+    from ray import tune as ray_tune
+
+    RAY_AVAILABLE = True
+except ImportError:
+    RAY_AVAILABLE = False
 
 from dlk.utils.register import register, register_module_name
 
-ogger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @cregister("trainer", "lightning")
@@ -52,6 +58,7 @@ class LightningTrainerConfig(Base):
             "ddp_notebook",
             "ddp_find_unused_parameters_true",
             "ddp_spawn",
+            "single_device",
             "deepspeed",
             "deepspeed_stage_1",
             "deepspeed_stage_2",
@@ -281,6 +288,12 @@ class RayTuneReportCallback(Callback):
         self.report_stage = report_stage
 
     def _report(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        if not RAY_AVAILABLE:
+            return
+
+        if not trainer.is_global_zero:
+            return
+
         epoch = trainer.current_epoch
         step = trainer.global_step
         logs = trainer.callback_metrics
@@ -290,7 +303,7 @@ class RayTuneReportCallback(Callback):
         logs["epoch"] = epoch
         logs["step"] = step
 
-        ray_train.report(logs)
+        ray_tune.report(metrics=logs)
 
     def on_validation_epoch_end(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"

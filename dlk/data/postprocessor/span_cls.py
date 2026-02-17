@@ -7,30 +7,24 @@ import json
 import logging
 import os
 import pickle as pkl
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import torch
 from intc import (
     MISSING,
-    AnyField,
     Base,
     BoolField,
-    DictField,
     FloatField,
     IntField,
     ListField,
     NestField,
     StrField,
-    SubModule,
     cregister,
 )
 from tabulate import tabulate
-from tokenizers import Tokenizer
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
-from dlk.utils.io import open
 from dlk.utils.register import register
 from dlk.utils.vocab import Vocabulary
 
@@ -50,9 +44,6 @@ class SpanClsPostProcessorConfig(BasePostProcessorConfig):
         help="ignore the provided char if these char is prefix or suffix of the entity",
     )
     label_vocab = StrField(value=MISSING, help="the label vocab file path")
-    tokenizer_path = StrField(
-        value=MISSING, help="the tokenizer file path, is not effected by `meta_dir`"
-    )
 
     class InputMap:
         logits = StrField(value="logits", help="the output logits")
@@ -90,7 +81,7 @@ class SpanClsPostProcessorConfig(BasePostProcessorConfig):
 
 @register("postprocessor", "span_cls")
 class SpanClsPostProcessor(BasePostProcessor):
-    """PostProcess for sequence labeling task"""
+    """PostProcess for span classification task"""
 
     def __init__(self, config: SpanClsPostProcessorConfig):
         super(SpanClsPostProcessor, self).__init__(config)
@@ -98,46 +89,13 @@ class SpanClsPostProcessor(BasePostProcessor):
         self.label_vocab = Vocabulary.load_from_file(
             os.path.join(self.config.meta_dir, self.config.label_vocab)
         )
-        with open(self.config.tokenizer_path, "r", encoding="utf-8") as f:
-            tokenizer_str = json.dumps(json.load(f))
-        self.tokenizer = Tokenizer.from_str(tokenizer_str)
 
     def _process4predict(
-        self, predict_logits: torch.FloatTensor, index: int, origin_data: pd.DataFrame
+        self, predict_logits: torch.FloatTensor, index: int, origin_data: Any
     ) -> Dict:
-        """gather the predict and origin text and ground_truth_entities_info for predict
-
-        Args:
-            predict: the predict span logits
-            index: the data index in origin_data
-            origin_data: the origin pd.DataFrame
-
-        Returns:
-            >>> one_ins info
-            >>> {
-            >>>     "sentence": "...",
-            >>>     "uuid": "..",
-            >>>     "entities_info": [".."],
-            >>>     "predict_entities_info": [".."],
-            >>> }
-
-        """
-
         def _get_entity_info(
             sub_tokens_index: List, offset_mapping: List, word_ids: List, label: str
         ) -> Dict:
-            """gather sub_tokens to get the start and end
-
-            Args:
-                sub_tokens_index: the entity tokens index list
-                offset_mapping: every token offset in text
-                word_ids: every token in the index of words
-                label: predict label
-
-            Returns:
-                entity_info
-
-            """
             if not sub_tokens_index or not label:
                 return {}
             start = offset_mapping[sub_tokens_index[0]][0]
@@ -145,7 +103,7 @@ class SpanClsPostProcessor(BasePostProcessor):
             return {"start": start, "end": end, "labels": [label]}
 
         one_ins = {}
-        origin_ins = origin_data.iloc[int(index)]
+        origin_ins = self._get_origin_row(origin_data, index)
         one_ins["sentence"] = origin_ins[self.config.origin_input_map.sentence]
         one_ins["uuid"] = origin_ins[self.config.origin_input_map.uuid]
         one_ins["entities_info"] = origin_ins[
@@ -177,8 +135,6 @@ class SpanClsPostProcessor(BasePostProcessor):
                 predict_entities_info.append(entity_info)
 
             if len(predict_entities_info) > max_entities:
-                # HACK: if the predict entities is more than max_entities, we will stop
-                predict_entities_info = []
                 break
 
         one_ins["predict_entities_info"] = predict_entities_info
@@ -188,44 +144,17 @@ class SpanClsPostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
-        """Process the model predict to human readable format
-
-        Args:
-            stage: train/test/etc.
-            batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the predicts
-
-        """
         batch_output[self.config.input_map.logits] = (
             batch_output[self.config.input_map.logits].float().cpu().numpy()
         )
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
-        """Process the model predict to human readable format for one batch
-        Args:
-            stage: train/test/etc.
-            batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-        Returns:
-            the predicts of one batch
-        """
         batch_logits = batch_output[self.config.input_map.logits]
         indexes = batch_output[self.config.input_map.index]
         predicts = []
@@ -243,48 +172,7 @@ class SpanClsPostProcessor(BasePostProcessor):
         stage: str,
         rt_config: Dict,
     ) -> Dict:
-        """calc the scores use the predicts or list_batch_outputs
-
-        Args:
-            predicts: list of predicts
-            stage: train/test/etc.
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the named scores, recall, precision, f1
-
-        """
-
         def _group_entities_info(entities_info: List[Dict], text: str) -> Dict:
-            """gather the same labeled entity to the same list
-
-            Args:
-                entities_info:
-                    >>> [
-                    >>>     {
-                    >>>         "start": start1,
-                    >>>         "end": end1,
-                    >>>         "labels": ["label_1"]
-                    >>>     },
-                    >>>     {
-                    >>>         "start": start2,
-                    >>>         "end": end2,
-                    >>>         "labels": ["label_2"]
-                    >>>     },....
-                    >>> ]
-                text: be labeled text
-
-            Returns:
-                >>> { "label_1" [text[start1:end1]], "label_2": [text[start_2: end_2]]...}
-
-            """
             info = {}
             for item in entities_info:
                 label = item["labels"][0]
@@ -301,9 +189,7 @@ class SpanClsPostProcessor(BasePostProcessor):
                         end_position -= 1
                     else:
                         break
-                if (
-                    start_position == end_position
-                ):  # if the entity after remove ignore char be null, we set it to origin
+                if start_position == end_position:
                     start_position, end_position = item["start"], item["end"]
 
                 if self.config.ignore_position:
@@ -313,37 +199,16 @@ class SpanClsPostProcessor(BasePostProcessor):
             return info
 
         def _calc_score(predict_list: List, ground_truth_list: List):
-            """use predict_list and ground_truth_list to calc scores
-
-            Args:
-                predict_list: list of predict
-                ground_truth_list: list of ground_truth
-
-            Returns:
-                precision, recall, f1
-
-            """
             category_tp = {}
             category_fp = {}
             category_fn = {}
 
             def _care_div(a, b):
-                """return a/b or 0.0 if b == 0"""
                 if b == 0:
                     return 0.0
                 return a / b
 
             def _calc_num(_pred: List, _ground_truth: List):
-                """calc tp, fn, fp
-
-                Args:
-                    pred: pred list
-                    ground_truth: groud truth list
-
-                Returns:
-                    tp, fn, fp
-
-                """
                 num_p = len(_pred)
                 num_t = len(_ground_truth)
                 truth = 0

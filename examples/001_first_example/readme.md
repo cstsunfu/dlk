@@ -45,7 +45,7 @@ data = data.map(
     lambda one: {
         "sentence": one["sentence"],
         "labels": label_map[one["label"]],
-        "uuid": str(uuid.uuid1()),
+        "uuid": str(uuid.uuid4()),
     },
     remove_columns=["sentence", "label"],
 )

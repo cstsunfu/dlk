@@ -4,7 +4,7 @@
         "log_dir": "./logs",
         "processed_data_dir": "./data/processed_data",
         "@trainer@lightning": {
-            "max_epochs": 5,
+            "max_epochs": 10,
             "devices": "auto",
             "strategy": "ddp_find_unused_parameters_true",
             "accelerator": "auto",
@@ -43,8 +43,8 @@
                 "gen_mask": {
                     "input_ids": "attention_mask"
                 },
-                "num_entity_classes": 19,
-                "num_relation_classes": 24,
+                "num_entity_classes": 4,
+                "num_relation_classes": 5,
                 "key_padding_pairs": {
                     "input_ids": 0,
                     "attention_mask": 0,
@@ -60,7 +60,7 @@
                 "@initmethod@default": {},
                 "@embedding@bert_like": {
                     "from_pretrain": true,
-                    "pretrained_model_path": "./hfl/chinese-roberta-wwm-ext",
+                    "pretrained_model_path": "/tmp/bert/",
                     "embedding_dim": 768,
                     "dropout": 0.1
                 },
@@ -155,7 +155,6 @@
             "@postprocessor@span_relation": {
                 "entity_label_vocab": "label_vocab#entity.json",
                 "relation_label_vocab": "label_vocab#relation.json",
-                "tokenizer_path": "./hfl/chinese-roberta-wwm-ext/tokenizer.json",
                 "start_save_epoch": 1,
                 "sym": false
             }

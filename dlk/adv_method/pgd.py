@@ -83,8 +83,9 @@ class PGDAdvMethod(AdvMethod):
                     continue
                 norm = torch.norm(param.grad)
                 if norm != 0 and not torch.isnan(norm):
-                    r_at = self.config.alpha * param.grad / norm
-                    param.data.add_(r_at)
+                    r_at = self.config.alpha * param.grad / (norm + 1e-8)
+                    with torch.no_grad():
+                        param.add_(r_at)
                     param.data = self.project(name, param.data, self.config.epsilon)
 
     def project(self, param_name, param_data, epsilon):
@@ -111,16 +112,15 @@ class PGDAdvMethod(AdvMethod):
                 param.grad = param.grad + self.grad_backup[name]
 
     def training_step(self, imodel, batch: Dict[str, torch.Tensor], batch_idx: int):
-        """do training_step on a mini batch
+        """Performs a training step using Projected Gradient Descent (PGD).
 
         Args:
-            imodel: imodel instance
-            batch: a mini batch inputs
-            batch_idx: the index(dataloader) of the mini batch
+            imodel: The integrated model instance (LightningModule).
+            batch: A dictionary containing the mini-batch inputs.
+            batch_idx: The index of the current batch.
 
         Returns:
-            the outputs
-
+            Tuple[torch.Tensor, Dict]: A tuple containing the mean loss and the loss log.
         """
         optimizer = imodel.optimizers()
         rt_config = {
@@ -129,10 +129,11 @@ class PGDAdvMethod(AdvMethod):
             "total_steps": imodel.num_training_steps,
             "total_epochs": imodel.num_training_epochs,
         }
-        optimizer.zero_grad()
 
-        self.attack(is_first_attack=True)  # This just saves the embeddings
+        # 1. Backup clean embeddings
+        self.attack(is_first_attack=True)
 
+        # 2. Iteratively find perturbations
         for t in range(self.config.adv_k):
             optimizer.zero_grad()
             result = imodel.model.training_step(batch)
@@ -140,14 +141,27 @@ class PGDAdvMethod(AdvMethod):
             imodel.manual_backward(loss)
             self.attack(is_first_attack=False)
 
+        # Clear gradients used for finding perturbations
         optimizer.zero_grad()
+
+        # 3. Compute Adversarial Loss
         result = imodel.model.training_step(batch)
         adv_loss, adv_loss_log = imodel.calc_loss(result, batch, rt_config=rt_config)
-        imodel.manual_backward(adv_loss)
+        imodel.manual_backward(adv_loss / 2.0)
 
+        # 4. Restore clean parameters
         self.restore()
 
+        # 5. Compute Clean Loss
+        result = imodel.model.training_step(batch)
+        clean_loss, _ = imodel.calc_loss(result, batch, rt_config=rt_config)
+        imodel.manual_backward(clean_loss / 2.0)
+
+        # 6. Update parameters
+        imodel.clip_gradients(
+            optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+        )
         optimizer.step()
         imodel.lr_schedulers().step()
 
-        return adv_loss, adv_loss_log
+        return (clean_loss + adv_loss) / 2.0, adv_loss_log

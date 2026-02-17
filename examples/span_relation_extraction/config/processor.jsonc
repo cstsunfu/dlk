@@ -1,8 +1,8 @@
 {
     "@processor@default": {
         "data_root": "data",
-        "train_data_type": "dataframe",
-        "valid_data_type": "dataframe",
+        "train_data_type": "dataset",
+        "valid_data_type": "dataset",
         "feed_order": [
             "fast_tokenizer",
             "token_gather#entity",
@@ -12,7 +12,7 @@
         ],
         "do_save": true,
         "@subprocessor@fast_tokenizer": {
-            "tokenizer_path": "./hfl/chinese-roberta-wwm-ext/tokenizer.json"
+            "tokenizer_path": "/tmp/bert/tokenizer.json"
         },
         "@subprocessor@token_gather#entity": {
             "token_vocab": "label_vocab#entity.json",

@@ -3,13 +3,11 @@
 # This source code is licensed under the Apache license found in the
 # LICENSE file in the root directory of this source tree.
 
-
 import json
 import logging
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-import pandas as pd
 from intc import (
     MISSING,
     AnyField,
@@ -24,11 +22,11 @@ from intc import (
     SubModule,
     cregister,
 )
-from tokenizers import Tokenizer
 from torchmetrics.functional.text import bleu_score
 
 from dlk.data.postprocessor import BasePostProcessor, BasePostProcessorConfig
 from dlk.utils.register import register, register_module_name
+from dlk.utils.tokenizer_util import load_fast_tokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +76,9 @@ class TokenGeneratePostProcessor(BasePostProcessor):
     def __init__(self, config: TokenGeneratePostProcessorConfig):
         super(TokenGeneratePostProcessor, self).__init__(config)
         self.config = config
+        self.tokenizer = load_fast_tokenizer(self.config.tokenizer)
 
-        self.tokenizer = Tokenizer.from_file(self.config.tokenizer)
-
-    def _get_origin_data(self, one_origin: pd.Series) -> Dict:
+    def _get_origin_data(self, one_origin: Dict) -> Dict:
         """
 
         Args:
@@ -101,51 +98,26 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         self,
         stage: str,
         batch_output: Dict,
-        origin_data: pd.DataFrame,
+        origin_data: Any,
         rt_config: Dict,
     ) -> List:
-        """Process the model predict to human readable format
-
-        Args:
-            stage: train/test/etc.
-            batch_output: model outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the predicts
-
-        """
+        """Process the model predict to human readable format"""
         return self.predict_one_batch(stage, batch_output, origin_data, rt_config)
 
     def predict_one_batch(
-        self, stage, batch_output: Dict, origin_data: pd.DataFrame, rt_config
+        self, stage, batch_output: Dict, origin_data: Any, rt_config
     ) -> List:
-        """Process the model predict to human readable format for one batch
-        Args:
-            stage: train/test/etc.
-            batch_output: a dict of outputs
-            origin_data: the origin pd.DataFrame data, there are some data not be able to convert to tensor
-        Returns:
-            the predicts of one batch
-        """
+        """Process the model predict to human readable format for one batch"""
         results = []
         indexes = list(batch_output[self.config.input_map.index])
 
         batch_generated = batch_output[self.config.input_map.generated]
         for i, (index, generated) in enumerate(zip(indexes, batch_generated)):
-            one_origin = origin_data.iloc[int(index)]
+            one_origin = self._get_origin_row(origin_data, index)
             one_ins = self._get_origin_data(one_origin)
 
             generate_result = []
-            for i, (one_generate) in enumerate(generated):
+            for j, (one_generate) in enumerate(generated):
                 generate_sent = self.tokenizer.decode(
                     list(one_generate["tokens"]),
                     skip_special_tokens=self.config.skip_special_tokens,
@@ -171,30 +143,14 @@ class TokenGeneratePostProcessor(BasePostProcessor):
         stage: str,
         rt_config: Dict,
     ) -> Dict:
-        """calc the scores use the predicts or list_batch_outputs
-
-        Args:
-            predicts: list of predicts
-            stage: train/test/etc.
-            rt_config:
-                >>> current status
-                >>> {
-                >>>     "current_step": self.global_step,
-                >>>     "current_epoch": self.current_epoch,
-                >>>     "total_steps": self.num_training_steps,
-                >>>     "total_epochs": self.num_training_epochs
-                >>> }
-
-        Returns:
-            the named scores
-
-        """
+        """calc the scores use the predicts or list_batch_outputs"""
         generates = []
         targets = []
         for one_ins in predicts:
             generates.append(one_ins["generated"][0]["generate"])
             targets.append(one_ins["target"])
-        bleu_score_value = float(bleu_score(generates, targets))
+        targets_list = [[t] for t in targets]
+        bleu_score_value = float(bleu_score(generates, targets_list))
 
         real_name = self.loss_name_map(stage)
         return {f"{real_name}_bleu": bleu_score_value}

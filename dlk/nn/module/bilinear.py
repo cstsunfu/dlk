@@ -136,36 +136,33 @@ class BiLinear(Module):
                 outputs[..., : self.config.hidden_size],
                 outputs[..., self.config.hidden_size :],
             )
-            # -> (b, o, s, h)
-            qw = qw.permute(0, 2, 1, 3)
-            kw = kw.permute(0, 2, 1, 3)
+            qw = qw.permute(0, 2, 1, 3).contiguous()
+            kw = kw.permute(0, 2, 1, 3).contiguous()
 
             if self.config.relation_position:
                 # (s, h) -> (1, 1, s, h) for broadcasting
-                sinusoidal_pos = (
-                    self.embed_positions(embedding.shape[:2]).unsqueeze(0).unsqueeze(0)
-                )
+                sinusoidal_pos = self.embed_positions(seq_len).unsqueeze(0).unsqueeze(0)
                 qw, kw = self.embed_positions.apply_rotary_position_embeddings(
                     sinusoidal_pos, qw, kw
                 )
-            # (b, o, s, h) @ (b, o, h, s) -> (b, o, s, s)
-            logits = torch.einsum("bhid,bhjd->bhij", qw, kw)
+
+            logits = torch.einsum("bosh,bokh->bosk", qw, kw)
 
         else:
             # (b, s, i) -> (b, s, h * 2)
             outputs = self.dense1(embedding)
             # -> (b, s, h), (b, s, h)
-            qw, kw = outputs[..., ::2], outputs[..., 1::2]
+            qw, kw = outputs[..., ::2].contiguous(), outputs[..., 1::2].contiguous()
 
             if self.config.relation_position:
                 # (s, h) -> (1, s, h) for broadcasting
-                sinusoidal_pos = self.embed_positions(embedding.shape[:2]).unsqueeze(0)
+                sinusoidal_pos = self.embed_positions(seq_len).unsqueeze(0)
                 qw, kw = self.embed_positions.apply_rotary_position_embeddings(
                     sinusoidal_pos, qw, kw
                 )
 
-            # (b, s, h) @ (b, h, s) -> (b, s, s)
-            logits = torch.einsum("bid,bjd->bij", qw, kw)
+            # qw: (b, s, h), kw: (b, s, h) -> kw.T: (b, h, s)
+            logits = torch.matmul(qw, kw.transpose(-1, -2))
 
             # (b, s, i) -> (b, s, o * 2)
             bias = self.dense2(embedding)
